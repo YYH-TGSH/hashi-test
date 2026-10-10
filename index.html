@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="數橋">
-  <title>數橋 - Hashi Puzzle</title>
+  <meta name="apple-mobile-web-app-title" content="數橋測試版">
+  <title>數橋測試版 - Hashi Puzzle</title>
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23ffcc00%22 rx=%2220%22/><text y=%2272%22 x=%2216%22 font-size=%2265%22>🌉</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234ade80%22 rx=%2220%22/><text y=%2272%22 x=%2216%22 font-size=%2265%22>🌉</text></svg>">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -102,10 +103,10 @@
   <style>
     body {
       overscroll-behavior-y: none;
-      background-color: #fdf5e6;
+      background-color: #e9f7e9;
       background-image:
-        radial-gradient(#e8dcc3 3px, transparent 3.5px),
-        radial-gradient(#d3c5ab 1.5px, transparent 2px),
+        radial-gradient(#c9e8c9 3px, transparent 3.5px),
+        radial-gradient(#b7ddb7 1.5px, transparent 2px),
         linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
       background-size: 28px 28px, 12px 12px, 100% 100%;
       margin: 0; padding: 0;
@@ -924,7 +925,7 @@
       // ✨ 勝利撒花
       useEffect(function() {
         if (isWon) {
-          const colors = ['#ffcc00', '#ef4444', '#3b82f6', '#10b981', '#a855f7', '#f97316'];
+          const colors = ['#4ade80', '#ef4444', '#3b82f6', '#10b981', '#a855f7', '#f97316'];
           const arr = [];
           for (let i = 0; i < 50; i++) {
             arr.push({ id: 'c' + i, left: Math.random() * 100, delay: Math.random() * 1.4, dur: 2.4 + Math.random() * 2.2, color: colors[i % colors.length], w: 6 + Math.random() * 6, h: 9 + Math.random() * 7 });
@@ -2591,13 +2592,13 @@
 
       const tutorialOverlay = showTutorial ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-[#fffaf0] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
+          <div className="bg-[#f3fbf3] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
             <div className="text-5xl mb-3 text-center">{TUTORIAL_STEPS[tutorialStep].icon}</div>
             <h2 className="text-xl font-black text-slate-800 mb-2 text-center">{TUTORIAL_STEPS[tutorialStep].title}</h2>
             <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center">{TUTORIAL_STEPS[tutorialStep].body}</p>
             <div className="flex justify-center gap-2 mb-5">
               {TUTORIAL_STEPS.map((_, idx) => (
-                <div key={idx} className={`w-2.5 h-2.5 rounded-full border-2 border-slate-800 ${idx === tutorialStep ? 'bg-[#ffcc00]' : 'bg-white'}`} />
+                <div key={idx} className={`w-2.5 h-2.5 rounded-full border-2 border-slate-800 ${idx === tutorialStep ? 'bg-[#4ade80]' : 'bg-white'}`} />
               ))}
             </div>
             <div className="flex gap-3">
@@ -2606,7 +2607,7 @@
               )}
               <button onClick={closeTutorial} className="flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">跳過</button>
               {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
-                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep + 1); }} className="flex-1 py-2.5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">下一步</button>
+                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep + 1); }} className="flex-1 py-2.5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">下一步</button>
               ) : (
                 <button onClick={closeTutorial} className="flex-1 py-2.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">開始遊戲 🎮</button>
               )}
@@ -2619,10 +2620,11 @@
         return (
           <div className="h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn">
             <div className="flex-1 flex flex-col justify-center w-full max-w-md items-center">
-              <div className="bg-[#fffaf0] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
+              <div className="bg-[#f3fbf3] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
                  <h1 className="text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3">
-                    <span className="inline-block animate-float-slow bg-[#ffcc00] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]">數</span>
-                    <span className="inline-block animate-float-slow animate-float-slow-d bg-[#ffcc00] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">橋</span>
+                    <span className="inline-block animate-float-slow bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]">數</span>
+                    <span className="inline-block animate-float-slow animate-float-slow-d bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">橋</span>
+                    <span className="inline-block self-center bg-[#2d2a26] text-[#4ade80] text-base px-3 py-1.5 border-[3px] border-slate-800 rounded-lg transform rotate-3 shadow-[3px_3px_0px_rgba(30,41,59,1)] tracking-widest">測試版</span>
                  </h1>
                  <div className="inline-block border-[3px] border-dashed border-slate-800 rounded-xl px-6 py-2 mb-8 bg-white shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-2">
                     <p className="text-slate-800 font-black text-xl tracking-widest uppercase italic">Hashi Puzzle</p>
@@ -2630,7 +2632,7 @@
                  <div className="flex flex-col gap-5">
                     <button onClick={startSinglePlayer} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">👤 單機挑戰</button>
                     <button onClick={() => { setJoinStep('choose'); setTempPlayerName(""); setNickError(""); setScreen('join'); }} className="w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌐 多人合作</button>
-                    <button onClick={startDailyMode} className="w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">📅 每日一題</button>
+                    <button onClick={startDailyMode} className="w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">📅 每日一題</button>
                     {dailyStatus && (
                       <p className="text-slate-600 font-bold text-sm -mt-2">
                         {dailyStatus.done ? `✅ 已完成 ${formatTime(dailyStatus.done.time)}` : `📅 ${dailyStatus.dateStr}`}
@@ -2641,7 +2643,7 @@
                  </div>
               </div>
             </div>
-            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.9.0)</div>
+            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.9.0 測試版)</div>
             {tutorialOverlay}
           </div>
         );
@@ -2650,8 +2652,8 @@
       if (screen === 'join') {
         return (
           <div className="h-screen w-screen flex flex-col items-center justify-center p-4 relative animate-fadeIn">
-            <div className="bg-[#fffaf0] border-4 border-slate-800 p-8 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-2xl w-full z-10 transform rotate-1">
-              <h2 className="text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#ffcc00] pb-1 select-none">🌐 多人連線選單</h2>
+            <div className="bg-[#f3fbf3] border-4 border-slate-800 p-8 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-2xl w-full z-10 transform rotate-1">
+              <h2 className="text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#4ade80] pb-1 select-none">🌐 多人連線選單</h2>
 
               {joinStep === 'choose' && (<div className="mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
                 <label className="block text-slate-800 font-black text-sm mb-2">選擇連線模式</label>
@@ -2705,11 +2707,11 @@
                     </div>
                   )}
                   <label className="block text-slate-800 font-black text-sm mb-2">② 取個名字 <span className="text-slate-400 font-bold">（可留白，拉霸機幫你抽！）</span></label>
-                  <input ref={nameInputRef} type="text" maxLength={12} placeholder={"例如：" + namePlaceholderAnimal + "（留白隨機抽一個！）"} value={tempPlayerName} onChange={(e) => { setTempPlayerName(e.target.value); setNickError(""); }} disabled={isConnecting} className="w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-yellow-50 outline-none focus:ring-2 ring-[#ffcc00] disabled:opacity-50" />
+                  <input ref={nameInputRef} type="text" maxLength={12} placeholder={"例如：" + namePlaceholderAnimal + "（留白隨機抽一個！）"} value={tempPlayerName} onChange={(e) => { setTempPlayerName(e.target.value); setNickError(""); }} disabled={isConnecting} className="w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-green-50 outline-none focus:ring-2 ring-[#4ade80] disabled:opacity-50" />
                   {nickError && <p className="text-red-600 font-black text-sm mt-2 animate-fadeIn">⚠️ {nickError}</p>}
                   <div className="flex gap-2 mt-4">
                     <button onClick={backToChoose} disabled={isConnecting} className="px-4 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">← 返回</button>
-                    <button onClick={openSlotForNick} disabled={isConnecting} className="flex-1 py-3 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">🎰 隨機抽一個</button>
+                    <button onClick={openSlotForNick} disabled={isConnecting} className="flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">🎰 隨機抽一個</button>
                     <button onClick={confirmNickAndEnter} disabled={isConnecting} className="flex-1 py-3 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">{isConnecting ? "進入中…" : "進入房間"}</button>
                   </div>
                 </div>
@@ -2720,10 +2722,10 @@
             </div>
             {showSlotMachine && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
-                <div className="bg-[#fffdfa] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter text-center">
+                <div className="bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter text-center">
                   <h2 className="text-2xl font-black text-slate-800 mb-1">🎰 暱稱拉霸機</h2>
                   <p className="text-xs font-bold text-slate-500 mb-4">沒填名字？那就交給命運吧！</p>
-                  <div className="bg-slate-800 rounded-xl border-4 border-[#ffcc00] px-4 mb-4 min-h-[96px] flex items-center justify-center">
+                  <div className="bg-slate-800 rounded-xl border-4 border-[#4ade80] px-4 mb-4 min-h-[96px] flex items-center justify-center">
                     {slotWaiting ? (
                       <p className="text-white font-black animate-pulse text-lg">正在確認可用名字…</p>
                     ) : (
@@ -2733,7 +2735,7 @@
                   {!slotWaiting && (
                     <div className="flex gap-3 mb-3">
                       <button onClick={() => { try { window.HASHI_SOUND.play('click'); } catch (e) {} spinSlot(slotPoolRef.current); }} disabled={slotSpinning} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">🔄 再轉一次</button>
-                      <button onClick={confirmSlotName} disabled={slotSpinning || !slotFinalName} className="flex-1 py-3 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">✅ 就用這個進入</button>
+                      <button onClick={confirmSlotName} disabled={slotSpinning || !slotFinalName} className="flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50">✅ 就用這個進入</button>
                     </div>
                   )}
                   <button onClick={closeSlotModal} className="w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors text-sm">取消</button>
@@ -2753,17 +2755,17 @@
       });
 
       return (
-        <div className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#fdf5e6', backgroundImage: 'radial-gradient(#d3c5ab 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
-          <div className="w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
+        <div className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
+          <div className="w-full max-w-[1200px] bg-[#f3fbf3] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
 
-            <div className={`bg-gradient-to-b from-[#ffd633] to-[#ffcc00] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2`}>
+            <div className={`bg-gradient-to-b from-[#ffd633] to-[#4ade80] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2`}>
                <div className="flex items-center justify-between gap-1 w-full">
                   <div className="flex items-center gap-2 flex-wrap">
-                     <h1 className="font-black tracking-tight uppercase text-lg md:text-2xl text-[#2d2a26] flex items-center gap-1">🌉<span className="hidden sm:inline">數橋</span></h1>
+                     <h1 className="font-black tracking-tight uppercase text-lg md:text-2xl text-[#2d2a26] flex items-center gap-1">🌉<span className="hidden sm:inline">數橋</span><span className="bg-[#2d2a26] text-[#4ade80] text-[10px] md:text-xs px-1.5 py-0.5 rounded-md tracking-widest">測試版</span></h1>
                      <div className="flex items-center gap-1 bg-[#2d2a26] text-white px-2 py-1 rounded-md font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-xs md:text-sm whitespace-nowrap">
                         <GameTimer startTime={startTime} endTime={endTime} isRunning={!isWon && screen === 'game'} />
                      </div>
-                     {isDailyMode && ( <span className="bg-[#ffcc00] text-[#2d2a26] px-2 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">📅 {dailyDateStr}</span> )}
+                     {isDailyMode && ( <span className="bg-[#4ade80] text-[#2d2a26] px-2 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">📅 {dailyDateStr}</span> )}
                      {isDailyMode && dailyStreak > 0 && ( <span className="bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">🔥 x{dailyStreak}</span> )}
                      {isMultiplayer && ( <span className="bg-emerald-400 text-slate-900 px-2 py-1 rounded-md border-2 border-slate-800 font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 whitespace-nowrap">{isHostRef.current ? '👑 主機' : '👤 玩家'} | 代碼: {roomId}</span> )}
                   </div>
@@ -2773,7 +2775,7 @@
                <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 ${isHeaderCollapsed ? 'max-h-0 opacity-0 scale-y-95' : 'max-h-[500px] opacity-100 scale-y-100'}`}>
                   <div className="bg-white border-[3px] border-[#2d2a26] rounded-xl p-3 text-[#2d2a26] shadow-[4px_4px_0px_#2d2a26] flex flex-col md:flex-row gap-3">
                      <div className="flex-1">
-                        <h3 className="text-sm md:text-base font-black mb-1 border-b-[3px] border-[#ffcc00] inline-block pb-0.5">📜 遊戲四大規則</h3>
+                        <h3 className="text-sm md:text-base font-black mb-1 border-b-[3px] border-[#4ade80] inline-block pb-0.5">📜 遊戲四大規則</h3>
                         <ol className="list-decimal list-outside ml-4 space-y-1 text-xs md:text-sm leading-relaxed font-bold">
                            <li>每個圓圈是一座「島」，數字代表需要幾座橋樑。</li>
                            <li>橋樑必須是垂直或水平方向。</li>
@@ -2781,7 +2783,7 @@
                            <li>兩座島之間最多架設 2 座橋，且完成時所有島嶼必須全部連通。</li>
                         </ol>
                      </div>
-                     <div className="md:w-1/3 bg-[#ffcc00]/20 p-2 md:p-3 rounded-xl border-[3px] border-dashed border-[#2d2a26] flex flex-col justify-center">
+                     <div className="md:w-1/3 bg-[#4ade80]/20 p-2 md:p-3 rounded-xl border-[3px] border-dashed border-[#2d2a26] flex flex-col justify-center">
                         <p className="text-[#2d2a26] font-black text-xs md:text-sm mb-1 flex items-center gap-1"><span>💡</span> 提示與狀態：</p>
                         <p className="text-slate-700 text-xs md:text-sm font-bold leading-relaxed">{cLevel.description}</p>
                      </div>
@@ -2803,7 +2805,7 @@
                   </select>
 
                   <div className="flex gap-1 md:gap-2 flex-wrap items-center ml-auto">
-                     {!isWon && hasSolution && !showSolution && !inRace && ( <button onClick={handleShowSolution} className="px-2 py-1 md:px-3 md:py-1.5 bg-yellow-400 text-[#2d2a26] border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="解答">💡<span className="hidden sm:inline">解答</span></button> )}
+                     {!isWon && hasSolution && !showSolution && !inRace && ( <button onClick={handleShowSolution} className="px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#2d2a26] border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="解答">💡<span className="hidden sm:inline">解答</span></button> )}
                      {!isDailyMode && !inRace && ( <button onClick={handleRegenerateRandom} className="px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="新題">🎲<span className="hidden sm:inline">新題</span></button> )}
                      {!isMultiplayer && ( <button onClick={handleUndo} disabled={history.length === 0 || isWon} className="px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26]" title="復原">↩️<span className="hidden sm:inline">復原</span></button> )}
                      <button onClick={handleReset} className="px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
@@ -2815,7 +2817,7 @@
             </div>
 
             {isMultiplayer && (
-              <div className="px-4 py-2 bg-[#fffdfa] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-40 shadow-inner shrink-0">
+              <div className="px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-40 shadow-inner shrink-0">
                 <span className="font-black text-slate-800 text-sm">👥 連線玩家：</span>
                 {playersList.map((p, idx) => {
                   const isMe = p.id === myId;
@@ -2836,7 +2838,7 @@
                       </span>
 
                       {colorPickerTarget === p.id && (
-                        <div className="absolute top-full mt-2 left-0 sm:left-0 bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] w-[180px] animate-fadeIn">
+                        <div className="absolute top-full mt-2 left-0 sm:left-0 bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] w-[180px] animate-fadeIn">
                           <div className="flex justify-between items-center mb-2 border-b-2 border-slate-800 pb-1">
                             <h3 className="text-xs font-black text-slate-800">🎨 選色</h3>
                             <button onClick={(e) => { e.stopPropagation(); setColorPickerTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black leading-none">✕</button>
@@ -2900,7 +2902,7 @@
             )}
 
             {inRace && raceState !== 'lobby' && (
-              <div className="px-4 py-2 bg-[#fffdfa] border-b-4 border-slate-800 shrink-0 relative z-40">
+              <div className="px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 shrink-0 relative z-40">
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs font-black text-slate-500">🏁 競速進度</p>
                   {Object.keys(raceProgress).map(uid => {
@@ -2927,7 +2929,7 @@
               </div>
             )}
 
-            <div className="relative z-0 flex-1 flex flex-col min-h-0 bg-[#fffaf0]">
+            <div className="relative z-0 flex-1 flex flex-col min-h-0 bg-[#f3fbf3]">
 
               {isGenerating && (
                 <div className="absolute inset-0 z-[40] flex items-center justify-center pointer-events-none">
@@ -2977,7 +2979,7 @@
                            )}
                        </div>
                    )}
-                   <button onClick={toggleInteractionMode} title={`切換模式 (目前: ${modeTitles[interactionMode]})`} className={`w-10 h-10 md:w-12 md:h-12 border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center ${interactionMode > 0 ? 'bg-[#ffcc00] text-slate-800' : 'bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-100'}`}>
+                   <button onClick={toggleInteractionMode} title={`切換模式 (目前: ${modeTitles[interactionMode]})`} className={`w-10 h-10 md:w-12 md:h-12 border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center ${interactionMode > 0 ? 'bg-[#4ade80] text-slate-800' : 'bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-100'}`}>
                      {modeIcons[interactionMode]}
                    </button>
                 </div>
@@ -3320,7 +3322,7 @@
                     <h2 className="text-2xl font-black text-[#2d2a26] mb-4">競速大廳</h2>
                     <div className="mb-4 flex flex-col gap-2">
                       {playersList.map(p => (
-                        <div key={p.id} className="flex items-center justify-center gap-2 bg-yellow-50 border-2 border-slate-800 rounded-xl px-4 py-2 font-black text-slate-800">
+                        <div key={p.id} className="flex items-center justify-center gap-2 bg-green-50 border-2 border-slate-800 rounded-xl px-4 py-2 font-black text-slate-800">
                           <span className="w-4 h-4 rounded-full border-2 border-slate-800 inline-block" style={{ backgroundColor: p.color === 'rainbow' ? '#fbbf24' : p.color }} />
                           {p.name} {p.isHost && '👑'} {p.id === myId && '(你)'}
                         </div>
@@ -3341,7 +3343,7 @@
 
               {raceCountdown !== null && (
                 <div className="absolute inset-0 z-[65] flex items-center justify-center pointer-events-none">
-                  <div key={raceCountdown} className="animate-countdownPop text-8xl md:text-9xl font-black text-[#2d2a26] bg-[#ffcc00] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]">
+                  <div key={raceCountdown} className="animate-countdownPop text-8xl md:text-9xl font-black text-[#2d2a26] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]">
                     {raceCountdown === 0 ? 'GO!' : raceCountdown}
                   </div>
                 </div>
@@ -3357,7 +3359,7 @@
                     <div className="text-5xl mb-2">🏁</div>
                     <h2 className="text-2xl font-black text-[#2d2a26] mb-4">競速結果</h2>
                     {raceResult.entries.map(e => (
-                      <div key={e.uid} className={'flex items-center justify-between gap-4 px-4 py-2 mb-2 rounded-xl border-[3px] ' + (e.uid === raceResult.winnerUid ? 'bg-[#ffcc00] border-slate-800' : 'bg-slate-50 border-slate-300')}>
+                      <div key={e.uid} className={'flex items-center justify-between gap-4 px-4 py-2 mb-2 rounded-xl border-[3px] ' + (e.uid === raceResult.winnerUid ? 'bg-[#4ade80] border-slate-800' : 'bg-slate-50 border-slate-300')}>
                         <span className="font-black text-slate-800">{e.uid === raceResult.winnerUid ? '🏆 ' : ''}{e.name}{e.uid === myId ? '(你)' : ''}</span>
                         <span className="font-mono font-black text-slate-800">{formatTime(Math.floor(e.timeMs / 1000))}</span>
                       </div>
@@ -3413,9 +3415,9 @@
                     )}
                     <div className="flex justify-center gap-3">
                       {isDailyMode ? (
-                        <button onClick={triggerDailyHome} className="px-5 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg">回主選單 🏠</button>
+                        <button onClick={triggerDailyHome} className="px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg">回主選單 🏠</button>
                       ) : (
-                        <button onClick={triggerRegenerate} className="px-5 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg">再來一局 ➔</button>
+                        <button onClick={triggerRegenerate} className="px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg">再來一局 ➔</button>
                       )}
                     </div>
                   </div>
@@ -3424,7 +3426,7 @@
 
               {isWon && hideVictoryModal && (
                 <div className="absolute bottom-6 inset-x-0 flex justify-center z-50 pointer-events-none">
-                  <button onClick={() => setHideVictoryModal(false)} className="pointer-events-auto bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] px-6 py-3 rounded-full shadow-[6px_6px_0px_#2d2a26] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg">🏆 顯示成績</button>
+                  <button onClick={() => setHideVictoryModal(false)} className="pointer-events-auto bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] px-6 py-3 rounded-full shadow-[6px_6px_0px_#2d2a26] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg">🏆 顯示成績</button>
                 </div>
               )}
             </div>
@@ -3433,14 +3435,14 @@
           {/* 存檔彈窗 */}
           {showSaveModal && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-              <div className="bg-[#fffdfa] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUp">
+              <div className="bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUp">
                 <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
                 <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
                 <div className="mb-6">
                   <button onClick={handleSaveCode} className="w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
                   <div className="relative">
                     <textarea id="saveCodeTextarea" value={saveCode} onChange={(e) => setSaveCode(e.target.value)} placeholder="點擊上方按鈕生成，或是手動貼上舊代碼至此處" rows="4" className="w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white" />
-                    <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#ffcc00] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
+                    <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -3454,7 +3456,7 @@
           {/* 自訂地圖彈窗 */}
           {showCustomModal && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
-              <div className="bg-[#fffdfa] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter">
+              <div className="bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter">
                 <div className="flex justify-between items-center mb-4 border-b-4 border-slate-800 pb-2">
                   <h2 className="text-xl font-black text-slate-800">⚙️ 自訂地圖尺寸</h2>
                   <button onClick={() => {
@@ -3466,11 +3468,11 @@
                 <div className="flex flex-col gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1">寬度 (橫向島嶼數):</label>
-                    <input type="number" min="5" max="100" value={tempWidth} onChange={(e) => setTempWidth(parseInt(e.target.value) || 5)} className="w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#ffcc00] outline-none" />
+                    <input type="number" min="5" max="100" value={tempWidth} onChange={(e) => setTempWidth(parseInt(e.target.value) || 5)} className="w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#4ade80] outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1">長度 (直向島嶼數):</label>
-                    <input type="number" min="5" max="100" value={tempHeight} onChange={(e) => setTempHeight(parseInt(e.target.value) || 5)} className="w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#ffcc00] outline-none" />
+                    <input type="number" min="5" max="100" value={tempHeight} onChange={(e) => setTempHeight(parseInt(e.target.value) || 5)} className="w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#4ade80] outline-none" />
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -3478,7 +3480,7 @@
                       setShowCustomModal(false);
                       setCurrentLevelId(stateRef.current.levelId);
                   }} className="flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300 active:translate-y-1 active:shadow-none transition-all">取消</button>
-                  <button onClick={handleCustomGenerate} className="flex-1 py-2 bg-[#ffcc00] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800] active:translate-y-1 active:shadow-none transition-all">產生</button>
+                  <button onClick={handleCustomGenerate} className="flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800] active:translate-y-1 active:shadow-none transition-all">產生</button>
                 </div>
               </div>
             </div>
