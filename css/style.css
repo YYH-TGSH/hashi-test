@@ -1,0 +1,297 @@
+body {
+      overscroll-behavior-y: none;
+      background-color: #e9f7e9;
+      background-image:
+        radial-gradient(#c9e8c9 3px, transparent 3.5px),
+        radial-gradient(#b7ddb7 1.5px, transparent 2px),
+        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
+      background-size: 28px 28px, 12px 12px, 100% 100%;
+      margin: 0; padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+    }
+    /* 所有按鈕統一 150ms 過渡（已有 Tailwind transition class 的不受影響） */
+    button { transition: all 150ms ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popUp {
+      0% { transform: translateY(30px) scale(0.95); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .animate-popUp {
+      animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes slideUpFade {
+      0% { transform: translate(-50%, 20px); opacity: 0; }
+      100% { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .animate-slideUpFade {
+      animation: slideUpFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popUpCenter {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-popUpCenter {
+      animation: popUpCenter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popOutCenter {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.8); opacity: 0; }
+    }
+    .animate-popOutCenter {
+      animation: popOutCenter 0.3s ease-in forwards;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    .animate-fadeOut {
+      animation: fadeOut 0.3s ease-in forwards;
+    }
+    @keyframes rippleAnim {
+      0% { transform: scale(0.1); opacity: 0.8; stroke-width: 6px; }
+      100% { transform: scale(3); opacity: 0; stroke-width: 2px; }
+    }
+    @keyframes dotAnim {
+      0% { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+      100% { content: ''; }
+    }
+    .animate-loading-dots::after {
+      content: '';
+      animation: dotAnim 1.5s infinite;
+    }
+
+    @keyframes floatY {
+      from { translate: 0 -4px; }
+      to { translate: 0 4px; }
+    }
+    .animate-float-slow { animation: floatY 4s ease-in-out infinite alternate; }
+    .animate-float-slow-d { animation-delay: -2s; }
+    @keyframes boardFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-boardFade { animation: boardFade 0.2s ease-out; }
+    /* 橋樑按壓回饋（手機觸控 :active） */
+    .bridge-group:active .bridge-hotzone { fill: rgba(250, 204, 21, 0.55) !important; }
+    .bridge-group:active line { filter: brightness(1.25); }
+
+    /* === 零耗能 SVG 材質動畫 === */
+    @keyframes rainbowStopAnim {
+      0%{stop-color:#E3002B;} 5%{stop-color:#F35B00;} 10%{stop-color:#FFC90E;} 15%{stop-color:#D7157A;} 20%{stop-color:#E895C0;} 25%{stop-color:#007A61;} 30%{stop-color:#87D300;} 35%{stop-color:#C4D600;} 40%{stop-color:#8DD1BF;} 45%{stop-color:#616130;} 50%{stop-color:#00538A;} 55%{stop-color:#008CC1;} 60%{stop-color:#00C1D5;} 65%{stop-color:#79C8ED;} 70%{stop-color:#CDBB79;} 75%{stop-color:#41136A;} 80%{stop-color:#935CB9;} 85%{stop-color:#BCA8D1;} 90%{stop-color:#7A0026;} 95%{stop-color:#BC7B70;} 100%{stop-color:#E3002B;}
+    }
+    .rainbow-stop {
+      animation: rainbowStopAnim 20s linear infinite;
+    }
+
+    .rainbow-stroke { stroke: url(#rainbowGrad) !important; }
+    .rainbow-fill { fill: url(#rainbowGrad) !important; }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 12px; height: 12px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-left: 2px solid #1e293b; border-top: 2px solid #1e293b; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border: 2px solid #1e293b; border-radius: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .solution-line { stroke-dasharray: 10 10; animation: dashMove 2s linear infinite; }
+    @keyframes dashMove { to { stroke-dashoffset: -20; } }
+    @keyframes starPop {
+      0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+      60% { transform: scale(1.4) rotate(10deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .animate-starPop { animation: starPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+    @keyframes burstFly {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--bx), var(--by)) scale(0.3); opacity: 0; }
+    }
+    .burst-particle { animation: burstFly 0.8s ease-out forwards; }
+    @keyframes confettiFall {
+      0% { transform: translateY(-5vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; }
+    }
+    .confetti-piece { animation-name: confettiFall; animation-timing-function: linear; animation-fill-mode: forwards; }
+    @keyframes countdownPop {
+      0% { transform: scale(0.3); opacity: 0; }
+      35% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-countdownPop { animation: countdownPop 0.9s ease-out both; }
+
+/* ===== 🔌 連線教學動畫（8 秒循環） ===== */
+.conn-demo { position: relative; height: 196px; }
+.conn-phone { position: absolute; top: 0; width: 110px; background: #fff; border: 3px solid #1e293b; border-radius: 14px; padding: 8px 6px; text-align: center; }
+.conn-host { left: 2px; animation: connHostGlow 8s infinite; }
+.conn-guest { right: 2px; animation: connGuestGlow 8s infinite; }
+.conn-ptitle { font-size: 12px; font-weight: 900; color: #1e293b; margin-bottom: 6px; }
+.conn-btn { font-size: 11px; font-weight: 900; background: #4ade80; border: 2px solid #1e293b; border-radius: 8px; padding: 4px 2px; margin-bottom: 6px; color: #1e293b; }
+.conn-code { display: flex; gap: 3px; justify-content: center; opacity: 0; animation: connCodePop 8s infinite; }
+.conn-code span { background: #1e293b; color: #4ade80; font-weight: 900; font-size: 13px; border-radius: 6px; padding: 2px 5px; }
+.conn-wire { position: absolute; top: 66px; left: 116px; right: 116px; border-top: 3px dashed #94a3b8; }
+.conn-chip { position: absolute; top: -15px; left: 0; background: #1e293b; color: #4ade80; font-size: 11px; font-weight: 900; border-radius: 999px; padding: 2px 8px; opacity: 0; white-space: nowrap; animation: connChipFly 8s infinite; }
+.conn-input { display: flex; gap: 3px; justify-content: center; margin-bottom: 6px; }
+.conn-input span { border: 2px solid #1e293b; border-radius: 6px; font-size: 13px; font-weight: 900; padding: 2px 5px; background: #f1f5f9; color: #1e293b; animation: connInputFill 8s infinite; }
+.conn-success { position: absolute; left: 50%; bottom: 2px; background: #1e293b; color: #fff; font-weight: 900; font-size: 14px; border-radius: 999px; padding: 6px 16px; border: 3px solid #4ade80; opacity: 0; white-space: nowrap; animation: connSuccess 8s infinite; }
+@keyframes connHostGlow {
+  0%, 22% { box-shadow: 4px 4px 0 rgba(30,41,59,1), 0 0 0 4px #4ade80; }
+  23%, 100% { box-shadow: 4px 4px 0 rgba(30,41,59,1); }
+}
+@keyframes connGuestGlow {
+  0%, 48% { box-shadow: 4px 4px 0 rgba(30,41,59,1); }
+  49%, 72% { box-shadow: 4px 4px 0 rgba(30,41,59,1), 0 0 0 4px #4ade80; }
+  73%, 100% { box-shadow: 4px 4px 0 rgba(30,41,59,1); }
+}
+@keyframes connCodePop {
+  0%, 14% { opacity: 0; transform: scale(0.5); }
+  18%, 88% { opacity: 1; transform: scale(1); }
+  92%, 100% { opacity: 0; transform: scale(0.5); }
+}
+@keyframes connChipFly {
+  0%, 24% { opacity: 0; left: 0; }
+  28% { opacity: 1; }
+  48% { opacity: 1; left: calc(100% - 46px); }
+  52%, 100% { opacity: 0; left: calc(100% - 46px); }
+}
+@keyframes connInputFill {
+  0%, 52% { background: #f1f5f9; }
+  56%, 88% { background: #4ade80; }
+  92%, 100% { background: #f1f5f9; }
+}
+@keyframes connSuccess {
+  0%, 68% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  74%, 90% { opacity: 1; transform: translateX(-50%) scale(1); }
+  94%, 100% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+}
+/* ===== 👆 架橋教學動畫（10 秒循環：拖曳 → 點擊三連拍） ===== */
+.bdemo { position: relative; }
+.bdemo-label { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 900; color: #1e293b; opacity: 0; }
+.bdemo-l1 { animation: bdemoL1 10s infinite; }
+.bdemo-l2 { animation: bdemoL2 10s infinite; }
+.bdemo-l3 { animation: bdemoL3 10s infinite; }
+.bdemo-l4 { animation: bdemoL4 10s infinite; }
+.bdemo-section { position: absolute; top: 40px; left: 0; right: 0; text-align: center; font-size: 46px; font-weight: 900; color: #1e293b; opacity: 0; z-index: 5; letter-spacing: 12px; }
+.bdemo-sec1 { animation: bdemoSec1 10s infinite; }
+.bdemo-sec2 { animation: bdemoSec2 10s infinite; }
+.bdemo-scene { position: relative; height: 150px; max-width: 300px; margin: 30px auto 0; }
+.bdemo-island { position: absolute; top: 45px; width: 60px; height: 60px; border-radius: 50%; background: #fff; border: 4px solid #1e293b; box-shadow: 3px 3px 0 rgba(30,41,59,1); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #1e293b; }
+.bdemo-preview { position: absolute; left: 90px; top: 72px; width: 120px; border-top: 5px dashed #4ade80; transform-origin: left center; opacity: 0; animation: bdemoPreview 10s infinite; }
+.bdemo-bridge { position: absolute; left: 90px; width: 120px; height: 7px; background: #1e293b; border-radius: 4px; opacity: 0; }
+.bdemo-b1 { top: 71px; animation: bdemoB1 10s infinite; }
+.bdemo-bd1 { top: 63px; animation: bdemoBD 10s infinite; }
+.bdemo-bd2 { top: 80px; animation: bdemoBD 10s infinite; }
+.bdemo-finger { position: absolute; top: 72px; left: 42px; font-size: 36px; opacity: 0; animation: bdemoFinger 10s infinite; }
+.bdemo-ripple { position: absolute; left: 138px; top: 63px; width: 24px; height: 24px; border: 3px solid #4ade80; border-radius: 50%; opacity: 0; animation: bdemoRipple 10s infinite; }
+@keyframes bdemoSec1 { 0% { opacity: 0; transform: scale(0.6); } 2%, 5% { opacity: 1; transform: scale(1); } 7%, 100% { opacity: 0; transform: scale(1); } }
+@keyframes bdemoSec2 { 0%, 36% { opacity: 0; transform: scale(0.6); } 38%, 41% { opacity: 1; transform: scale(1); } 43%, 100% { opacity: 0; transform: scale(1); } }
+@keyframes bdemoL1 { 0%, 6% { opacity: 0; } 9%, 31% { opacity: 1; } 34%, 100% { opacity: 0; } }
+@keyframes bdemoL2 { 0%, 42% { opacity: 0; } 45%, 48% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes bdemoL3 { 0%, 49% { opacity: 0; } 52%, 55% { opacity: 1; } 58%, 100% { opacity: 0; } }
+@keyframes bdemoL4 { 0%, 56% { opacity: 0; } 59%, 63% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes bdemoFinger {
+  0%, 8% { opacity: 0; left: 42px; }
+  10%, 11% { opacity: 1; left: 42px; }
+  26% { opacity: 1; left: 222px; }
+  29%, 100% { opacity: 0; left: 222px; }
+}
+@keyframes bdemoPreview {
+  0%, 10% { opacity: 0; transform: scaleX(0); }
+  12% { opacity: 1; transform: scaleX(0); }
+  26% { opacity: 1; transform: scaleX(1); }
+  28%, 100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes bdemoB1 {
+  0%, 28% { opacity: 0; }
+  31%, 35% { opacity: 1; }
+  37% { opacity: 0; }
+  46%, 51% { opacity: 1; }
+  53%, 100% { opacity: 0; }
+}
+@keyframes bdemoBD {
+  0%, 52% { opacity: 0; }
+  54%, 59% { opacity: 1; }
+  61%, 100% { opacity: 0; }
+}
+@keyframes bdemoRipple {
+  0%, 43% { opacity: 0; transform: scale(0.4); }
+  45% { opacity: 0.9; transform: scale(0.4); }
+  49% { opacity: 0; transform: scale(2.4); }
+  50%, 51% { opacity: 0; transform: scale(0.4); }
+  53% { opacity: 0.9; transform: scale(0.4); }
+  57% { opacity: 0; transform: scale(2.4); }
+  58% { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 0.9; transform: scale(0.4); }
+  64% { opacity: 0; transform: scale(2.4); }
+  66%, 100% { opacity: 0; transform: scale(0.4); }
+}
+
+/* ===== ✏️ 草稿教學動畫（12 秒循環：虛線兩法 → 切畫筆一點變實線） ===== */
+.ddemo-l1 { animation: ddemoL1 12s infinite; }
+.ddemo-l2 { animation: ddemoL2 12s infinite; }
+.ddemo-l3 { animation: ddemoL3 12s infinite; }
+.ddemo-l4 { animation: ddemoL4 12s infinite; }
+.ddemo-mode { position: absolute; top: 0; right: 0; z-index: 5; }
+.ddemo-m { position: absolute; top: 0; right: 0; font-size: 12px; font-weight: 900; border: 2px solid #1e293b; border-radius: 999px; padding: 3px 10px; white-space: nowrap; opacity: 0; }
+.ddemo-m-draft { background: #fef08a; color: #1e293b; animation: ddemoMD 12s infinite; }
+.ddemo-m-pen { background: #1e293b; color: #4ade80; animation: ddemoMP 12s infinite; }
+.ddemo-preview { animation: ddemoPreview 12s infinite; }
+.ddemo-dash { position: absolute; left: 90px; width: 120px; border-top: 6px dashed #1e293b; opacity: 0; }
+.ddemo-db1 { top: 72px; animation: ddemoDB1 12s infinite; }
+.ddemo-dbA { top: 64px; animation: ddemoDB 12s infinite; }
+.ddemo-dbB { top: 81px; animation: ddemoDB 12s infinite; }
+.ddemo-sbA { top: 63px; animation: ddemoSB 12s infinite; }
+.ddemo-sbB { top: 80px; animation: ddemoSB 12s infinite; }
+.ddemo-finger { animation: ddemoFinger 12s infinite; }
+.ddemo-ripple { animation: ddemoRipple 12s infinite; }
+@keyframes ddemoL1 { 0%, 2% { opacity: 0; } 5%, 21% { opacity: 1; } 24%, 100% { opacity: 0; } }
+@keyframes ddemoL2 { 0%, 25% { opacity: 0; } 28%, 45% { opacity: 1; } 48%, 100% { opacity: 0; } }
+@keyframes ddemoL3 { 0%, 47% { opacity: 0; } 50%, 57% { opacity: 1; } 60%, 100% { opacity: 0; } }
+@keyframes ddemoL4 { 0%, 59% { opacity: 0; } 62%, 89% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes ddemoMD { 0%, 50% { opacity: 1; } 52%, 100% { opacity: 0; } }
+@keyframes ddemoMP { 0%, 50% { opacity: 0; transform: scale(0.7); } 54%, 100% { opacity: 1; transform: scale(1); } }
+@keyframes ddemoFinger {
+  0%, 4% { opacity: 0; left: 42px; }
+  6%, 7% { opacity: 1; left: 42px; }
+  17% { opacity: 1; left: 222px; }
+  19%, 100% { opacity: 0; left: 222px; }
+}
+@keyframes ddemoPreview {
+  0%, 6% { opacity: 0; transform: scaleX(0); }
+  8% { opacity: 1; transform: scaleX(0); }
+  17% { opacity: 1; transform: scaleX(1); }
+  19%, 100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes ddemoDB1 {
+  0%, 19% { opacity: 0; }
+  22%, 25% { opacity: 1; }
+  27% { opacity: 0; }
+  32%, 38% { opacity: 1; }
+  40%, 100% { opacity: 0; }
+}
+@keyframes ddemoDB {
+  0%, 38% { opacity: 0; }
+  41%, 63% { opacity: 1; }
+  65%, 100% { opacity: 0; }
+}
+@keyframes ddemoSB {
+  0%, 63% { opacity: 0; transform: scaleY(0.4); }
+  67%, 89% { opacity: 1; transform: scaleY(1); }
+  92%, 100% { opacity: 0; transform: scaleY(1); }
+}
+@keyframes ddemoRipple {
+  0%, 27% { opacity: 0; transform: scale(0.4); }
+  29% { opacity: 0.9; transform: scale(0.4); }
+  33% { opacity: 0; transform: scale(2.4); }
+  34%, 35% { opacity: 0; transform: scale(0.4); }
+  37% { opacity: 0.9; transform: scale(0.4); }
+  41% { opacity: 0; transform: scale(2.4); }
+  42%, 60% { opacity: 0; transform: scale(0.4); }
+  62% { opacity: 0.9; transform: scale(0.4); }
+  66% { opacity: 0; transform: scale(2.4); }
+  68%, 100% { opacity: 0; transform: scale(0.4); }
+}
