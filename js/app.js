@@ -515,27 +515,9 @@
         }
       }, [isWon]);
 
-      // 🏁 競速進度分享（節流：變化時或每秒一次）
+      // 🏁 競速進度分享：effect 版（安全網；主要推送走 raceAwareSync 內的 pushRaceProgress）
       useEffect(function() {
-        if (raceState !== 'racing') return;
-        const islands = (randomLevelData && randomLevelData.islands) || [];
-        if (islands.length === 0) return;
-        let done = 0;
-        islands.forEach(isl => {
-          const cc = islandCurrentCounts[isl.id];
-          if (cc && cc.total === isl.req) done++;
-        });
-        const p = done / islands.length;
-        const now = Date.now();
-        if (p !== lastProgressValRef.current || now - lastProgressSentRef.current > 1000) {
-          lastProgressValRef.current = p;
-          lastProgressSentRef.current = now;
-          const info = { progress: p, name: (myNameRef.current || '你'), color: myColorRef.current };
-          setRaceProgress(prev => ({ ...prev, [myId]: info }));
-          const msg = { type: 'RACE_PROGRESS', uid: myId, name: info.name, color: info.color, progress: p };
-          if (isHostRef.current) { connsRef.current.forEach(c => { if (c.open) c.send(msg); }); }
-          else if (connRef.current && connRef.current.open) { connRef.current.send(msg); }
-        }
+        pushRaceProgress(bridges);
       }, [islandCurrentCounts, raceState, randomLevelData]);
 
       const showToast = (m) => { setToastMsg(m); setTimeout(() => setToastMsg(""), 4000); };
@@ -783,7 +765,6 @@
         }
 
         if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
-        if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中不分享游標（防偷看）
         const msg = { type: 'CLICK', uid: myId, x: pt.x, y: pt.y };
         setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: myId, x: pt.x, y: pt.y, timestamp: Date.now() }]);
 
@@ -868,7 +849,6 @@
         }
 
         if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
-        if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中不分享游標（防偷看）
         if (Date.now() - lastCursorSend.current < 50) return;
         lastCursorSend.current = Date.now();
         const pt = getSvgCoords(e.clientX, e.clientY);
@@ -977,10 +957,42 @@
         }
       };
 
+      // 🏁 競速進度推送：用最新的 bridges 直接計算並廣播（架橋當下同步呼叫，不依賴 effect 時序）
+      const pushRaceProgress = (bridgesArr) => {
+        if (raceStateRef.current !== 'racing') return;
+        const rld = (stateRef.current && stateRef.current.randomLevelData) || randomLevelData;
+        const islands = (rld && rld.islands) || [];
+        if (islands.length === 0) return;
+        const counts = {};
+        islands.forEach(i => { counts[i.id] = 0; });
+        (bridgesArr || []).forEach(b => {
+          const t = (b.count || 0) + (b.draftCount || 0);
+          if (counts[b.from] !== undefined) counts[b.from] += t;
+          if (counts[b.to] !== undefined) counts[b.to] += t;
+        });
+        let done = 0;
+        islands.forEach(isl => { if (counts[isl.id] === isl.req) done++; });
+        const p = done / islands.length;
+        const now = Date.now();
+        if (p === lastProgressValRef.current && now - lastProgressSentRef.current <= 1000) return; // 節流
+        lastProgressValRef.current = p;
+        lastProgressSentRef.current = now;
+        const info = { progress: p, name: (myNameRef.current || '你'), color: myColorRef.current };
+        setRaceProgress(prev => ({ ...prev, [myId]: info }));
+        const msg = { type: 'RACE_PROGRESS', uid: myId, name: info.name, color: info.color, progress: p };
+        try {
+          if (isHostRef.current) { connsRef.current.forEach(c => { if (c.open) c.send(msg); }); }
+          else if (connRef.current && connRef.current.open) { connRef.current.send(msg); }
+        } catch (e) {}
+      };
+
       // 🏁 競速中：橋樑/塗鴉只改本地，不廣播（防偷看、防互相覆蓋）
       const raceAwareSync = (partial) => {
         if (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing' || raceStateRef.current === 'finished') {
-          if (partial.bridges !== undefined) setBridges(partial.bridges);
+          if (partial.bridges !== undefined) {
+            setBridges(partial.bridges);
+            pushRaceProgress(partial.bridges);
+          }
           if (partial.strokes !== undefined) setStrokes(partial.strokes);
           if (partial.showSolution !== undefined) setShowSolution(partial.showSolution);
           stateRef.current = { ...stateRef.current, ...partial };
@@ -2299,7 +2311,7 @@
                  </div>
               </div>
             </div>
-            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.15 測試版)</div>
+            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.16 測試版)</div>
             {tutorialOverlay}
           </div>
         );
