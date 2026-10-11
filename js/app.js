@@ -239,6 +239,107 @@
       const [cursors, setCursors] = useState({});
       const [ripples, setRipples] = useState([]);
 
+      // 💬 聊天室
+      const [chatMsgs, setChatMsgs] = useState([]); // {id, uid, name, color, text, ts, mine}
+      const [chatOpen, setChatOpen] = useState(false);
+      const [chatInput, setChatInput] = useState('');
+      const [unreadChat, setUnreadChat] = useState(0);
+      const chatOpenRef = useRef(false);
+      const chatListRef = useRef(null);
+      const [chatMin, setChatMin] = useState(false); // 💬 聊天室收合
+
+      // 💬 聊天室邏輯
+      useEffect(function() { chatOpenRef.current = chatOpen; if (chatOpen) setUnreadChat(0); }, [chatOpen]);
+      useEffect(function() { // 新訊息自動捲到底
+        const el = chatListRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      }, [chatMsgs, chatOpen]);
+      const appendChatMsg = (m) => {
+        const msg = { id: 'c' + Date.now() + '_' + Math.floor(Math.random() * 1000000), uid: m.uid, name: m.name || '對手', color: m.color || '#3b82f6', text: String(m.text || '').slice(0, 200), ts: m.ts || Date.now(), mine: m.uid === myId };
+        setChatMsgs(prev => [...prev.slice(-99), msg]);
+        if (!msg.mine && !chatOpenRef.current) setUnreadChat(prev => prev + 1);
+      };
+      const sendChat = () => {
+        const text = chatInput.trim();
+        if (!text || engineRef.current !== 'peerjs') return;
+        const msg = { type: 'CHAT', uid: myId, name: (myNameRef.current || '你'), color: myColorRef.current, text: text, ts: Date.now() };
+        appendChatMsg(msg);
+        setChatInput('');
+        try {
+          if (isHostRef.current) { connsRef.current.forEach(c => { if (c.open) c.send(msg); }); }
+          else if (connRef.current && connRef.current.open) { connRef.current.send(msg); }
+        } catch (e) {}
+      };
+
+      // 📹 圓形視訊（PeerJS MediaConnection，走 WebRTC 不經伺服器）
+      const [videoOn, setVideoOn] = useState(false);
+      const [micMuted, setMicMuted] = useState(false);
+      const [localStream, setLocalStream] = useState(null);
+      const [remoteVideos, setRemoteVideos] = useState({}); // uid -> MediaStream
+      const localStreamRef = useRef(null);
+      const videoCallsRef = useRef([]);
+      const videoOnRef = useRef(false);
+      useEffect(function() { videoOnRef.current = videoOn; }, [videoOn]);
+      const handleIncomingCall = (call) => {
+        try { call.answer(localStreamRef.current || undefined); } catch (e) { try { call.answer(); } catch (e2) {} }
+        videoCallsRef.current.push(call);
+        const remoteUid = (call.metadata && call.metadata.uid) || call.peer;
+        call.on('stream', (rs) => {
+          setRemoteVideos(prev => ({ ...prev, [remoteUid]: rs }));
+          showToast('📹 對方開啟了視訊');
+        });
+        call.on('close', () => {
+          setRemoteVideos(prev => { const n = { ...prev }; delete n[remoteUid]; return n; });
+        });
+      };
+      const callAllPeers = (stream) => {
+        const peer = peerRef.current;
+        if (!peer) return;
+        const doCall = (peerId, uid) => {
+          try {
+            const call = peer.call(peerId, stream, { metadata: { uid: myId, name: (myNameRef.current || '你') } });
+            videoCallsRef.current.push(call);
+            call.on('stream', (rs) => { setRemoteVideos(prev => ({ ...prev, [uid]: rs })); });
+            call.on('close', () => { setRemoteVideos(prev => { const n = { ...prev }; delete n[uid]; return n; }); });
+          } catch (e) {}
+        };
+        if (isHostRef.current) {
+          connsRef.current.forEach(c => { if (c.uid && c.open) doCall(c.peer, c.uid); });
+        } else if (connRef.current && connRef.current.open) {
+          const hostEntry = playersListRef.current.find(p => p.isHost);
+          doCall(connRef.current.peer, hostEntry ? hostEntry.id : connRef.current.peer);
+        }
+      };
+      const stopVideo = () => {
+        videoCallsRef.current.forEach(call => { try { call.close(); } catch (e) {} });
+        videoCallsRef.current = [];
+        const s = localStreamRef.current;
+        if (s) { try { s.getTracks().forEach(t => t.stop()); } catch (e) {} }
+        localStreamRef.current = null;
+        setLocalStream(null); setRemoteVideos({}); setVideoOn(false); setMicMuted(false);
+      };
+      const toggleVideo = async () => {
+        if (videoOn) { stopVideo(); return; }
+        if (engineRef.current !== 'peerjs') return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('⚠️ 目前的環境不支援相機（預覽器不算），請上線後用 Safari 開啟');
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, facingMode: 'user' }, audio: true });
+          localStreamRef.current = stream;
+          setLocalStream(stream); setVideoOn(true); setMicMuted(false);
+          callAllPeers(stream);
+        } catch (e) {
+          showToast(e && e.name === 'NotAllowedError' ? '⚠️ 相機/麥克風權限被拒，請到瀏覽器設定中允許' : '⚠️ 無法開啟相機/麥克風');
+        }
+      };
+      const toggleMic = () => {
+        const s = localStreamRef.current;
+        if (s) { try { s.getAudioTracks().forEach(t => { t.enabled = micMuted; }); } catch (e) {} }
+        setMicMuted(prev => !prev);
+      };
+
       // 首次教學導覽
       const [showTutorial, setShowTutorial] = useState(false);
       const [tutorialStep, setTutorialStep] = useState(0);
@@ -765,6 +866,7 @@
         }
 
         if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
+        if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中停用游標分享（防作弊）
         const msg = { type: 'CLICK', uid: myId, x: pt.x, y: pt.y };
         setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: myId, x: pt.x, y: pt.y, timestamp: Date.now() }]);
 
@@ -849,6 +951,7 @@
         }
 
         if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
+        if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中停用游標分享（防作弊）
         if (Date.now() - lastCursorSend.current < 50) return;
         lastCursorSend.current = Date.now();
         const pt = getSvgCoords(e.clientX, e.clientY);
@@ -1308,6 +1411,8 @@
         setRoomId(""); setPlayersList([]);
         connsRef.current = []; connRef.current = null;
         setCursors({}); setRipples([]); setInteractionMode(0);
+        setChatMsgs([]); setUnreadChat(0); setChatOpen(false); setChatInput('');
+        stopVideo(); // 📹 關閉視訊
       };
 
       const startSinglePlayer = () => {
@@ -1601,6 +1706,7 @@
         if (isCreating) {
             const p = new Peer(rId + '-host');
             peerRef.current = p;
+            p.on('call', handleIncomingCall); // 📹 視訊來電
             p.on('open', function() {
               setIsHost(true); isHostRef.current = true;
               setRoomId(rId); setIsConnecting(false);
@@ -1642,6 +1748,16 @@
                           });
                           return nList;
                       });
+                      // 📹 若房主已開視訊，自動撥給新加入的玩家
+                      if (videoOnRef.current && localStreamRef.current && c.open) {
+                        try {
+                          const call = peerRef.current.call(c.peer, localStreamRef.current, { metadata: { uid: myId, name: (myNameRef.current || '你') } });
+                          videoCallsRef.current.push(call);
+                          const newUid = m.uid;
+                          call.on('stream', (rs) => { setRemoteVideos(prev => ({ ...prev, [newUid]: rs })); });
+                          call.on('close', () => { setRemoteVideos(prev => { const n = { ...prev }; delete n[newUid]; return n; }); });
+                        } catch (e) {}
+                      }
                   } else if (m.type === 'GET_TAKEN_NAMES') {
                       // 只回給該連線：目前已使用的名字（排除空名字，給拉霸機／暱稱檢查用）
                       c.send({ type: 'TAKEN_NAMES', names: playersListRef.current.filter(pl => pl.name && pl.name.trim()).map(pl => pl.name) });
@@ -1676,6 +1792,9 @@
                   } else if (m.type === 'CLICK') {
                       connsRef.current.forEach(conn => { if(conn.peer !== c.peer) conn.send(m); });
                       setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
+                  } else if (m.type === 'CHAT') {
+                      appendChatMsg(m);
+                      connsRef.current.forEach(conn => { if(conn.peer !== c.peer && conn.open) conn.send(m); });
                   } else if (m.type === 'RACE_PROGRESS') {
                       setRaceProgress(prev => ({ ...prev, [m.uid]: { progress: m.progress, name: m.name, color: m.color } }));
                       connsRef.current.forEach(conn => { if(conn.peer !== c.peer && conn.open) conn.send(m); });
@@ -1693,6 +1812,8 @@
                     }
                     connsRef.current = connsRef.current.filter(conn => conn.peer !== c.peer);
                     if (c.uid) { // 如果斷線的是已知玩家，自動拔除並廣播
+                        const goneUid = c.uid;
+                        setRemoteVideos(prev => { const n = { ...prev }; delete n[goneUid]; return n; }); // 📹 移除視訊
                         setPlayersList(prev => {
                             const nList = prev.filter(pl => pl.id !== c.uid);
                             connsRef.current.forEach(conn => {
@@ -1717,6 +1838,7 @@
         } else {
             const guestP = new Peer();
             peerRef.current = guestP;
+            guestP.on('call', handleIncomingCall); // 📹 視訊來電
             guestP.on('open', function() {
                 const c = guestP.connect(rId + '-host');
                 connRef.current = c;
@@ -1759,6 +1881,8 @@
                       setCursors(prev => ({ ...prev, [m.uid]: { x: m.x, y: m.y } }));
                   } else if (m.type === 'CLICK') {
                       setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
+                  } else if (m.type === 'CHAT') {
+                      appendChatMsg(m);
                   } else if (m.type === 'TAKEN_NAMES') {
                       if (!guestNamesResolvedRef.current && !guestJoinedRef.current && joinActiveRef.current) {
                           if (guestNamesTimeoutRef.current) { clearTimeout(guestNamesTimeoutRef.current); guestNamesTimeoutRef.current = null; }
@@ -1859,6 +1983,7 @@
         playersListRef.current.forEach(p => { seed[p.id] = { progress: 0, name: p.name, color: p.color }; });
         if (!seed[myId]) seed[myId] = { progress: 0, name: (myNameRef.current || '你'), color: myColorRef.current };
         setRaceProgress(seed);
+        setCursors({}); // 🏁 競速開始：清掉大廳殘留的游標（競速模式不顯示游標，防作弊）
         levelDimRef.current = { w: payload.randomLevelData.width, h: payload.randomLevelData.height };
         setBoardFadeKey(k => k + 1); scheduleFitZoom();
         setRaceState('countdown'); raceStateRef.current = 'countdown';
@@ -2311,7 +2436,7 @@
                  </div>
               </div>
             </div>
-            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.16 測試版)</div>
+            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.17 測試版)</div>
             {tutorialOverlay}
           </div>
         );
@@ -2412,7 +2537,8 @@
                 </div>
               </div>
             )}
-            {toastMsg && <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade">{toastMsg}</div>}
+  
+          {toastMsg && <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade">{toastMsg}</div>}
             {tutorialOverlay}
           </div>
         );
@@ -2441,7 +2567,35 @@
                        <button onClick={() => startDailyMode(HASHI_PUZZLE.shiftDateStr(dailyDateStr, 1))} disabled={dailyDateStr >= HASHI_PUZZLE.getDailyDateStr()} className="disabled:opacity-30 px-1" title="後一天的題目">▶</button>
                      </span> )}
                      {isDailyMode && dailyStreak > 0 && ( <span className="bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">🔥 x{dailyStreak}</span> )}
-                     {isMultiplayer && ( <span className="bg-emerald-400 text-slate-900 px-2 py-1 rounded-md border-2 border-slate-800 font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 whitespace-nowrap">{isHostRef.current ? '👑 主機' : '👤 玩家'} | 代碼: {roomId}</span> )}
+                     {(videoOn || Object.keys(remoteVideos).length > 0) && (
+              <div className="px-4 py-2 bg-slate-800 flex gap-3 items-start overflow-x-auto shrink-0">
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-[3px] border-[#4ade80] shadow relative bg-slate-600">
+                    {localStream ? (
+                      <video ref={el => { if (el) el.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white font-black text-lg" style={{ backgroundColor: myColorRef.current === 'rainbow' ? '#a855f7' : (myColorRef.current || '#3b82f6') }}>{(myNameRef.current || '你').slice(0, 1)}</div>
+                    )}
+                  </div>
+                  <span className="text-white text-[10px] font-bold mt-0.5">你{micMuted ? ' 🔇' : ''}</span>
+                </div>
+                {Object.entries(remoteVideos).map(entry => {
+                  const uid = entry[0]; const stream = entry[1];
+                  const pl = playersList.find(p => p.id === uid);
+                  const nm = pl ? pl.name : '對手';
+                  return (
+                    <div key={uid} className="flex flex-col items-center shrink-0">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-[3px] border-white shadow relative bg-slate-600">
+                        <video ref={el => { if (el) el.srcObject = stream; }} autoPlay playsInline className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-white text-[10px] font-bold mt-0.5 max-w-[64px] truncate">{nm}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {isMultiplayer && ( <span className="bg-emerald-400 text-slate-900 px-2 py-1 rounded-md border-2 border-slate-800 font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 whitespace-nowrap">{isHostRef.current ? '👑 主機' : '👤 玩家'} | 代碼: {roomId}</span> )}
                   </div>
                   <button onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)} className="flex px-2 md:px-3 py-1 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap">{isHeaderCollapsed ? '🔽 展開規則' : '🔼 縮小面板'}</button>
                </div>
@@ -2560,15 +2714,44 @@
                   );
                 })}
                 {engineRef.current === 'peerjs' && (
-                  <div className="ml-auto flex items-center">
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 bg-slate-100 px-2 py-1 rounded-md border-2 border-slate-300 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors hover:bg-slate-200">
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <button
+                      onClick={() => { setChatOpen(prev => { if (!prev) setChatMin(false); return !prev; }); }}
+                      className="relative flex items-center gap-1 text-xs md:text-sm font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border-2 border-slate-300 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:bg-slate-200 transition-colors"
+                      title="聊天室"
+                    >
+                      💬 聊天
+                      {unreadChat > 0 && (
+                        <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white">
+                          {unreadChat > 99 ? '99+' : unreadChat}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={toggleVideo}
+                      className={"flex items-center gap-1 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (videoOn ? "text-white bg-slate-800 border-slate-800" : "text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200")}
+                      title={videoOn ? '關閉視訊' : '開啟視訊（圓形頭像）'}
+                    >
+                      {videoOn ? '📹' : '🎥'} 視訊
+                    </button>
+                    {videoOn && (
+                      <button
+                        onClick={toggleMic}
+                        className="flex items-center text-xs md:text-sm font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border-2 border-slate-300 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:bg-slate-200 transition-colors"
+                        title={micMuted ? '取消靜音' : '靜音'}
+                      >
+                        {micMuted ? '🔇' : '🎤'}
+                      </button>
+                    )}
+                    <label title={mpMode === 'race' ? '競速模式停用顯示游標（防作弊）' : ''} className={"flex items-center gap-1.5 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (mpMode === 'race' ? "text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed opacity-70" : "cursor-pointer text-slate-700 hover:text-slate-900 bg-slate-100 border-slate-300 hover:bg-slate-200")}>
                       <input
                         type="checkbox"
                         checked={showOtherCursors}
+                        disabled={mpMode === 'race'}
                         onChange={(e) => setShowOtherCursors(e.target.checked)}
                         className="w-3.5 h-3.5 md:w-4 md:h-4 accent-emerald-500"
                       />
-                      顯示游標
+                      顯示游標{mpMode === 'race' ? ' 🔒' : ''}
                     </label>
                   </div>
                 )}
@@ -2962,7 +3145,7 @@
                         style={{ display: 'none' }}
                     />
 
-                    {showOtherCursors && engineRef.current === 'peerjs' && Object.entries(cursors).map(entry => {
+                    {showOtherCursors && mpMode !== 'race' && engineRef.current === 'peerjs' && Object.entries(cursors).map(entry => {
                         const uid = entry[0]; const pos = entry[1];
                         if (uid === myId) return null;
                         const player = playersList.find(p => p.id === uid);
@@ -3161,6 +3344,46 @@
           )}
 
           {toastMsg && <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade">{toastMsg}</div>}
+          {chatOpen && engineRef.current === 'peerjs' && (
+            <div className="absolute inset-0 z-[95] flex items-end justify-center pointer-events-none p-3">
+              <div className="pointer-events-auto w-full max-w-md bg-[#f6fdf6]/90 backdrop-blur-[2px] border-4 border-slate-800 rounded-2xl shadow-[4px_4px_0px_rgba(30,41,59,0.6)] flex flex-col overflow-hidden" style={chatMin ? {} : { height: '40vh', maxHeight: '380px' }}>
+                <div onClick={() => setChatMin(prev => !prev)} className="flex items-center justify-between px-3 py-2 bg-[#4ade80] border-b-[3px] border-slate-800 shrink-0 cursor-pointer select-none">
+                  <span className="font-black text-slate-900">💬 聊天室 {unreadChat > 0 && <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black inline-flex items-center justify-center border-2 border-white align-middle">{unreadChat > 99 ? '99+' : unreadChat}</span>}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-800">{chatMin ? '🔼' : '🔽'}</span>
+                    <button onClick={(e) => { e.stopPropagation(); setChatOpen(false); }} className="w-7 h-7 rounded-full bg-white border-2 border-slate-800 font-black text-slate-800 text-sm leading-none">✕</button>
+                  </div>
+                </div>
+                {!chatMin && (
+                <React.Fragment>
+                <div ref={chatListRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+                  {chatMsgs.length === 0 && <p className="text-center text-slate-400 text-xs font-bold py-8">還沒有訊息，打個招呼吧！👋</p>}
+                  {chatMsgs.map(m => (
+                    <div key={m.id} className={"flex " + (m.mine ? "justify-end" : "justify-start")}>
+                      <div className={"max-w-[82%] px-2.5 py-1.5 rounded-xl border-2 border-slate-800 " + (m.mine ? "bg-[#4ade80]" : "bg-white")}>
+                        {!m.mine && <div className="text-[10px] font-black leading-tight" style={{ color: m.color === 'rainbow' ? '#a855f7' : m.color }}>{m.name}</div>}
+                        <div className="break-words text-sm font-bold text-slate-900 leading-snug">{m.text}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 p-2 border-t-[3px] border-slate-800 shrink-0 bg-white">
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }}
+                    placeholder="輸入訊息…"
+                    maxLength={200}
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl border-2 border-slate-800 text-sm font-bold outline-none focus:border-emerald-500"
+                  />
+                  <button onClick={sendChat} className="px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none shrink-0">送出</button>
+                </div>
+                </React.Fragment>
+                )}
+              </div>
+            </div>
+          )}
+
           {tutorialOverlay}
         </div>
       );
