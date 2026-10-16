@@ -37,3 +37,82 @@ body[data-view="home"] {
   box-shadow: 3px 3px 0 rgba(30,41,59,1); cursor: pointer;
 }
 #plat-back:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(30,41,59,1); }
+body[data-view="lobby"] {
+  overscroll-behavior-y: none;
+  background-color: #fdf5e6;
+  background-image: radial-gradient(#d3c5ab 2px, transparent 2px);
+  background-size: 12px 12px;
+  margin: 0; padding: 0;
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+}
+/* Phase C：殼 dock（聊天/視訊/喇叭/大廳） */
+#plat-dock {
+  position: fixed; right: 10px; bottom: 14px; z-index: 99990;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#plat-dock button {
+  position: relative; width: 52px; height: 52px; border-radius: 9999px;
+  background: #fff; border: 3px solid #1e293b; font-size: 22px;
+  box-shadow: 3px 3px 0 rgba(30,41,59,1); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#plat-dock button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(30,41,59,1); }
+#plat-dock button.on { background: #1e293b; color: #fff; }
+#plat-dock .dock-label { position: absolute; bottom: 2px; right: 5px; font-size: 8px; font-weight: 900; }
+#dock-chat-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 9999px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 900;
+  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
+}
+/* 視訊圓形頭像條（右側直排） */
+#plat-videos {
+  position: fixed; right: 10px; top: 64px; z-index: 99989;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+}
+.plat-vid { display: flex; flex-direction: column; align-items: center; width: 60px; }
+.plat-vid .circ {
+  width: 56px; height: 56px; border-radius: 9999px; overflow: hidden;
+  border: 3px solid #1e293b; background: #475569; box-shadow: 2px 2px 0 rgba(30,41,59,1);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 900; font-size: 20px;
+}
+.plat-vid video { width: 100%; height: 100%; object-fit: cover; }
+.plat-vid .nm { font-size: 10px; font-weight: 900; color: #1e293b; background: rgba(255,255,255,.85); border-radius: 6px; padding: 0 4px; margin-top: 2px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 發言提示橫幅 */
+#plat-speak {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99995;
+  background: #1e293b; color: #fff; font-weight: 900; font-size: 14px;
+  padding: 8px 12px; border-radius: 9999px; border: 3px solid #fff;
+  box-shadow: 3px 3px 0 rgba(30,41,59,.5); display: flex; gap: 10px; align-items: center;
+  max-width: 94vw;
+}
+#plat-speak button { background: #4ade80; color: #052e16; border: 2px solid #052e16; border-radius: 9999px; padding: 2px 12px; font-weight: 900; cursor: pointer; }
+#plat-speak #plat-speak-no { background: #fff; color: #1e293b; border-color: #1e293b; padding: 2px 9px; }
+/* 聊天面板：釘在視窗底部置中、半透明、不出螢幕（比照數橋 v2.17 定案） */
+#plat-chat { position: fixed; inset: 0; z-index: 99992; pointer-events: none; }
+#plat-chat-panel {
+  pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: 10px; width: min(560px, 94vw);
+  background: rgba(255,255,255,.92); backdrop-filter: blur(6px);
+  border: 3px solid #1e293b; border-radius: 16px; overflow: hidden;
+  box-shadow: 4px 4px 0 rgba(30,41,59,1); display: flex; flex-direction: column;
+}
+#plat-chat-head {
+  background: #4ade80; padding: 8px 12px; font-weight: 900; color: #052e16;
+  display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+}
+#plat-chat-head button { background: transparent; border: none; font-size: 15px; cursor: pointer; padding: 2px 6px; }
+#plat-chat-body { display: flex; flex-direction: column; }
+#plat-chat-list { height: 38vh; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.plat-msg { font-size: 14px; font-weight: 700; color: #1e293b; word-break: break-word; }
+.plat-msg .who { font-weight: 900; margin-right: 6px; }
+.plat-msg.sys { color: #64748b; font-size: 12px; text-align: center; }
+#plat-chat-inputrow { display: flex; gap: 8px; padding: 8px 10px; border-top: 2px solid rgba(30,41,59,.15); }
+#plat-chat-input { flex: 1; min-width: 0; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 10px; font-weight: 700; }
+#plat-chat-send { background: #4ade80; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 16px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
+.plat-unread { background: #ef4444; color: #fff; border-radius: 9999px; font-size: 10px; padding: 1px 7px; font-weight: 900; }
+/* 大廳 */
+#lob-colors button { width: 30px; height: 30px; border-radius: 9999px; border: 2px solid #1e293b; cursor: pointer; padding: 0; }
+#lob-colors button.sel { outline: 3px solid #1e293b; outline-offset: 2px; }
+#lob-roster li { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; font-weight: 900; color: #1e293b; }
+#lob-roster .dot { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid #1e293b; flex-shrink: 0; }

@@ -945,6 +945,8 @@ function HashiGame() {
   var engineRef = useRef('none');
   var isHostRef = useRef(false);
   var peerRef = useRef(null);
+  var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
+  var platAutoRef = useRef(null);
   var connRef = useRef(null);
   var connsRef = useRef([]);
   var zoomContainerRef = useRef(null);
@@ -2545,6 +2547,37 @@ function HashiGame() {
     }
   };
 
+  // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
+  useEffect(function () {
+    if (!PLAT_MODE) return;
+    window.__PLAT_HOOKS_hashi = {
+      enter: function enter(sess) {
+        platAutoRef.current = { name: sess.name };
+        var mode = sess.mode || 'coop';
+        setMpMode(mode);mpModeRef.current = mode;
+        setTempPlayerName(sess.name);
+        try {
+          myNameRef.current = sess.name;
+        } catch (e) {}
+        setNickError("");
+        setEngine('peerjs');engineRef.current = 'peerjs';
+        setIsConnecting(true);setJoinStep('connecting');
+        if (sess.isHost) {
+          joinRoleRef.current = 'host';joinActiveRef.current = true;
+          setupPeerJS(sess.code, true);
+        } else {
+          joinRoleRef.current = 'guest';joinActiveRef.current = true;
+          guestJoinedRef.current = false;guestNamesResolvedRef.current = false;guestAutoNameRef.current = false;
+          setTakenNames([]);
+          setupPeerJS(sess.code, false);
+        }
+      },
+      exit: function exit() {
+        handleGoHome();
+      }
+    };
+  }, []);
+
   var setupPeerJS = function setupPeerJS(rId, isCreating) {
     if (isCreating) {
       var p = new Peer(rId + '-host');
@@ -2556,6 +2589,9 @@ function HashiGame() {
         setJoinStep('nick');
         // 空名字先佔位，等 nick 步確認後再填上
         setPlayersList([{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }]);
+        if (platAutoRef.current) {
+          var nmH = platAutoRef.current.name;platAutoRef.current = null;hostConfirmName(nmH);
+        }
 
         p.on('connection', function (c) {
           connsRef.current.push(c);
@@ -2600,7 +2636,7 @@ function HashiGame() {
                 return nList;
               });
               // 📹 若房主已開視訊，自動撥給新加入的玩家，並同步麥克風狀態
-              if (videoOnRef.current && localStreamRef.current && c.open) {
+              if (!PLAT_MODE && videoOnRef.current && localStreamRef.current && c.open) {
                 try {
                   var call = peerRef.current.call(c.peer, localStreamRef.current, { metadata: { uid: myId, name: myNameRef.current || '你' } });
                   videoCallsRef.current.push(call);
@@ -2760,6 +2796,9 @@ function HashiGame() {
               setTakenNames([]);
               setIsConnecting(false);
               setJoinStep('nick');
+              if (platAutoRef.current) {
+                var nmT = platAutoRef.current.name;platAutoRef.current = null;guestSendJoin(nmT, false);
+              }
             }
           }, 5000);
         });
@@ -2808,6 +2847,9 @@ function HashiGame() {
               }));
               setIsConnecting(false);
               setJoinStep('nick');
+              if (platAutoRef.current) {
+                var nmG = platAutoRef.current.name;platAutoRef.current = null;guestSendJoin(nmG, false);
+              }
             }
           } else if (m.type === 'JOIN_REJECTED' && m.reason === 'name_taken') {
             handleJoinRejected(m);
@@ -2843,6 +2885,7 @@ function HashiGame() {
   };
 
   var handleGoHome = function handleGoHome() {
+    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
     if (engineRef.current !== 'none') {
       if (!isHostRef.current && engineRef.current === 'peerjs' && connRef.current) {
         // 有禮貌地先傳送退出訊號給房主，再關閉連線
@@ -4114,7 +4157,7 @@ function HashiGame() {
               '\uD83D\uDD25 x',
               dailyStreak
             ),
-            (videoOn || Object.keys(remoteVideos).length > 0) && React.createElement(
+            !PLAT_MODE && (videoOn || Object.keys(remoteVideos).length > 0) && React.createElement(
               'div',
               { className: 'px-4 py-2 bg-slate-800 flex gap-3 items-start overflow-x-auto shrink-0' },
               React.createElement(
@@ -4436,7 +4479,7 @@ function HashiGame() {
             )
           );
         }),
-        engineRef.current === 'peerjs' && React.createElement(
+        engineRef.current === 'peerjs' && !PLAT_MODE && React.createElement(
           'div',
           { className: 'ml-auto flex items-center gap-1.5' },
           React.createElement(
@@ -5396,7 +5439,7 @@ function HashiGame() {
         '\u2715'
       )
     ),
-    chatOpen && engineRef.current === 'peerjs' && React.createElement(
+    chatOpen && !PLAT_MODE && engineRef.current === 'peerjs' && React.createElement(
       'div',
       { className: 'absolute inset-0 z-[95] flex items-end justify-center pointer-events-none p-3' },
       React.createElement(

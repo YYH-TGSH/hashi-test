@@ -67,10 +67,85 @@
           <div class="flex flex-col gap-5">
             <button onclick="PLAT_show('sudoku')" class="w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">🔢 數獨 Sudoku</button>
             <button onclick="PLAT_show('hashi')" class="w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌉 數橋 Hashi</button>
+            <button onclick="PLAT_show('lobby')" class="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">👥 多人連線（先進大廳）</button>
           </div>
         </div>
       </div>
       <div class="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (整合測試版 v0.1)</div>
+    </div>
+  </div>
+
+
+  <div id="view-lobby" class="plat-view">
+    <div class="min-h-screen w-full flex flex-col items-center p-4">
+      <div class="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-5 mt-6">
+        <h2 class="font-black text-2xl text-slate-800 mb-4">👥 多人連線大廳</h2>
+        <div id="lob-idle">
+          <label class="font-black text-slate-700 text-sm">你的暱稱</label>
+          <input id="lob-name" maxlength="12" placeholder="輸入暱稱" class="w-full mt-1 mb-3 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
+          <label class="font-black text-slate-700 text-sm">代表色</label>
+          <div id="lob-colors" class="flex flex-wrap gap-1.5 mt-1 mb-4"></div>
+          <button id="lob-create" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all mb-3">🏠 建立房間</button>
+          <div class="flex gap-2">
+            <input id="lob-code" maxlength="4" inputmode="numeric" placeholder="4 位數房號" class="flex-1 min-w-0 px-3 py-2.5 border-[3px] border-slate-800 rounded-lg font-bold text-lg text-center tracking-widest">
+            <button id="lob-join" class="px-4 py-2.5 bg-sky-300 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🚪 加入</button>
+          </div>
+          <div id="lob-msg" class="mt-3 text-sm font-bold text-slate-500 min-h-[20px]"></div>
+        </div>
+        <div id="lob-room" style="display:none">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="font-black text-slate-700">房號</span>
+            <span id="lob-room-code" class="bg-slate-800 text-white font-mono font-black text-xl px-3 py-0.5 rounded-lg tracking-widest"></span>
+            <span id="lob-role" class="font-black text-sm text-slate-500"></span>
+          </div>
+          <div class="font-black text-slate-700 text-sm mb-1">房間成員</div>
+          <ul id="lob-roster" class="mb-4 flex flex-col gap-1.5"></ul>
+          <div id="lob-launch">
+            <div class="font-black text-slate-700 text-sm mb-1.5">房主開始遊戲（全員一起進）</div>
+            <div class="flex flex-col gap-2">
+              <button data-launch="sudoku" class="w-full py-3 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🔢 數獨 Sudoku</button>
+              <button data-launch="hashi-coop" class="w-full py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🌉 數橋・合作</button>
+              <button data-launch="hashi-race" class="w-full py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏁 數橋・競速</button>
+            </div>
+          </div>
+          <div id="lob-waiting" class="font-bold text-slate-500 text-center py-2" style="display:none">⏳ 等待房主開始遊戲…</div>
+          <div id="lob-inmatch" class="font-bold text-emerald-600 text-center py-2" style="display:none">🎮 對局進行中（用右下角 🏠 回大廳）</div>
+          <button id="lob-leave" class="w-full mt-3 py-2.5 bg-white border-[3px] border-slate-300 rounded-xl font-black text-slate-500 active:translate-y-[2px] transition-all">離開房間</button>
+        </div>
+      </div>
+      <button onclick="PLAT_show('home')" class="mt-5 font-bold text-slate-500 underline">← 回平台首頁</button>
+    </div>
+  </div>
+
+  <div id="plat-speak" style="display:none">
+    <span>🔊 <b id="plat-speak-name"></b> 發言中，開啟音效？</span>
+    <button id="plat-speak-yes">開啟</button>
+    <button id="plat-speak-no">✕</button>
+  </div>
+
+  <div id="plat-videos" style="display:none"></div>
+
+  <div id="plat-dock" style="display:none">
+    <button id="dock-lobby" title="回大廳">🏠<span class="dock-label">大廳</span></button>
+    <button id="dock-chat" title="聊天室">💬<span id="dock-chat-badge" style="display:none"></span></button>
+    <button id="dock-video" title="開啟視訊（圓形頭像）">🎥</button>
+    <button id="dock-mic" title="靜音切換" style="display:none">🔇</button>
+    <button id="dock-speaker" title="喇叭開關" style="display:none">🔈</button>
+  </div>
+
+  <div id="plat-chat" style="display:none">
+    <div id="plat-chat-panel">
+      <div id="plat-chat-head">
+        <span>💬 聊天室 <span id="plat-chat-unread" class="plat-unread" style="display:none"></span></span>
+        <span><button id="plat-chat-min">🔽</button><button id="plat-chat-close">✕</button></span>
+      </div>
+      <div id="plat-chat-body">
+        <div id="plat-chat-list"></div>
+        <div id="plat-chat-inputrow">
+          <input id="plat-chat-input" placeholder="輸入訊息…" maxlength="200">
+          <button id="plat-chat-send">送出</button>
+        </div>
+      </div>
     </div>
   </div>
 

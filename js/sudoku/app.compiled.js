@@ -78,7 +78,7 @@ function SudokuGame() {
     setLastSessionAlive = _useState4[1]; // null: 檢查中, true: 可恢復, false: 失效
 
   useEffect(function () {
-    if (screen === 'home') {
+    if (screen === 'home' && !window.__PLAT_PLATFORM) {
       var last = null;
       try {
         last = JSON.parse(localStorage.getItem('sudoku_last_session') || 'null');
@@ -3464,6 +3464,7 @@ function SudokuGame() {
     }]);
   };
   var handleGoHome = function handleGoHome() {
+    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
     if (engineRef.current === 'peerjs') {
       if (!isHostRef.current && connRef.current) {
         connRef.current.send({
@@ -3798,6 +3799,36 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
+
+  // ===== 平台 Phase C 接入：殼 launch 時自動進多人（免重打暱稱/房號） =====
+  useEffect(function () {
+    if (!window.__PLAT_PLATFORM) return;
+    window.__PLAT_HOOKS_sudoku = {
+      enter: function enter(sess) {
+        myNameRef.current = sess.name;
+        setTempPlayerName(sess.name);
+        setEngine('peerjs');
+        engineRef.current = 'peerjs';
+        setIsConnecting(true);
+        if (sess.isHost) {
+          syncState({
+            levelData: emptyLevelData,
+            cells: [],
+            localCells: [],
+            matchPhase: 'waiting',
+            matchEndTime: null,
+            isBrawlMode: false
+          }, false);
+          setupPeerJS(sess.code, sess.name, true);
+        } else {
+          setupPeerJS(sess.code, sess.name, false);
+        }
+      },
+      exit: function exit() {
+        handleGoHome();
+      }
+    };
+  }, []);
   var setupPeerJS = function setupPeerJS(rId, pName, isCreating) {
     var savedProg = loadLocalProgress(rId, myId);
     setConnectionStatus(isCreating ? "正在啟動通訊模組..." : "\u6B63\u5728\u5C0B\u627E\u623F\u9593 ".concat(rId, "..."));
@@ -4214,6 +4245,12 @@ function SudokuGame() {
           }
         });
         c.on('close', function () {
+          if (window.__PLAT_PLATFORM) {
+            showToast("⚠️ 與主機連線中斷");
+            switchToOffline();
+            if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('host-gone');
+            return;
+          }
           var list = playersListRef.current;
           var others = list.filter(function (p) {
             return !p.isHost && !p.isSpectator;
