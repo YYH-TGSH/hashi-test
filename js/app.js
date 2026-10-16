@@ -280,6 +280,35 @@
       const videoCallsRef = useRef([]);
       const videoOnRef = useRef(false);
       useEffect(function() { videoOnRef.current = videoOn; }, [videoOn]);
+      // 🔊 喇叭預設關閉；有人開麥發言時提示是否開音效
+      const [speakerOn, setSpeakerOn] = useState(false);
+      const [remoteMic, setRemoteMic] = useState({}); // uid -> muted(bool)
+      const [speakPrompt, setSpeakPrompt] = useState(null); // {uid, name}
+      const speakerOnRef = useRef(false);
+      const speakPromptedRef = useRef({});
+      useEffect(function() { speakerOnRef.current = speakerOn; }, [speakerOn]);
+      useEffect(function() { // 喇叭開關即時套用到所有遠端視訊
+        document.querySelectorAll('.remote-video-el').forEach(el => { try { el.muted = !speakerOn; } catch (e) {} });
+        if (speakerOn) setSpeakPrompt(null);
+      }, [speakerOn]);
+      const broadcastMic = (muted) => {
+        const msg = { type: 'MIC', uid: myId, name: (myNameRef.current || '你'), muted: muted };
+        try {
+          if (isHostRef.current) { connsRef.current.forEach(c => { if (c.open) c.send(msg); }); }
+          else if (connRef.current && connRef.current.open) { connRef.current.send(msg); }
+        } catch (e) {}
+      };
+      const handleMicMsg = (m) => {
+        if (!m || m.uid === myId) return;
+        setRemoteMic(prev => ({ ...prev, [m.uid]: !!m.muted }));
+        if (m.muted) {
+          speakPromptedRef.current[m.uid] = false;
+          setSpeakPrompt(prev => (prev && prev.uid === m.uid) ? null : prev);
+        } else if (!speakerOnRef.current && !speakPromptedRef.current[m.uid]) {
+          speakPromptedRef.current[m.uid] = true;
+          setSpeakPrompt({ uid: m.uid, name: m.name || '對手' });
+        }
+      };
       const handleIncomingCall = (call) => {
         try { call.answer(localStreamRef.current || undefined); } catch (e) { try { call.answer(); } catch (e2) {} }
         videoCallsRef.current.push(call);
@@ -317,6 +346,7 @@
         if (s) { try { s.getTracks().forEach(t => t.stop()); } catch (e) {} }
         localStreamRef.current = null;
         setLocalStream(null); setRemoteVideos({}); setVideoOn(false); setMicMuted(false);
+        setRemoteMic({}); setSpeakPrompt(null); speakPromptedRef.current = {};
       };
       const toggleVideo = async () => {
         if (videoOn) { stopVideo(); return; }
@@ -327,17 +357,21 @@
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, facingMode: 'user' }, audio: true });
+          try { stream.getAudioTracks().forEach(t => { t.enabled = false; }); } catch (e) {} // 🎤 麥克風預設關閉，要講話再手動開
           localStreamRef.current = stream;
-          setLocalStream(stream); setVideoOn(true); setMicMuted(false);
+          setLocalStream(stream); setVideoOn(true); setMicMuted(true);
           callAllPeers(stream);
+          broadcastMic(true);
         } catch (e) {
           showToast(e && e.name === 'NotAllowedError' ? '⚠️ 相機/麥克風權限被拒，請到瀏覽器設定中允許' : '⚠️ 無法開啟相機/麥克風');
         }
       };
       const toggleMic = () => {
+        const newMuted = !micMuted;
         const s = localStreamRef.current;
-        if (s) { try { s.getAudioTracks().forEach(t => { t.enabled = micMuted; }); } catch (e) {} }
-        setMicMuted(prev => !prev);
+        if (s) { try { s.getAudioTracks().forEach(t => { t.enabled = !newMuted; }); } catch (e) {} }
+        setMicMuted(newMuted);
+        broadcastMic(newMuted); // 通知其他玩家：我開麥/關麥了
       };
 
       // 首次教學導覽
@@ -1748,7 +1782,7 @@
                           });
                           return nList;
                       });
-                      // 📹 若房主已開視訊，自動撥給新加入的玩家
+                      // 📹 若房主已開視訊，自動撥給新加入的玩家，並同步麥克風狀態
                       if (videoOnRef.current && localStreamRef.current && c.open) {
                         try {
                           const call = peerRef.current.call(c.peer, localStreamRef.current, { metadata: { uid: myId, name: (myNameRef.current || '你') } });
@@ -1756,6 +1790,7 @@
                           const newUid = m.uid;
                           call.on('stream', (rs) => { setRemoteVideos(prev => ({ ...prev, [newUid]: rs })); });
                           call.on('close', () => { setRemoteVideos(prev => { const n = { ...prev }; delete n[newUid]; return n; }); });
+                          c.send({ type: 'MIC', uid: myId, name: (myNameRef.current || '你'), muted: (function() { try { const at = localStreamRef.current.getAudioTracks()[0]; return at ? !at.enabled : true; } catch (e) { return true; } })() });
                         } catch (e) {}
                       }
                   } else if (m.type === 'GET_TAKEN_NAMES') {
@@ -1794,6 +1829,9 @@
                       setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
                   } else if (m.type === 'CHAT') {
                       appendChatMsg(m);
+                      connsRef.current.forEach(conn => { if(conn.peer !== c.peer && conn.open) conn.send(m); });
+                  } else if (m.type === 'MIC') {
+                      handleMicMsg(m);
                       connsRef.current.forEach(conn => { if(conn.peer !== c.peer && conn.open) conn.send(m); });
                   } else if (m.type === 'RACE_PROGRESS') {
                       setRaceProgress(prev => ({ ...prev, [m.uid]: { progress: m.progress, name: m.name, color: m.color } }));
@@ -1883,6 +1921,8 @@
                       setRipples(prev => [...prev, { id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
                   } else if (m.type === 'CHAT') {
                       appendChatMsg(m);
+                  } else if (m.type === 'MIC') {
+                      handleMicMsg(m);
                   } else if (m.type === 'TAKEN_NAMES') {
                       if (!guestNamesResolvedRef.current && !guestJoinedRef.current && joinActiveRef.current) {
                           if (guestNamesTimeoutRef.current) { clearTimeout(guestNamesTimeoutRef.current); guestNamesTimeoutRef.current = null; }
@@ -2436,7 +2476,7 @@
                  </div>
               </div>
             </div>
-            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.17 測試版)</div>
+            <div className="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (v2.18 測試版)</div>
             {tutorialOverlay}
           </div>
         );
@@ -2586,9 +2626,9 @@
                   return (
                     <div key={uid} className="flex flex-col items-center shrink-0">
                       <div className="w-14 h-14 rounded-full overflow-hidden border-[3px] border-white shadow relative bg-slate-600">
-                        <video ref={el => { if (el) el.srcObject = stream; }} autoPlay playsInline className="w-full h-full object-cover" />
+                        <video ref={el => { if (el) { el.srcObject = stream; try { el.muted = !speakerOnRef.current; } catch (e) {} } }} autoPlay playsInline muted className="remote-video-el w-full h-full object-cover" />
                       </div>
-                      <span className="text-white text-[10px] font-bold mt-0.5 max-w-[64px] truncate">{nm}</span>
+                      <span className="text-white text-[10px] font-bold mt-0.5 max-w-[64px] truncate">{nm}{remoteMic[uid] === false ? ' 🎤' : ''}</span>
                     </div>
                   );
                 })}
@@ -2741,6 +2781,15 @@
                         title={micMuted ? '取消靜音' : '靜音'}
                       >
                         {micMuted ? '🔇' : '🎤'}
+                      </button>
+                    )}
+                    {(videoOn || Object.keys(remoteVideos).length > 0) && (
+                      <button
+                        onClick={() => setSpeakerOn(prev => !prev)}
+                        className={"flex items-center gap-1 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (speakerOn ? "text-white bg-slate-800 border-slate-800" : "text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200")}
+                        title={speakerOn ? '喇叭開啟中（點按關閉）' : '喇叭關閉中（點按開啟，才聽得到對方）'}
+                      >
+                        {speakerOn ? '🔊' : '🔈'} 喇叭
                       </button>
                     )}
                     <label title={mpMode === 'race' ? '競速模式停用顯示游標（防作弊）' : ''} className={"flex items-center gap-1.5 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (mpMode === 'race' ? "text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed opacity-70" : "cursor-pointer text-slate-700 hover:text-slate-900 bg-slate-100 border-slate-300 hover:bg-slate-200")}>
@@ -3344,6 +3393,14 @@
           )}
 
           {toastMsg && <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade">{toastMsg}</div>}
+          {speakPrompt && !speakerOn && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[96] bg-slate-800 text-white pl-4 pr-2 py-2 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.35)] border-[3px] border-white flex items-center gap-2 whitespace-nowrap max-w-[calc(100%-16px)]">
+              <span className="truncate">🔊 {speakPrompt.name} 發言中，開啟音效？</span>
+              <button onClick={() => setSpeakerOn(true)} className="bg-[#4ade80] text-slate-900 px-3 py-1 rounded-full font-black border-2 border-slate-900 shrink-0">開啟</button>
+              <button onClick={() => setSpeakPrompt(null)} className="bg-white/20 text-white px-2 py-1 rounded-full font-black shrink-0">✕</button>
+            </div>
+          )}
+
           {chatOpen && engineRef.current === 'peerjs' && (
             <div className="absolute inset-0 z-[95] flex items-end justify-center pointer-events-none p-3">
               <div className="pointer-events-auto w-full max-w-md bg-[#f6fdf6]/90 backdrop-blur-[2px] border-4 border-slate-800 rounded-2xl shadow-[4px_4px_0px_rgba(30,41,59,0.6)] flex flex-col overflow-hidden" style={chatMin ? {} : { height: '40vh', maxHeight: '380px' }}>
