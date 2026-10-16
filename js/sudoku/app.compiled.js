@@ -3875,7 +3875,7 @@ function SudokuGame() {
             setLocalCells(savedProg.d);
             showToast("📦 已恢復上次對局進度");
           }
-          generateAndSync(sizeId, diffId, isBrawlMode ? 'brawl' : 'coop');
+          generateAndSync(stateRef.current.sizeId, stateRef.current.diffId, stateRef.current.isBrawlMode ? 'brawl' : 'coop');
         }
         p.on('connection', function (c) {
           connsRef.current.push(c);

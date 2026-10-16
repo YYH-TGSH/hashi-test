@@ -1013,6 +1013,8 @@ function HashiGame() {
   var lastProgressSentRef = useRef(0);
   var lastProgressValRef = useRef(-1);
   var myItemsRef = useRef([]);
+  var raceProgressRef = useRef({});
+  var hostMilestonesRef = useRef({});
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
   var fxRef = useRef({ fog: {}, phantom: {}, invertUntil: 0 });
@@ -1840,10 +1842,7 @@ function HashiGame() {
       }
     } catch (e) {}
   };
-  var grantBrawlItem = function grantBrawlItem() {
-    if (myItemsRef.current.length >= 3) {
-      showToast('🎒 道具已滿（最多 3 個），先用掉一個吧');return;
-    }
+  var pickRandomItem = function pickRandomItem() {
     var r = Math.random() * 11,
         pick = BRAWL_ITEMS[0];
     for (var i = 0; i < BRAWL_ITEMS.length; i++) {
@@ -1851,9 +1850,49 @@ function HashiGame() {
         pick = BRAWL_ITEMS[i];break;
       }
     }
-    var ni = myItemsRef.current.concat([pick.key]);
+    return pick;
+  };
+  // 里程碑發放（房主執行，比照數獨）：抽一件道具，再依進度加權抽一位玩家——越落後權重越高，但不是永遠最後一名
+  var handleBrawlMilestone = function handleBrawlMilestone(m) {
+    if (!isHostRef.current) return;
+    var key = m.uid + '@' + m.threshold;
+    if (hostMilestonesRef.current[key]) return;
+    hostMilestonesRef.current[key] = true;
+    var cands = playersListRef.current.filter(function (pl) {
+      return pl.id;
+    });
+    if (!cands.length) return;
+    var item = pickRandomItem();
+    var total = 0;
+    var ws = cands.map(function (pl) {
+      var info = raceProgressRef.current[pl.id];
+      var prog = info ? info.progress : 0;
+      var wgt = Math.pow(1 - prog, 2) + 0.15;
+      total += wgt;return wgt;
+    });
+    var r = Math.random() * total,
+        sel = cands[cands.length - 1];
+    for (var i = 0; i < cands.length; i++) {
+      r -= ws[i];if (r <= 0) {
+        sel = cands[i];break;
+      }
+    }
+    var grant = { type: 'BRAWL_GRANT', toUid: sel.id, item: item.key, fromUid: m.uid };
+    sendBrawlMsg(grant);
+    if (sel.id === myId) applyBrawlGrant(grant);
+  };
+  var applyBrawlGrant = function applyBrawlGrant(m) {
+    if (!m || m.toUid !== myId) return;
+    var meta = BRAWL_ITEMS.find(function (x) {
+      return x.key === m.item;
+    });
+    if (!meta) return;
+    if (myItemsRef.current.length >= 3) {
+      showToast('🎒 道具已滿，里程碑道具流掉了');return;
+    }
+    var ni = myItemsRef.current.concat([m.item]);
     myItemsRef.current = ni;setMyItems(ni);
-    showToast('🎁 里程碑道具：' + pick.icon + ' ' + pick.name + '！');
+    showToast('🎁 里程碑道具：你獲得 ' + meta.icon + ' ' + meta.name + '！');
     try {
       window.HASHI_SOUND.play('star');
     } catch (e) {}
@@ -2102,6 +2141,9 @@ function HashiGame() {
       )
     );
   };
+  useEffect(function () {
+    raceProgressRef.current = raceProgress;
+  }, [raceProgress]);
   // 特效計時：到期自動清除
   useEffect(function () {
     var hasFx = fxInvertUntil > 0 || Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
@@ -2150,7 +2192,7 @@ function HashiGame() {
     var p = done / islands.length;
     [0.25, 0.5, 0.75].forEach(function (t) {
       if (p >= t && !milestonesRef.current[t]) {
-        milestonesRef.current[t] = true;grantBrawlItem();
+        milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
       }
     });
     var nowB = Date.now();
@@ -3102,6 +3144,8 @@ function HashiGame() {
               connsRef.current.forEach(function (conn) {
                 if (conn.peer !== c.peer && conn.open) conn.send(m);
               });
+            } else if (m.type === 'BRAWL_MILESTONE') {
+              handleBrawlMilestone(m);
             }
           });
 
@@ -3198,6 +3242,8 @@ function HashiGame() {
             });
           } else if (m.type === 'BRAWL_ITEM') {
             applyBrawlItem(m);
+          } else if (m.type === 'BRAWL_GRANT') {
+            applyBrawlGrant(m);
           } else if (m.type === 'CURSOR') {
             setCursors(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { x: m.x, y: m.y }));
@@ -3324,7 +3370,7 @@ function HashiGame() {
     raceResultsRef.current = {};
     setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
-    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};
+    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};
     setBrawlBoards({});setGodViewUid(null);
     fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
     stateRef.current = _extends({}, stateRef.current, payload);
@@ -4971,28 +5017,9 @@ function HashiGame() {
             { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
             React.createElement(
               'span',
-              { className: 'text-xs font-black text-slate-500' },
-              '\uD83C\uDF92'
-            ),
-            myItems.length === 0 && React.createElement(
-              'span',
               { className: 'text-[11px] font-bold text-slate-400' },
-              '\u9032\u5EA6\u5230 25%\uFF0F50%\uFF0F75% \u6703\u767C\u9053\u5177'
+              '\uD83C\uDF92 \u91CC\u7A0B\u7891\uFF0825%\uFF0F50%\uFF0F75%\uFF09\u6703\u767C\u9053\u5177\u7D66\u843D\u5F8C\u8005\uFF0C\u5728\u5E95\u90E8\u5713\u9215\u4F7F\u7528'
             ),
-            myItems.map(function (k, i) {
-              var it = BRAWL_ITEMS.find(function (x) {
-                return x.key === k;
-              });
-              return React.createElement(
-                'button',
-                { key: i, onClick: function onClick() {
-                    return useBrawlItem(k);
-                  }, disabled: raceState !== 'racing', className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
-                it.icon,
-                ' ',
-                it.name
-              );
-            }),
             React.createElement(
               'button',
               { onClick: function onClick() {
@@ -5051,6 +5078,41 @@ function HashiGame() {
             '\u5730\u5716\u7522\u751F\u4E2D',
             React.createElement('span', { className: 'animate-loading-dots inline-block w-[1.5em] text-left' })
           )
+        ),
+        inRace && (raceState === 'racing' || raceState === 'finished') && myItems.length > 0 && React.createElement(
+          'div',
+          { className: 'absolute bottom-4 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-2.5' },
+          Object.keys(myItems.reduce(function (acc, k) {
+            acc[k] = (acc[k] || 0) + 1;return acc;
+          }, {})).map(function (k) {
+            var meta = BRAWL_ITEMS.find(function (x) {
+              return x.key === k;
+            });
+            var cnt = myItems.filter(function (x) {
+              return x === k;
+            }).length;
+            return React.createElement(
+              'button',
+              { key: k, onClick: function onClick() {
+                  return useBrawlItem(k);
+                }, disabled: raceState !== 'racing', className: 'relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center active:translate-y-[2px] active:shadow-none disabled:opacity-40 transition-all' },
+              React.createElement(
+                'span',
+                { className: 'text-[22px] md:text-2xl leading-none' },
+                meta.icon
+              ),
+              React.createElement(
+                'span',
+                { className: 'text-[9px] font-black text-slate-600 leading-tight mt-0.5' },
+                meta.name
+              ),
+              cnt > 1 && React.createElement(
+                'span',
+                { className: 'absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center' },
+                cnt
+              )
+            );
+          })
         ),
         React.createElement(
           'div',
