@@ -79,19 +79,34 @@
   <div id="view-lobby" class="plat-view">
     <div class="min-h-screen w-full flex flex-col items-center p-4">
       <div class="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-5 mt-6">
-        <h2 class="font-black text-2xl text-slate-800 mb-4">👥 多人連線大廳</h2>
-        <div id="lob-idle">
-          <label class="font-black text-slate-700 text-sm">你的暱稱</label>
-          <input id="lob-name" maxlength="12" placeholder="輸入暱稱" class="w-full mt-1 mb-3 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
+        <h2 class="font-black text-2xl text-slate-800 mb-4">👥 多人連線</h2>
+
+        <div id="lob-step-entry">
+          <div class="flex gap-3">
+            <button id="lob-go-create" class="flex-1 py-8 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠<br>建立房間</button>
+            <button id="lob-go-join" class="flex-1 py-8 bg-sky-300 border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🚪<br>加入房間</button>
+          </div>
+          <p class="mt-4 text-sm font-bold text-slate-400 text-center">跟朋友約好，一個人建立房間、其他人輸入房號加入</p>
+        </div>
+
+        <div id="lob-step-nick" style="display:none">
+          <div id="lob-joinrow" style="display:none">
+            <label class="font-black text-slate-700 text-sm">房號（朋友給你的 4 位數）</label>
+            <input id="lob-code" maxlength="4" inputmode="numeric" placeholder="0000" class="w-full mt-1 mb-3 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-black text-2xl text-center tracking-[0.5em]">
+          </div>
+          <label class="font-black text-slate-700 text-sm">你的暱稱（拉霸機選一個，或自己輸入）</label>
+          <div id="slot-display">🎰</div>
+          <div class="flex gap-2 mb-3">
+            <button id="slot-spin" class="flex-1 py-2.5 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸</button>
+            <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
+          </div>
           <label class="font-black text-slate-700 text-sm">代表色</label>
           <div id="lob-colors" class="flex flex-wrap gap-1.5 mt-1 mb-4"></div>
-          <button id="lob-create" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all mb-3">🏠 建立房間</button>
-          <div class="flex gap-2">
-            <input id="lob-code" maxlength="4" inputmode="numeric" placeholder="4 位數房號" class="flex-1 min-w-0 px-3 py-2.5 border-[3px] border-slate-800 rounded-lg font-bold text-lg text-center tracking-widest">
-            <button id="lob-join" class="px-4 py-2.5 bg-sky-300 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🚪 加入</button>
-          </div>
-          <div id="lob-msg" class="mt-3 text-sm font-bold text-slate-500 min-h-[20px]"></div>
+          <button id="lob-confirm" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">✅ 確認，進房間</button>
+          <button id="lob-back" class="w-full mt-3 font-bold text-slate-400 underline">← 返回</button>
+          <div id="lob-msg" class="mt-3 text-sm font-bold text-rose-500 min-h-[20px]"></div>
         </div>
+
         <div id="lob-room" style="display:none">
           <div class="flex items-center gap-2 mb-3">
             <span class="font-black text-slate-700">房號</span>
@@ -101,11 +116,20 @@
           <div class="font-black text-slate-700 text-sm mb-1">房間成員</div>
           <ul id="lob-roster" class="mb-4 flex flex-col gap-1.5"></ul>
           <div id="lob-launch">
-            <div class="font-black text-slate-700 text-sm mb-1.5">房主開始遊戲（全員一起進）</div>
-            <div class="flex flex-col gap-2">
-              <button data-launch="sudoku" class="w-full py-3 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🔢 數獨 Sudoku</button>
-              <button data-launch="hashi-coop" class="w-full py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🌉 數橋・合作</button>
-              <button data-launch="hashi-race" class="w-full py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏁 數橋・競速</button>
+            <div class="font-black text-slate-700 text-sm mb-1.5">🎮 遊戲平台（房主選遊戲與模式，全員一起進）</div>
+            <div class="lob-game-card">
+              <div class="lob-game-title" style="background:#ffcc00">🔢 數獨 Sudoku</div>
+              <div class="flex gap-2 p-2">
+                <button data-launch="sudoku-coop" class="lob-mode-btn">🤝 合作</button>
+                <button data-launch="sudoku-brawl" class="lob-mode-btn">⚔️ 大亂鬥</button>
+              </div>
+            </div>
+            <div class="lob-game-card">
+              <div class="lob-game-title" style="background:#4ade80">🌉 數橋 Hashi</div>
+              <div class="flex gap-2 p-2">
+                <button data-launch="hashi-coop" class="lob-mode-btn">🤝 合作</button>
+                <button data-launch="hashi-brawl" class="lob-mode-btn">⚔️ 大亂鬥</button>
+              </div>
             </div>
           </div>
           <div id="lob-waiting" class="font-bold text-slate-500 text-center py-2" style="display:none">⏳ 等待房主開始遊戲…</div>

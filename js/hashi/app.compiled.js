@@ -855,81 +855,118 @@ function HashiGame() {
       _useState140 = _slicedToArray(_useState139, 2),
       raceProgress = _useState140[0],
       setRaceProgress = _useState140[1];
+  // ⚔️ 大亂鬥擴充：盤面快照（上帝視角）+ 道具 + 特效
 
-  var _useState141 = useState(null),
+
+  var _useState141 = useState({}),
       _useState142 = _slicedToArray(_useState141, 2),
-      raceResult = _useState142[0],
-      setRaceResult = _useState142[1];
+      brawlBoards = _useState142[0],
+      setBrawlBoards = _useState142[1];
 
-  var _useState143 = useState(false),
+  var _useState143 = useState(null),
       _useState144 = _slicedToArray(_useState143, 2),
-      raceWaiting = _useState144[0],
-      setRaceWaiting = _useState144[1];
+      godViewUid = _useState144[0],
+      setGodViewUid = _useState144[1];
 
-  var _useState145 = useState(null),
+  var _useState145 = useState([]),
       _useState146 = _slicedToArray(_useState145, 2),
-      raceCountdown = _useState146[0],
-      setRaceCountdown = _useState146[1];
+      myItems = _useState146[0],
+      setMyItems = _useState146[1];
+
+  var _useState147 = useState({}),
+      _useState148 = _slicedToArray(_useState147, 2),
+      fxFog = _useState148[0],
+      setFxFog = _useState148[1];
+
+  var _useState149 = useState({}),
+      _useState150 = _slicedToArray(_useState149, 2),
+      fxPhantom = _useState150[0],
+      setFxPhantom = _useState150[1];
+
+  var _useState151 = useState(0),
+      _useState152 = _slicedToArray(_useState151, 2),
+      fxInvertUntil = _useState152[0],
+      setFxInvertUntil = _useState152[1];
+
+  var _useState153 = useState(Date.now()),
+      _useState154 = _slicedToArray(_useState153, 2),
+      fxNow = _useState154[0],
+      setFxNow = _useState154[1];
+
+  var _useState155 = useState(null),
+      _useState156 = _slicedToArray(_useState155, 2),
+      raceResult = _useState156[0],
+      setRaceResult = _useState156[1];
+
+  var _useState157 = useState(false),
+      _useState158 = _slicedToArray(_useState157, 2),
+      raceWaiting = _useState158[0],
+      setRaceWaiting = _useState158[1];
+
+  var _useState159 = useState(null),
+      _useState160 = _slicedToArray(_useState159, 2),
+      raceCountdown = _useState160[0],
+      setRaceCountdown = _useState160[1];
 
   // ⭐ 星級評分
 
 
-  var _useState147 = useState(0),
-      _useState148 = _slicedToArray(_useState147, 2),
-      stars = _useState148[0],
-      setStars = _useState148[1];
+  var _useState161 = useState(0),
+      _useState162 = _slicedToArray(_useState161, 2),
+      stars = _useState162[0],
+      setStars = _useState162[1];
 
-  var _useState149 = useState(false),
-      _useState150 = _slicedToArray(_useState149, 2),
-      isNewBest = _useState150[0],
-      setIsNewBest = _useState150[1];
+  var _useState163 = useState(false),
+      _useState164 = _slicedToArray(_useState163, 2),
+      isNewBest = _useState164[0],
+      setIsNewBest = _useState164[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState151 = useState([]),
-      _useState152 = _slicedToArray(_useState151, 2),
-      bursts = _useState152[0],
-      setBursts = _useState152[1];
+  var _useState165 = useState([]),
+      _useState166 = _slicedToArray(_useState165, 2),
+      bursts = _useState166[0],
+      setBursts = _useState166[1];
 
-  var _useState153 = useState([]),
-      _useState154 = _slicedToArray(_useState153, 2),
-      confetti = _useState154[0],
-      setConfetti = _useState154[1];
+  var _useState167 = useState([]),
+      _useState168 = _slicedToArray(_useState167, 2),
+      confetti = _useState168[0],
+      setConfetti = _useState168[1];
 
   // 每日一題
 
 
-  var _useState155 = useState(false),
-      _useState156 = _slicedToArray(_useState155, 2),
-      isDailyMode = _useState156[0],
-      setIsDailyMode = _useState156[1];
+  var _useState169 = useState(false),
+      _useState170 = _slicedToArray(_useState169, 2),
+      isDailyMode = _useState170[0],
+      setIsDailyMode = _useState170[1];
 
-  var _useState157 = useState(""),
-      _useState158 = _slicedToArray(_useState157, 2),
-      dailyDateStr = _useState158[0],
-      setDailyDateStr = _useState158[1];
+  var _useState171 = useState(""),
+      _useState172 = _slicedToArray(_useState171, 2),
+      dailyDateStr = _useState172[0],
+      setDailyDateStr = _useState172[1];
 
-  var _useState159 = useState(0),
-      _useState160 = _slicedToArray(_useState159, 2),
-      dailyStreak = _useState160[0],
-      setDailyStreak = _useState160[1];
+  var _useState173 = useState(0),
+      _useState174 = _slicedToArray(_useState173, 2),
+      dailyStreak = _useState174[0],
+      setDailyStreak = _useState174[1];
 
-  var _useState161 = useState(null),
-      _useState162 = _slicedToArray(_useState161, 2),
-      dailyDone = _useState162[0],
-      setDailyDone = _useState162[1];
+  var _useState175 = useState(null),
+      _useState176 = _slicedToArray(_useState175, 2),
+      dailyDone = _useState176[0],
+      setDailyDone = _useState176[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState163 = useState(function () {
+  var _useState177 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState164 = _slicedToArray(_useState163, 2),
-      dailyMenuDate = _useState164[0],
-      setDailyMenuDate = _useState164[1];
+      _useState178 = _slicedToArray(_useState177, 2),
+      dailyMenuDate = _useState178[0],
+      setDailyMenuDate = _useState178[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -975,6 +1012,10 @@ function HashiGame() {
   var myFinishTimeRef = useRef(null);
   var lastProgressSentRef = useRef(0);
   var lastProgressValRef = useRef(-1);
+  var myItemsRef = useRef([]);
+  var milestonesRef = useRef({});
+  var lastBrawlSentRef = useRef(0);
+  var fxRef = useRef({ fog: {}, phantom: {}, invertUntil: 0 });
   var prevIslandDoneRef = useRef({});
 
   var MAX_SAFE_DIMENSION = 8500;
@@ -1786,6 +1827,307 @@ function HashiGame() {
     }
   };
 
+  // ⚔️ 大亂鬥道具系統
+  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧水球', w: 2 }, { key: 'phantom', icon: '❓', name: '數字幻影', w: 2 }, { key: 'invert', icon: '🔀', name: '單雙顛倒', w: 2 }, { key: 'magnet', icon: '🧲', name: '磁鐵', w: 2 }];
+  var sendBrawlMsg = function sendBrawlMsg(msg) {
+    try {
+      if (isHostRef.current) {
+        connsRef.current.forEach(function (c) {
+          if (c.open) c.send(msg);
+        });
+      } else if (connRef.current && connRef.current.open) {
+        connRef.current.send(msg);
+      }
+    } catch (e) {}
+  };
+  var grantBrawlItem = function grantBrawlItem() {
+    if (myItemsRef.current.length >= 3) {
+      showToast('🎒 道具已滿（最多 3 個），先用掉一個吧');return;
+    }
+    var r = Math.random() * 11,
+        pick = BRAWL_ITEMS[0];
+    for (var i = 0; i < BRAWL_ITEMS.length; i++) {
+      r -= BRAWL_ITEMS[i].w;if (r <= 0) {
+        pick = BRAWL_ITEMS[i];break;
+      }
+    }
+    var ni = myItemsRef.current.concat([pick.key]);
+    myItemsRef.current = ni;setMyItems(ni);
+    showToast('🎁 里程碑道具：' + pick.icon + ' ' + pick.name + '！');
+    try {
+      window.HASHI_SOUND.play('star');
+    } catch (e) {}
+  };
+  var applyMagnet = function applyMagnet() {
+    var rld = stateRef.current.randomLevelData;
+    var sol = rld && rld.solution || [];
+    var mine = stateRef.current.bridges || [];
+    var islMap = {};(rld && rld.islands || []).forEach(function (i) {
+      islMap[i.id] = i;
+    });
+    var segCross = function segCross(a, b) {
+      var af = islMap[a.from],
+          at = islMap[a.to],
+          bf = islMap[b.from],
+          bt = islMap[b.to];
+      if (!af || !at || !bf || !bt) return false;
+      var aH = af.y === at.y,
+          bH = bf.y === bt.y;
+      if (aH === bH) return false;
+      var hp = aH ? [af, at] : [bf, bt];var vp = aH ? [bf, bt] : [af, at];
+      var hx1 = Math.min(hp[0].x, hp[1].x),
+          hx2 = Math.max(hp[0].x, hp[1].x);
+      var vy1 = Math.min(vp[0].y, vp[1].y),
+          vy2 = Math.max(vp[0].y, vp[1].y);
+      return vp[0].x > hx1 && vp[0].x < hx2 && hp[0].y > vy1 && hp[0].y < vy2;
+    };
+    var samePair = function samePair(x, y) {
+      return x.from === y.from && x.to === y.to || x.from === y.to && x.to === y.from;
+    };
+    var cands = sol.filter(function (solB) {
+      var cur = mine.find(function (b) {
+        return samePair(b, solB);
+      });
+      if (!cur || cur.count >= solB.count) return false;
+      return !mine.some(function (b) {
+        return b.count > 0 && !samePair(b, solB) && segCross(solB, b);
+      });
+    });
+    if (!cands.length) {
+      showToast('🧲 目前沒有能補上的正確橋');return false;
+    }
+    var pickB = cands[Math.floor(Math.random() * cands.length)];
+    var nb = mine.map(function (b) {
+      return samePair(b, pickB) ? _extends({}, b, { count: Math.min(2, b.count + 1), owner: myId }) : b;
+    });
+    raceAwareSync({ bridges: nb });
+    showToast('🧲 磁鐵幫你補上一條正確的橋！');
+    try {
+      window.HASHI_SOUND.play('bridge');
+    } catch (e) {}
+    return true;
+  };
+  var applyBrawlItem = function applyBrawlItem(m) {
+    if (!m || m.targetUid !== myId) return;
+    var now = Date.now();
+    if (m.item === 'bomb') {
+      var cur = (stateRef.current.bridges || []).filter(function (b) {
+        return b.count > 0;
+      });
+      if (!cur.length) {
+        showToast('💣 ' + (m.fromName || '對手') + ' 想炸你的橋，但你還沒架橋！');return;
+      }
+      var victim = cur[Math.floor(Math.random() * cur.length)];
+      var nb = stateRef.current.bridges.map(function (b) {
+        return b.id === victim.id ? _extends({}, b, { count: b.count - 1, owner: b.count - 1 > 0 || (b.draftCount || 0) > 0 ? b.owner : null }) : b;
+      });
+      raceAwareSync({ bridges: nb });
+      showToast('💣 ' + (m.fromName || '對手') + ' 炸掉了你一條橋！');
+      try {
+        window.HASHI_SOUND.play('remove');
+      } catch (e) {}
+    } else if (m.item === 'fog') {
+      var isls = (stateRef.current.randomLevelData || {}).islands || [];
+      if (!isls.length) return;
+      var c = isls[Math.floor(Math.random() * isls.length)];
+      var fog = _extends({}, fxRef.current.fog);
+      isls.forEach(function (i) {
+        if (Math.abs(i.x - c.x) <= 2 && Math.abs(i.y - c.y) <= 2) fog[i.id] = now + 10000;
+      });
+      fxRef.current.fog = fog;setFxFog(fog);
+      showToast('🌫️ ' + (m.fromName || '對手') + ' 的迷霧水球罩住了一區島嶼！');
+    } else if (m.item === 'phantom') {
+      var pool = [].concat(_toConsumableArray((stateRef.current.randomLevelData || {}).islands || []));
+      var ph = _extends({}, fxRef.current.phantom);
+      for (var k = 0; k < 3 && pool.length; k++) {
+        var isl = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];ph[isl.id] = now + 8000;
+      }
+      fxRef.current.phantom = ph;setFxPhantom(ph);
+      showToast('❓ ' + (m.fromName || '對手') + ' 用了數字幻影！');
+    } else if (m.item === 'invert') {
+      fxRef.current.invertUntil = now + 10000;setFxInvertUntil(now + 10000);
+      showToast('🔀 ' + (m.fromName || '對手') + ' 讓你的單雙橋顛倒 10 秒！');
+    }
+  };
+  var useBrawlItem = function useBrawlItem(key) {
+    if (raceStateRef.current !== 'racing') return;
+    var idx = myItemsRef.current.indexOf(key);
+    if (idx < 0) return;
+    var meta = BRAWL_ITEMS.find(function (x) {
+      return x.key === key;
+    });
+    if (key === 'magnet') {
+      if (!applyMagnet()) return;
+    } else {
+      var target = null,
+          best = -1,
+          tName = '';
+      playersListRef.current.forEach(function (p) {
+        if (p.id === myId) return;
+        var info = raceProgress[p.id];
+        var pr = info ? info.progress : 0;
+        if (pr > best) {
+          best = pr;target = p.id;tName = p.name;
+        }
+      });
+      if (!target) {
+        showToast('⚠️ 沒有對手可以攻擊');return;
+      }
+      sendBrawlMsg({ type: 'BRAWL_ITEM', item: key, fromUid: myId, fromName: myNameRef.current || '對手', targetUid: target });
+      showToast(meta.icon + ' 已對 ' + (tName || '對手') + ' 使用 ' + meta.name + '！');
+    }
+    var ni = myItemsRef.current.slice();ni.splice(idx, 1);
+    myItemsRef.current = ni;setMyItems(ni);
+  };
+  // 👁️ 上帝視角：唯讀即時檢視對手盤面
+  var renderGodModal = function renderGodModal() {
+    if (!godViewUid) return null;
+    var board = brawlBoards[godViewUid];
+    if (!board || !randomLevelData) return null;
+    var isls = randomLevelData.islands || [];
+    if (!isls.length) return null;
+    var islMap = {};isls.forEach(function (i) {
+      islMap[i.id] = i;
+    });
+    var counts = {};isls.forEach(function (i) {
+      counts[i.id] = 0;
+    });
+    (board.bridges || []).forEach(function (b) {
+      if (counts[b.from] !== undefined) counts[b.from] += b.count;if (counts[b.to] !== undefined) counts[b.to] += b.count;
+    });
+    var maxGX = Math.max.apply(Math, isls.map(function (i) {
+      return i.x;
+    }).concat([6]));
+    var maxGY = Math.max.apply(Math, isls.map(function (i) {
+      return i.y;
+    }).concat([6]));
+    var gw = (maxGX + 1) * SCALE + PADDING * 2;
+    var gh = (maxGY + 1) * SCALE + PADDING * 2;
+    var opps = Object.keys(brawlBoards);
+    return React.createElement(
+      'div',
+      { className: 'fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4', onClick: function onClick() {
+          return setGodViewUid(null);
+        } },
+      React.createElement(
+        'div',
+        { className: 'bg-white rounded-2xl border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto', onClick: function onClick(e) {
+            return e.stopPropagation();
+          } },
+        React.createElement(
+          'div',
+          { className: 'flex items-center justify-between mb-2' },
+          React.createElement(
+            'h3',
+            { className: 'font-black text-base md:text-lg text-[#2d2a26]' },
+            '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2 \u2014 ',
+            board.name,
+            '\uFF08',
+            Math.round((board.progress || 0) * 100),
+            '%\uFF09'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setGodViewUid(null);
+              }, className: 'w-8 h-8 shrink-0 bg-white border-2 border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)]' },
+            '\u2715'
+          )
+        ),
+        opps.length > 1 && React.createElement(
+          'div',
+          { className: 'flex gap-1.5 mb-2 flex-wrap' },
+          opps.map(function (u) {
+            return React.createElement(
+              'button',
+              { key: u, onClick: function onClick() {
+                  return setGodViewUid(u);
+                }, className: "px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (u === godViewUid ? "bg-slate-800 text-white" : "bg-white text-slate-700") },
+              brawlBoards[u].name
+            );
+          })
+        ),
+        React.createElement(
+          'svg',
+          { viewBox: '0 0 ' + gw + ' ' + gh, className: 'w-full h-auto bg-[#f3fbf3] rounded-xl border-2 border-slate-200' },
+          (board.bridges || []).map(function (b) {
+            var f = islMap[b.from],
+                t = islMap[b.to];
+            if (!f || !t || b.count === 0 && !(b.draftCount > 0)) return null;
+            var x1 = f.x * SCALE + PADDING,
+                y1 = f.y * SCALE + PADDING,
+                x2 = t.x * SCALE + PADDING,
+                y2 = t.y * SCALE + PADDING;
+            var horiz = f.y === t.y;
+            var off = 4;
+            var lines = [];
+            if (b.count >= 1) {
+              if (b.count === 2) {
+                lines.push(React.createElement('line', { key: b.id + '-a', x1: x1 + (horiz ? 0 : -off), y1: y1 + (horiz ? -off : 0), x2: x2 + (horiz ? 0 : -off), y2: y2 + (horiz ? -off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+                lines.push(React.createElement('line', { key: b.id + '-b', x1: x1 + (horiz ? 0 : off), y1: y1 + (horiz ? off : 0), x2: x2 + (horiz ? 0 : off), y2: y2 + (horiz ? off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+              } else {
+                lines.push(React.createElement('line', { key: b.id, x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+              }
+            } else if (b.draftCount > 0) {
+              lines.push(React.createElement('line', { key: b.id + '-d', x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#94a3b8', strokeWidth: '4', strokeDasharray: '6 5', strokeLinecap: 'round' }));
+            }
+            return React.createElement(
+              'g',
+              { key: 'gb-' + b.id },
+              lines
+            );
+          }),
+          isls.map(function (i) {
+            var cx = i.x * SCALE + PADDING,
+                cy = i.y * SCALE + PADDING;
+            var done = counts[i.id] === i.req,
+                over = counts[i.id] > i.req;
+            return React.createElement(
+              'g',
+              { key: 'gi-' + i.id },
+              React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS, fill: done ? '#d1fae5' : over ? '#fee2e2' : '#ffffff', stroke: done ? '#059669' : over ? '#dc2626' : '#1e293b', strokeWidth: '4' }),
+              React.createElement(
+                'text',
+                { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans', fill: '#1e293b' },
+                i.req
+              )
+            );
+          })
+        ),
+        React.createElement(
+          'p',
+          { className: 'text-[11px] font-bold text-slate-400 mt-2 text-center' },
+          '\u5373\u6642\u540C\u6B65\u5C0D\u624B\u76E4\u9762\uFF08\u552F\u8B80\uFF09\u30FB\u9EDE\u5916\u9762\u6216 \u2715 \u95DC\u9589'
+        )
+      )
+    );
+  };
+  // 特效計時：到期自動清除
+  useEffect(function () {
+    var hasFx = fxInvertUntil > 0 || Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
+    if (!hasFx) return;
+    var iv = setInterval(function () {
+      var now = Date.now();setFxNow(now);
+      var prune = function prune(obj) {
+        var n = {};var changed = false;Object.keys(obj).forEach(function (k) {
+          if (obj[k] > now) n[k] = obj[k];else changed = true;
+        });return changed ? n : obj;
+      };
+      var nf = prune(fxRef.current.fog);if (nf !== fxRef.current.fog) {
+        fxRef.current.fog = nf;setFxFog(nf);
+      }
+      var np = prune(fxRef.current.phantom);if (np !== fxRef.current.phantom) {
+        fxRef.current.phantom = np;setFxPhantom(np);
+      }
+      if (fxRef.current.invertUntil && fxRef.current.invertUntil <= now) {
+        fxRef.current.invertUntil = 0;setFxInvertUntil(0);
+      }
+    }, 500);
+    return function () {
+      return clearInterval(iv);
+    };
+  }, [fxFog, fxPhantom, fxInvertUntil]);
+
   // 🏁 競速進度推送：用最新的 bridges 直接計算並廣播（架橋當下同步呼叫，不依賴 effect 時序）
   var pushRaceProgress = function pushRaceProgress(bridgesArr) {
     if (raceStateRef.current !== 'racing') return;
@@ -1806,6 +2148,16 @@ function HashiGame() {
       if (counts[isl.id] === isl.req) done++;
     });
     var p = done / islands.length;
+    [0.25, 0.5, 0.75].forEach(function (t) {
+      if (p >= t && !milestonesRef.current[t]) {
+        milestonesRef.current[t] = true;grantBrawlItem();
+      }
+    });
+    var nowB = Date.now();
+    if (nowB - lastBrawlSentRef.current > 700) {
+      lastBrawlSentRef.current = nowB;
+      sendBrawlMsg({ type: 'BRAWL_STATE', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, progress: p, bridges: bridgesArr });
+    }
     var now = Date.now();
     if (p === lastProgressValRef.current && now - lastProgressSentRef.current <= 1000) return; // 節流
     lastProgressValRef.current = p;
@@ -2011,6 +2363,10 @@ function HashiGame() {
           newDraftCount = 0;
         } else {
           newCount = (b.count + 1) % 3;
+        }
+        // 🔀 單雙顛倒特效中：產生的 1 與 2 互換
+        if (fxRef.current.invertUntil > Date.now()) {
+          if (newCount === 1) newCount = 2;else if (newCount === 2) newCount = 1;
         }
       }
 
@@ -2553,7 +2909,7 @@ function HashiGame() {
     window.__PLAT_HOOKS_hashi = {
       enter: function enter(sess) {
         platAutoRef.current = { name: sess.name };
-        var mode = sess.mode || 'coop';
+        var mode = sess.mode === 'brawl' ? 'race' : 'coop';
         setMpMode(mode);mpModeRef.current = mode;
         setTempPlayerName(sess.name);
         try {
@@ -2669,7 +3025,7 @@ function HashiGame() {
                 }) });
             } else if (m.type === 'LEAVE') {
               if (raceStateRef.current !== 'idle') {
-                showToast("⚠️ 對手離開，競速結束");
+                showToast("⚠️ 對手離開，大亂鬥結束");
                 exitRaceToSolo();
               }
               // 玩家主動按退出時，觸發在線名單更新
@@ -2734,13 +3090,25 @@ function HashiGame() {
               connsRef.current.forEach(function (conn) {
                 if (conn.peer !== c.peer && conn.open) conn.send(m);
               });
+            } else if (m.type === 'BRAWL_STATE') {
+              setBrawlBoards(function (prev) {
+                return _extends({}, prev, _defineProperty({}, m.uid, { bridges: m.bridges, progress: m.progress, name: m.name, color: m.color }));
+              });
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
+            } else if (m.type === 'BRAWL_ITEM') {
+              applyBrawlItem(m);
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
             }
           });
 
           c.on('close', function () {
             if (suppressCloseRef.current) return;
             if (c.uid && raceStateRef.current !== 'idle') {
-              showToast("⚠️ 對手斷線，競速結束");
+              showToast("⚠️ 對手斷線，大亂鬥結束");
               exitRaceToSolo();
             }
             connsRef.current = connsRef.current.filter(function (conn) {
@@ -2824,6 +3192,12 @@ function HashiGame() {
             });
           } else if (m.type === 'RACE_FINISH') {
             onRaceOpponentFinish(m.uid, m);
+          } else if (m.type === 'BRAWL_STATE') {
+            setBrawlBoards(function (prev) {
+              return _extends({}, prev, _defineProperty({}, m.uid, { bridges: m.bridges, progress: m.progress, name: m.name, color: m.color }));
+            });
+          } else if (m.type === 'BRAWL_ITEM') {
+            applyBrawlItem(m);
           } else if (m.type === 'CURSOR') {
             setCursors(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { x: m.x, y: m.y }));
@@ -2866,7 +3240,7 @@ function HashiGame() {
             return;
           }
           if (raceStateRef.current !== 'idle') {
-            showToast("⚠️ 對手斷線，競速結束");exitRaceToSolo();
+            showToast("⚠️ 對手斷線，大亂鬥結束");exitRaceToSolo();
           } else {
             showToast("⚠️ 主機已離線，切換為單機模式");switchToOffline();
           }
@@ -2912,7 +3286,7 @@ function HashiGame() {
   // ==================== 🏁 競速模式 ====================
   var startRace = function startRace() {
     if (!isHostRef.current || playersListRef.current.length < 2) return;
-    var targetLevelDef = { id: 2, name: "10x10 標準", width: 10, height: 10, description: "🏁 競速專用題目，祝好運！" };
+    var targetLevelDef = { id: 2, name: "10x10 標準", width: 10, height: 10, description: "🏁 大亂鬥專用題目，祝好運！" };
     var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
     var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
     var startAt = Date.now() + 3500;
@@ -2950,6 +3324,9 @@ function HashiGame() {
     raceResultsRef.current = {};
     setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
+    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};
+    setBrawlBoards({});setGodViewUid(null);
+    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
     stateRef.current = _extends({}, stateRef.current, payload);
     var seed = {};
     playersListRef.current.forEach(function (p) {
@@ -2984,6 +3361,7 @@ function HashiGame() {
   };
 
   var onRaceSelfFinish = function onRaceSelfFinish(timeMs) {
+    sendBrawlMsg({ type: 'BRAWL_STATE', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, progress: 1, bridges: stateRef.current.bridges });
     myFinishTimeRef.current = timeMs;
     var msg = { type: 'RACE_FINISH', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: timeMs };
     if (isHostRef.current) {
@@ -3035,6 +3413,8 @@ function HashiGame() {
   };
 
   var exitRaceToSolo = function exitRaceToSolo() {
+    myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
+    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
@@ -3862,7 +4242,7 @@ function HashiGame() {
                 { onClick: function onClick() {
                     setMpMode('race');mpModeRef.current = 'race';window.HASHI_SOUND.play('click');
                   }, disabled: isConnecting, className: "py-3 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + (mpMode === 'race' ? 'bg-red-400 text-slate-900' : 'bg-white text-slate-400') },
-                '\uD83C\uDFC1 \u7AF6\u901F'
+                '\uD83C\uDFC1 \u5927\u4E82\u9B25'
               )
             ),
             React.createElement(
@@ -4535,7 +4915,7 @@ function HashiGame() {
           ),
           React.createElement(
             'label',
-            { title: mpMode === 'race' ? '競速模式停用顯示游標（防作弊）' : '', className: "flex items-center gap-1.5 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (mpMode === 'race' ? "text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed opacity-70" : "cursor-pointer text-slate-700 hover:text-slate-900 bg-slate-100 border-slate-300 hover:bg-slate-200") },
+            { title: mpMode === 'race' ? '大亂鬥模式停用顯示游標（防作弊）' : '', className: "flex items-center gap-1.5 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (mpMode === 'race' ? "text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed opacity-70" : "cursor-pointer text-slate-700 hover:text-slate-900 bg-slate-100 border-slate-300 hover:bg-slate-200") },
             React.createElement('input', {
               type: 'checkbox',
               checked: showOtherCursors,
@@ -4559,7 +4939,7 @@ function HashiGame() {
           React.createElement(
             'p',
             { className: 'text-xs font-black text-slate-500' },
-            '\uD83C\uDFC1 \u7AF6\u901F\u9032\u5EA6'
+            '\uD83C\uDFC1 \u5927\u4E82\u9B25\u9032\u5EA6'
           ),
           Object.keys(raceProgress).map(function (uid) {
             var info = raceProgress[uid];
@@ -4585,9 +4965,66 @@ function HashiGame() {
                 '%'
               )
             );
-          })
+          }),
+          (raceState === 'racing' || raceState === 'finished') && React.createElement(
+            'div',
+            { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
+            React.createElement(
+              'span',
+              { className: 'text-xs font-black text-slate-500' },
+              '\uD83C\uDF92'
+            ),
+            myItems.length === 0 && React.createElement(
+              'span',
+              { className: 'text-[11px] font-bold text-slate-400' },
+              '\u9032\u5EA6\u5230 25%\uFF0F50%\uFF0F75% \u6703\u767C\u9053\u5177'
+            ),
+            myItems.map(function (k, i) {
+              var it = BRAWL_ITEMS.find(function (x) {
+                return x.key === k;
+              });
+              return React.createElement(
+                'button',
+                { key: i, onClick: function onClick() {
+                    return useBrawlItem(k);
+                  }, disabled: raceState !== 'racing', className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
+                it.icon,
+                ' ',
+                it.name
+              );
+            }),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
+                }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
+              '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2'
+            ),
+            fxInvertUntil > fxNow && React.createElement(
+              'span',
+              { className: 'px-2 py-1 bg-red-100 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs' },
+              '\uD83D\uDD00 \u985B\u5012\u4E2D ',
+              Math.ceil((fxInvertUntil - fxNow) / 1000),
+              's'
+            ),
+            Object.keys(fxFog).some(function (id) {
+              return fxFog[id] > fxNow;
+            }) && React.createElement(
+              'span',
+              { className: 'px-2 py-1 bg-slate-200 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs' },
+              '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
+            ),
+            Object.keys(fxPhantom).some(function (id) {
+              return fxPhantom[id] > fxNow;
+            }) && React.createElement(
+              'span',
+              { className: 'px-2 py-1 bg-purple-100 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs' },
+              '\u2753 \u5E7B\u5F71\u4E2D'
+            )
+          )
         )
       ),
+      renderGodModal(),
       !isHeaderCollapsed && React.createElement(
         'div',
         { className: 'h-8 shrink-0 flex items-center justify-center bg-slate-800 text-white border-b-4 border-slate-800 relative z-30 font-bold tracking-wide' },
@@ -4973,7 +5410,17 @@ function HashiGame() {
                   React.createElement(
                     'text',
                     { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans pointer-events-none select-none transition-colors duration-300', fill: textColor },
-                    island.req
+                    fxPhantom[island.id] && fxPhantom[island.id] > fxNow ? '?' : island.req
+                  ),
+                  fxFog[island.id] && fxFog[island.id] > fxNow && React.createElement(
+                    'g',
+                    { className: 'pointer-events-none' },
+                    React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS + 7, fill: '#e2e8f0', fillOpacity: '0.96' }),
+                    React.createElement(
+                      'text',
+                      { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', fontSize: '16', className: 'pointer-events-none select-none' },
+                      '\uD83C\uDF2B\uFE0F'
+                    )
                   ),
                   isDirectlyHovered && activeHints.map(function (b) {
                     if (!crossedBridgeIds.has(b.id)) return null;
@@ -5060,7 +5507,7 @@ function HashiGame() {
             React.createElement(
               'h2',
               { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
-              '\u7AF6\u901F\u5927\u5EF3'
+              '\u5927\u4E82\u9B25\u5927\u5EF3'
             ),
             React.createElement(
               'div',
@@ -5084,7 +5531,7 @@ function HashiGame() {
               React.createElement(
                 'button',
                 { onClick: startRace, disabled: playersList.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
-                '\uD83C\uDFC1 \u958B\u59CB\u7AF6\u901F'
+                '\uD83C\uDFC1 \u958B\u59CB\u5927\u4E82\u9B25'
               ),
               React.createElement(
                 'p',
@@ -5094,7 +5541,7 @@ function HashiGame() {
             ) : React.createElement(
               'p',
               { className: 'font-black text-slate-700 animate-pulse' },
-              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u7AF6\u901F...'
+              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u5927\u4E82\u9B25...'
             ),
             React.createElement(
               'button',
@@ -5131,7 +5578,7 @@ function HashiGame() {
             React.createElement(
               'h2',
               { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
-              '\u7AF6\u901F\u7D50\u679C'
+              '\u5927\u4E82\u9B25\u7D50\u679C'
             ),
             raceResult.entries.map(function (e) {
               return React.createElement(

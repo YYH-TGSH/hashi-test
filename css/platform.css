@@ -116,3 +116,18 @@ body[data-view="lobby"] {
 #lob-colors button.sel { outline: 3px solid #1e293b; outline-offset: 2px; }
 #lob-roster li { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; font-weight: 900; color: #1e293b; }
 #lob-roster .dot { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid #1e293b; flex-shrink: 0; }
+/* 大廳步驟：拉霸機 + 遊戲平台卡片 */
+#slot-display {
+  font-size: 34px; font-weight: 900; color: #1e293b; text-align: center;
+  background: #fffbeb; border: 3px dashed #1e293b; border-radius: 12px;
+  padding: 10px 6px; margin: 6px 0 10px; min-height: 68px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lob-game-card { border: 3px solid #1e293b; border-radius: 12px; overflow: hidden; margin-bottom: 10px; box-shadow: 3px 3px 0 rgba(30,41,59,1); }
+.lob-game-title { font-weight: 900; color: #1e293b; padding: 6px 10px; border-bottom: 3px solid #1e293b; }
+.lob-mode-btn {
+  flex: 1; padding: 10px 4px; background: #fff; border: 3px solid #1e293b; border-radius: 10px;
+  font-weight: 900; font-size: 17px; color: #1e293b; cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(30,41,59,1);
+}
+.lob-mode-btn:active { transform: translate(2px,2px); box-shadow: none; }

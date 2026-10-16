@@ -118,6 +118,20 @@
   };
   window.__PLAT_NET = Net;
 
+  var SLOT_NAMES = ['柴犬', '柯基', '虎斑貓', '橘貓', '倉鼠', '兔兔', '刺蝟', '龍貓', '水豚', '樹懶', '狐獴', '羊駝', '企鵝', '海獺', '貓頭鷹', '松鼠', '無尾熊', '台灣黑熊', '石虎', '穿山甲', '梅花鹿', '台灣藍鵲', '帝雉', '獼猴', '山羌', '綠蠵龜', '櫻花鉤吻鮭', '飛魚', '螢火蟲', '獨角仙'];
+  var slotName = '', slotTimer = null;
+  function spinSlot() {
+    if (slotTimer) return;
+    var el = $('slot-display'); var t0 = Date.now();
+    (function tick() {
+      slotName = SLOT_NAMES[Math.floor(Math.random() * SLOT_NAMES.length)];
+      el.textContent = slotName;
+      var elapsed = Date.now() - t0;
+      if (elapsed < 950) slotTimer = setTimeout(tick, 55 + (elapsed / 950) * 140);
+      else { slotTimer = null; $('lob-name').value = slotName; }
+    })();
+  }
+
   // ---------- 訊息傳送 ----------
   function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; try { conn.send(m); } catch (e) {} }
   function platBroadcast(obj, exceptPid) {
@@ -165,8 +179,13 @@
 
   // ---------- 大廳 UI ----------
   function lobbyMsg(t) { var el = $('lob-msg'); if (el) el.textContent = t || ''; }
-  function showIdle() { $('lob-idle').style.display = 'block'; $('lob-room').style.display = 'none'; }
-  function showRoom() { $('lob-idle').style.display = 'none'; $('lob-room').style.display = 'block'; }
+  function showStep(s) {
+    $('lob-step-entry').style.display = (s === 'entry') ? 'block' : 'none';
+    $('lob-step-nick').style.display = (s === 'nick') ? 'block' : 'none';
+    $('lob-room').style.display = (s === 'room') ? 'block' : 'none';
+  }
+  function showIdle() { showStep('entry'); }
+  function showRoom() { showStep('room'); }
   function renderLobby() {
     if (!Net.active) { showIdle(); return; }
     showRoom();
@@ -214,12 +233,7 @@
       storeSet('plat_rainbow', '1'); renderColors(); lobbyMsg('🌈 解鎖隱藏代表色 rainbow！');
     }
   }
-  function readIdentity() {
-    var name = ($('lob-name').value || '').trim();
-    Net.me.name = name;
-    if (name) storeSet('plat_name', name);
-    return name;
-  }
+  function readIdentity() { return Net.me.name || ''; }
 
   // ---------- 連線管理 ----------
   function wireConn(c) {
@@ -269,7 +283,7 @@
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
         break;
       }
-      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; renderLobby(); break;
+      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; showRoom(); renderLobby(); break;
       case 'reject': lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
       case 'leave': {
         if (!Net.isHost) return;
@@ -623,20 +637,36 @@
   // ---------- 初始化 UI 綁定 ----------
   function init() {
     var nameInp = $('lob-name');
-    if (nameInp) nameInp.value = storeGet('plat_name') || '';
+    var savedName = storeGet('plat_name') || '';
+    if (nameInp) nameInp.value = savedName;
+    if (savedName) { Net.me.name = savedName; slotName = savedName; $('slot-display').textContent = savedName; }
+    else { slotName = SLOT_NAMES[Math.floor(Math.random() * SLOT_NAMES.length)]; $('slot-display').textContent = slotName; }
     var savedColor = storeGet('plat_color');
     if (savedColor) Net.me.color = savedColor;
     var codeInp = $('lob-code');
     if (codeInp) codeInp.value = storeGet('plat_last_code') || '';
     renderColors();
-    $('lob-create').onclick = createRoom;
-    $('lob-join').onclick = function () { var c = ($('lob-code').value || '').trim(); if (c) storeSet('plat_last_code', c); joinRoom(); };
+    $('lob-go-create').onclick = function () { Net.lobMode = 'create'; $('lob-joinrow').style.display = 'none'; lobbyMsg(''); showStep('nick'); };
+    $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
+    $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
+    $('slot-spin').onclick = spinSlot;
+    nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
+    $('lob-confirm').onclick = function () {
+      var name = (nameInp.value || '').trim() || slotName;
+      if (!name) { lobbyMsg('⚠️ 先拉霸或輸入暱稱'); return; }
+      Net.me.name = name; storeSet('plat_name', name);
+      if (Net.lobMode === 'join') {
+        var c = ($('lob-code').value || '').trim();
+        if (c.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
+        storeSet('plat_last_code', c);
+        joinRoom();
+      } else createRoom();
+    };
     $('lob-leave').onclick = leaveRoom;
     document.querySelectorAll('[data-launch]').forEach(function (b) {
       b.onclick = function () {
-        var v = b.getAttribute('data-launch');
-        var game = (v === 'sudoku') ? 'sudoku' : 'hashi';
-        var mode = (v === 'hashi-race') ? 'race' : 'coop';
+        var parts = (b.getAttribute('data-launch') || '').split('-');
+        var game = parts[0], mode = parts[1] || 'coop';
         platBroadcast({ kind: 'launch', game: game, mode: mode });
         doLaunch(game, mode);
       };

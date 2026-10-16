@@ -3817,7 +3817,7 @@ function SudokuGame() {
             localCells: [],
             matchPhase: 'waiting',
             matchEndTime: null,
-            isBrawlMode: false
+            isBrawlMode: sess.mode === 'brawl'
           }, false);
           setupPeerJS(sess.code, sess.name, true);
         } else {
