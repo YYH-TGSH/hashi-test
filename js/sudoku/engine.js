@@ -184,6 +184,16 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
     return { sizeDef, diffDef, cells };
 }
 
+// ===== 每日一題：日期種子生成（全員同題、跨裝置一致） =====
+function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashDateStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+async function generateDailySudoku(dateStr, onProgress) {
+    const origRandom = Math.random;
+    Math.random = mulberry32(hashDateStr('sudoku-daily-' + dateStr));
+    try { return await generateSudokuAsync(9, 'medium', onProgress); }
+    finally { Math.random = origRandom; }
+}
+
 function formatTime(secs) { return String(Math.floor(secs / 60)).padStart(2, '0') + ":" + String(secs % 60).padStart(2, '0'); }
 
 // 本地進度恢復系統核心函數 (v3.8.0)

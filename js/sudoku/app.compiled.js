@@ -273,42 +273,62 @@ function SudokuGame() {
     _useState74 = _slicedToArray(_useState73, 2),
     selectedChar = _useState74[0],
     setSelectedChar = _useState74[1];
+  // 輸入方式：'num' 數字先行（先點數字再點格子）｜'cell' 格子先行（先點格子再點數字）— 玩家可切換、記住選擇
+  var _useState75 = useState(function () {
+      try {
+        return localStorage.getItem('sudoku_input_mode') === 'cell' ? 'cell' : 'num';
+      } catch (e) {
+        return 'num';
+      }
+    }),
+    _useState76 = _slicedToArray(_useState75, 2),
+    inputMode = _useState76[0],
+    setInputMode = _useState76[1];
+  var _useState77 = useState(null),
+    _useState78 = _slicedToArray(_useState77, 2),
+    selectedCellId = _useState78[0],
+    setSelectedCellId = _useState78[1];
+  useEffect(function () {
+    try {
+      localStorage.setItem('sudoku_input_mode', inputMode);
+    } catch (e) {}
+  }, [inputMode]);
 
   // 禮物與反擊機制 (盤面直接覆蓋)
-  var _useState75 = useState({}),
-    _useState76 = _slicedToArray(_useState75, 2),
-    unopenedGifts = _useState76[0],
-    setUnopenedGifts = _useState76[1];
-  var _useState77 = useState(initialDataRef.current.sizeDef.chars),
-    _useState78 = _slicedToArray(_useState77, 2),
-    keyMapping = _useState78[0],
-    setKeyMapping = _useState78[1];
-  var _useState79 = useState([]),
+  var _useState79 = useState({}),
     _useState80 = _slicedToArray(_useState79, 2),
-    flippedKeys = _useState80[0],
-    setFlippedKeys = _useState80[1];
-  var _useState81 = useState([]),
+    unopenedGifts = _useState80[0],
+    setUnopenedGifts = _useState80[1];
+  var _useState81 = useState(initialDataRef.current.sizeDef.chars),
     _useState82 = _slicedToArray(_useState81, 2),
-    flares = _useState82[0],
-    setFlares = _useState82[1];
-
-  // === 道具系統：水球霧化 + 格子清除 ===
+    keyMapping = _useState82[0],
+    setKeyMapping = _useState82[1];
   var _useState83 = useState([]),
     _useState84 = _slicedToArray(_useState83, 2),
-    myWeapons = _useState84[0],
-    setMyWeapons = _useState84[1]; // ['balloon','eraser',...]
-  var _useState85 = useState({}),
+    flippedKeys = _useState84[0],
+    setFlippedKeys = _useState84[1];
+  var _useState85 = useState([]),
     _useState86 = _slicedToArray(_useState85, 2),
-    foggedBoxes = _useState86[0],
-    setFoggedBoxes = _useState86[1]; // { boxId: expiryTimestamp }
-  var _useState87 = useState({}),
+    flares = _useState86[0],
+    setFlares = _useState86[1];
+
+  // === 道具系統：水球霧化 + 格子清除 ===
+  var _useState87 = useState([]),
     _useState88 = _slicedToArray(_useState87, 2),
-    erasingCells = _useState88[0],
-    setErasingCells = _useState88[1]; // { cellId: { value, timestamp } }
-  var _useState89 = useState('my'),
+    myWeapons = _useState88[0],
+    setMyWeapons = _useState88[1]; // ['balloon','eraser',...]
+  var _useState89 = useState({}),
     _useState90 = _slicedToArray(_useState89, 2),
-    finishViewMode = _useState90[0],
-    setFinishViewMode = _useState90[1]; // 'my' | 'god'
+    foggedBoxes = _useState90[0],
+    setFoggedBoxes = _useState90[1]; // { boxId: expiryTimestamp }
+  var _useState91 = useState({}),
+    _useState92 = _slicedToArray(_useState91, 2),
+    erasingCells = _useState92[0],
+    setErasingCells = _useState92[1]; // { cellId: { value, timestamp } }
+  var _useState93 = useState('my'),
+    _useState94 = _slicedToArray(_useState93, 2),
+    finishViewMode = _useState94[0],
+    setFinishViewMode = _useState94[1]; // 'my' | 'god'
   var lastMilestoneRef = useRef(0); // 已跨越的 10% 里程碑數量（0~9）
 
   var processedEventsRef = useRef(new Set());
@@ -316,109 +336,162 @@ function SudokuGame() {
   var scrambledCharsRef = useRef(new Set());
   var modeIcons = ['🖋️', '✏️', '🖌️'];
   var modeTitles = ['填答模式', '草稿模式', '畫筆作記號'];
-  var _useState91 = useState(3),
-    _useState92 = _slicedToArray(_useState91, 2),
-    zoomModeIdx = _useState92[0],
-    setZoomModeIdx = _useState92[1];
-  var _useState93 = useState({
+  var _useState95 = useState(3),
+    _useState96 = _slicedToArray(_useState95, 2),
+    zoomModeIdx = _useState96[0],
+    setZoomModeIdx = _useState96[1];
+  var _useState97 = useState({
       value: 1.0,
       visible: false
     }),
-    _useState94 = _slicedToArray(_useState93, 2),
-    zoomIndicator = _useState94[0],
-    setZoomIndicator = _useState94[1];
+    _useState98 = _slicedToArray(_useState97, 2),
+    zoomIndicator = _useState98[0],
+    setZoomIndicator = _useState98[1];
   var zoomIndicatorTimer = useRef(null);
-  var _useState95 = useState(false),
-    _useState96 = _slicedToArray(_useState95, 2),
-    isClosingModal = _useState96[0],
-    setIsClosingModal = _useState96[1];
+  var _useState99 = useState(false),
+    _useState100 = _slicedToArray(_useState99, 2),
+    isClosingModal = _useState100[0],
+    setIsClosingModal = _useState100[1];
 
   // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
-  var _useState97 = useState(false),
-    _useState98 = _slicedToArray(_useState97, 2),
-    zoomMenuOpen = _useState98[0],
-    setZoomMenuOpen = _useState98[1];
-  var _useState99 = useState({
-      x: -1,
-      y: -1
-    }),
-    _useState100 = _slicedToArray(_useState99, 2),
-    zoomMenuPos = _useState100[0],
-    setZoomMenuPos = _useState100[1];
   var _useState101 = useState(false),
     _useState102 = _slicedToArray(_useState101, 2),
-    isDraggingZoom = _useState102[0],
-    setIsDraggingZoom = _useState102[1];
-  var wasZoomDragged = useRef(false);
-  var zoomDragTimer = useRef(null);
-  var _useState103 = useState(false),
-    _useState104 = _slicedToArray(_useState103, 2),
-    modeSubOpen = _useState104[0],
-    setModeSubOpen = _useState104[1];
-  var _useState105 = useState({
+    zoomMenuOpen = _useState102[0],
+    setZoomMenuOpen = _useState102[1];
+  var _useState103 = useState({
       x: -1,
       y: -1
     }),
+    _useState104 = _slicedToArray(_useState103, 2),
+    zoomMenuPos = _useState104[0],
+    setZoomMenuPos = _useState104[1];
+  var _useState105 = useState(false),
     _useState106 = _slicedToArray(_useState105, 2),
-    modeMenuPos = _useState106[0],
-    setModeMenuPos = _useState106[1];
+    isDraggingZoom = _useState106[0],
+    setIsDraggingZoom = _useState106[1];
+  var wasZoomDragged = useRef(false);
+  var zoomDragTimer = useRef(null);
   var _useState107 = useState(false),
     _useState108 = _slicedToArray(_useState107, 2),
-    isDraggingMode = _useState108[0],
-    setIsDraggingMode = _useState108[1];
-  var wasModeDragged = useRef(false);
-  var modeDragTimer = useRef(null);
-  var _useState109 = useState(true),
+    modeSubOpen = _useState108[0],
+    setModeSubOpen = _useState108[1];
+  var _useState109 = useState({
+      x: -1,
+      y: -1
+    }),
     _useState110 = _slicedToArray(_useState109, 2),
-    menuVertical = _useState110[0],
-    setMenuVertical = _useState110[1]; // 共用排列方向偏好
+    modeMenuPos = _useState110[0],
+    setModeMenuPos = _useState110[1];
   var _useState111 = useState(false),
     _useState112 = _slicedToArray(_useState111, 2),
-    isGenerating = _useState112[0],
-    setIsGenerating = _useState112[1];
-  var _useState113 = useState(""),
+    isDraggingMode = _useState112[0],
+    setIsDraggingMode = _useState112[1];
+  var wasModeDragged = useRef(false);
+  var modeDragTimer = useRef(null);
+  var _useState113 = useState(true),
     _useState114 = _slicedToArray(_useState113, 2),
-    genProgress = _useState114[0],
-    setGenProgress = _useState114[1];
-  var isAutoFillingRef = useRef(false);
-  var _useState115 = useState(null),
+    menuVertical = _useState114[0],
+    setMenuVertical = _useState114[1]; // 共用排列方向偏好
+  var _useState115 = useState(false),
     _useState116 = _slicedToArray(_useState115, 2),
-    colorPickerTarget = _useState116[0],
-    setColorPickerTarget = _useState116[1];
-  var _useState117 = useState([]),
+    isGenerating = _useState116[0],
+    setIsGenerating = _useState116[1];
+  var _useState117 = useState(""),
     _useState118 = _slicedToArray(_useState117, 2),
-    colorSeq = _useState118[0],
-    setColorSeq = _useState118[1];
-  var _useState119 = useState(""),
+    genProgress = _useState118[0],
+    setGenProgress = _useState118[1];
+  var isAutoFillingRef = useRef(false);
+  var _useState119 = useState(null),
     _useState120 = _slicedToArray(_useState119, 2),
-    editName = _useState120[0],
-    setEditName = _useState120[1];
-  var _useState121 = useState(""),
+    colorPickerTarget = _useState120[0],
+    setColorPickerTarget = _useState120[1];
+  var _useState121 = useState([]),
     _useState122 = _slicedToArray(_useState121, 2),
-    roomId = _useState122[0],
-    setRoomId = _useState122[1];
-  var _useState123 = useState(false),
+    colorSeq = _useState122[0],
+    setColorSeq = _useState122[1];
+  var _useState123 = useState(""),
     _useState124 = _slicedToArray(_useState123, 2),
-    isHost = _useState124[0],
-    setIsHost = _useState124[1];
-  var isHostRef = useRef(false);
+    editName = _useState124[0],
+    setEditName = _useState124[1];
   var _useState125 = useState(""),
     _useState126 = _slicedToArray(_useState125, 2),
-    tempRoomId = _useState126[0],
-    setTempRoomId = _useState126[1];
-  var _useState127 = useState(""),
+    roomId = _useState126[0],
+    setRoomId = _useState126[1];
+  var _useState127 = useState(false),
     _useState128 = _slicedToArray(_useState127, 2),
-    tempPlayerName = _useState128[0],
-    setTempPlayerName = _useState128[1];
-  var _useState129 = useState(false),
+    isHost = _useState128[0],
+    setIsHost = _useState128[1];
+  var isHostRef = useRef(false);
+  var _useState129 = useState(""),
     _useState130 = _slicedToArray(_useState129, 2),
-    stableMode = _useState130[0],
-    setStableMode = _useState130[1];
-  var _useState131 = useState(0),
+    tempRoomId = _useState130[0],
+    setTempRoomId = _useState130[1];
+  var _useState131 = useState(""),
     _useState132 = _slicedToArray(_useState131, 2),
-    titleClicks = _useState132[0],
-    setTitleClicks = _useState132[1];
-  var _useState133 = useState([{
+    tempPlayerName = _useState132[0],
+    setTempPlayerName = _useState132[1];
+  var _useState133 = useState('entry'),
+    _useState134 = _slicedToArray(_useState133, 2),
+    setupStep = _useState134[0],
+    setSetupStep = _useState134[1]; // entry | create | join（比照數橋三段式）
+  // ===== 每日一題（比照數橋） =====
+  var dailyTodayStr = function dailyTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var shiftDateStr = function shiftDateStr(ds, delta) {
+    var d = new Date(ds + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var _useState135 = useState(function () {
+      return dailyTodayStr();
+    }),
+    _useState136 = _slicedToArray(_useState135, 2),
+    dailyPickDate = _useState136[0],
+    setDailyPickDate = _useState136[1];
+  var _useState137 = useState(null),
+    _useState138 = _slicedToArray(_useState137, 2),
+    dailyDate = _useState138[0],
+    setDailyDate = _useState138[1]; // 進行中的每日題日期（null=非每日模式）
+  var dailyRef = useRef(null);
+  var dailyRecordedRef = useRef(false);
+  var _useState139 = useState(function () {
+      try {
+        return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }),
+    _useState140 = _slicedToArray(_useState139, 2),
+    dailyRecords = _useState140[0],
+    setDailyRecords = _useState140[1];
+  var _useState141 = useState(function () {
+      try {
+        return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
+      } catch (e) {
+        return {
+          count: 0,
+          lastDate: ''
+        };
+      }
+    }),
+    _useState142 = _slicedToArray(_useState141, 2),
+    dailyStreak = _useState142[0],
+    setDailyStreak = _useState142[1];
+  var _useState143 = useState(false),
+    _useState144 = _slicedToArray(_useState143, 2),
+    showTutorial = _useState144[0],
+    setShowTutorial = _useState144[1];
+  var _useState145 = useState(false),
+    _useState146 = _slicedToArray(_useState145, 2),
+    stableMode = _useState146[0],
+    setStableMode = _useState146[1];
+  var _useState147 = useState(0),
+    _useState148 = _slicedToArray(_useState147, 2),
+    titleClicks = _useState148[0],
+    setTitleClicks = _useState148[1];
+  var _useState149 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -426,37 +499,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
-    _useState134 = _slicedToArray(_useState133, 2),
-    playersList = _useState134[0],
-    setPlayersList = _useState134[1];
-  var _useState135 = useState(false),
-    _useState136 = _slicedToArray(_useState135, 2),
-    isConnecting = _useState136[0],
-    setIsConnecting = _useState136[1];
-  var _useState137 = useState(""),
-    _useState138 = _slicedToArray(_useState137, 2),
-    connectionStatus = _useState138[0],
-    setConnectionStatus = _useState138[1];
-  var _useState139 = useState(false),
-    _useState140 = _slicedToArray(_useState139, 2),
-    showCancelButton = _useState140[0],
-    setShowCancelButton = _useState140[1];
-  var _useState141 = useState(true),
-    _useState142 = _slicedToArray(_useState141, 2),
-    showOtherCursors = _useState142[0],
-    setShowOtherCursors = _useState142[1];
-  var _useState143 = useState(true),
-    _useState144 = _slicedToArray(_useState143, 2),
-    showGhostProgress = _useState144[0],
-    setShowGhostProgress = _useState144[1];
-  var _useState145 = useState({}),
-    _useState146 = _slicedToArray(_useState145, 2),
-    cursors = _useState146[0],
-    setCursors = _useState146[1];
-  var _useState147 = useState([]),
-    _useState148 = _slicedToArray(_useState147, 2),
-    ripples = _useState148[0],
-    setRipples = _useState148[1];
+    _useState150 = _slicedToArray(_useState149, 2),
+    playersList = _useState150[0],
+    setPlayersList = _useState150[1];
+  var _useState151 = useState(false),
+    _useState152 = _slicedToArray(_useState151, 2),
+    isConnecting = _useState152[0],
+    setIsConnecting = _useState152[1];
+  var _useState153 = useState(""),
+    _useState154 = _slicedToArray(_useState153, 2),
+    connectionStatus = _useState154[0],
+    setConnectionStatus = _useState154[1];
+  var _useState155 = useState(false),
+    _useState156 = _slicedToArray(_useState155, 2),
+    showCancelButton = _useState156[0],
+    setShowCancelButton = _useState156[1];
+  var _useState157 = useState(true),
+    _useState158 = _slicedToArray(_useState157, 2),
+    showOtherCursors = _useState158[0],
+    setShowOtherCursors = _useState158[1];
+  var _useState159 = useState(true),
+    _useState160 = _slicedToArray(_useState159, 2),
+    showGhostProgress = _useState160[0],
+    setShowGhostProgress = _useState160[1];
+  var _useState161 = useState({}),
+    _useState162 = _slicedToArray(_useState161, 2),
+    cursors = _useState162[0],
+    setCursors = _useState162[1];
+  var _useState163 = useState([]),
+    _useState164 = _slicedToArray(_useState163, 2),
+    ripples = _useState164[0],
+    setRipples = _useState164[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -3268,6 +3341,28 @@ function SudokuGame() {
   var onNumClick = function onNumClick(e, c) {
     e.preventDefault();
     if (isAutoFillingRef.current || winner || matchPhase !== 'playing' || isSpectator) return;
+    if (inputMode === 'cell') {
+      // 格子先行：數字鍵 = 寫入目前選取的格子（還沒選格子時，點數字只做同值高亮）
+      if (!selectedCellId) {
+        if (!completedChars.has(c)) setSelectedChar(function (prev) {
+          return prev === c ? null : c;
+        });
+        return;
+      }
+      var cur = isBrawlMode ? localCells : cells;
+      var t = cur.find(function (x) {
+        return x.id === selectedCellId;
+      });
+      if (!t) return;
+      if (t.isGiven || t.isSystemRevealed) {
+        showToast("⚠️ 這格是題目給的，不能修改");
+        return;
+      }
+      if (!isHeaderCollapsed) setIsHeaderCollapsed(true);
+      applyCharToCell(selectedCellId, c);
+      setSelectedChar(c);
+      return;
+    }
     if (!isHeaderCollapsed) setIsHeaderCollapsed(true);
     var now = Date.now();
     var tracker = clickTracker.current;
@@ -3353,6 +3448,13 @@ function SudokuGame() {
     if (targetIdx === -1) return;
     var target = cur[targetIdx];
 
+    // 格子先行：點格子只是「選取」，等玩家再點數字鍵填入（同時以該格數字做同值高亮）
+    if (inputMode === 'cell') {
+      setSelectedCellId(cellId);
+      setSelectedChar(target.value);
+      return;
+    }
+
     // 判斷按鍵是否已經被反擊打亂
     var isScrambled = keyMapping.join('') !== cSizeDef.chars.join('');
     if (selectedChar === null) {
@@ -3375,6 +3477,18 @@ function SudokuGame() {
       });
       return;
     }
+    applyCharToCell(cellId, selectedChar);
+  };
+
+  // 把字元 char 套用到指定格子（填答/草稿共用；數字先行與格子先行都走這裡）
+  var applyCharToCell = function applyCharToCell(cellId, _char6) {
+    var cur = isBrawlMode ? localCells : cells;
+    var targetIdx = cur.findIndex(function (c) {
+      return c.id === cellId;
+    });
+    if (targetIdx === -1) return;
+    var target = cur[targetIdx];
+    if (target.isGiven || target.isSystemRevealed) return;
     if (engineRef.current === 'none') setHistory(function (past) {
       return [].concat(_toConsumableArray(past.slice(past.length > 25 ? 1 : 0)), [cur]);
     });
@@ -3382,16 +3496,16 @@ function SudokuGame() {
     var nextCell = _objectSpread({}, target);
     if (interactionMode === 1) {
       // 草稿模式
-      if (nextCell.drafts.includes(selectedChar)) {
+      if (nextCell.drafts.includes(_char6)) {
         nextCell.drafts = nextCell.drafts.filter(function (d) {
-          return d !== selectedChar;
+          return d !== _char6;
         });
       } else {
-        nextCell.drafts = [].concat(_toConsumableArray(nextCell.drafts), [selectedChar]);
+        nextCell.drafts = [].concat(_toConsumableArray(nextCell.drafts), [_char6]);
       }
     } else {
       // 一般填答模式
-      var nextValue = target.value === selectedChar ? null : selectedChar;
+      var nextValue = target.value === _char6 ? null : _char6;
       nextCell.value = nextValue;
       nextCell.owner = nextValue !== null ? myId : null;
       nextCell.drafts = [];
@@ -3464,6 +3578,8 @@ function SudokuGame() {
     }]);
   };
   var handleGoHome = function handleGoHome() {
+    dailyRef.current = null;
+    setDailyDate(null);
     if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
     if (engineRef.current === 'peerjs') {
       if (!isHostRef.current && connRef.current) {
@@ -3609,7 +3725,83 @@ function SudokuGame() {
       svgRef.current.style.height = "".concat(svgH * next, "px");
     }
   };
+  var startDailyGame = function startDailyGame(dateStr) {
+    switchToOffline();
+    dailyRef.current = dateStr;
+    setDailyDate(dateStr);
+    dailyRecordedRef.current = false;
+    setScreen('game');
+    setMatchPhase('playing');
+    setIsBrawlMode(false);
+    setIsHeaderCollapsed(false);
+    setIsGenerating(true);
+    setWinner(null);
+    isWinnerDeclaredRef.current = false;
+    setTimeout(function () {
+      generateDailySudoku(dateStr, setGenProgress).then(function (newData) {
+        var initCells = JSON.parse(JSON.stringify(newData.cells));
+        syncState({
+          sizeId: 9,
+          diffId: 'medium',
+          levelData: newData,
+          cells: initCells,
+          localCells: initCells,
+          strokes: [],
+          startTime: Date.now(),
+          isBrawlMode: false,
+          winner: null,
+          matchEndTime: null,
+          solutionGrid: null,
+          isGenerating: false,
+          selectedChar: null,
+          keyMapping: newData.sizeDef.chars,
+          finishViewMode: 'my'
+        }, true);
+        setIsWon(false);
+        setHistory([]);
+        setEndTime(null);
+        setHideVictoryModal(false);
+        setSelectedChar(null);
+        setGenProgress("");
+      });
+    }, 100);
+  };
+
+  // 每日一題完賽記錄（連擊只認今天；補玩只記該日成績）
+  useEffect(function () {
+    if (!isWon || !dailyRef.current || dailyRecordedRef.current || !endTime) return;
+    dailyRecordedRef.current = true;
+    var dateStr = dailyRef.current;
+    var secs = Math.max(1, Math.round((endTime - startTime) / 1000));
+    setDailyRecords(function (prev) {
+      var next = _objectSpread({}, prev);
+      if (!next[dateStr] || secs < next[dateStr]) next[dateStr] = secs;
+      try {
+        localStorage.setItem('sudoku_daily_records', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    if (dateStr === dailyTodayStr()) {
+      setDailyStreak(function (prev) {
+        var next = prev;
+        if (prev.lastDate !== dateStr) {
+          var count = prev.lastDate === shiftDateStr(dateStr, -1) ? prev.count + 1 : 1;
+          next = {
+            count: count,
+            lastDate: dateStr
+          };
+          try {
+            localStorage.setItem('sudoku_daily_streak', JSON.stringify(next));
+          } catch (e) {}
+        }
+        return next;
+      });
+    }
+    showToast('📅 每日一題（' + dateStr + '）完成！用時 ' + formatTime(secs));
+  }, [isWon, endTime]);
   var startSinglePlayer = function startSinglePlayer() {
+    dailyRef.current = null;
+    setDailyDate(null);
     switchToOffline();
     setScreen('game');
     setMatchPhase('waiting');
@@ -4420,6 +4612,84 @@ function SudokuGame() {
       className: "text-[10px] text-slate-400 font-bold uppercase tracking-widest"
     }, "Connection ID: ", myId.substring(0, 6)))));
   }
+  var tutorialOverlay = showTutorial ? /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4",
+    onClick: function onClick() {
+      return setShowTutorial(false);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative",
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowTutorial(false);
+    },
+    className: "absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10"
+  }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
+    className: "text-2xl font-black text-slate-800 border-b-4 border-[#ffcc00] inline-block pb-1 mb-5"
+  }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 border-[3px] border-slate-800 rounded-lg overflow-hidden w-40"
+  }, ['5', '', '', '', null, '3', '', '', ''].map(function (v, i) {
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "relative aspect-square flex items-center justify-center font-black text-xl border border-slate-300 " + (v === null ? 'tut-target bg-amber-50' : 'bg-white text-slate-800')
+    }, v === null ? /*#__PURE__*/React.createElement("span", {
+      className: "tut-key-num text-emerald-600"
+    }, "8") : v);
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-center font-black text-slate-700"
+  }, "\u9EDE\u4E00\u683C\uFF0C\u518D\u6309\u4E0B\u9762\u7684\u6578\u5B57\u9375\u586B\u5165")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative w-20 h-20 border-[3px] border-slate-800 rounded-lg bg-white"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tut-draft-a absolute top-1 left-2 font-black text-slate-400 text-lg"
+  }, "2"), /*#__PURE__*/React.createElement("span", {
+    className: "tut-draft-b absolute bottom-1 right-2 font-black text-slate-400 text-lg"
+  }, "7"), /*#__PURE__*/React.createElement("span", {
+    className: "absolute -bottom-3 -right-3 text-2xl"
+  }, "\u270F\uFE0F"))), /*#__PURE__*/React.createElement("p", {
+    className: "text-center font-black text-slate-700"
+  }, "\u9084\u4E0D\u78BA\u5B9A\uFF1F\u5148\u958B\u7B46\u8A18\uFF0C\u628A\u53EF\u80FD\u7684\u6578\u5B57\u8A18\u4E0B\u4F86")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex border-[3px] border-slate-800 rounded-lg overflow-hidden"
+  }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) {
+    return /*#__PURE__*/React.createElement("div", {
+      key: n,
+      className: "tut-row-cell w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black border-r border-slate-300 last:border-r-0",
+      style: {
+        animationDelay: n * 0.28 + 's'
+      }
+    }, n);
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-center font-black text-slate-700"
+  }, "\u6BCF\u4E00\u884C\u3001\u6BCF\u4E00\u5217\u3001\u6BCF\u500B 3\xD73 \u5BAE\uFF0C1~9 \u90FD\u4E0D\u80FD\u91CD\u8907")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-2 mb-3 flex-wrap"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "px-3 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
+  }, "\uD83D\uDD22 \u5148\u9EDE\u6578\u5B57 \u2192 \u518D\u9EDE\u683C\u5B50"), /*#__PURE__*/React.createElement("span", {
+    className: "px-3 py-2 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
+  }, "\uD83D\uDC46 \u5148\u9EDE\u683C\u5B50 \u2192 \u518D\u9EDE\u6578\u5B57")), /*#__PURE__*/React.createElement("p", {
+    className: "text-center font-black text-slate-700"
+  }, "\u8F38\u5165\u65B9\u5F0F\u81EA\u5DF1\u9078\uFF0C\u904A\u6232\u4E2D\u5728\u76E4\u9762\u4E0B\u65B9\u96A8\u6642\u5207\u63DB")), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowTutorial(false);
+    },
+    className: "w-full py-3.5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+  }, "\u77E5\u9053\u4E86\uFF0C\u958B\u59CB\u73A9\uFF01"))) : null;
   if (screen === 'home') {
     return /*#__PURE__*/React.createElement("div", {
       className: "h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn"
@@ -4472,9 +4742,46 @@ function SudokuGame() {
         return setScreen('join');
       },
       className: "w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
-    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA")))), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA"), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return startDailyGame(dailyPickDate);
+      },
+      className: "w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
+    }, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C", dailyPickDate !== dailyTodayStr() ? '（' + dailyPickDate.slice(5) + '）' : '', dailyRecords[dailyPickDate] ? ' ✓' : ''), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-center gap-2 flex-wrap"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setDailyPickDate(shiftDateStr(dailyPickDate, -1));
+      },
+      disabled: dailyPickDate <= '2026-01-01',
+      className: "w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
+    }, "\u25C0"), /*#__PURE__*/React.createElement("input", {
+      type: "date",
+      min: "2026-01-01",
+      max: dailyTodayStr(),
+      value: dailyPickDate,
+      onChange: function onChange(e) {
+        if (e.target.value) setDailyPickDate(e.target.value);
+      },
+      className: "border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm outline-none"
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setDailyPickDate(shiftDateStr(dailyPickDate, 1));
+      },
+      disabled: dailyPickDate >= dailyTodayStr(),
+      className: "w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
+    }, "\u25B6"), /*#__PURE__*/React.createElement("span", {
+      className: "font-black text-sm text-orange-600"
+    }, "\uD83D\uDD25 \u9023\u7E8C ", dailyStreak.count || 0, " \u5929"), dailyRecords[dailyPickDate] ? /*#__PURE__*/React.createElement("span", {
+      className: "font-black text-sm text-emerald-600"
+    }, "\u6700\u4F73 ", formatTime(dailyRecords[dailyPickDate])) : null), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setShowTutorial(true);
+      },
+      className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
+    }, "\u2753 \u73A9\u6CD5\u6559\u5B78")))), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
-    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v3.13.4)"));
+    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v3.13.4)"), tutorialOverlay);
   }
   if (screen === 'join') {
     return /*#__PURE__*/React.createElement("div", {
@@ -4490,11 +4797,39 @@ function SudokuGame() {
         } else setTitleClicks(nc);
       },
       className: "text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#ffcc00] pb-1 cursor-pointer select-none"
-    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA\u9078\u55AE"), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA\u9078\u55AE"), setupStep === 'entry' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-1 md:grid-cols-2 gap-4"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setSetupStep('create');
+      },
+      className: "bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-black text-2xl mb-1"
+    }, "\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593"), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold opacity-90 leading-relaxed"
+    }, "\u4F60\u662F\u623F\u4E3B\uFF01\u4EE3\u78BC\u56FA\u5B9A\u4E0D\u8B8A\uFF0C\u670B\u53CB\u7528\u540C\u4E00\u7D44\u4EE3\u78BC\u52A0\u5165")), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setSetupStep('join');
+      },
+      className: "bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-black text-2xl mb-1"
+    }, "\uD83D\uDEAA \u52A0\u5165\u623F\u9593"), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold opacity-80 leading-relaxed"
+    }, "\u8F38\u5165\u670B\u53CB\u7D66\u4F60\u7684 4 \u4F4D\u6578\u4EE3\u78BC"))), /*#__PURE__*/React.createElement("p", {
+      className: "mt-5 text-sm font-bold text-slate-400 text-center"
+    }, "\u8DDF\u670B\u53CB\u7D04\u597D\uFF0C\u4E00\u500B\u4EBA\u5EFA\u7ACB\u623F\u9593\u3001\u5176\u4ED6\u4EBA\u8F38\u5165\u623F\u865F\u52A0\u5165")), setupStep !== 'entry' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setSetupStep('entry');
+      },
+      disabled: isConnecting,
+      className: "mb-4 font-bold text-slate-400 hover:text-slate-800 hover:underline disabled:opacity-50"
+    }, "\u2190 \u8FD4\u56DE"), /*#__PURE__*/React.createElement("div", {
       className: "mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, /*#__PURE__*/React.createElement("label", {
       className: "block text-slate-800 font-black text-sm mb-2"
-    }, "\u7B2C\u4E00\u6B65\uFF1A\u8A2D\u5B9A\u986F\u793A\u66B1\u7A31"), /*#__PURE__*/React.createElement("input", {
+    }, "\u8A2D\u5B9A\u986F\u793A\u66B1\u7A31"), /*#__PURE__*/React.createElement("input", {
       type: "text",
       placeholder: "\u4F8B\u5982\uFF1A\u738B\u5C0F\u660E",
       value: tempPlayerName,
@@ -4503,25 +4838,17 @@ function SudokuGame() {
       },
       disabled: isConnecting,
       className: "w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-yellow-50 outline-none focus:ring-2 ring-[#ffcc00] disabled:opacity-50"
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 md:grid-cols-2 gap-8"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "border-t-4 md:border-t-0 md:border-r-4 border-dashed border-slate-300 pt-4 md:pt-0 md:pr-6 flex flex-col h-full"
-    }, /*#__PURE__*/React.createElement("h3", {
+    })), setupStep === 'create' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
       className: "font-black text-lg mb-2 flex items-center gap-2 text-slate-800"
     }, "\uD83D\uDC51 \u5EFA\u7ACB\u5C0D\u5C40\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs text-slate-600 mb-4 font-bold leading-relaxed flex flex-col gap-2"
-    }, /*#__PURE__*/React.createElement("p", null, "\u64D4\u4EFB\u5C0D\u5C40\u4E3B\u6A5F\uFF0C\u7CFB\u7D71\u6703\u81EA\u52D5\u5206\u6D3E\u9080\u8ACB\u78BC\u3002", /*#__PURE__*/React.createElement("br", null), "\u5EFA\u7ACB\u5F8C\u53EF\u96A8\u6642\u65BC\u4E0A\u65B9\u9078\u55AE\u5207\u63DB\u300C\u5408\u4F5C/\u7AF6\u901F\u300D\u6A21\u5F0F\u3002")), /*#__PURE__*/React.createElement("div", {
-      className: "mt-auto"
-    }, stableMode && /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-slate-600 mb-4 font-bold leading-relaxed"
+    }, /*#__PURE__*/React.createElement("p", null, "\u64D4\u4EFB\u5C0D\u5C40\u4E3B\u6A5F\uFF0C\u7CFB\u7D71\u6703\u81EA\u52D5\u5206\u6D3E\u9080\u8ACB\u78BC\u3002", /*#__PURE__*/React.createElement("br", null), "\u5EFA\u7ACB\u5F8C\u53EF\u96A8\u6642\u65BC\u4E0A\u65B9\u9078\u55AE\u5207\u63DB\u300C\u5408\u4F5C/\u5927\u4E82\u9B25\u300D\u6A21\u5F0F\u3002")), stableMode && /*#__PURE__*/React.createElement("div", {
       className: "text-xs font-black text-emerald-600 mb-2 animate-pulse"
     }, "\u2713 \u96F2\u7AEF\u6A21\u5F0F\u6E96\u5099\u5C31\u7DD2"), /*#__PURE__*/React.createElement("button", {
       onClick: initiateHostGame,
       disabled: isConnecting,
       className: "w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase"
-    }, isConnecting ? "生成中..." : "發起對戰"))), /*#__PURE__*/React.createElement("div", {
-      className: "pt-4 md:pt-0 flex flex-col h-full"
-    }, /*#__PURE__*/React.createElement("h3", {
+    }, isConnecting ? "生成中..." : "發起對戰")), setupStep === 'join' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
       className: "font-black text-lg mb-2 flex items-center gap-2 text-slate-800"
     }, "\uD83D\uDC64 \u53C3\u8207\u73FE\u6709\u5C0D\u5C40"), /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-slate-600 mb-2 font-bold leading-relaxed"
@@ -4538,10 +4865,11 @@ function SudokuGame() {
     }), /*#__PURE__*/React.createElement("button", {
       onClick: joinExistingGame,
       disabled: isConnecting,
-      className: "w-full py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mt-auto disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+      className: "w-full py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase"
     }, isConnecting ? "加入中..." : "參與連線"))), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        return setScreen('home');
+        setSetupStep('entry');
+        setScreen('home');
       },
       disabled: isConnecting,
       className: "mt-8 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50"
@@ -4973,7 +5301,9 @@ function SudokuGame() {
     endTime: isBrawlMode ? matchPhase === 'finished' ? stateRef.current.matchEndTime || endTime : null : endTime || (winner ? matchStartTime : null),
     isRunning: (isBrawlMode ? matchPhase === 'playing' : !isWon) && !winner && screen === 'game',
     matchPhase: matchPhase
-  })), /*#__PURE__*/React.createElement("div", {
+  })), dailyDate && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
+  }, "\uD83D\uDCC5 \u6BCF\u65E5 ", dailyDate.slice(5), dailyDate !== dailyTodayStr() ? ' 補玩' : ''), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 shrink-0"
   }, isMultiplayer && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "bg-emerald-400 text-slate-900 px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] flex items-center gap-1 whitespace-nowrap shrink-0"
@@ -5008,7 +5338,7 @@ function SudokuGame() {
     className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#ffcc00] inline-block pb-0.5"
   }, "\uD83D\uDCDC \u904A\u6232\u898F\u5247"), /*#__PURE__*/React.createElement("ol", {
     className: "list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold"
-  }, /*#__PURE__*/React.createElement("li", null, "\u9078\u64C7\u4E0A\u65B9\u6578\u5B57\u9EDE\u64CA\u65B9\u683C\u3002\u82E5\u4E0D\u9078\u4E0A\u65B9\u6578\u5B57\uFF0C\u53EF\u76F4\u63A5\u9EDE\u64CA\u76E4\u9762\u5DF2\u6709\u6578\u5B57\u4F86\u300C\u667A\u6167\u5438\u53D6\u300D\u9AD8\u4EAE\u3002"), /*#__PURE__*/React.createElement("li", null, "\u4E0D\u53EF\u91CD\u8907\uFF1A\u82E5\u767C\u751F\u885D\u7A81\uFF0C\u80CC\u666F\u6703\u4EAE\u8D77\u7D05\u8272\u63D0\u793A\u3002"), /*#__PURE__*/React.createElement("li", null, "\u8349\u7A3F\u6A21\u5F0F\uFF1A\u53EF\u5728\u65B9\u683C\u5167\u6A19\u8A18\u591A\u500B\u5C0F\u6578\u5B57\u8F14\u52A9\u63A8\u7406\u3002"), /*#__PURE__*/React.createElement("li", null, "\u9577\u6309\u6E05\u9664\uFF1A\u82E5\u586B\u932F\u6578\u5B57\u4E14\u4E0A\u65B9\u6309\u9375\u5DF2\u88AB\u9396\u5B9A\uFF08\u53CD\u7070\uFF09\uFF0C\u53EF\u9577\u6309\u8A72\u683C 0.5 \u79D2\u5F37\u5236\u6E05\u9664\u3002"))))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("li", null, "\u9078\u64C7\u4E0A\u65B9\u6578\u5B57\u9EDE\u64CA\u65B9\u683C\u3002\u82E5\u4E0D\u9078\u4E0A\u65B9\u6578\u5B57\uFF0C\u53EF\u76F4\u63A5\u9EDE\u64CA\u76E4\u9762\u5DF2\u6709\u6578\u5B57\u4F86\u300C\u667A\u6167\u5438\u53D6\u300D\u9AD8\u4EAE\u3002"), /*#__PURE__*/React.createElement("li", null, "\u8F38\u5165\u65B9\u5F0F\u53EF\u5728\u4E0B\u65B9\u5207\u63DB\u6210\u300C\uD83D\uDC46 \u683C\u5B50\u5148\u884C\u300D\uFF1A\u5148\u9EDE\u683C\u5B50\u3001\u518D\u9EDE\u6578\u5B57\u586B\u5165\uFF0C\u7FD2\u6163\u9019\u7A2E\u9806\u5E8F\u7684\u73A9\u5BB6\u9069\u7528\uFF1B\u5207\u63DB\u5F8C\u6703\u8A18\u4F4F\u4F60\u7684\u9078\u64C7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u4E0D\u53EF\u91CD\u8907\uFF1A\u82E5\u767C\u751F\u885D\u7A81\uFF0C\u80CC\u666F\u6703\u4EAE\u8D77\u7D05\u8272\u63D0\u793A\u3002"), /*#__PURE__*/React.createElement("li", null, "\u8349\u7A3F\u6A21\u5F0F\uFF1A\u53EF\u5728\u65B9\u683C\u5167\u6A19\u8A18\u591A\u500B\u5C0F\u6578\u5B57\u8F14\u52A9\u63A8\u7406\u3002"), /*#__PURE__*/React.createElement("li", null, "\u9577\u6309\u6E05\u9664\uFF1A\u82E5\u586B\u932F\u6578\u5B57\u4E14\u4E0A\u65B9\u6309\u9375\u5DF2\u88AB\u9396\u5B9A\uFF08\u53CD\u7070\uFF09\uFF0C\u53EF\u9577\u6309\u8A72\u683C 0.5 \u79D2\u5F37\u5236\u6E05\u9664\u3002"))))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-nowrap gap-1.5 items-center w-full overflow-x-auto hide-scrollbar pt-0.5 pb-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5 items-center shrink-0"
@@ -5277,7 +5607,7 @@ function SudokuGame() {
     var isHighlightZone = yellowAllowed && highlightZones.has(cell.id);
     var isFilledWithOther = yellowAllowed && selectedChar !== null && cell.value !== null && cell.value !== selectedChar && interactionMode < 2;
     var fillColor = '#ffffff';
-    if (hasConflict) fillColor = '#fee2e2';else if (isExactMatch) fillColor = '#fde047';else if (isHighlightZone || isFilledWithOther) fillColor = '#fef8cb';else if (isSpectator && cell.isGiven) fillColor = '#f1f5f9'; // 上帝視角下的題目背景：淺灰色 (v3.10.12)
+    if (hasConflict) fillColor = '#fee2e2';else if (inputMode === 'cell' && selectedCellId === cell.id) fillColor = '#bae6fd';else if (isExactMatch) fillColor = '#fde047';else if (isHighlightZone || isFilledWithOther) fillColor = '#fef8cb';else if (isSpectator && cell.isGiven) fillColor = '#f1f5f9'; // 上帝視角下的題目背景：淺灰色 (v3.10.12)
 
     return /*#__PURE__*/React.createElement("rect", {
       key: "bg-".concat(cell.id),
@@ -5943,6 +6273,23 @@ function SudokuGame() {
     className: "w-10 h-10 md:w-12 md:h-12 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-xl font-black",
     title: "\u653E\u5927"
   }, "\uFF0B")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner",
+    title: "\u8F38\u5165\u65B9\u5F0F"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setInputMode('num');
+    },
+    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ".concat(inputMode === 'num' ? 'bg-[#ffcc00] text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-white')
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD22"), /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline"
+  }, "\u6578\u5B57\u5148\u884C")), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setInputMode('cell');
+    },
+    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ".concat(inputMode === 'cell' ? 'bg-sky-400 text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-white')
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDC46"), /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline"
+  }, "\u683C\u5B50\u5148\u884C"))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
