@@ -1,0 +1,5499 @@
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var _React = React,
+    useState = _React.useState,
+    useEffect = _React.useEffect,
+    useMemo = _React.useMemo,
+    useRef = _React.useRef;
+
+// === 20 色票 ===
+
+var COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
+
+// === 關卡設定 ===
+var LEVELS = [{ id: 1, name: "5x5 幼幼班", width: 5, height: 5, description: "最簡單的暖身關卡，試著連連看。" }, { id: 2, name: "10x10 標準", width: 10, height: 10, description: "標準難度，注意所有島嶼都要連通喔！" }, { id: 3, name: "10x20 手機直式", width: 10, height: 20, description: "適合手機滑動的長條形地圖。" }, { id: 4, name: "15x15 魔王", width: 15, height: 15, description: "極具挑戰性！找尋角落的大數字作為突破口。" }, { id: 5, name: "20x20 史詩", width: 20, height: 20, description: "超大地圖，請善用右下角的畫面縮放功能。" }, { id: 'custom', name: "⚙️ 自訂尺寸", width: 30, height: 30, description: "自訂地圖長寬，適合多人合作挑戰！" }];
+
+// === 首次教學導覽步驟 ===
+var TUTORIAL_STEPS = [{ icon: "🌉", title: "歡迎來到數橋！", body: "每個圓圈是一座「島」，上面的數字代表這座島需要幾座橋。你的任務：用橋把所有島連成一張網！" }, { icon: "👆", title: "怎麼架橋？", body: "從島嶼按住拖曳，會看到預覽線跟著手指，放開即架橋；按住不放也會進入拖曳預覽；也可以直接點擊兩座島之間的空白處：點一下架 1 座橋、點兩下架 2 座、點第三下取消。橋只能走直線或橫線，而且橋跟橋之間不能交叉喔！", demo: 'bridge' }, { icon: "✏️", title: "草稿模式", body: "右下角按鈕可以切換到 ✏️ 草稿模式，先用虛線記下不確定的橋，確定後再轉成實線。", demo: 'draft' }, { icon: "🔍", title: "縮放與操作", body: "雙指開合可以縮放地圖，也可以用右下角的 ＋ － 按鈕。向下滑動畫布可以自動收合上方選單，爭取更多空間。" }, { icon: "🌐", title: "多人合作", body: "從主選單進入「多人合作」，一人按「建立房間」拿到 4 位數代碼，朋友按「加入房間」輸入代碼就能一起解題！每個人的橋會用不同顏色顯示。" }, { icon: "🔌", title: "跟朋友連線", body: "房主建立房間拿代碼 → 把代碼傳給朋友 → 朋友輸入代碼加入 → 連線成功！", demo: 'connect' }];
+
+var getAvailableColor = function getAvailableColor(currentPlayers) {
+  var usedColors = currentPlayers.map(function (p) {
+    return p.color;
+  });
+  var available = COLORS.filter(function (c) {
+    return !usedColors.includes(c);
+  });
+  if (available.length > 0) {
+    return available[Math.floor(Math.random() * available.length)];
+  }
+  return COLORS[Math.floor(Math.random() * COLORS.length)];
+};
+
+function formatTime(secs) {
+  var m = String(Math.floor(secs / 60)).padStart(2, '0');
+  var s = String(secs % 60).padStart(2, '0');
+  return m + ":" + s;
+}
+
+// ⭐ 每局星級評分：timeSec 完成秒數、islandCount 島數、usedSolution 是否看過解答
+function computeStars(timeSec, islandCount, usedSolution) {
+  if (usedSolution) return 1;
+  if (timeSec <= islandCount * 6) return 3;
+  if (timeSec <= islandCount * 15) return 2;
+  return 1;
+}
+
+function GameTimer(_ref) {
+  var startTime = _ref.startTime,
+      endTime = _ref.endTime,
+      isRunning = _ref.isRunning;
+
+  var _useState = useState(Date.now()),
+      _useState2 = _slicedToArray(_useState, 2),
+      now = _useState2[0],
+      setNow = _useState2[1];
+
+  useEffect(function () {
+    if (!isRunning) return;
+    setNow(Date.now());
+    var t = setInterval(function () {
+      return setNow(Date.now());
+    }, 1000);
+    return function () {
+      return clearInterval(t);
+    };
+  }, [isRunning, startTime]);
+
+  var timeToUse = endTime ? endTime : now;
+  var secs = Math.max(0, Math.floor((timeToUse - startTime) / 1000));
+  return React.createElement(
+    'span',
+    null,
+    '\u23F1 ',
+    formatTime(secs)
+  );
+}
+
+// ==========================================
+// 每日一題：確定性隨機（零伺服器，同一天全世界同一題）
+// ==========================================
+// 台灣可愛動物隨機暱稱（多人連線用，約30個）
+// ===== ANIMAL-NAMES-START =====
+var ANIMAL_NAMES = ['柴犬', '柯基', '虎斑貓', '橘貓', '倉鼠', '兔兔', '刺蝟', '龍貓', '水豚', '樹懶', '狐獴', '羊駝', '企鵝', '海獺', '貓頭鷹', '松鼠', '無尾熊', '台灣黑熊', '石虎', '穿山甲', '梅花鹿', '台灣藍鵲', '帝雉', '獼猴', '山羌', '綠蠵龜', '櫻花鉤吻鮭', '飛魚', '螢火蟲', '獨角仙'];
+function normName(n) {
+  return (n || '').trim().toLowerCase();
+}
+// ===== ANIMAL-NAMES-END =====
+
+// ===== DAILY-CHALLENGE-START ===
+
+// (moved to js/puzzle.js: mulberry32)
+
+
+// (moved to js/puzzle.js: hashDateStr)
+
+
+// (moved to js/puzzle.js: getDailyDateStr)
+
+
+// (moved to js/puzzle.js: shiftDateStr)
+
+
+// (moved to js/puzzle.js: getDailySeed)
+
+function readDailyRecord(dateStr) {
+  try {
+    var raw = localStorage.getItem('hashi_daily_' + dateStr);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function readDailyStreak() {
+  try {
+    var raw = localStorage.getItem('hashi_daily_streak');
+    var s = raw ? JSON.parse(raw) : null;
+    return s && typeof s.count === 'number' ? s : { count: 0, lastDate: '' };
+  } catch (e) {
+    return { count: 0, lastDate: '' };
+  }
+}
+function getDailyStatus(dateStr) {
+  var d = clampDailyDate(dateStr);
+  return { dateStr: d, done: readDailyRecord(d), streak: readDailyStreak().count };
+}
+// 每日一題可玩的日期範圍：今天以前（含今天），未來不行
+var MIN_DAILY_DATE = '2026-01-01';
+function clampDailyDate(d) {
+  var today = HASHI_PUZZLE.getDailyDateStr();
+  if (!d) return today;
+  if (d > today) return today;
+  if (d < MIN_DAILY_DATE) return MIN_DAILY_DATE;
+  return d;
+}
+// ===== DAILY-CHALLENGE-END =====
+
+// ==========================================
+// 全新高密度智慧演算法 (網格掃描 + Kruskal生成樹)
+// ==========================================
+
+// (moved to js/puzzle.js: generateRandomHashi)
+
+
+// (moved to js/puzzle.js: generateEmptyBridges)
+
+
+// ==========================================
+// React 主程式 (v2.0：移除雲端伺服器，僅保留 PeerJS 免費直連)
+// ==========================================
+
+function HashiGame() {
+  var _this = this;
+
+  var playerIdRef = useRef(Math.random().toString(36).substring(2, 12));
+  var myId = playerIdRef.current;
+  var myNameRef = useRef("");
+  var myColorRef = useRef(COLORS[0]);
+
+  var initialDataRef = useRef(null);
+  if (!initialDataRef.current) {
+    initialDataRef.current = HASHI_PUZZLE.generateUniqueHashi(LEVELS[1]);
+  }
+
+  var _useState3 = useState('home'),
+      _useState4 = _slicedToArray(_useState3, 2),
+      screen = _useState4[0],
+      setScreen = _useState4[1];
+
+  var _useState5 = useState('none'),
+      _useState6 = _slicedToArray(_useState5, 2),
+      engine = _useState6[0],
+      setEngine = _useState6[1];
+
+  var _useState7 = useState(2),
+      _useState8 = _slicedToArray(_useState7, 2),
+      currentLevelId = _useState8[0],
+      setCurrentLevelId = _useState8[1];
+
+  var _useState9 = useState(initialDataRef.current),
+      _useState10 = _slicedToArray(_useState9, 2),
+      randomLevelData = _useState10[0],
+      setRandomLevelData = _useState10[1];
+
+  var _useState11 = useState(function () {
+    return HASHI_PUZZLE.generateEmptyBridges(initialDataRef.current);
+  }),
+      _useState12 = _slicedToArray(_useState11, 2),
+      bridges = _useState12[0],
+      setBridges = _useState12[1];
+
+  var _useState13 = useState([]),
+      _useState14 = _slicedToArray(_useState13, 2),
+      strokes = _useState14[0],
+      setStrokes = _useState14[1];
+
+  var _useState15 = useState([]),
+      _useState16 = _slicedToArray(_useState15, 2),
+      history = _useState16[0],
+      setHistory = _useState16[1];
+
+  var _useState17 = useState(false),
+      _useState18 = _slicedToArray(_useState17, 2),
+      isWon = _useState18[0],
+      setIsWon = _useState18[1];
+
+  var _useState19 = useState(false),
+      _useState20 = _slicedToArray(_useState19, 2),
+      hideVictoryModal = _useState20[0],
+      setHideVictoryModal = _useState20[1];
+
+  var _useState21 = useState(""),
+      _useState22 = _slicedToArray(_useState21, 2),
+      toastMsg = _useState22[0],
+      setToastMsg = _useState22[1];
+
+  var _useState23 = useState(Date.now()),
+      _useState24 = _slicedToArray(_useState23, 2),
+      startTime = _useState24[0],
+      setStartTime = _useState24[1];
+
+  var _useState25 = useState(null),
+      _useState26 = _slicedToArray(_useState25, 2),
+      endTime = _useState26[0],
+      setEndTime = _useState26[1];
+
+  var _useState27 = useState(1),
+      _useState28 = _slicedToArray(_useState27, 2),
+      zoomLevel = _useState28[0],
+      setZoomLevel = _useState28[1];
+
+  var _useState29 = useState(false),
+      _useState30 = _slicedToArray(_useState29, 2),
+      showSolution = _useState30[0],
+      setShowSolution = _useState30[1];
+
+  var _useState31 = useState(true),
+      _useState32 = _slicedToArray(_useState31, 2),
+      isHeaderCollapsed = _useState32[0],
+      setIsHeaderCollapsed = _useState32[1];
+
+  var _useState33 = useState(false),
+      _useState34 = _slicedToArray(_useState33, 2),
+      showSaveModal = _useState34[0],
+      setShowSaveModal = _useState34[1];
+
+  var _useState35 = useState(""),
+      _useState36 = _slicedToArray(_useState35, 2),
+      saveCode = _useState36[0],
+      setSaveCode = _useState36[1];
+
+  var _useState37 = useState(false),
+      _useState38 = _slicedToArray(_useState37, 2),
+      showCustomModal = _useState38[0],
+      setShowCustomModal = _useState38[1];
+
+  var _useState39 = useState(30),
+      _useState40 = _slicedToArray(_useState39, 2),
+      tempWidth = _useState40[0],
+      setTempWidth = _useState40[1];
+
+  var _useState41 = useState(30),
+      _useState42 = _slicedToArray(_useState41, 2),
+      tempHeight = _useState42[0],
+      setTempHeight = _useState42[1];
+
+  var _useState43 = useState(0),
+      _useState44 = _slicedToArray(_useState43, 2),
+      interactionMode = _useState44[0],
+      setInteractionMode = _useState44[1];
+
+  var _useState45 = useState('pen'),
+      _useState46 = _slicedToArray(_useState45, 2),
+      drawSubMode = _useState46[0],
+      setDrawSubMode = _useState46[1];
+
+  var modeIcons = ['🖋️', '✏️', '🖌️'];
+  var modeTitles = ['實線模式', '草稿模式', '繪圖作記號'];
+
+  var _useState47 = useState(0),
+      _useState48 = _slicedToArray(_useState47, 2),
+      zoomModeIdx = _useState48[0],
+      setZoomModeIdx = _useState48[1];
+
+  var _useState49 = useState(false),
+      _useState50 = _slicedToArray(_useState49, 2),
+      isClosingModal = _useState50[0],
+      setIsClosingModal = _useState50[1];
+
+  var _useState51 = useState(false),
+      _useState52 = _slicedToArray(_useState51, 2),
+      isGenerating = _useState52[0],
+      setIsGenerating = _useState52[1];
+
+  var _useState53 = useState(0),
+      _useState54 = _slicedToArray(_useState53, 2),
+      boardFadeKey = _useState54[0],
+      setBoardFadeKey = _useState54[1]; // 新題目時棋盤淡入
+
+  var _useState55 = useState(null),
+      _useState56 = _slicedToArray(_useState55, 2),
+      hoveredBridgeId = _useState56[0],
+      setHoveredBridgeId = _useState56[1];
+
+  var _useState57 = useState(null),
+      _useState58 = _slicedToArray(_useState57, 2),
+      hoveredIslandId = _useState58[0],
+      setHoveredIslandId = _useState58[1];
+
+  var _useState59 = useState(null),
+      _useState60 = _slicedToArray(_useState59, 2),
+      colorPickerTarget = _useState60[0],
+      setColorPickerTarget = _useState60[1];
+
+  var _useState61 = useState([]),
+      _useState62 = _slicedToArray(_useState61, 2),
+      colorSeq = _useState62[0],
+      setColorSeq = _useState62[1];
+
+  // 💾 記住暱稱與房號（同一裝置下次免重打；房主代碼固定不變）
+
+
+  var loadSavedNickname = function loadSavedNickname() {
+    try {
+      return localStorage.getItem('hashi_nickname') || "";
+    } catch (e) {
+      return "";
+    }
+  };
+  var saveNickname = function saveNickname(n) {
+    try {
+      if (n) localStorage.setItem('hashi_nickname', n);
+    } catch (e) {}
+  };
+  var loadLastRoom = function loadLastRoom() {
+    try {
+      return localStorage.getItem('hashi_last_room') || "";
+    } catch (e) {
+      return "";
+    }
+  };
+  var saveLastRoom = function saveLastRoom(r) {
+    try {
+      if (r) localStorage.setItem('hashi_last_room', r);
+    } catch (e) {}
+  };
+  var loadHostRoom = function loadHostRoom() {
+    try {
+      return localStorage.getItem('hashi_host_room') || "";
+    } catch (e) {
+      return "";
+    }
+  };
+  var saveHostRoom = function saveHostRoom(r) {
+    try {
+      if (r) localStorage.setItem('hashi_host_room', r);
+    } catch (e) {}
+  };
+  var clearHostRoom = function clearHostRoom() {
+    try {
+      localStorage.removeItem('hashi_host_room');
+    } catch (e) {}
+  };
+
+  var _useState63 = useState(""),
+      _useState64 = _slicedToArray(_useState63, 2),
+      roomId = _useState64[0],
+      setRoomId = _useState64[1];
+
+  var _useState65 = useState(false),
+      _useState66 = _slicedToArray(_useState65, 2),
+      isHost = _useState66[0],
+      setIsHost = _useState66[1];
+
+  var _useState67 = useState(function () {
+    return loadLastRoom();
+  }),
+      _useState68 = _slicedToArray(_useState67, 2),
+      tempRoomId = _useState68[0],
+      setTempRoomId = _useState68[1];
+
+  var _useState69 = useState(""),
+      _useState70 = _slicedToArray(_useState69, 2),
+      tempPlayerName = _useState70[0],
+      setTempPlayerName = _useState70[1];
+
+  var _useState71 = useState(function () {
+    return ANIMAL_NAMES[Math.random() * ANIMAL_NAMES.length | 0];
+  }),
+      _useState72 = _slicedToArray(_useState71, 1),
+      namePlaceholderAnimal = _useState72[0];
+
+  var nameInputRef = useRef(null);
+
+  var _useState73 = useState('choose'),
+      _useState74 = _slicedToArray(_useState73, 2),
+      joinStep = _useState74[0],
+      setJoinStep = _useState74[1]; // 'choose' | 'hostSetup' | 'guestSetup' | 'connecting' | 'nick'
+
+
+  var _useState75 = useState([]),
+      _useState76 = _slicedToArray(_useState75, 2),
+      takenNames = _useState76[0],
+      setTakenNames = _useState76[1]; // 來賓：房主回傳的已用名單快照
+
+
+  var _useState77 = useState(""),
+      _useState78 = _slicedToArray(_useState77, 2),
+      nickError = _useState78[0],
+      setNickError = _useState78[1]; // nick 步輸入框下方 inline 錯誤
+
+
+  var joinRoleRef = useRef(null); // 'host' | 'guest'
+  var joinActiveRef = useRef(false); // 是否正在 join 流程中（供斷線／錯誤判斷）
+  var suppressCloseRef = useRef(false); // 主動清理連線時壓住 close 事件雜訊
+  var autoNameRef = useRef(false); // 本次加入用的名字是否來自拉霸機（REQ_REJOIN 沿用）
+  var hostRoomRetryRef = useRef(false); // 房主固定代碼衝突時只自動重試一次
+  // 🎰 暱稱拉霸機
+
+  var _useState79 = useState(false),
+      _useState80 = _slicedToArray(_useState79, 2),
+      showSlotMachine = _useState80[0],
+      setShowSlotMachine = _useState80[1];
+
+  var _useState81 = useState('host'),
+      _useState82 = _slicedToArray(_useState81, 2),
+      slotMode = _useState82[0],
+      setSlotMode = _useState82[1];
+
+  var _useState83 = useState(ANIMAL_NAMES),
+      _useState84 = _slicedToArray(_useState83, 2),
+      slotPool = _useState84[0],
+      setSlotPool = _useState84[1];
+
+  var _useState85 = useState(""),
+      _useState86 = _slicedToArray(_useState85, 2),
+      slotName = _useState86[0],
+      setSlotName = _useState86[1];
+
+  var _useState87 = useState(false),
+      _useState88 = _slicedToArray(_useState87, 2),
+      slotSpinning = _useState88[0],
+      setSlotSpinning = _useState88[1];
+
+  var _useState89 = useState(""),
+      _useState90 = _slicedToArray(_useState89, 2),
+      slotFinalName = _useState90[0],
+      setSlotFinalName = _useState90[1];
+
+  var _useState91 = useState(false),
+      _useState92 = _slicedToArray(_useState91, 2),
+      slotWaiting = _useState92[0],
+      setSlotWaiting = _useState92[1];
+
+  var _useState93 = useState(0),
+      _useState94 = _slicedToArray(_useState93, 2),
+      slotRound = _useState94[0],
+      setSlotRound = _useState94[1];
+
+  var slotPoolRef = useRef(ANIMAL_NAMES);
+  var slotFinalNameRef = useRef("");
+  var slotTimerRef = useRef(null);
+  var guestAutoNameRef = useRef(false);
+  var guestJoinedRef = useRef(false);
+  var guestNamesResolvedRef = useRef(false);
+  var guestNamesTimeoutRef = useRef(null);
+
+  var _useState95 = useState([]),
+      _useState96 = _slicedToArray(_useState95, 2),
+      playersList = _useState96[0],
+      setPlayersList = _useState96[1];
+
+  var _useState97 = useState(false),
+      _useState98 = _slicedToArray(_useState97, 2),
+      isConnecting = _useState98[0],
+      setIsConnecting = _useState98[1];
+
+  var _useState99 = useState(true),
+      _useState100 = _slicedToArray(_useState99, 2),
+      showOtherCursors = _useState100[0],
+      setShowOtherCursors = _useState100[1];
+
+  var _useState101 = useState({}),
+      _useState102 = _slicedToArray(_useState101, 2),
+      cursors = _useState102[0],
+      setCursors = _useState102[1];
+
+  var _useState103 = useState([]),
+      _useState104 = _slicedToArray(_useState103, 2),
+      ripples = _useState104[0],
+      setRipples = _useState104[1];
+
+  // 💬 聊天室
+
+
+  var _useState105 = useState([]),
+      _useState106 = _slicedToArray(_useState105, 2),
+      chatMsgs = _useState106[0],
+      setChatMsgs = _useState106[1]; // {id, uid, name, color, text, ts, mine}
+
+
+  var _useState107 = useState(false),
+      _useState108 = _slicedToArray(_useState107, 2),
+      chatOpen = _useState108[0],
+      setChatOpen = _useState108[1];
+
+  var _useState109 = useState(''),
+      _useState110 = _slicedToArray(_useState109, 2),
+      chatInput = _useState110[0],
+      setChatInput = _useState110[1];
+
+  var _useState111 = useState(0),
+      _useState112 = _slicedToArray(_useState111, 2),
+      unreadChat = _useState112[0],
+      setUnreadChat = _useState112[1];
+
+  var chatOpenRef = useRef(false);
+  var chatListRef = useRef(null);
+
+  var _useState113 = useState(false),
+      _useState114 = _slicedToArray(_useState113, 2),
+      chatMin = _useState114[0],
+      setChatMin = _useState114[1]; // 💬 聊天室收合
+
+  // 💬 聊天室邏輯
+
+
+  useEffect(function () {
+    chatOpenRef.current = chatOpen;if (chatOpen) setUnreadChat(0);
+  }, [chatOpen]);
+  useEffect(function () {
+    // 新訊息自動捲到底
+    var el = chatListRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chatMsgs, chatOpen]);
+  var appendChatMsg = function appendChatMsg(m) {
+    var msg = { id: 'c' + Date.now() + '_' + Math.floor(Math.random() * 1000000), uid: m.uid, name: m.name || '對手', color: m.color || '#3b82f6', text: String(m.text || '').slice(0, 200), ts: m.ts || Date.now(), mine: m.uid === myId };
+    setChatMsgs(function (prev) {
+      return [].concat(_toConsumableArray(prev.slice(-99)), [msg]);
+    });
+    if (!msg.mine && !chatOpenRef.current) setUnreadChat(function (prev) {
+      return prev + 1;
+    });
+  };
+  var sendChat = function sendChat() {
+    var text = chatInput.trim();
+    if (!text || engineRef.current !== 'peerjs') return;
+    var msg = { type: 'CHAT', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, text: text, ts: Date.now() };
+    appendChatMsg(msg);
+    setChatInput('');
+    try {
+      if (isHostRef.current) {
+        connsRef.current.forEach(function (c) {
+          if (c.open) c.send(msg);
+        });
+      } else if (connRef.current && connRef.current.open) {
+        connRef.current.send(msg);
+      }
+    } catch (e) {}
+  };
+
+  // 📹 圓形視訊（PeerJS MediaConnection，走 WebRTC 不經伺服器）
+
+  var _useState115 = useState(false),
+      _useState116 = _slicedToArray(_useState115, 2),
+      videoOn = _useState116[0],
+      setVideoOn = _useState116[1];
+
+  var _useState117 = useState(false),
+      _useState118 = _slicedToArray(_useState117, 2),
+      micMuted = _useState118[0],
+      setMicMuted = _useState118[1];
+
+  var _useState119 = useState(null),
+      _useState120 = _slicedToArray(_useState119, 2),
+      localStream = _useState120[0],
+      setLocalStream = _useState120[1];
+
+  var _useState121 = useState({}),
+      _useState122 = _slicedToArray(_useState121, 2),
+      remoteVideos = _useState122[0],
+      setRemoteVideos = _useState122[1]; // uid -> MediaStream
+
+
+  var localStreamRef = useRef(null);
+  var videoCallsRef = useRef([]);
+  var videoOnRef = useRef(false);
+  useEffect(function () {
+    videoOnRef.current = videoOn;
+  }, [videoOn]);
+  // 🔊 喇叭預設關閉；有人開麥發言時提示是否開音效
+
+  var _useState123 = useState(false),
+      _useState124 = _slicedToArray(_useState123, 2),
+      speakerOn = _useState124[0],
+      setSpeakerOn = _useState124[1];
+
+  var _useState125 = useState({}),
+      _useState126 = _slicedToArray(_useState125, 2),
+      remoteMic = _useState126[0],
+      setRemoteMic = _useState126[1]; // uid -> muted(bool)
+
+
+  var _useState127 = useState(null),
+      _useState128 = _slicedToArray(_useState127, 2),
+      speakPrompt = _useState128[0],
+      setSpeakPrompt = _useState128[1]; // {uid, name}
+
+
+  var speakerOnRef = useRef(false);
+  var speakPromptedRef = useRef({});
+  useEffect(function () {
+    speakerOnRef.current = speakerOn;
+  }, [speakerOn]);
+  useEffect(function () {
+    // 喇叭開關即時套用到所有遠端視訊
+    document.querySelectorAll('.remote-video-el').forEach(function (el) {
+      try {
+        el.muted = !speakerOn;
+      } catch (e) {}
+    });
+    if (speakerOn) setSpeakPrompt(null);
+  }, [speakerOn]);
+  var broadcastMic = function broadcastMic(muted) {
+    var msg = { type: 'MIC', uid: myId, name: myNameRef.current || '你', muted: muted };
+    try {
+      if (isHostRef.current) {
+        connsRef.current.forEach(function (c) {
+          if (c.open) c.send(msg);
+        });
+      } else if (connRef.current && connRef.current.open) {
+        connRef.current.send(msg);
+      }
+    } catch (e) {}
+  };
+  var handleMicMsg = function handleMicMsg(m) {
+    if (!m || m.uid === myId) return;
+    setRemoteMic(function (prev) {
+      return _extends({}, prev, _defineProperty({}, m.uid, !!m.muted));
+    });
+    if (m.muted) {
+      speakPromptedRef.current[m.uid] = false;
+      setSpeakPrompt(function (prev) {
+        return prev && prev.uid === m.uid ? null : prev;
+      });
+    } else if (!speakerOnRef.current && !speakPromptedRef.current[m.uid]) {
+      speakPromptedRef.current[m.uid] = true;
+      setSpeakPrompt({ uid: m.uid, name: m.name || '對手' });
+    }
+  };
+  var handleIncomingCall = function handleIncomingCall(call) {
+    try {
+      call.answer(localStreamRef.current || undefined);
+    } catch (e) {
+      try {
+        call.answer();
+      } catch (e2) {}
+    }
+    videoCallsRef.current.push(call);
+    var remoteUid = call.metadata && call.metadata.uid || call.peer;
+    call.on('stream', function (rs) {
+      setRemoteVideos(function (prev) {
+        return _extends({}, prev, _defineProperty({}, remoteUid, rs));
+      });
+      showToast('📹 對方開啟了視訊');
+    });
+    call.on('close', function () {
+      setRemoteVideos(function (prev) {
+        var n = _extends({}, prev);delete n[remoteUid];return n;
+      });
+    });
+  };
+  var callAllPeers = function callAllPeers(stream) {
+    var peer = peerRef.current;
+    if (!peer) return;
+    var doCall = function doCall(peerId, uid) {
+      try {
+        var call = peer.call(peerId, stream, { metadata: { uid: myId, name: myNameRef.current || '你' } });
+        videoCallsRef.current.push(call);
+        call.on('stream', function (rs) {
+          setRemoteVideos(function (prev) {
+            return _extends({}, prev, _defineProperty({}, uid, rs));
+          });
+        });
+        call.on('close', function () {
+          setRemoteVideos(function (prev) {
+            var n = _extends({}, prev);delete n[uid];return n;
+          });
+        });
+      } catch (e) {}
+    };
+    if (isHostRef.current) {
+      connsRef.current.forEach(function (c) {
+        if (c.uid && c.open) doCall(c.peer, c.uid);
+      });
+    } else if (connRef.current && connRef.current.open) {
+      var hostEntry = playersListRef.current.find(function (p) {
+        return p.isHost;
+      });
+      doCall(connRef.current.peer, hostEntry ? hostEntry.id : connRef.current.peer);
+    }
+  };
+  var stopVideo = function stopVideo() {
+    videoCallsRef.current.forEach(function (call) {
+      try {
+        call.close();
+      } catch (e) {}
+    });
+    videoCallsRef.current = [];
+    var s = localStreamRef.current;
+    if (s) {
+      try {
+        s.getTracks().forEach(function (t) {
+          return t.stop();
+        });
+      } catch (e) {}
+    }
+    localStreamRef.current = null;
+    setLocalStream(null);setRemoteVideos({});setVideoOn(false);setMicMuted(false);
+    setRemoteMic({});setSpeakPrompt(null);speakPromptedRef.current = {};
+  };
+  var toggleVideo = function () {
+    var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+      var stream;
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              if (!videoOn) {
+                _context.next = 3;
+                break;
+              }
+
+              stopVideo();return _context.abrupt('return');
+
+            case 3:
+              if (!(engineRef.current !== 'peerjs')) {
+                _context.next = 5;
+                break;
+              }
+
+              return _context.abrupt('return');
+
+            case 5:
+              if (!(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
+                _context.next = 8;
+                break;
+              }
+
+              showToast('⚠️ 目前的環境不支援相機（預覽器不算），請上線後用 Safari 開啟');
+              return _context.abrupt('return');
+
+            case 8:
+              _context.prev = 8;
+              _context.next = 11;
+              return navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, facingMode: 'user' }, audio: true });
+
+            case 11:
+              stream = _context.sent;
+
+              try {
+                stream.getAudioTracks().forEach(function (t) {
+                  t.enabled = false;
+                });
+              } catch (e) {} // 🎤 麥克風預設關閉，要講話再手動開
+              localStreamRef.current = stream;
+              setLocalStream(stream);setVideoOn(true);setMicMuted(true);
+              callAllPeers(stream);
+              broadcastMic(true);
+              _context.next = 24;
+              break;
+
+            case 21:
+              _context.prev = 21;
+              _context.t0 = _context['catch'](8);
+
+              showToast(_context.t0 && _context.t0.name === 'NotAllowedError' ? '⚠️ 相機/麥克風權限被拒，請到瀏覽器設定中允許' : '⚠️ 無法開啟相機/麥克風');
+
+            case 24:
+            case 'end':
+              return _context.stop();
+          }
+        }
+      }, _callee, _this, [[8, 21]]);
+    }));
+
+    return function toggleVideo() {
+      return _ref2.apply(this, arguments);
+    };
+  }();
+  var toggleMic = function toggleMic() {
+    var newMuted = !micMuted;
+    var s = localStreamRef.current;
+    if (s) {
+      try {
+        s.getAudioTracks().forEach(function (t) {
+          t.enabled = !newMuted;
+        });
+      } catch (e) {}
+    }
+    setMicMuted(newMuted);
+    broadcastMic(newMuted); // 通知其他玩家：我開麥/關麥了
+  };
+
+  // 首次教學導覽
+
+  var _useState129 = useState(false),
+      _useState130 = _slicedToArray(_useState129, 2),
+      showTutorial = _useState130[0],
+      setShowTutorial = _useState130[1];
+
+  var _useState131 = useState(0),
+      _useState132 = _slicedToArray(_useState131, 2),
+      tutorialStep = _useState132[0],
+      setTutorialStep = _useState132[1];
+
+  // 靜音偏好（與全域音效引擎同步）
+
+
+  var _useState133 = useState(function () {
+    try {
+      return localStorage.getItem('hashi_muted') === '1';
+    } catch (e) {
+      return false;
+    }
+  }),
+      _useState134 = _slicedToArray(_useState133, 2),
+      muted = _useState134[0],
+      setMuted = _useState134[1];
+
+  // 🏁 競速模式
+
+
+  var _useState135 = useState('coop'),
+      _useState136 = _slicedToArray(_useState135, 2),
+      mpMode = _useState136[0],
+      setMpMode = _useState136[1]; // 'coop' | 'race'
+
+
+  var _useState137 = useState('idle'),
+      _useState138 = _slicedToArray(_useState137, 2),
+      raceState = _useState138[0],
+      setRaceState = _useState138[1]; // idle | lobby | countdown | racing | finished
+
+
+  var _useState139 = useState({}),
+      _useState140 = _slicedToArray(_useState139, 2),
+      raceProgress = _useState140[0],
+      setRaceProgress = _useState140[1];
+
+  var _useState141 = useState(null),
+      _useState142 = _slicedToArray(_useState141, 2),
+      raceResult = _useState142[0],
+      setRaceResult = _useState142[1];
+
+  var _useState143 = useState(false),
+      _useState144 = _slicedToArray(_useState143, 2),
+      raceWaiting = _useState144[0],
+      setRaceWaiting = _useState144[1];
+
+  var _useState145 = useState(null),
+      _useState146 = _slicedToArray(_useState145, 2),
+      raceCountdown = _useState146[0],
+      setRaceCountdown = _useState146[1];
+
+  // ⭐ 星級評分
+
+
+  var _useState147 = useState(0),
+      _useState148 = _slicedToArray(_useState147, 2),
+      stars = _useState148[0],
+      setStars = _useState148[1];
+
+  var _useState149 = useState(false),
+      _useState150 = _slicedToArray(_useState149, 2),
+      isNewBest = _useState150[0],
+      setIsNewBest = _useState150[1];
+
+  // ✨ 爽感：粒子與撒花
+
+
+  var _useState151 = useState([]),
+      _useState152 = _slicedToArray(_useState151, 2),
+      bursts = _useState152[0],
+      setBursts = _useState152[1];
+
+  var _useState153 = useState([]),
+      _useState154 = _slicedToArray(_useState153, 2),
+      confetti = _useState154[0],
+      setConfetti = _useState154[1];
+
+  // 每日一題
+
+
+  var _useState155 = useState(false),
+      _useState156 = _slicedToArray(_useState155, 2),
+      isDailyMode = _useState156[0],
+      setIsDailyMode = _useState156[1];
+
+  var _useState157 = useState(""),
+      _useState158 = _slicedToArray(_useState157, 2),
+      dailyDateStr = _useState158[0],
+      setDailyDateStr = _useState158[1];
+
+  var _useState159 = useState(0),
+      _useState160 = _slicedToArray(_useState159, 2),
+      dailyStreak = _useState160[0],
+      setDailyStreak = _useState160[1];
+
+  var _useState161 = useState(null),
+      _useState162 = _slicedToArray(_useState161, 2),
+      dailyDone = _useState162[0],
+      setDailyDone = _useState162[1];
+
+  var isDailyModeRef = useRef(false);
+  var dailyDateStrRef = useRef("");
+  // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
+
+  var _useState163 = useState(function () {
+    return HASHI_PUZZLE.getDailyDateStr();
+  }),
+      _useState164 = _slicedToArray(_useState163, 2),
+      dailyMenuDate = _useState164[0],
+      setDailyMenuDate = _useState164[1];
+
+  var dailyStatus = useMemo(function () {
+    if (screen !== 'home') return null;
+    return getDailyStatus(dailyMenuDate);
+  }, [screen, dailyMenuDate]);
+
+  var isMultiplayer = engine !== 'none';
+  var inRace = raceState !== 'idle';
+  var svgRef = useRef(null);
+  var lastCursorSend = useRef(0);
+  var isDrawingRef = useRef(false);
+
+  var engineRef = useRef('none');
+  var isHostRef = useRef(false);
+  var peerRef = useRef(null);
+  var connRef = useRef(null);
+  var connsRef = useRef([]);
+  var zoomContainerRef = useRef(null);
+  var lastPinchDist = useRef(null);
+  var stateRef = useRef({ bridges: [], randomLevelData: null, showSolution: false, startTime: Date.now(), levelId: 2, strokes: [] });
+
+  var zoomLevelRef = useRef(1);
+  var zoomModeIdxRef = useRef(0);
+  var levelDimRef = useRef({ w: 10, h: 10 }); // 最新題目尺寸（給 auto-fit 用）
+  var userZoomedRef = useRef(false); // 使用者是否手動調整過縮放
+  var lastBridgeTapRef = useRef({}); // 橋樑防連點時間戳
+  var dragDrawRef = useRef(null); // 拖曳架橋手勢 {kind:'island'|'bridge', id, startX, startY, startT, dragging, targetId, holdTimer}
+  var panRef = useRef(null); // 空白處單指拖曳捲動 {lastX, lastY}（CSS px；svg 已 touch-action:none，需手動捲動）
+  var currentPathDataRef = useRef("");
+  var drawingPathRef = useRef(null);
+  var eraserRef = useRef(null);
+  var dragPreviewLineRef = useRef(null); // 拖曳架橋預覽線（ref 直寫 DOM，不走 React state）
+  var dragPreviewTipRef = useRef(null); // 拖曳預覽線末端圓點
+  var lastEraseTimeRef = useRef(0);
+  var mpModeRef = useRef('coop');
+  var playersListRef = useRef([]);
+  var raceStateRef = useRef('idle');
+  var raceStartAtRef = useRef(null);
+  var raceSeqRef = useRef(0);
+  var raceResultsRef = useRef({});
+  var myFinishTimeRef = useRef(null);
+  var lastProgressSentRef = useRef(0);
+  var lastProgressValRef = useRef(-1);
+  var prevIslandDoneRef = useRef({});
+
+  var MAX_SAFE_DIMENSION = 8500;
+
+  // === 拖曳架橋手勢判定常數（方便微調手感） ===
+  var TAP_MAX_MS = 350; // 按下到放開 < 350ms 才算點擊
+  var DRAG_HOLD_MS = 220; // 按住 220ms 不放 → 進入拖曳模式（預覽線現身）
+  var TAP_MOVE_TOL = 12; // 點擊容錯：移動 < 12px（SVG 單位）
+
+  var cLevel = randomLevelData || { islands: [], description: "" };
+  var islandsToRender = cLevel.islands || [];
+  var maxGridX = islandsToRender.length > 0 ? Math.max.apply(Math, islandsToRender.map(function (i) {
+    return i.x;
+  }).concat([6])) : 6;
+  var maxGridY = islandsToRender.length > 0 ? Math.max.apply(Math, islandsToRender.map(function (i) {
+    return i.y;
+  }).concat([6])) : 6;
+  var gridWidth = cLevel.width ? cLevel.width : maxGridX + 1;
+  var gridHeight = cLevel.height ? cLevel.height : maxGridY + 1;
+
+  var SCALE = 65;var PADDING = 85;var ISLAND_RADIUS = 22;
+  var svgW = (gridWidth - 1) * SCALE + PADDING * 2;
+  var svgH = (gridHeight - 1) * SCALE + PADDING * 2;
+  var hasSolution = cLevel.solution && cLevel.solution.length > 0;
+
+  var getPlayerColor = function getPlayerColor(uid) {
+    var p = playersList.find(function (p) {
+      return p.id === uid;
+    });
+    return p ? p.color : COLORS[0];
+  };
+
+  var myCurrentColor = getPlayerColor(myId);
+  var _mePlayer = playersList.find(function (p) {
+    return p.id === myId;
+  });
+  myNameRef.current = _mePlayer ? _mePlayer.name : "";
+  myColorRef.current = myCurrentColor;
+
+  useEffect(function () {
+    if (engine !== 'peerjs' && interactionMode >= 2) {
+      setInteractionMode(0);
+    }
+  }, [engine, interactionMode]);
+
+  useEffect(function () {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+  useEffect(function () {
+    zoomModeIdxRef.current = zoomModeIdx;
+  }, [zoomModeIdx]);
+
+  // 首次進入遊戲時顯示教學導覽（localStorage 記錄）
+  useEffect(function () {
+    var seen = false;
+    try {
+      seen = localStorage.getItem('hashi_tutorial_seen') === '1';
+    } catch (e) {}
+    if (!seen) {
+      setTutorialStep(0);
+      setShowTutorial(true);
+    }
+  }, []);
+
+  useEffect(function () {
+    stateRef.current = { bridges: bridges, randomLevelData: randomLevelData, showSolution: showSolution, startTime: startTime, levelId: currentLevelId, strokes: strokes };
+    levelDimRef.current = { w: gridWidth, h: gridHeight };
+  }, [bridges, randomLevelData, showSolution, startTime, currentLevelId, strokes]);
+
+  useEffect(function () {
+    if (screen !== 'game') return;
+    var el = zoomContainerRef.current;
+    if (!el) return;
+    var touchStartY = null;
+
+    var handleTouchStart = function handleTouchStart(e) {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+    var handleTouchMove = function handleTouchMove(e) {
+      if (interactionMode >= 2) return;
+
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (lastPinchDist.current) {
+          var delta = dist - lastPinchDist.current;
+          var newZoom = Math.min(Math.max(zoomLevelRef.current + delta * 0.005, 0.4), 3.5);
+
+          if (svgW * newZoom > MAX_SAFE_DIMENSION || svgH * newZoom > MAX_SAFE_DIMENSION) {
+            newZoom = Math.min(MAX_SAFE_DIMENSION / svgW, MAX_SAFE_DIMENSION / svgH);
+          }
+
+          zoomLevelRef.current = newZoom;
+          userZoomedRef.current = true;
+
+          if (svgRef.current) {
+            svgRef.current.style.width = svgW * newZoom + 'px';
+            svgRef.current.style.height = svgH * newZoom + 'px';
+          }
+
+          if (zoomModeIdxRef.current !== 0) {
+            setZoomModeIdx(0);
+            zoomModeIdxRef.current = 0;
+          }
+        }
+        lastPinchDist.current = dist;
+      } else if (e.touches.length === 1 && touchStartY !== null) {
+        var dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dy) > 30 && !isHeaderCollapsed) {
+          setIsHeaderCollapsed(true);
+        }
+      }
+    };
+    var handleTouchEnd = function handleTouchEnd() {
+      lastPinchDist.current = null;
+      touchStartY = null;
+      if (zoomLevel !== zoomLevelRef.current) {
+        setZoomLevel(zoomLevelRef.current);
+      }
+    };
+    var handleWheel = function handleWheel(e) {
+      if (interactionMode >= 2) return;
+      if (Math.abs(e.deltaY) > 10 && !isHeaderCollapsed) {
+        setIsHeaderCollapsed(true);
+      }
+      if (e.ctrlKey && zoomModeIdxRef.current !== 0) {
+        setZoomModeIdx(0);
+        zoomModeIdxRef.current = 0;
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+    el.addEventListener('touchcancel', handleTouchEnd);
+    el.addEventListener('wheel', handleWheel, { passive: true });
+
+    return function () {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchEnd);
+      el.removeEventListener('wheel', handleWheel);
+    };
+  }, [screen, isHeaderCollapsed, interactionMode, svgW, svgH, zoomLevel]);
+
+  useEffect(function () {
+    if (screen !== 'game') return;
+    var t = null;
+    var onWinResize = function onWinResize() {
+      if (userZoomedRef.current) return; // 使用者手動調過就不自動重算
+      if (t) clearTimeout(t);
+      t = setTimeout(function () {
+        applyFitZoom();
+      }, 200);
+    };
+    window.addEventListener('resize', onWinResize);
+    window.addEventListener('orientationchange', onWinResize);
+    return function () {
+      window.removeEventListener('resize', onWinResize);
+      window.removeEventListener('orientationchange', onWinResize);
+      if (t) clearTimeout(t);
+    };
+  }, [screen]);
+
+  useEffect(function () {
+    if (ripples.length === 0) return;
+    var timer = setTimeout(function () {
+      var now = Date.now();
+      setRipples(function (prev) {
+        return prev.filter(function (r) {
+          return now - r.timestamp < 1000;
+        });
+      });
+    }, 1000);
+    return function () {
+      return clearTimeout(timer);
+    };
+  }, [ripples]);
+
+  useEffect(function () {
+    playersListRef.current = playersList;
+  }, [playersList]);
+
+  // ✨ 島嶼完成粒子：偵測「未完成 → 完成」
+  useEffect(function () {
+    var islands = randomLevelData && randomLevelData.islands || [];
+    if (islands.length === 0) return;
+    var fresh = [];
+    islands.forEach(function (isl) {
+      var cc = islandCurrentCounts[isl.id];
+      var done = !!(cc && cc.total === isl.req);
+      var was = !!prevIslandDoneRef.current[isl.id];
+      if (done && !was) fresh.push(isl);
+      prevIslandDoneRef.current[isl.id] = done;
+    });
+    if (fresh.length > 0) {
+      var col = myCurrentColor === 'rainbow' ? '#fbbf24' : myCurrentColor;
+      var parts = fresh.map(function (isl) {
+        var cx = isl.x * SCALE + PADDING,
+            cy = isl.y * SCALE + PADDING;
+        var arr = [];
+        for (var k = 0; k < 8; k++) {
+          var ang = k / 8 * Math.PI * 2 + Math.random() * 0.6;
+          var dist = 26 + Math.random() * 24;
+          arr.push({ dx: Math.cos(ang) * dist, dy: Math.sin(ang) * dist });
+        }
+        return { id: 'b' + Date.now() + '_' + isl.id + '_' + Math.floor(Math.random() * 1000000), x: cx, y: cy, color: col, parts: arr };
+      });
+      setBursts(function (prev) {
+        return [].concat(_toConsumableArray(prev), _toConsumableArray(parts));
+      });
+      var ids = {};
+      parts.forEach(function (p) {
+        ids[p.id] = true;
+      });
+      setTimeout(function () {
+        setBursts(function (prev) {
+          return prev.filter(function (b) {
+            return !ids[b.id];
+          });
+        });
+      }, 850);
+    }
+  }, [islandCurrentCounts]);
+
+  // ✨ 勝利撒花
+  useEffect(function () {
+    if (isWon) {
+      var colors = ['#4ade80', '#ef4444', '#3b82f6', '#10b981', '#a855f7', '#f97316'];
+      var arr = [];
+      for (var i = 0; i < 50; i++) {
+        arr.push({ id: 'c' + i, left: Math.random() * 100, delay: Math.random() * 1.4, dur: 2.4 + Math.random() * 2.2, color: colors[i % colors.length], w: 6 + Math.random() * 6, h: 9 + Math.random() * 7 });
+      }
+      setConfetti(arr);
+    } else {
+      setConfetti([]);
+    }
+  }, [isWon]);
+
+  // 🏁 競速進度分享：effect 版（安全網；主要推送走 raceAwareSync 內的 pushRaceProgress）
+  useEffect(function () {
+    pushRaceProgress(bridges);
+  }, [islandCurrentCounts, raceState, randomLevelData]);
+
+  var showToast = function showToast(m) {
+    setToastMsg(m);setTimeout(function () {
+      return setToastMsg("");
+    }, 4000);
+  };
+
+  var getSvgCoords = function getSvgCoords(clientX, clientY) {
+    var svg = svgRef.current;
+    if (!svg) return null;
+    var pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    var ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    return pt.matrixTransform(ctm.inverse());
+  };
+
+  var eraseAtPoint = function eraseAtPoint(cx, cy) {
+    var offsets = [[0, 0], [15, 0], [-15, 0], [0, 15], [0, -15], [10, 10], [-10, -10], [10, -10], [-10, 10]];
+    var hitIds = new Set();
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = offsets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var off = _step.value;
+
+        var els = document.elementsFromPoint(cx + off[0], cy + off[1]);
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+          for (var _iterator2 = els[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+            var el = _step2.value;
+
+            if (el.classList.contains('doodle-stroke')) {
+              (function () {
+                var sid = el.getAttribute('data-stroke-id');
+                var strokeObj = stateRef.current.strokes.find(function (s) {
+                  return s.id === sid;
+                });
+                var strokeUid = strokeObj && strokeObj.uid || (strokeObj ? strokeObj.id.split('-')[1] : null);
+                if (strokeUid === myId) {
+                  hitIds.add(sid);
+                }
+              })();
+            }
+          }
+        } catch (err) {
+          _didIteratorError2 = true;
+          _iteratorError2 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+              _iterator2.return();
+            }
+          } finally {
+            if (_didIteratorError2) {
+              throw _iteratorError2;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+
+    if (hitIds.size > 0) {
+      var newStrokes = stateRef.current.strokes.filter(function (s) {
+        return !hitIds.has(s.id);
+      });
+      if (newStrokes.length !== stateRef.current.strokes.length) {
+        raceAwareSync({ strokes: newStrokes });
+      }
+    }
+  };
+
+  // === 拖曳架橋：手勢起始（時間＋距離雙條件判定） ===
+  // 「同點或相近位置、快速按下放開」→ 點擊；「持續按住（長按）或移動」→ 拖曳模式
+  var clearDragTimer = function clearDragTimer(dd) {
+    if (dd && dd.holdTimer) {
+      clearTimeout(dd.holdTimer);dd.holdTimer = null;
+    }
+  };
+
+  var startDragGesture = function startDragGesture(e, kind, id) {
+    if (interactionMode >= 2 || !e.isPrimary || dragDrawRef.current || isWon) return;
+    var pt = getSvgCoords(e.clientX, e.clientY);
+    if (!pt) return;
+    var dd = { kind: kind, id: id, startX: pt.x, startY: pt.y, startT: Date.now(), dragging: false, targetId: null, holdTimer: null };
+    dragDrawRef.current = dd;
+    var pc = myCurrentColor === 'rainbow' ? '#fbbf24' : myCurrentColor;
+    if (dragPreviewLineRef.current) dragPreviewLineRef.current.setAttribute('stroke', pc);
+    if (dragPreviewTipRef.current) dragPreviewTipRef.current.setAttribute('fill', pc);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    // 長按進入拖曳：DRAG_HOLD_MS 後還按著 → 只顯示 tip 圓點在觸摸點（還沒方向，線保持隱藏）
+    dd.holdTimer = setTimeout(function () {
+      var cur = dragDrawRef.current;
+      if (cur && cur.holdTimer === dd.holdTimer && !cur.dragging) {
+        cur.dragging = true;
+        var tip = dragPreviewTipRef.current;
+        if (tip) {
+          tip.setAttribute('cx', cur.startX);tip.setAttribute('cy', cur.startY);
+          tip.style.display = 'block';
+        }
+      }
+    }, DRAG_HOLD_MS);
+  };
+
+  var handleIslandPointerDown = function handleIslandPointerDown(e, island) {
+    if (interactionMode < 2) setHoveredIslandId(island.id);
+    startDragGesture(e, 'island', island.id);
+  };
+
+  var handleBridgePointerDown = function handleBridgePointerDown(e, b) {
+    startDragGesture(e, 'bridge', b.id);
+  };
+
+  // === 拖曳架橋：依拖曳方向判定目標橋樑 ===
+  var resolveDragTarget = function resolveDragTarget(d, dx, dy) {
+    var rlv = stateRef.current.randomLevelData;
+    var islands = rlv && rlv.islands ? rlv.islands : [];
+    var bridgesNow = stateRef.current.bridges || [];
+    var islMap = {};islands.forEach(function (i) {
+      islMap[i.id] = i;
+    });
+    if (d.kind === 'island') {
+      var from = islMap[d.id];if (!from) return null;
+      var fromX = from.x * SCALE + PADDING,
+          fromY = from.y * SCALE + PADDING;
+      var len = Math.hypot(dx, dy) || 1,
+          nx = dx / len,
+          ny = dy / len;
+      var bestId = null,
+          bestCos = 0.82; // 夾角 < ~35°
+      bridgesNow.forEach(function (b) {
+        if (b.from !== d.id && b.to !== d.id) return;
+        var other = islMap[b.from === d.id ? b.to : b.from];if (!other) return;
+        var vx = other.x * SCALE + PADDING - fromX,
+            vy = other.y * SCALE + PADDING - fromY;
+        var vl = Math.hypot(vx, vy) || 1;vx /= vl;vy /= vl;
+        var cos = vx * nx + vy * ny;
+        if (cos > bestCos) {
+          bestCos = cos;bestId = b.id;
+        }
+      });
+      return bestId;
+    }
+    // 從橋樑出發：拖曳以橋軸向為主才算數
+    var b = bridgesNow.find(function (x) {
+      return x.id === d.id;
+    });if (!b) return null;
+    var f = islMap[b.from],
+        t = islMap[b.to];if (!f || !t) return null;
+    var ax = t.x - f.x,
+        ay = t.y - f.y;
+    var axial = Math.abs(dx * ax + dy * ay),
+        normal = Math.abs(dx * ay - dy * ax);
+    return axial > 0 && axial > normal * 1.5 ? d.id : null;
+  };
+
+  // === 拖曳架橋預覽線（ref 直寫 DOM，不走 React state，避免 pointermove 重渲染） ===
+  var hideDragPreview = function hideDragPreview() {
+    if (dragPreviewLineRef.current) dragPreviewLineRef.current.style.display = 'none';
+    if (dragPreviewTipRef.current) dragPreviewTipRef.current.style.display = 'none';
+  };
+
+  // 拖曳預覽線幾何：軸向取手指按下位置，法向取軸線位置（線「從手指開始」，貼在橋的線上）
+  var islandCenter = function islandCenter(id) {
+    var rlv = stateRef.current.randomLevelData;
+    var islands = rlv && rlv.islands ? rlv.islands : [];
+    var isl = islands.find(function (i) {
+      return i.id === id;
+    });
+    return isl ? { x: isl.x * SCALE + PADDING, y: isl.y * SCALE + PADDING } : null;
+  };
+  var bridgeAxis = function bridgeAxis(id) {
+    var rlv = stateRef.current.randomLevelData;
+    var islands = rlv && rlv.islands ? rlv.islands : [];
+    var islMap = {};islands.forEach(function (i) {
+      islMap[i.id] = i;
+    });
+    var b = (stateRef.current.bridges || []).find(function (x) {
+      return x.id === id;
+    });
+    if (!b) return null;
+    var f = islMap[b.from],
+        t = islMap[b.to];
+    if (!f || !t) return null;
+    var fx = f.x * SCALE + PADDING,
+        fy = f.y * SCALE + PADDING;
+    var tx = t.x * SCALE + PADDING,
+        ty = t.y * SCALE + PADDING;
+    return { type: b.type, midX: (fx + tx) / 2, midY: (fy + ty) / 2 };
+  };
+  // 法向座標：島嶼出發 = 島中心在法向的分量；橋樑出發 = 橋中點在法向的分量
+  var dragAxisNormal = function dragAxisNormal(d, main) {
+    if (d.kind === 'island') {
+      var c = islandCenter(d.id);
+      return c ? main === 'h' ? c.y : c.x : null;
+    }
+    var ax = bridgeAxis(d.id);
+    return ax ? main === 'h' ? ax.midY : ax.midX : null;
+  };
+
+  // 拖曳提交門檻：拉超過 max(24, 島間距×0.35) 才算數
+  var dragCommitInfo = function dragCommitInfo(d, dx, dy) {
+    var ax = Math.abs(dx),
+        ay = Math.abs(dy);
+    var main = ax >= ay ? 'h' : 'v';
+    var len = main === 'h' ? ax : ay;
+    var spacing = SCALE;
+    if (d.targetId) {
+      var rlv = stateRef.current.randomLevelData;
+      var islands = rlv && rlv.islands ? rlv.islands : [];
+      var islMap = {};islands.forEach(function (i) {
+        islMap[i.id] = i;
+      });
+      var b = (stateRef.current.bridges || []).find(function (x) {
+        return x.id === d.targetId;
+      });
+      if (b) {
+        var f = islMap[b.from],
+            t = islMap[b.to];
+        if (f && t) spacing = Math.hypot(t.x - f.x, t.y - f.y) * SCALE;
+      }
+    }
+    return { main: main, len: len, threshold: Math.max(24, spacing * 0.35) };
+  };
+
+  // 預覽線長度上限：有目標橋時 = 起點到拖曳方向那端島的距離，否則 120
+  var dragPreviewMaxLen = function dragPreviewMaxLen(d, main, dir, sx, sy) {
+    var rlv = stateRef.current.randomLevelData;
+    var islands = rlv && rlv.islands ? rlv.islands : [];
+    var islMap = {};islands.forEach(function (i) {
+      islMap[i.id] = i;
+    });
+    if (d.targetId) {
+      var b = (stateRef.current.bridges || []).find(function (x) {
+        return x.id === d.targetId;
+      });
+      if (b) {
+        var targetIslandId = null;
+        if (d.kind === 'island') {
+          targetIslandId = b.from === d.id ? b.to : b.from;
+        } else {
+          var f = islMap[b.from],
+              t = islMap[b.to];
+          if (f && t) {
+            var fx = f.x * SCALE + PADDING,
+                fy = f.y * SCALE + PADDING;
+            var tx = t.x * SCALE + PADDING,
+                ty = t.y * SCALE + PADDING;
+            var toF = main === 'h' ? Math.sign(fx - sx) === dir : Math.sign(fy - sy) === dir;
+            targetIslandId = toF ? b.from : b.to;
+          }
+        }
+        var o = islMap[targetIslandId];
+        if (o) {
+          var ox = o.x * SCALE + PADDING,
+              oy = o.y * SCALE + PADDING;
+          return Math.max(0, Math.hypot(ox - sx, oy - sy));
+        }
+      }
+    }
+    return 120;
+  };
+
+  // 每幀更新預覽線：起點 = 手指按下點的軸向座標 × 軸線的法向座標（從手指開始、貼在橋線上）
+  var updateDragPreview = function updateDragPreview(d, dx, dy) {
+    var line = dragPreviewLineRef.current,
+        tip = dragPreviewTipRef.current;
+    if (!line || !tip) return;
+    var info = dragCommitInfo(d, dx, dy);
+    var main = info.main;
+    var fixed = dragAxisNormal(d, main);
+    if (fixed === null) return;
+    var sx = main === 'h' ? d.startX : fixed;
+    var sy = main === 'h' ? fixed : d.startY;
+    var dir = main === 'h' ? Math.sign(dx) || 1 : Math.sign(dy) || 1;
+    var maxLen = dragPreviewMaxLen(d, main, dir, sx, sy);
+    var cl = Math.min(info.len, maxLen);
+    var ex = main === 'h' ? sx + dir * cl : sx;
+    var ey = main === 'v' ? sy + dir * cl : sy;
+    line.setAttribute('x1', sx);line.setAttribute('y1', sy);
+    line.setAttribute('x2', ex);line.setAttribute('y2', ey);
+    tip.setAttribute('cx', ex);tip.setAttribute('cy', ey);
+    line.style.display = 'block';tip.style.display = 'block';
+  };
+
+  var handlePointerDown = function handlePointerDown(e) {
+    // 雙指介入：取消拖曳架橋與空白捲動，讓 pinch 縮放接管
+    if (e.isPrimary === false) {
+      if (dragDrawRef.current) {
+        clearDragTimer(dragDrawRef.current);dragDrawRef.current = null;hideDragPreview();
+      }
+      panRef.current = null;
+      if (interactionMode < 2) {
+        setHoveredIslandId(null);setHoveredBridgeId(null);
+      }
+    }
+    if (interactionMode < 2 && e.target.tagName && e.target.tagName.toLowerCase() === 'svg') {
+      setHoveredIslandId(null);
+      setHoveredBridgeId(null);
+      // 空白處單指按下 → 手動捲動（svg 已是 touch-action:none，瀏覽器不會代勞捲動）
+      if (e.isPrimary && !dragDrawRef.current && !panRef.current) {
+        panRef.current = { lastX: e.clientX, lastY: e.clientY };
+      }
+    }
+
+    var pt = getSvgCoords(e.clientX, e.clientY);
+    if (!pt) return;
+
+    if (interactionMode === 2) {
+      e.target.setPointerCapture(e.pointerId);
+      if (drawSubMode === 'pen') {
+        isDrawingRef.current = true;
+        currentPathDataRef.current = 'M ' + pt.x + ' ' + pt.y;
+        if (drawingPathRef.current) {
+          drawingPathRef.current.setAttribute('d', currentPathDataRef.current);
+          drawingPathRef.current.style.display = 'block';
+        }
+      } else if (drawSubMode === 'eraser') {
+        eraseAtPoint(e.clientX, e.clientY);
+      }
+      return;
+    }
+
+    if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
+    if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中停用游標分享（防作弊）
+    var msg = { type: 'CLICK', uid: myId, x: pt.x, y: pt.y };
+    setRipples(function (prev) {
+      return [].concat(_toConsumableArray(prev), [{ id: Date.now() + Math.random(), uid: myId, x: pt.x, y: pt.y, timestamp: Date.now() }]);
+    });
+
+    if (isHostRef.current) {
+      connsRef.current.forEach(function (c) {
+        return c.send(msg);
+      });
+    } else if (connRef.current) {
+      connRef.current.send(msg);
+    }
+  };
+
+  var handlePointerMove = function handlePointerMove(e) {
+    // 拖曳架橋：方向判定 + 預覽線跟隨 + 即時高亮
+    if (dragDrawRef.current && interactionMode < 2) {
+      var dd = dragDrawRef.current;
+      var pressed = e.buttons > 0 || e.pointerType === 'touch' && e.isPrimary;
+      if (!pressed) {
+        clearDragTimer(dd);
+        dragDrawRef.current = null;
+        hideDragPreview();
+        setHoveredBridgeId(null);
+      } else {
+        var _pt = getSvgCoords(e.clientX, e.clientY);
+        if (_pt) {
+          var dx = _pt.x - dd.startX,
+              dy = _pt.y - dd.startY;
+          if (!dd.dragging && Math.hypot(dx, dy) > TAP_MOVE_TOL) {
+            clearDragTimer(dd);
+            dd.dragging = true;
+            // 預覽線起點改為每幀投影（updateDragPreview 內計算），不再快照島中心/橋中點
+          }
+          if (dd.dragging) {
+            var t = resolveDragTarget(dd, dx, dy);
+            if (t !== dd.targetId) {
+              var wasNull = !dd.targetId;
+              dd.targetId = t;
+              setHoveredBridgeId(t);
+              // 目標出現時輕 tick 一聲，加 150ms 遲滯避免抖動連播
+              if (t && wasNull && Date.now() - (dd.lastTick || 0) > 150) {
+                dd.lastTick = Date.now();
+                try {
+                  window.HASHI_SOUND.play('click');
+                } catch (err2) {}
+              }
+            }
+            updateDragPreview(dd, dx, dy);
+          }
+        }
+      }
+    }
+    // 空白處單指拖曳 → 手動捲動棋盤（svg 為 touch-action:none 時的替代捲動）
+    else if (panRef.current && interactionMode < 2 && e.isPrimary) {
+        var pan = panRef.current;
+        var zc = zoomContainerRef.current;
+        if (zc && (e.buttons > 0 || e.pointerType === 'touch')) {
+          zc.scrollLeft -= e.clientX - pan.lastX;
+          zc.scrollTop -= e.clientY - pan.lastY;
+          pan.lastX = e.clientX;pan.lastY = e.clientY;
+        }
+      }
+    if (interactionMode === 2) {
+      var _pt2 = getSvgCoords(e.clientX, e.clientY);
+      if (drawSubMode === 'eraser') {
+        if (_pt2 && eraserRef.current) {
+          eraserRef.current.setAttribute('cx', _pt2.x);
+          eraserRef.current.setAttribute('cy', _pt2.y);
+          if (eraserRef.current.style.display === 'none') {
+            eraserRef.current.style.display = 'block';
+          }
+        }
+        if (e.buttons > 0 || e.pointerType === 'touch') {
+          if (Date.now() - lastEraseTimeRef.current > 50) {
+            eraseAtPoint(e.clientX, e.clientY);
+            lastEraseTimeRef.current = Date.now();
+          }
+        }
+      } else if (drawSubMode === 'pen' && isDrawingRef.current) {
+        if (_pt2 && currentPathDataRef.current) {
+          currentPathDataRef.current += ' L ' + _pt2.x + ' ' + _pt2.y;
+          if (drawingPathRef.current) {
+            drawingPathRef.current.setAttribute('d', currentPathDataRef.current);
+          }
+        }
+      }
+      return;
+    }
+
+    if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
+    if (raceStateRef.current === 'racing' || raceStateRef.current === 'countdown') return; // 🏁 競速中停用游標分享（防作弊）
+    if (Date.now() - lastCursorSend.current < 50) return;
+    lastCursorSend.current = Date.now();
+    var pt = getSvgCoords(e.clientX, e.clientY);
+    if (pt) {
+      var msg = { type: 'CURSOR', uid: myId, x: pt.x, y: pt.y };
+      if (isHostRef.current) {
+        connsRef.current.forEach(function (c) {
+          return c.send(msg);
+        });
+      } else if (connRef.current) {
+        connRef.current.send(msg);
+      }
+    }
+  };
+
+  var handlePointerUp = function handlePointerUp(e) {
+    // 只處理真正的放開與取消；svg 的 onPointerLeave 不再經由這裡結算拖曳，
+    // 避免邊界事件（特別是 iOS 上 pointer capture 相關的）誤殺進行中的手勢
+    if (e.type !== 'pointerup' && e.type !== 'pointercancel') return;
+    panRef.current = null;
+    // 拖曳架橋手勢結算（pointercancel 只清空、不結算）
+    var dd = dragDrawRef.current;
+    if (dd) {
+      clearDragTimer(dd);
+      dragDrawRef.current = null;
+      hideDragPreview();
+      if (e.type !== 'pointercancel' && interactionMode < 2 && !isWon) {
+        var pt = getSvgCoords(e.clientX, e.clientY);
+        var dx = pt ? pt.x - dd.startX : 0,
+            dy = pt ? pt.y - dd.startY : 0;
+        var moved = Math.hypot(dx, dy);
+        var dt = Date.now() - (dd.startT || 0);
+        if (!dd.dragging && dt < TAP_MAX_MS && moved < TAP_MOVE_TOL) {
+          // 點擊：同點或相近位置、快速按下放開（有容錯率）→ 只有橋樑能點，島嶼不做事
+          if (dd.kind === 'bridge') handleBridgeClick(dd.id);
+        } else if (dd.dragging && dd.targetId) {
+          // 拖曳：有目標且拉超過門檻才真正架橋
+          var info = dragCommitInfo(dd, dx, dy);
+          if (info.len > info.threshold) handleBridgeClick(dd.targetId);
+        }
+        // 其餘狀況（按住超時未動、拖曳未達門檻）→ 取消，什麼都不做
+      }
+      if (interactionMode < 2) {
+        setHoveredIslandId(null);setHoveredBridgeId(null);
+      }
+    }
+    if (interactionMode === 2) {
+      if (drawSubMode === 'pen' && isDrawingRef.current) {
+        isDrawingRef.current = false;
+        if (currentPathDataRef.current) {
+          var newStrokes = [].concat(_toConsumableArray(stateRef.current.strokes), [{ id: Date.now() + '-' + myId, uid: myId, path: currentPathDataRef.current }]);
+          raceAwareSync({ strokes: newStrokes });
+          currentPathDataRef.current = "";
+          if (drawingPathRef.current) drawingPathRef.current.style.display = 'none';
+        }
+      }
+      if (e.type === 'pointerleave' || e.type === 'pointercancel' || e.pointerType === 'touch') {
+        if (eraserRef.current) eraserRef.current.style.display = 'none';
+      }
+    }
+  };
+
+  var clearOwnStrokes = function clearOwnStrokes() {
+    var newStrokes = stateRef.current.strokes.filter(function (s) {
+      return !s.id.endsWith('-' + myId);
+    });
+    raceAwareSync({ strokes: newStrokes });
+    showToast("🗑️ 已清除你所有的塗鴉");
+  };
+
+  var clearAllStrokes = function clearAllStrokes() {
+    if (isHostRef.current) {
+      raceAwareSync({ strokes: [] });
+      showToast("🚨 房主已清空全場塗鴉");
+    }
+  };
+
+  var purgeGhostPlayers = function purgeGhostPlayers() {
+    if (!isHostRef.current) return;
+    setPlayersList(function (prev) {
+      var hostPlayer = prev.find(function (p) {
+        return p.id === myId;
+      });
+      if (!hostPlayer) return prev;
+      var newList = [hostPlayer];
+
+      if (engineRef.current === 'peerjs') {
+        connsRef.current = connsRef.current.filter(function (c) {
+          return c.open;
+        });
+        connsRef.current.forEach(function (c) {
+          return c.send({ type: 'PLAYERS_UPDATE', players: newList });
+        });
+        connsRef.current.forEach(function (c) {
+          return c.send({ type: 'REQ_REJOIN' });
+        });
+      }
+      return newList;
+    });
+  };
+
+  var syncState = function syncState(partial) {
+    var shouldBroadcast = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+    if (partial.bridges !== undefined) setBridges(partial.bridges);
+    if (partial.showSolution !== undefined) setShowSolution(partial.showSolution);
+    if (partial.randomLevelData !== undefined) setRandomLevelData(partial.randomLevelData);
+    if (partial.startTime !== undefined) setStartTime(partial.startTime);
+    if (partial.levelId !== undefined) setCurrentLevelId(partial.levelId);
+    if (partial.strokes !== undefined) setStrokes(partial.strokes);
+
+    var updatedState = _extends({}, stateRef.current, partial);
+    stateRef.current = updatedState;
+
+    if (shouldBroadcast) {
+      if (engineRef.current === 'peerjs') {
+        if (isHostRef.current) {
+          connsRef.current.forEach(function (c) {
+            return c.send({ type: 'SYNC', data: updatedState });
+          });
+        } else if (connRef.current) {
+          connRef.current.send({ type: 'SYNC', data: updatedState });
+        }
+      }
+    }
+  };
+
+  // 🏁 競速進度推送：用最新的 bridges 直接計算並廣播（架橋當下同步呼叫，不依賴 effect 時序）
+  var pushRaceProgress = function pushRaceProgress(bridgesArr) {
+    if (raceStateRef.current !== 'racing') return;
+    var rld = stateRef.current && stateRef.current.randomLevelData || randomLevelData;
+    var islands = rld && rld.islands || [];
+    if (islands.length === 0) return;
+    var counts = {};
+    islands.forEach(function (i) {
+      counts[i.id] = 0;
+    });
+    (bridgesArr || []).forEach(function (b) {
+      var t = (b.count || 0) + (b.draftCount || 0);
+      if (counts[b.from] !== undefined) counts[b.from] += t;
+      if (counts[b.to] !== undefined) counts[b.to] += t;
+    });
+    var done = 0;
+    islands.forEach(function (isl) {
+      if (counts[isl.id] === isl.req) done++;
+    });
+    var p = done / islands.length;
+    var now = Date.now();
+    if (p === lastProgressValRef.current && now - lastProgressSentRef.current <= 1000) return; // 節流
+    lastProgressValRef.current = p;
+    lastProgressSentRef.current = now;
+    var info = { progress: p, name: myNameRef.current || '你', color: myColorRef.current };
+    setRaceProgress(function (prev) {
+      return _extends({}, prev, _defineProperty({}, myId, info));
+    });
+    var msg = { type: 'RACE_PROGRESS', uid: myId, name: info.name, color: info.color, progress: p };
+    try {
+      if (isHostRef.current) {
+        connsRef.current.forEach(function (c) {
+          if (c.open) c.send(msg);
+        });
+      } else if (connRef.current && connRef.current.open) {
+        connRef.current.send(msg);
+      }
+    } catch (e) {}
+  };
+
+  // 🏁 競速中：橋樑/塗鴉只改本地，不廣播（防偷看、防互相覆蓋）
+  var raceAwareSync = function raceAwareSync(partial) {
+    if (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing' || raceStateRef.current === 'finished') {
+      if (partial.bridges !== undefined) {
+        setBridges(partial.bridges);
+        pushRaceProgress(partial.bridges);
+      }
+      if (partial.strokes !== undefined) setStrokes(partial.strokes);
+      if (partial.showSolution !== undefined) setShowSolution(partial.showSolution);
+      stateRef.current = _extends({}, stateRef.current, partial);
+    } else {
+      syncState(partial);
+    }
+  };
+
+  // ⭐ 最佳紀錄：hashi_best_{W}x{H}
+  var recordBest = function recordBest(secs) {
+    try {
+      var w = randomLevelData.width,
+          h = randomLevelData.height;
+      var key = 'hashi_best_' + w + 'x' + h;
+      var prev = parseInt(localStorage.getItem(key) || '0', 10);
+      if (!prev || secs < prev) {
+        localStorage.setItem(key, String(secs));
+        setIsNewBest(true);
+      } else {
+        setIsNewBest(false);
+      }
+    } catch (e) {}
+  };
+
+  var resetWinMeta = function resetWinMeta() {
+    setStars(0);setIsNewBest(false);setBursts([]);
+    prevIslandDoneRef.current = {};
+  };
+
+  var islandCurrentCounts = useMemo(function () {
+    var counts = {};
+    var islands = randomLevelData && randomLevelData.islands ? randomLevelData.islands : [];
+    islands.forEach(function (i) {
+      counts[i.id] = { total: 0, real: 0 };
+    });
+    (bridges || []).forEach(function (b) {
+      if (counts[b.from] !== undefined) {
+        counts[b.from].total += b.count + (b.draftCount || 0);
+        counts[b.from].real += b.count;
+      }
+      if (counts[b.to] !== undefined) {
+        counts[b.to].total += b.count + (b.draftCount || 0);
+        counts[b.to].real += b.count;
+      }
+    });
+    return counts;
+  }, [bridges, randomLevelData]);
+
+  var crossedBridgeIds = useMemo(function () {
+    var crossed = new Set();
+    var islMap = {};
+    var islands = randomLevelData && randomLevelData.islands ? randomLevelData.islands : [];
+    islands.forEach(function (i) {
+      islMap[i.id] = i;
+    });
+
+    var activeV = bridges.filter(function (b) {
+      return b.count + (b.draftCount || 0) > 0 && b.type === 'v';
+    });
+    var activeH = bridges.filter(function (b) {
+      return b.count + (b.draftCount || 0) > 0 && b.type === 'h';
+    });
+
+    bridges.forEach(function (target) {
+      if (target.count + (target.draftCount || 0) > 0) return;
+
+      var tFrom = islMap[target.from];
+      var tTo = islMap[target.to];
+      if (!tFrom || !tTo) return;
+
+      var isCross = false;
+      if (target.type === 'h') {
+        var y = tFrom.y;
+        var minX = Math.min(tFrom.x, tTo.x);
+        var maxX = Math.max(tFrom.x, tTo.x);
+        for (var i = 0; i < activeV.length; i++) {
+          var b = activeV[i];
+          var bFrom = islMap[b.from],
+              bTo = islMap[b.to];
+          if (bFrom && bTo && bFrom.x > minX && bFrom.x < maxX && y > Math.min(bFrom.y, bTo.y) && y < Math.max(bFrom.y, bTo.y)) {
+            isCross = true;break;
+          }
+        }
+      } else {
+        var x = tFrom.x;
+        var minY = Math.min(tFrom.y, tTo.y);
+        var maxY = Math.max(tFrom.y, tTo.y);
+        for (var _i = 0; _i < activeH.length; _i++) {
+          var _b = activeH[_i];
+          var _bFrom = islMap[_b.from],
+              _bTo = islMap[_b.to];
+          if (_bFrom && _bTo && _bFrom.y > minY && _bFrom.y < maxY && x > Math.min(_bFrom.x, _bTo.x) && x < Math.max(_bFrom.x, _bTo.x)) {
+            isCross = true;break;
+          }
+        }
+      }
+      if (isCross) crossed.add(target.id);
+    });
+    return crossed;
+  }, [bridges, randomLevelData]);
+
+  var highlightedIslandIds = useMemo(function () {
+    var ids = new Set();
+    if (hoveredIslandId) {
+      ids.add(hoveredIslandId);
+      bridges.forEach(function (b) {
+        if (b.from === hoveredIslandId) ids.add(b.to);
+        if (b.to === hoveredIslandId) ids.add(b.from);
+      });
+    }
+    if (hoveredBridgeId) {
+      var hb = bridges.find(function (b) {
+        return b.id === hoveredBridgeId;
+      });
+      if (hb) {
+        ids.add(hb.from);
+        ids.add(hb.to);
+      }
+    }
+    return ids;
+  }, [hoveredIslandId, hoveredBridgeId, bridges]);
+
+  var activeHints = useMemo(function () {
+    if (!hoveredIslandId || interactionMode >= 2) return [];
+    return bridges.filter(function (b) {
+      return b.from === hoveredIslandId || b.to === hoveredIslandId;
+    });
+  }, [hoveredIslandId, interactionMode, bridges]);
+
+  var handleBridgeClick = function handleBridgeClick(bId) {
+    if (isWon || interactionMode >= 2) return;
+    if (raceStateRef.current === 'countdown') return; // 🏁 倒數中鎖定操作
+    var nowTap = Date.now();
+    if (nowTap - (lastBridgeTapRef.current[bId] || 0) < 150) return; // 防手機連點誤觸
+    lastBridgeTapRef.current[bId] = nowTap;
+    var cur = bridges || [];
+    var target = cur.find(function (b) {
+      return b.id === bId;
+    });
+    if (!target) return;
+
+    if (target.count + (target.draftCount || 0) === 0) {
+      if (crossedBridgeIds.has(bId)) {
+        window.HASHI_SOUND.play('error');
+        return showToast("🚫 橋樑不能交叉喔！請先移除阻擋的橋。");
+      }
+    }
+
+    if (engineRef.current === 'none') {
+      setHistory(function (past) {
+        var newPast = [].concat(_toConsumableArray(past), [cur]);
+        if (newPast.length > 25) return newPast.slice(newPast.length - 25);
+        return newPast;
+      });
+    }
+
+    var oldTotal = target.count + (target.draftCount || 0);
+
+    var nextBridges = cur.map(function (b) {
+      if (b.id !== bId) return b;
+
+      var newCount = b.count;
+      var newDraftCount = b.draftCount || 0;
+
+      if (interactionMode === 1) {
+        // 草稿模式
+        if (b.count === 1) {
+          newDraftCount = newDraftCount === 0 ? 1 : 0;
+        } else if (b.count === 0) {
+          newDraftCount = (newDraftCount + 1) % 3;
+        }
+      } else {
+        // 實線模式
+        if (newDraftCount > 0) {
+          newCount = b.count + newDraftCount;
+          newDraftCount = 0;
+        } else {
+          newCount = (b.count + 1) % 3;
+        }
+      }
+
+      var newOwner = newCount > 0 || newDraftCount > 0 ? myId : null;
+      return _extends({}, b, { count: newCount, draftCount: newDraftCount, owner: newOwner });
+    });
+
+    var newB = nextBridges.find(function (b) {
+      return b.id === bId;
+    });
+    var newTotal = newB.count + (newB.draftCount || 0);
+    if (newTotal > oldTotal) {
+      window.HASHI_SOUND.play('bridge');
+    } else if (newTotal < oldTotal) {
+      window.HASHI_SOUND.play('remove');
+    }
+
+    raceAwareSync({ bridges: nextBridges });
+
+    // ✨ 點擊漣漪：在橋樑中點（成功架橋或取消時）
+    if (newTotal !== oldTotal) {
+      var islMap2 = {};
+      (randomLevelData && randomLevelData.islands || []).forEach(function (i) {
+        islMap2[i.id] = i;
+      });
+      var bf = islMap2[target.from],
+          bt = islMap2[target.to];
+      if (bf && bt) {
+        var mx = (bf.x + bt.x) / 2 * SCALE + PADDING;
+        var myy = (bf.y + bt.y) / 2 * SCALE + PADDING;
+        setRipples(function (prev) {
+          return [].concat(_toConsumableArray(prev), [{ id: Date.now() + Math.random(), uid: myId, x: mx, y: myy, timestamp: Date.now() }]);
+        });
+      }
+    }
+
+    setHoveredIslandId(null);
+  };
+
+  var handleShowSolution = function handleShowSolution() {
+    syncState({ showSolution: true });
+  };
+
+  var toggleInteractionMode = function toggleInteractionMode() {
+    var maxModes = engineRef.current === 'peerjs' ? 3 : 2;
+    var nextMode = (interactionMode + 1) % maxModes;
+    setInteractionMode(nextMode);
+    showToast(modeIcons[nextMode] + ' \u5DF2\u5207\u63DB\u70BA ' + modeTitles[nextMode]);
+  };
+
+  var handleUndo = function handleUndo() {
+    if (history.length === 0 || isWon || engineRef.current !== 'none') return;
+    var previousState = history[history.length - 1];
+    syncState({ bridges: previousState });
+    setHistory(function (past) {
+      return past.slice(0, -1);
+    });
+  };
+
+  var handleReset = function handleReset() {
+    var empty = HASHI_PUZZLE.generateEmptyBridges(randomLevelData);
+    raceAwareSync({ bridges: empty, strokes: [], showSolution: false, startTime: Date.now() });
+    if (engineRef.current === 'none') setHistory([]);
+    setIsWon(false);setEndTime(null);
+    resetWinMeta();
+  };
+
+  var handleRegenerateRandom = function handleRegenerateRandom() {
+    if (isDailyModeRef.current) return;
+    setIsGenerating(true);
+    setTimeout(function () {
+      purgeGhostPlayers();
+      var targetLevelDef = void 0;
+      if (currentLevelId === 'custom') {
+        targetLevelDef = { id: 'custom', name: '\u2699\uFE0F \u81EA\u8A02 (' + randomLevelData.width + 'x' + randomLevelData.height + ')', width: randomLevelData.width, height: randomLevelData.height, description: "玩家自訂尺寸的大型地圖！" };
+      } else {
+        targetLevelDef = LEVELS.find(function (l) {
+          return l.id === currentLevelId;
+        }) || LEVELS[1];
+      }
+      var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
+      var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
+      syncState({ levelId: currentLevelId, randomLevelData: newRandomData, bridges: empty, strokes: [], showSolution: false, startTime: Date.now() });
+      setIsWon(false);setHistory([]);setEndTime(null);setHideVictoryModal(false);
+      resetWinMeta();
+      setBoardFadeKey(function (k) {
+        return k + 1;
+      });scheduleFitZoom();
+      setIsGenerating(false);
+    }, 100);
+  };
+
+  var handleLevelChange = function handleLevelChange(newLevelId) {
+    if (isDailyModeRef.current) return;
+    if (engineRef.current !== 'none' && !isHostRef.current) return;
+
+    if (newLevelId === 'custom') {
+      setShowCustomModal(true);
+      return;
+    }
+
+    setIsGenerating(true);
+    setTimeout(function () {
+      purgeGhostPlayers();
+      var targetLevelDef = LEVELS.find(function (l) {
+        return l.id === newLevelId;
+      });
+      if (!targetLevelDef) {
+        setIsGenerating(false);
+        return;
+      }
+      var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
+      var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
+      syncState({ levelId: newLevelId, randomLevelData: newRandomData, bridges: empty, strokes: [], showSolution: false, startTime: Date.now() });
+      setIsWon(false);setHistory([]);setEndTime(null);
+      resetWinMeta();
+      setBoardFadeKey(function (k) {
+        return k + 1;
+      });scheduleFitZoom();
+      setIsGenerating(false);
+    }, 100);
+  };
+
+  var handleCustomGenerate = function handleCustomGenerate() {
+    var w = Math.max(5, Math.min(100, tempWidth));
+    var h = Math.max(5, Math.min(100, tempHeight));
+    setTempWidth(w);
+    setTempHeight(h);
+    setShowCustomModal(false);
+
+    setIsGenerating(true);
+    setTimeout(function () {
+      purgeGhostPlayers();
+      var customLevelDef = { id: 'custom', name: '\u2699\uFE0F \u81EA\u8A02 (' + w + 'x' + h + ')', width: w, height: h, description: "玩家自訂尺寸的大型地圖！" };
+      var newRandomData = HASHI_PUZZLE.generateUniqueHashi(customLevelDef);
+      var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
+
+      syncState({ levelId: 'custom', randomLevelData: newRandomData, bridges: empty, strokes: [], showSolution: false, startTime: Date.now() });
+      setIsWon(false);setHistory([]);setEndTime(null);
+      resetWinMeta();
+      setBoardFadeKey(function (k) {
+        return k + 1;
+      });scheduleFitZoom();
+      setIsGenerating(false);
+    }, 100);
+  };
+
+  var closeVictoryModal = function closeVictoryModal() {
+    setIsClosingModal(true);
+    setTimeout(function () {
+      setHideVictoryModal(true);
+      setIsClosingModal(false);
+    }, 300);
+  };
+
+  var triggerRegenerate = function triggerRegenerate() {
+    setIsClosingModal(true);
+    setTimeout(function () {
+      setIsClosingModal(false);
+      handleRegenerateRandom();
+    }, 300);
+  };
+
+  var triggerDailyHome = function triggerDailyHome() {
+    setIsClosingModal(true);
+    setTimeout(function () {
+      setIsClosingModal(false);
+      handleGoHome();
+    }, 300);
+  };
+
+  var switchToOffline = function switchToOffline() {
+    setEngine('none');engineRef.current = 'none';
+    setIsHost(false);isHostRef.current = false;
+    setRoomId("");setPlayersList([]);
+    connsRef.current = [];connRef.current = null;
+    setCursors({});setRipples([]);setInteractionMode(0);
+    setChatMsgs([]);setUnreadChat(0);setChatOpen(false);setChatInput('');
+    stopVideo(); // 📹 關閉視訊
+  };
+
+  var startSinglePlayer = function startSinglePlayer() {
+    setIsDailyMode(false);isDailyModeRef.current = false;
+    resetWinMeta();
+    switchToOffline();setScreen('game');handleReset();setIsHeaderCollapsed(true);
+  };
+
+  // 每日一題：紀錄過關（只在每日模式呼叫）
+  var recordDailyWin = function recordDailyWin(secs) {
+    var d = dailyDateStrRef.current;
+    if (!d) return;
+    try {
+      var prev = readDailyRecord(d);
+      var best = prev ? Math.min(prev.time, secs) : secs;
+      localStorage.setItem('hashi_daily_' + d, JSON.stringify({ time: best }));
+    } catch (e) {}
+    // 連擊只算「今天」：補玩以前日期的題目只記成績，不影響連擊
+    try {
+      var today = HASHI_PUZZLE.getDailyDateStr();
+      if (d === today) {
+        var streak = readDailyStreak();
+        var yesterday = HASHI_PUZZLE.shiftDateStr(d, -1);
+        var newCount = void 0;
+        if (streak.lastDate === d) newCount = streak.count;else if (streak.lastDate === yesterday) newCount = streak.count + 1;else newCount = 1;
+        localStorage.setItem('hashi_daily_streak', JSON.stringify({ count: newCount, lastDate: d }));
+        setDailyStreak(newCount);
+      }
+    } catch (e) {}
+    setDailyDone(readDailyRecord(d));
+  };
+
+  var startDailyMode = function startDailyMode(dateStr) {
+    var d = clampDailyDate(dateStr);
+    var today = HASHI_PUZZLE.getDailyDateStr();
+    var rng = HASHI_PUZZLE.getDailySeed(d);
+    var dailyDef = { id: 'daily', name: '\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C (' + d + ')', width: 10, height: 10, description: d < today ? '\u88DC\u73A9 ' + d + ' \u7684\u6BCF\u65E5\u984C\u76EE\uFF1A\u5168\u4E16\u754C\u540C\u4E00\u984C\uFF01' : '\u6BCF\u65E5\u6311\u6230\uFF08' + d + '\uFF09\uFF1A\u5168\u4E16\u754C\u540C\u4E00\u984C\uFF0C\u4E00\u5929\u53EA\u6709\u4E00\u6B21\u6A5F\u6703\uFF01' };
+    var data = HASHI_PUZZLE.generateUniqueHashi(dailyDef, rng);
+    var empty = HASHI_PUZZLE.generateEmptyBridges(data);
+    var status = getDailyStatus(d);
+    setIsDailyMode(true);isDailyModeRef.current = true;
+    setDailyDateStr(d);dailyDateStrRef.current = d;
+    setDailyStreak(status.streak);
+    setDailyDone(status.done);
+    setCurrentLevelId('daily');
+    setRandomLevelData(data);
+    setBridges(empty);
+    setStrokes([]);
+    setHistory([]);
+    setShowSolution(false);
+    setStartTime(Date.now());
+    setIsWon(false);setEndTime(null);setHideVictoryModal(false);
+    resetWinMeta();
+    setBoardFadeKey(function (k) {
+      return k + 1;
+    });scheduleFitZoom();
+    setInteractionMode(0);
+    switchToOffline();
+    setScreen('game');
+    setIsHeaderCollapsed(true);
+  };
+
+  // ===== 🎰 暱稱拉霸機（只給沒手動填暱稱的玩家） =====
+  var spinSlot = function spinSlot(pool) {
+    if (slotTimerRef.current) {
+      clearTimeout(slotTimerRef.current);slotTimerRef.current = null;
+    }
+    var list = pool && pool.length > 0 ? pool : ANIMAL_NAMES;
+    slotPoolRef.current = list;
+    setSlotPool(list);
+    setSlotRound(function (r) {
+      return r + 1;
+    });
+    setSlotSpinning(true);
+    setSlotFinalName("");slotFinalNameRef.current = "";
+    var t0 = Date.now();
+    var delay = 60;
+    var tick = function tick() {
+      setSlotName(list[Math.random() * list.length | 0]);
+      if (Date.now() - t0 >= 1800) {
+        var finalName = list[Math.random() * list.length | 0];
+        setSlotName(finalName);
+        setSlotFinalName(finalName);slotFinalNameRef.current = finalName;
+        setSlotSpinning(false);
+        slotTimerRef.current = null;
+        try {
+          window.HASHI_SOUND.play('star');
+        } catch (e) {}
+        return;
+      }
+      delay = Math.min(delay * 1.18, 420);
+      slotTimerRef.current = setTimeout(tick, delay);
+    };
+    tick();
+  };
+
+  var openSlotMachine = function openSlotMachine(mode, pool) {
+    // 新流程：pool 在開拉霸機前就已算好（含已用名單排除），直接轉
+    setSlotMode(mode);
+    setSlotWaiting(false);
+    setSlotName("");setSlotFinalName("");slotFinalNameRef.current = "";
+    setSlotSpinning(false);
+    if (pool) {
+      slotPoolRef.current = pool;setSlotPool(pool);
+    }
+    setShowSlotMachine(true);
+    spinSlot(pool);
+  };
+
+  // 只關拉霸機 modal（回到 nick 步，連線保持）
+  var closeSlotModal = function closeSlotModal() {
+    if (slotTimerRef.current) {
+      clearTimeout(slotTimerRef.current);slotTimerRef.current = null;
+    }
+    setShowSlotMachine(false);
+    setSlotSpinning(false);
+    setSlotWaiting(false);
+  };
+
+  // 完整清理 join 流程（回到 choose 步）
+  var fullJoinCleanup = function fullJoinCleanup() {
+    if (guestNamesTimeoutRef.current) {
+      clearTimeout(guestNamesTimeoutRef.current);guestNamesTimeoutRef.current = null;
+    }
+    if (slotTimerRef.current) {
+      clearTimeout(slotTimerRef.current);slotTimerRef.current = null;
+    }
+    setShowSlotMachine(false);
+    setSlotSpinning(false);
+    setSlotWaiting(false);
+    suppressCloseRef.current = true;
+    if (connRef.current) {
+      try {
+        connRef.current.close();
+      } catch (e) {}connRef.current = null;
+    }
+    if (peerRef.current) {
+      try {
+        peerRef.current.destroy();
+      } catch (e) {}peerRef.current = null;
+    }
+    connsRef.current = [];
+    setTimeout(function () {
+      suppressCloseRef.current = false;
+    }, 500);
+    engineRef.current = 'none';setEngine('none');
+    setIsConnecting(false);
+    setIsHost(false);isHostRef.current = false;
+    setRoomId("");
+    setPlayersList([]);
+    setTakenNames([]);
+    setNickError("");
+    setTempPlayerName("");
+    setJoinStep('choose');
+    joinRoleRef.current = null;
+    joinActiveRef.current = false;
+    guestAutoNameRef.current = false;
+    guestJoinedRef.current = false;
+    guestNamesResolvedRef.current = false;
+  };
+
+  var backToChoose = function backToChoose() {
+    fullJoinCleanup();setScreen('join');
+  };
+
+  var confirmSlotName = function confirmSlotName() {
+    var name = slotFinalNameRef.current;
+    if (!name || slotSpinning) return;
+    try {
+      window.HASHI_SOUND.play('click');
+    } catch (e) {}
+    if (slotTimerRef.current) {
+      clearTimeout(slotTimerRef.current);slotTimerRef.current = null;
+    }
+    setShowSlotMachine(false);
+    setTempPlayerName(name);
+    autoNameRef.current = true;
+    if (slotMode === 'host') {
+      hostConfirmName(name);
+    } else {
+      guestSendJoin(name, true);
+    }
+  };
+
+  var handleJoinRejected = function handleJoinRejected(m) {
+    // 最終把關：連線保持開啟，不關閉
+    setIsConnecting(false);
+    guestJoinedRef.current = false;
+    joinActiveRef.current = true;
+    setScreen('join');
+    setJoinStep('nick');
+    if (guestAutoNameRef.current) {
+      // 拉霸機自動名：用房主回傳的最新名單再轉一次
+      showToast("🎰 剛好被選走了，再轉一次！");
+      var taken = new Set((m.names || []).map(normName));
+      var pool = ANIMAL_NAMES.filter(function (a) {
+        return !taken.has(normName(a));
+      });
+      setTakenNames(m.names || []);
+      setTimeout(function () {
+        openSlotMachine('guest', pool.length > 0 ? pool : ANIMAL_NAMES);
+      }, 700);
+    } else {
+      // 手動名：留在 nick 步，inline 錯誤
+      setNickError("暱稱「" + (m.dupName || "這個名字") + "」已經有人用了，換一個吧！");
+      setTimeout(function () {
+        if (nameInputRef.current) nameInputRef.current.focus();
+      }, 350);
+    }
+  };
+
+  // ===== 新流程：先選房間，進去再填暱稱（名字用參數傳遞） =====
+  var excludeTakenNames = function excludeTakenNames(pool, taken) {
+    var t = new Set((taken || []).map(normName));
+    var rest = pool.filter(function (a) {
+      return !t.has(normName(a));
+    });
+    return rest.length > 0 ? rest : pool.slice();
+  };
+
+  // 房主：建立房間（空名字先佔位）→ nick 步
+  var hostCreateRoom = function hostCreateRoom() {
+    mpModeRef.current = mpMode;
+    setIsConnecting(true);
+    setJoinStep('connecting');
+    setNickError("");
+    setTempPlayerName(loadSavedNickname());
+    joinRoleRef.current = 'host';
+    joinActiveRef.current = true;
+    // 房主代碼固定不變：第一次隨機產生並存下，之後都用同一組，朋友不用每次重問代碼
+    var rId = loadHostRoom();
+    if (!rId) {
+      rId = Math.floor(1000 + Math.random() * 9000).toString();saveHostRoom(rId);
+    }
+    hostRoomRetryRef.current = false;
+    setEngine('peerjs');engineRef.current = 'peerjs';
+    setupPeerJS(rId, true);
+  };
+
+  // 房主在 nick 步確認暱稱 → 進遊戲（競速則進大廳）
+  var hostConfirmName = function hostConfirmName(pName) {
+    var name = (pName || "").trim();
+    if (!name) return;
+    // 房裡可能已有提早進來的來賓，本地即時檢查
+    var clash = playersListRef.current.some(function (pl) {
+      return pl.id !== myId && pl.name && normName(pl.name) === normName(name);
+    });
+    if (clash) {
+      setNickError("已經有人用這個名字了，換一個吧！");return;
+    }
+    var entry = { id: myId, name: name, isHost: true, color: getAvailableColor(playersListRef.current.filter(function (p) {
+        return p.id !== myId;
+      })) };
+    setPlayersList(function (prev) {
+      var nList = [entry].concat(prev.filter(function (p) {
+        return p.id !== myId;
+      }));
+      connsRef.current.forEach(function (c) {
+        if (c.open) {
+          try {
+            c.send({ type: 'PLAYERS_UPDATE', players: nList });
+          } catch (e) {}
+        }
+      });
+      return nList;
+    });
+    setTempPlayerName(name);
+    saveNickname(name);
+    joinActiveRef.current = false;
+    setIsConnecting(false);
+    setScreen('game');setIsHeaderCollapsed(true);
+    if (mpModeRef.current === 'race') {
+      setRaceState('lobby');raceStateRef.current = 'lobby';
+    }
+  };
+
+  // 來賓：連線 → handshake 拿已用名單 → nick 步
+  var guestConnectRoom = function guestConnectRoom() {
+    var rId = tempRoomId.trim().toUpperCase();
+    if (!rId) return showToast("⚠️ 請輸入朋友給你的 4 位數代碼");
+    saveLastRoom(rId);
+    setIsConnecting(true);
+    setJoinStep('connecting');
+    setNickError("");
+    setTempPlayerName(loadSavedNickname());
+    setTakenNames([]);
+    joinRoleRef.current = 'guest';
+    joinActiveRef.current = true;
+    guestAutoNameRef.current = false;
+    guestJoinedRef.current = false;
+    guestNamesResolvedRef.current = false;
+    setEngine('peerjs');engineRef.current = 'peerjs';
+    setupPeerJS(rId, false);
+  };
+
+  // 來賓送出 JOIN（暱稱已在 nick 步確認過）
+  var guestSendJoin = function guestSendJoin(pName, auto) {
+    var name = (pName || "").trim();
+    if (!name) return;
+    setNickError("");
+    setIsConnecting(true);
+    guestAutoNameRef.current = auto;
+    autoNameRef.current = auto;
+    setTempPlayerName(name);
+    saveNickname(name);
+    if (connRef.current && connRef.current.open) {
+      guestJoinedRef.current = true;
+      joinActiveRef.current = false;
+      connRef.current.send({ type: 'JOIN', pName: name, uid: myId, auto: auto });
+      setScreen('game');setIsHeaderCollapsed(true);setIsConnecting(false);
+    } else {
+      setIsConnecting(false);
+      showToast("⚠️ 連線已中斷，請重試");
+      backToChoose();
+    }
+  };
+
+  // nick 步：拉霸機（排除已用名單）
+  var openSlotForNick = function openSlotForNick() {
+    setNickError("");
+    try {
+      window.HASHI_SOUND.play('click');
+    } catch (e) {}
+    var pool = void 0;
+    if (joinRoleRef.current === 'host') {
+      pool = excludeTakenNames(ANIMAL_NAMES, playersListRef.current.filter(function (pl) {
+        return pl.id !== myId && pl.name;
+      }).map(function (pl) {
+        return pl.name;
+      }));
+    } else {
+      pool = excludeTakenNames(ANIMAL_NAMES, takenNames);
+    }
+    openSlotMachine(joinRoleRef.current === 'host' ? 'host' : 'guest', pool);
+  };
+
+  // nick 步：按「進入房間」
+  var confirmNickAndEnter = function confirmNickAndEnter() {
+    var name = tempPlayerName.trim();
+    setNickError("");
+    if (!name) {
+      openSlotForNick();return;
+    } // 空白 → 拉霸機
+    autoNameRef.current = false;
+    if (joinRoleRef.current === 'host') {
+      hostConfirmName(name);
+    } else {
+      var clash = takenNames.some(function (t) {
+        return normName(t) === normName(name);
+      }); // 本地即時檢查
+      if (clash) {
+        setNickError("已經有人用這個名字了，換一個吧！");return;
+      }
+      guestSendJoin(name, false);
+    }
+  };
+
+  var setupPeerJS = function setupPeerJS(rId, isCreating) {
+    if (isCreating) {
+      var p = new Peer(rId + '-host');
+      peerRef.current = p;
+      p.on('call', handleIncomingCall); // 📹 視訊來電
+      p.on('open', function () {
+        setIsHost(true);isHostRef.current = true;
+        setRoomId(rId);setIsConnecting(false);
+        setJoinStep('nick');
+        // 空名字先佔位，等 nick 步確認後再填上
+        setPlayersList([{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }]);
+
+        p.on('connection', function (c) {
+          connsRef.current.push(c);
+          c.on('data', function (m) {
+            if (m.type === 'JOIN') {
+              c.uid = m.uid; // 將玩家身分標籤綁定到這個連線上
+              // 撞名檢查：同 uid 重連允許；不同 uid 同名（大小寫不敏感）拒絕
+              var tryName = (m.pName || '').trim();
+              var clash = !!tryName && playersListRef.current.some(function (pl) {
+                return pl.id !== m.uid && normName(pl.name) === normName(tryName);
+              });
+              if (clash) {
+                // 連線保持開啟：拉霸機自動名會自動重轉，手動名回 nick 步重填
+                c.send({ type: 'JOIN_REJECTED', reason: 'name_taken', dupName: tryName, names: playersListRef.current.map(function (pl) {
+                    return pl.name;
+                  }) });
+                return;
+              }
+              setPlayersList(function (prev) {
+                var existingPlayer = prev.find(function (pl) {
+                  return pl.id === m.uid;
+                });
+                var nList = void 0;
+                if (existingPlayer) {
+                  // 老玩家回歸，更新名字
+                  nList = prev.map(function (pl) {
+                    return pl.id === m.uid ? _extends({}, pl, { name: m.pName }) : pl;
+                  });
+                } else {
+                  // 新玩家加入
+                  var newColor = m.color || getAvailableColor(prev);
+                  nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor }]);
+                }
+                // 強制派發最新地圖與名單
+                connsRef.current.forEach(function (conn) {
+                  if (conn === c) {
+                    conn.send({ type: 'INIT', data: stateRef.current, players: nList, mpMode: mpModeRef.current });
+                  } else if (conn.open) {
+                    conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                  }
+                });
+                return nList;
+              });
+              // 📹 若房主已開視訊，自動撥給新加入的玩家，並同步麥克風狀態
+              if (videoOnRef.current && localStreamRef.current && c.open) {
+                try {
+                  var call = peerRef.current.call(c.peer, localStreamRef.current, { metadata: { uid: myId, name: myNameRef.current || '你' } });
+                  videoCallsRef.current.push(call);
+                  var newUid = m.uid;
+                  call.on('stream', function (rs) {
+                    setRemoteVideos(function (prev) {
+                      return _extends({}, prev, _defineProperty({}, newUid, rs));
+                    });
+                  });
+                  call.on('close', function () {
+                    setRemoteVideos(function (prev) {
+                      var n = _extends({}, prev);delete n[newUid];return n;
+                    });
+                  });
+                  c.send({ type: 'MIC', uid: myId, name: myNameRef.current || '你', muted: function () {
+                      try {
+                        var at = localStreamRef.current.getAudioTracks()[0];return at ? !at.enabled : true;
+                      } catch (e) {
+                        return true;
+                      }
+                    }() });
+                } catch (e) {}
+              }
+            } else if (m.type === 'GET_TAKEN_NAMES') {
+              // 只回給該連線：目前已使用的名字（排除空名字，給拉霸機／暱稱檢查用）
+              c.send({ type: 'TAKEN_NAMES', names: playersListRef.current.filter(function (pl) {
+                  return pl.name && pl.name.trim();
+                }).map(function (pl) {
+                  return pl.name;
+                }) });
+            } else if (m.type === 'LEAVE') {
+              if (raceStateRef.current !== 'idle') {
+                showToast("⚠️ 對手離開，競速結束");
+                exitRaceToSolo();
+              }
+              // 玩家主動按退出時，觸發在線名單更新
+              setPlayersList(function (prev) {
+                var nList = prev.filter(function (pl) {
+                  return pl.id !== m.uid;
+                });
+                connsRef.current.forEach(function (conn) {
+                  if (conn !== c && conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
+            } else if (m.type === 'SYNC') {
+              syncState(m.data, false);
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer) conn.send({ type: 'SYNC', data: m.data });
+              });
+            } else if (m.type === 'REQ_COLOR_CHANGE') {
+              setPlayersList(function (prev) {
+                var nList = prev.map(function (pl) {
+                  if (pl.id === m.targetId) return _extends({}, pl, { color: m.color });
+                  return pl;
+                });
+                connsRef.current.forEach(function (conn) {
+                  return conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
+            } else if (m.type === 'CURSOR') {
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer) conn.send(m);
+              });
+              setCursors(function (prev) {
+                return _extends({}, prev, _defineProperty({}, m.uid, { x: m.x, y: m.y }));
+              });
+            } else if (m.type === 'CLICK') {
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer) conn.send(m);
+              });
+              setRipples(function (prev) {
+                return [].concat(_toConsumableArray(prev), [{ id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
+              });
+            } else if (m.type === 'CHAT') {
+              appendChatMsg(m);
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
+            } else if (m.type === 'MIC') {
+              handleMicMsg(m);
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
+            } else if (m.type === 'RACE_PROGRESS') {
+              setRaceProgress(function (prev) {
+                return _extends({}, prev, _defineProperty({}, m.uid, { progress: m.progress, name: m.name, color: m.color }));
+              });
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
+            } else if (m.type === 'RACE_FINISH') {
+              onRaceOpponentFinish(m.uid, m);
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              });
+            }
+          });
+
+          c.on('close', function () {
+            if (suppressCloseRef.current) return;
+            if (c.uid && raceStateRef.current !== 'idle') {
+              showToast("⚠️ 對手斷線，競速結束");
+              exitRaceToSolo();
+            }
+            connsRef.current = connsRef.current.filter(function (conn) {
+              return conn.peer !== c.peer;
+            });
+            if (c.uid) {
+              // 如果斷線的是已知玩家，自動拔除並廣播
+              var goneUid = c.uid;
+              setRemoteVideos(function (prev) {
+                var n = _extends({}, prev);delete n[goneUid];return n;
+              }); // 📹 移除視訊
+              setPlayersList(function (prev) {
+                var nList = prev.filter(function (pl) {
+                  return pl.id !== c.uid;
+                });
+                connsRef.current.forEach(function (conn) {
+                  if (conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
+            }
+          });
+        });
+      });
+      p.on('error', function (err) {
+        if (isCreating && err && err.type === 'unavailable-id' && !hostRoomRetryRef.current) {
+          // 固定代碼被佔用（多半是上次連線殘留）：換一組新代碼重試一次
+          hostRoomRetryRef.current = true;
+          clearHostRoom();
+          hostCreateRoom();
+          return;
+        }
+        setIsConnecting(false);setJoinStep('choose');joinActiveRef.current = false;joinRoleRef.current = null;switchToOffline();showToast("⚠️ 無法建立對局大廳，請重試");
+      });
+    } else {
+      var guestP = new Peer();
+      peerRef.current = guestP;
+      guestP.on('call', handleIncomingCall); // 📹 視訊來電
+      guestP.on('open', function () {
+        var c = guestP.connect(rId + '-host');
+        connRef.current = c;
+        c.on('open', function () {
+          setIsHost(false);isHostRef.current = false;
+          setRoomId(rId);
+          // 新流程：一律先跟房主要已用名單，進 nick 步填完暱稱才 JOIN
+          guestNamesResolvedRef.current = false;
+          c.send({ type: 'GET_TAKEN_NAMES', uid: myId });
+          if (guestNamesTimeoutRef.current) {
+            clearTimeout(guestNamesTimeoutRef.current);
+          }
+          guestNamesTimeoutRef.current = setTimeout(function () {
+            if (!guestNamesResolvedRef.current && !guestJoinedRef.current && joinActiveRef.current) {
+              setTakenNames([]);
+              setIsConnecting(false);
+              setJoinStep('nick');
+            }
+          }, 5000);
+        });
+        c.on('data', function (m) {
+          if (m.type === 'INIT') {
+            if (m.players) setPlayersList(m.players);
+            if (m.data) syncState(m.data, false);
+            if (m.mpMode === 'race') {
+              setMpMode('race');mpModeRef.current = 'race';
+              setRaceState('lobby');raceStateRef.current = 'lobby';
+            }
+          } else if (m.type === 'SYNC') {
+            syncState(m.data, false);
+          } else if (m.type === 'PLAYERS_UPDATE') {
+            if (m.players) setPlayersList(m.players);
+          } else if (m.type === 'RACE_START') {
+            beginRace(m.data, m.startAt);
+          } else if (m.type === 'RACE_REMATCH') {
+            showToast("🏁 房主發起了再來一局！");
+          } else if (m.type === 'RACE_PROGRESS') {
+            setRaceProgress(function (prev) {
+              return _extends({}, prev, _defineProperty({}, m.uid, { progress: m.progress, name: m.name, color: m.color }));
+            });
+          } else if (m.type === 'RACE_FINISH') {
+            onRaceOpponentFinish(m.uid, m);
+          } else if (m.type === 'CURSOR') {
+            setCursors(function (prev) {
+              return _extends({}, prev, _defineProperty({}, m.uid, { x: m.x, y: m.y }));
+            });
+          } else if (m.type === 'CLICK') {
+            setRipples(function (prev) {
+              return [].concat(_toConsumableArray(prev), [{ id: Date.now() + Math.random(), uid: m.uid, x: m.x, y: m.y, timestamp: Date.now() }]);
+            });
+          } else if (m.type === 'CHAT') {
+            appendChatMsg(m);
+          } else if (m.type === 'MIC') {
+            handleMicMsg(m);
+          } else if (m.type === 'TAKEN_NAMES') {
+            if (!guestNamesResolvedRef.current && !guestJoinedRef.current && joinActiveRef.current) {
+              if (guestNamesTimeoutRef.current) {
+                clearTimeout(guestNamesTimeoutRef.current);guestNamesTimeoutRef.current = null;
+              }
+              guestNamesResolvedRef.current = true;
+              setTakenNames((m.names || []).filter(function (n) {
+                return n && n.trim();
+              }));
+              setIsConnecting(false);
+              setJoinStep('nick');
+            }
+          } else if (m.type === 'JOIN_REJECTED' && m.reason === 'name_taken') {
+            handleJoinRejected(m);
+          } else if (m.type === 'REQ_REJOIN') {
+            connRef.current.send({ type: 'JOIN', pName: myNameRef.current, uid: myId, color: myColorRef.current, auto: autoNameRef.current });
+          }
+        });
+        c.on('close', function () {
+          if (suppressCloseRef.current) return;
+          if (joinActiveRef.current) {
+            // 還在 join 流程（connecting/nick/拉霸機）→ 回 choose 步
+            showToast("⚠️ 連線中斷，請重試");
+            fullJoinCleanup();
+            return;
+          }
+          if (raceStateRef.current !== 'idle') {
+            showToast("⚠️ 對手斷線，競速結束");exitRaceToSolo();
+          } else {
+            showToast("⚠️ 主機已離線，切換為單機模式");switchToOffline();
+          }
+        });
+      });
+      guestP.on('error', function () {
+        if (joinActiveRef.current) {
+          showToast("⚠️ 無法連線，請確認代碼是否正確");
+          fullJoinCleanup();
+        } else {
+          setIsConnecting(false);switchToOffline();
+          showToast("⚠️ 無法連線，請確認代碼是否正確");
+        }
+      });
+    }
+  };
+
+  var handleGoHome = function handleGoHome() {
+    if (engineRef.current !== 'none') {
+      if (!isHostRef.current && engineRef.current === 'peerjs' && connRef.current) {
+        // 有禮貌地先傳送退出訊號給房主，再關閉連線
+        connRef.current.send({ type: 'LEAVE', uid: myId });
+        setTimeout(function () {
+          if (peerRef.current) {
+            peerRef.current.destroy();peerRef.current = null;
+          }
+        }, 100);
+      } else {
+        if (peerRef.current) {
+          peerRef.current.destroy();peerRef.current = null;
+        }
+      }
+    }
+    switchToOffline();setScreen('home');setIsWon(false);setEndTime(null);setHistory([]);
+    setIsDailyMode(false);isDailyModeRef.current = false;
+    setRaceState('idle');raceStateRef.current = 'idle';
+    setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
+    raceResultsRef.current = {};myFinishTimeRef.current = null;
+    resetWinMeta();
+  };
+
+  // ==================== 🏁 競速模式 ====================
+  var startRace = function startRace() {
+    if (!isHostRef.current || playersListRef.current.length < 2) return;
+    var targetLevelDef = { id: 2, name: "10x10 標準", width: 10, height: 10, description: "🏁 競速專用題目，祝好運！" };
+    var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
+    var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
+    var startAt = Date.now() + 3500;
+    var payload = { randomLevelData: newRandomData, bridges: empty, levelId: 2, showSolution: false, startTime: startAt, strokes: [] };
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'RACE_START', data: payload, startAt: startAt });
+    });
+    beginRace(payload, startAt);
+  };
+
+  var rematchRace = function rematchRace() {
+    if (!isHostRef.current) return;
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'RACE_REMATCH' });
+    });
+    showToast("🏁 再來一局！");
+    startRace();
+  };
+
+  var beginRace = function beginRace(payload, startAt) {
+    var seq = ++raceSeqRef.current;
+    setRandomLevelData(payload.randomLevelData);
+    setBridges(payload.bridges);
+    setCurrentLevelId(payload.levelId || 2);
+    setShowSolution(false);
+    setStrokes([]);
+    setHistory([]);
+    setStartTime(startAt);
+    setEndTime(null);
+    setIsWon(false);setHideVictoryModal(false);
+    resetWinMeta();
+    setConfetti([]);
+    raceStartAtRef.current = startAt;
+    myFinishTimeRef.current = null;
+    raceResultsRef.current = {};
+    setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
+    lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
+    stateRef.current = _extends({}, stateRef.current, payload);
+    var seed = {};
+    playersListRef.current.forEach(function (p) {
+      seed[p.id] = { progress: 0, name: p.name, color: p.color };
+    });
+    if (!seed[myId]) seed[myId] = { progress: 0, name: myNameRef.current || '你', color: myColorRef.current };
+    setRaceProgress(seed);
+    setCursors({}); // 🏁 競速開始：清掉大廳殘留的游標（競速模式不顯示游標，防作弊）
+    levelDimRef.current = { w: payload.randomLevelData.width, h: payload.randomLevelData.height };
+    setBoardFadeKey(function (k) {
+      return k + 1;
+    });scheduleFitZoom();
+    setRaceState('countdown');raceStateRef.current = 'countdown';
+    var now = Date.now();
+    [3, 2, 1].forEach(function (n) {
+      var delay = Math.max(0, startAt - n * 1000 - now);
+      setTimeout(function () {
+        if (raceSeqRef.current !== seq || raceStateRef.current !== 'countdown') return;
+        setRaceCountdown(n);
+        window.HASHI_SOUND.play('countdown');
+      }, delay);
+    });
+    setTimeout(function () {
+      if (raceSeqRef.current !== seq || raceStateRef.current !== 'countdown') return;
+      setRaceCountdown(0);
+      window.HASHI_SOUND.play('go');
+      setRaceState('racing');raceStateRef.current = 'racing';
+      setTimeout(function () {
+        if (raceSeqRef.current === seq) setRaceCountdown(null);
+      }, 900);
+    }, Math.max(0, startAt - now));
+  };
+
+  var onRaceSelfFinish = function onRaceSelfFinish(timeMs) {
+    myFinishTimeRef.current = timeMs;
+    var msg = { type: 'RACE_FINISH', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: timeMs };
+    if (isHostRef.current) {
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send(msg);
+      });
+    } else if (connRef.current && connRef.current.open) {
+      connRef.current.send(msg);
+    }
+    if (Object.keys(raceResultsRef.current).length > 0) {
+      showRaceResult();
+    } else {
+      setRaceWaiting(true);
+      showToast("⏳ 你完成了！等待對手...");
+    }
+  };
+
+  var onRaceOpponentFinish = function onRaceOpponentFinish(uid, m) {
+    if (raceResultsRef.current[uid]) return;
+    raceResultsRef.current[uid] = { name: m.name || '對手', color: m.color, timeMs: m.timeMs };
+    if (myFinishTimeRef.current != null) {
+      showRaceResult();
+    } else {
+      showToast("🏁 " + (m.name || '對手') + " 已完成！加油！");
+    }
+  };
+
+  var showRaceResult = function showRaceResult() {
+    var myTime = myFinishTimeRef.current || 0;
+    var entries = [{ uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: myTime }];
+    Object.keys(raceResultsRef.current).forEach(function (uid) {
+      var r = raceResultsRef.current[uid];
+      entries.push({ uid: uid, name: r.name, color: r.color, timeMs: r.timeMs });
+    });
+    entries.sort(function (a, b) {
+      return a.timeMs - b.timeMs;
+    });
+    var islCount = (stateRef.current.randomLevelData && stateRef.current.randomLevelData.islands || []).length || 1;
+    var s = computeStars(Math.floor(myTime / 1000), islCount, false);
+    setStars(s);
+    for (var si = 0; si < s; si++) {
+      setTimeout(function () {
+        return window.HASHI_SOUND.play('star');
+      }, 200 + si * 320);
+    }
+    setRaceResult({ winnerUid: entries[0].uid, entries: entries });
+    setRaceWaiting(false);
+    setRaceState('finished');raceStateRef.current = 'finished';
+  };
+
+  var exitRaceToSolo = function exitRaceToSolo() {
+    setRaceState('idle');raceStateRef.current = 'idle';
+    setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
+    raceResultsRef.current = {};myFinishTimeRef.current = null;
+    switchToOffline();
+  };
+  // ================== 🏁 競速模式結束 ==================
+
+  var handlePlayerColorChange = function handlePlayerColorChange(playerId, newColor) {
+    if (engineRef.current === 'none') return;
+
+    if (engineRef.current === 'peerjs') {
+      if (isHostRef.current) {
+        setPlayersList(function (prev) {
+          var nList = prev.map(function (p) {
+            if (p.id === playerId) return _extends({}, p, { color: newColor });
+            return p;
+          });
+          connsRef.current.forEach(function (c) {
+            return c.send({ type: 'PLAYERS_UPDATE', players: nList });
+          });
+          return nList;
+        });
+      } else if (connRef.current) {
+        connRef.current.send({ type: 'REQ_COLOR_CHANGE', targetId: playerId, color: newColor });
+      }
+    }
+  };
+
+  useEffect(function () {
+    var islands = randomLevelData && randomLevelData.islands ? randomLevelData.islands : [];
+    if (islands.length === 0) {
+      if (isWon) {
+        setIsWon(false);setEndTime(null);
+      }
+      return;
+    }
+
+    var allCountsMatch = true;
+    for (var i = 0; i < islands.length; i++) {
+      if (islandCurrentCounts[islands[i].id].real !== islands[i].req) {
+        allCountsMatch = false;break;
+      }
+    }
+    if (!allCountsMatch) {
+      if (isWon) {
+        setIsWon(false);setEndTime(null);
+      }
+      return;
+    }
+
+    var adjList = {};islands.forEach(function (i) {
+      adjList[i.id] = [];
+    });
+    (bridges || []).forEach(function (b) {
+      if (b.count > 0 && adjList[b.from] && adjList[b.to]) {
+        adjList[b.from].push(b.to);adjList[b.to].push(b.from);
+      }
+    });
+    var visited = new Set();var queue = [islands[0].id];
+    if (queue.length > 0) visited.add(queue[0]);
+    while (queue.length > 0) {
+      var curr = queue.shift();
+      if (adjList[curr]) {
+        adjList[curr].forEach(function (neighbor) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);queue.push(neighbor);
+          }
+        });
+      }
+    }
+    if (visited.size === islands.length && islands.length > 0) {
+      if (!isWon) {
+        setIsWon(true);
+        setEndTime(Date.now());
+        setHideVictoryModal(false);
+        var secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+        if (raceStateRef.current === 'racing') {
+          // 🏁 競速完賽：記錄個人成績並通知對手，不播標準勝利音效
+          var timeMs = Math.max(0, Date.now() - raceStartAtRef.current);
+          recordBest(secs);
+          onRaceSelfFinish(timeMs);
+        } else {
+          window.HASHI_SOUND.play('win');
+          var s = computeStars(secs, islands.length, showSolution);
+          setStars(s);
+          for (var si = 0; si < s; si++) {
+            setTimeout(function () {
+              return window.HASHI_SOUND.play('star');
+            }, 200 + si * 320);
+          }
+          recordBest(secs);
+          if (isDailyModeRef.current) {
+            recordDailyWin(secs);
+          }
+        }
+      }
+    } else {
+      if (isWon) {
+        setIsWon(false);setEndTime(null);
+      }
+    }
+  }, [bridges, randomLevelData, islandCurrentCounts, isWon]);
+
+  var handleSaveCode = function handleSaveCode() {
+    var saveData = {
+      lid: currentLevelId,
+      r: randomLevelData,
+      b: (bridges || []).filter(function (br) {
+        return br.count > 0 || (br.draftCount || 0) > 0;
+      }).map(function (br) {
+        return { i: br.id, c: br.count, d: br.draftCount || 0, o: br.owner };
+      }),
+      s: strokes
+    };
+    var code = btoa(encodeURIComponent(JSON.stringify(saveData)));
+    setSaveCode(code);
+    var textArea = document.createElement("textarea");textArea.value = code;document.body.appendChild(textArea);textArea.select();
+    try {
+      document.execCommand('copy');showToast("✅ 已產生並複製代碼！");
+    } catch (err) {}
+    document.body.removeChild(textArea);
+  };
+
+  var handleQuickPaste = function () {
+    var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+      var text, ta;
+      return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.prev = 0;
+
+              if (!(navigator.clipboard && navigator.clipboard.readText)) {
+                _context2.next = 8;
+                break;
+              }
+
+              _context2.next = 4;
+              return navigator.clipboard.readText();
+
+            case 4:
+              text = _context2.sent;
+              if (text) {
+                setSaveCode(text);showToast("✅ 貼上成功！");
+              }_context2.next = 9;
+              break;
+
+            case 8:
+              throw new Error();
+
+            case 9:
+              _context2.next = 16;
+              break;
+
+            case 11:
+              _context2.prev = 11;
+              _context2.t0 = _context2['catch'](0);
+              ta = document.getElementById("saveCodeTextarea");
+              if (ta) ta.focus();showToast("⚠️ 瀏覽器阻擋自動貼上，請手動貼上");
+            case 16:
+            case 'end':
+              return _context2.stop();
+          }
+        }
+      }, _callee2, _this, [[0, 11]]);
+    }));
+
+    return function handleQuickPaste() {
+      return _ref3.apply(this, arguments);
+    };
+  }();
+
+  var handleLoadCode = function handleLoadCode() {
+    try {
+      if (!saveCode.trim()) return showToast("⚠️ 請貼上代碼");
+      var data = JSON.parse(decodeURIComponent(atob(saveCode.trim())));
+
+      var baseLevel = void 0,
+          newRandom = void 0;
+      if (data.lid === 'custom' || data.lid === 'daily') {
+        baseLevel = { id: data.lid, name: data.lid === 'daily' ? '\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C' : '\u2699\uFE0F \u81EA\u8A02\u5C3A\u5BF8', islands: data.r && data.r.islands ? data.r.islands : [] };
+        newRandom = data.r;
+      } else {
+        baseLevel = LEVELS.find(function (l) {
+          return l.id === data.lid;
+        });
+        if (!baseLevel) return showToast("⚠️ 無效的代碼");
+        newRandom = data.r;
+      }
+
+      var islandsToUse = newRandom && newRandom.islands ? newRandom.islands : baseLevel.islands;
+      var emptyBridges = HASHI_PUZZLE.generateEmptyBridges({ islands: islandsToUse });
+
+      data.b.forEach(function (savedBr) {
+        var tb = emptyBridges.find(function (eb) {
+          return eb.id === savedBr.i;
+        });if (tb) {
+          tb.count = savedBr.c || 0;tb.draftCount = savedBr.d || 0;tb.owner = savedBr.o;
+        }
+      });
+      setCurrentLevelId(data.lid);
+      syncState({ randomLevelData: newRandom, bridges: emptyBridges, strokes: data.s || [], showSolution: false });
+      setIsWon(false);setShowSaveModal(false);showToast("✅ 讀取成功！");
+    } catch (e) {
+      showToast("⚠️ 讀檔失敗！");
+    }
+  };
+
+  var handleZoomIn = function handleZoomIn() {
+    var newZoom = Math.min(zoomLevelRef.current + 0.3, 3.5);
+    userZoomedRef.current = true;
+
+    if (svgW * newZoom > MAX_SAFE_DIMENSION || svgH * newZoom > MAX_SAFE_DIMENSION) {
+      newZoom = Math.min(MAX_SAFE_DIMENSION / svgW, MAX_SAFE_DIMENSION / svgH);
+      showToast("⚠️ 已達此設備顯示極限，無法再放大");
+    }
+
+    zoomLevelRef.current = newZoom;
+    setZoomLevel(newZoom);
+    setZoomModeIdx(0);
+    zoomModeIdxRef.current = 0;
+    if (svgRef.current) {
+      svgRef.current.style.width = svgW * newZoom + 'px';
+      svgRef.current.style.height = svgH * newZoom + 'px';
+    }
+  };
+  var handleZoomOut = function handleZoomOut() {
+    var newZoom = Math.max(zoomLevelRef.current - 0.3, 0.4);
+    userZoomedRef.current = true;
+    zoomLevelRef.current = newZoom;
+    setZoomLevel(newZoom);
+    setZoomModeIdx(0);
+    zoomModeIdxRef.current = 0;
+    if (svgRef.current) {
+      svgRef.current.style.width = svgW * newZoom + 'px';
+      svgRef.current.style.height = svgH * newZoom + 'px';
+    }
+  };
+  var handleZoomReset = function handleZoomReset() {
+    zoomLevelRef.current = 1;
+    userZoomedRef.current = true;
+    setZoomLevel(1);
+    setZoomModeIdx(0);
+    zoomModeIdxRef.current = 0;
+    if (svgRef.current) {
+      svgRef.current.style.width = svgW + 'px';
+      svgRef.current.style.height = svgH + 'px';
+    }
+  };
+
+  // === 題目自動適應螢幕（新題目 / 旋轉螢幕時呼叫） ===
+  var applyFitZoom = function applyFitZoom() {
+    var container = zoomContainerRef.current;
+    if (!container) return false;
+    var cw = container.clientWidth;
+    var ch = container.clientHeight;
+    if (!cw || !ch) return false;
+    var _levelDimRef$current = levelDimRef.current,
+        w = _levelDimRef$current.w,
+        h = _levelDimRef$current.h;
+
+    var sW = (w - 1) * SCALE + PADDING * 2;
+    var sH = (h - 1) * SCALE + PADDING * 2;
+    var paddingFactor = 0.95;
+    var newZoom = Math.min(cw / sW, ch / sH) * paddingFactor;
+    newZoom = Math.min(Math.max(newZoom, 0.2), 3.5);
+    if (sW * newZoom > MAX_SAFE_DIMENSION || sH * newZoom > MAX_SAFE_DIMENSION) {
+      newZoom = Math.min(MAX_SAFE_DIMENSION / sW, MAX_SAFE_DIMENSION / sH);
+    }
+    userZoomedRef.current = false;
+    zoomLevelRef.current = newZoom;
+    setZoomLevel(newZoom);
+    setZoomModeIdx(3);
+    zoomModeIdxRef.current = 3;
+    if (svgRef.current) {
+      svgRef.current.style.width = sW * newZoom + 'px';
+      svgRef.current.style.height = sH * newZoom + 'px';
+    }
+    return true;
+  };
+  var scheduleFitZoom = function scheduleFitZoom() {
+    // 等 DOM 穩定再量測；量不到就 350ms 後重試一次
+    setTimeout(function () {
+      requestAnimationFrame(function () {
+        if (!applyFitZoom()) {
+          setTimeout(function () {
+            return requestAnimationFrame(function () {
+              applyFitZoom();
+            });
+          }, 350);
+        }
+      });
+    }, 60);
+  };
+
+  var handleCycleZoom = function handleCycleZoom() {
+    var nextIdx = (zoomModeIdxRef.current + 1) % 4;
+    setZoomModeIdx(nextIdx);
+    zoomModeIdxRef.current = nextIdx;
+    userZoomedRef.current = true; // 手動縮放
+
+    var container = zoomContainerRef.current;
+    if (!container) return;
+
+    var paddingFactor = 0.95;
+    var cw = container.clientWidth;
+    var ch = container.clientHeight;
+
+    var newZoom = 1;
+    if (nextIdx === 0) {
+      newZoom = 1;
+      showToast("🔍 原始大小 (1x)");
+    } else if (nextIdx === 1) {
+      newZoom = cw / svgW * paddingFactor;
+      showToast("↔️ 適應螢幕寬度");
+    } else if (nextIdx === 2) {
+      newZoom = ch / svgH * paddingFactor;
+      showToast("↕️ 適應螢幕長度");
+    } else if (nextIdx === 3) {
+      newZoom = Math.min(cw / svgW, ch / svgH) * paddingFactor;
+      showToast("🔲 長寬自動適應");
+    }
+
+    newZoom = Math.min(Math.max(newZoom, 0.2), 3.5);
+
+    if (svgW * newZoom > MAX_SAFE_DIMENSION || svgH * newZoom > MAX_SAFE_DIMENSION) {
+      newZoom = Math.min(MAX_SAFE_DIMENSION / svgW, MAX_SAFE_DIMENSION / svgH);
+    }
+
+    zoomLevelRef.current = newZoom;
+    setZoomLevel(newZoom);
+
+    if (svgRef.current) {
+      svgRef.current.style.width = svgW * newZoom + 'px';
+      svgRef.current.style.height = svgH * newZoom + 'px';
+    }
+  };
+
+  // === 首次教學導覽 overlay（可在任何畫面開啟） ===
+  var closeTutorial = function closeTutorial() {
+    try {
+      localStorage.setItem('hashi_tutorial_seen', '1');
+    } catch (e) {}
+    setShowTutorial(false);
+  };
+  // ===== 👆 架橋教學動畫（兩幕：拖曳 → 點擊三連拍） =====
+  var BridgeDemo = function BridgeDemo() {
+    return React.createElement(
+      'div',
+      { className: 'bdemo mb-4', 'aria-hidden': 'true' },
+      React.createElement(
+        'div',
+        { className: 'bdemo-section bdemo-sec1' },
+        '\u62D6\u66F3'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-section bdemo-sec2' },
+        '\u9EDE\u64CA'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label bdemo-l1' },
+        '\uD83D\uDC46 \u6309\u4F4F\u62D6\u66F3\uFF0C\u653E\u958B\u67B6\u6A4B'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label bdemo-l2' },
+        '\u9EDE\u4E00\u4E0B\uFF1A1 \u5EA7\u6A4B'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label bdemo-l3' },
+        '\u9EDE\u5169\u4E0B\uFF1A2 \u5EA7\u6A4B'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label bdemo-l4' },
+        '\u9EDE\u4E09\u4E0B\uFF1A\u53D6\u6D88'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-scene' },
+        React.createElement(
+          'div',
+          { className: 'bdemo-island', style: { left: '30px' } },
+          '3'
+        ),
+        React.createElement(
+          'div',
+          { className: 'bdemo-island', style: { left: '210px' } },
+          '2'
+        ),
+        React.createElement('div', { className: 'bdemo-preview' }),
+        React.createElement('div', { className: 'bdemo-bridge bdemo-b1' }),
+        React.createElement('div', { className: 'bdemo-bridge bdemo-bd1' }),
+        React.createElement('div', { className: 'bdemo-bridge bdemo-bd2' }),
+        React.createElement(
+          'div',
+          { className: 'bdemo-finger' },
+          '\uD83D\uDC46'
+        ),
+        React.createElement('div', { className: 'bdemo-ripple' })
+      )
+    );
+  };
+
+  // ===== ✏️ 草稿教學動畫：虛線兩法 → 切畫筆一點變實線 =====
+  var DraftDemo = function DraftDemo() {
+    return React.createElement(
+      'div',
+      { className: 'bdemo mb-4', 'aria-hidden': 'true' },
+      React.createElement(
+        'div',
+        { className: 'bdemo-label ddemo-l1' },
+        '\u270F\uFE0F \u8349\u7A3F\uFF1A\u62D6\u66F3\u756B\u51FA\u865B\u7DDA'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label ddemo-l2' },
+        '\uD83D\uDC46 \u9EDE\u64CA\uFF1A\u9EDE\u5169\u4E0B 2 \u689D\u865B\u7DDA'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label ddemo-l3' },
+        '\u5207\u56DE\u756B\u7B46\u6A21\u5F0F \u270E'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-label ddemo-l4' },
+        '\u9EDE\u4E00\u4E0B\uFF1A\u865B\u7DDA\u76F4\u63A5\u8B8A\u5BE6\u7DDA\uFF01'
+      ),
+      React.createElement(
+        'div',
+        { className: 'bdemo-scene' },
+        React.createElement(
+          'div',
+          { className: 'ddemo-mode' },
+          React.createElement(
+            'span',
+            { className: 'ddemo-m ddemo-m-draft' },
+            '\u270F\uFE0F \u8349\u7A3F'
+          ),
+          React.createElement(
+            'span',
+            { className: 'ddemo-m ddemo-m-pen' },
+            '\u270E \u756B\u7B46'
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'bdemo-island', style: { left: '30px' } },
+          '3'
+        ),
+        React.createElement(
+          'div',
+          { className: 'bdemo-island', style: { left: '210px' } },
+          '2'
+        ),
+        React.createElement('div', { className: 'bdemo-preview ddemo-preview' }),
+        React.createElement('div', { className: 'ddemo-dash ddemo-db1' }),
+        React.createElement('div', { className: 'ddemo-dash ddemo-dbA' }),
+        React.createElement('div', { className: 'ddemo-dash ddemo-dbB' }),
+        React.createElement('div', { className: 'bdemo-bridge ddemo-sbA' }),
+        React.createElement('div', { className: 'bdemo-bridge ddemo-sbB' }),
+        React.createElement(
+          'div',
+          { className: 'bdemo-finger ddemo-finger' },
+          '\uD83D\uDC46'
+        ),
+        React.createElement('div', { className: 'bdemo-ripple ddemo-ripple' })
+      )
+    );
+  };
+
+  // ===== 🔌 連線教學動畫：房主建房拿代碼 → 代碼飛給朋友 → 朋友輸入加入 → 成功 =====
+  var ConnectDemo = function ConnectDemo() {
+    return React.createElement(
+      'div',
+      { className: 'conn-demo mb-4', 'aria-hidden': 'true' },
+      React.createElement(
+        'div',
+        { className: 'conn-phone conn-host' },
+        React.createElement(
+          'div',
+          { className: 'conn-ptitle' },
+          '\uD83C\uDFE0 \u623F\u4E3B'
+        ),
+        React.createElement(
+          'div',
+          { className: 'conn-btn' },
+          '\u5EFA\u7ACB\u623F\u9593'
+        ),
+        React.createElement(
+          'div',
+          { className: 'conn-code' },
+          React.createElement(
+            'span',
+            null,
+            '1'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '2'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '3'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '4'
+          )
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'conn-wire' },
+        React.createElement(
+          'div',
+          { className: 'conn-chip' },
+          '1234'
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'conn-phone conn-guest' },
+        React.createElement(
+          'div',
+          { className: 'conn-ptitle' },
+          '\uD83D\uDEAA \u670B\u53CB'
+        ),
+        React.createElement(
+          'div',
+          { className: 'conn-input' },
+          React.createElement(
+            'span',
+            null,
+            '1'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '2'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '3'
+          ),
+          React.createElement(
+            'span',
+            null,
+            '4'
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'conn-btn' },
+          '\u52A0\u5165\u623F\u9593'
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'conn-success' },
+        '\u2705 \u9023\u7DDA\u6210\u529F\uFF01'
+      )
+    );
+  };
+
+  var openTutorial = function openTutorial() {
+    window.HASHI_SOUND.play('click');
+    setTutorialStep(0);
+    setShowTutorial(true);
+  };
+
+  var tutorialOverlay = showTutorial ? React.createElement(
+    'div',
+    { className: 'fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4' },
+    React.createElement(
+      'div',
+      { className: 'bg-[#f3fbf3] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
+      React.createElement(
+        'div',
+        { className: 'text-5xl mb-3 text-center' },
+        TUTORIAL_STEPS[tutorialStep].icon
+      ),
+      React.createElement(
+        'h2',
+        { className: 'text-xl font-black text-slate-800 mb-2 text-center' },
+        TUTORIAL_STEPS[tutorialStep].title
+      ),
+      React.createElement(
+        'p',
+        { className: 'text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center' },
+        TUTORIAL_STEPS[tutorialStep].body
+      ),
+      TUTORIAL_STEPS[tutorialStep].demo === 'connect' && React.createElement(ConnectDemo, null),
+      TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && React.createElement(BridgeDemo, null),
+      TUTORIAL_STEPS[tutorialStep].demo === 'draft' && React.createElement(DraftDemo, null),
+      React.createElement(
+        'div',
+        { className: 'flex justify-center gap-2 mb-5' },
+        TUTORIAL_STEPS.map(function (_, idx) {
+          return React.createElement('div', { key: idx, className: 'w-2.5 h-2.5 rounded-full border-2 border-slate-800 ' + (idx === tutorialStep ? 'bg-[#4ade80]' : 'bg-white') });
+        })
+      ),
+      React.createElement(
+        'div',
+        { className: 'flex gap-3' },
+        tutorialStep > 0 && React.createElement(
+          'button',
+          { onClick: function onClick() {
+              window.HASHI_SOUND.play('click');setTutorialStep(tutorialStep - 1);
+            }, className: 'flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+          '\u4E0A\u4E00\u6B65'
+        ),
+        React.createElement(
+          'button',
+          { onClick: closeTutorial, className: 'flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+          '\u8DF3\u904E'
+        ),
+        tutorialStep < TUTORIAL_STEPS.length - 1 ? React.createElement(
+          'button',
+          { onClick: function onClick() {
+              window.HASHI_SOUND.play('click');setTutorialStep(tutorialStep + 1);
+            }, className: 'flex-1 py-2.5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+          '\u4E0B\u4E00\u6B65'
+        ) : React.createElement(
+          'button',
+          { onClick: closeTutorial, className: 'flex-1 py-2.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+          '\u958B\u59CB\u904A\u6232 \uD83C\uDFAE'
+        )
+      )
+    )
+  ) : null;
+
+  if (screen === 'home') {
+    return React.createElement(
+      'div',
+      { className: 'h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn' },
+      React.createElement(
+        'div',
+        { className: 'flex-1 flex flex-col justify-center w-full max-w-md items-center' },
+        React.createElement(
+          'div',
+          { className: 'bg-[#f3fbf3] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10' },
+          React.createElement(
+            'h1',
+            { className: 'text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3' },
+            React.createElement(
+              'span',
+              { className: 'inline-block animate-float-slow bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
+              '\u6578'
+            ),
+            React.createElement(
+              'span',
+              { className: 'inline-block animate-float-slow animate-float-slow-d bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
+              '\u6A4B'
+            ),
+            React.createElement(
+              'span',
+              { className: 'inline-block self-center bg-[#2d2a26] text-[#4ade80] text-base px-3 py-1.5 border-[3px] border-slate-800 rounded-lg transform rotate-3 shadow-[3px_3px_0px_rgba(30,41,59,1)] tracking-widest' },
+              '\u6E2C\u8A66\u7248'
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'inline-block border-[3px] border-dashed border-slate-800 rounded-xl px-6 py-2 mb-8 bg-white shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-2' },
+            React.createElement(
+              'p',
+              { className: 'text-slate-800 font-black text-xl tracking-widest uppercase italic' },
+              'Hashi Puzzle'
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex flex-col gap-5' },
+            React.createElement(
+              'button',
+              { onClick: startSinglePlayer, className: 'w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1' },
+              '\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  setJoinStep('choose');setTempPlayerName("");setNickError("");setScreen('join');
+                }, className: 'w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1' },
+              '\uD83C\uDF10 \u591A\u4EBA\u5408\u4F5C'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return startDailyMode(dailyMenuDate);
+                }, className: 'w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1' },
+              '\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C'
+            ),
+            React.createElement(
+              'div',
+              { className: '-mt-2 flex items-center justify-center gap-1.5' },
+              React.createElement(
+                'span',
+                { className: 'text-slate-500 font-bold text-xs whitespace-nowrap' },
+                '\uD83D\uDD58 \u4EE5\u524D\u7684\u984C\u76EE'
+              ),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setDailyMenuDate(function (d) {
+                      return clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, -1));
+                    });
+                  }, disabled: dailyMenuDate <= MIN_DAILY_DATE, className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none' },
+                '\u25C0'
+              ),
+              React.createElement('input', { type: 'date', value: dailyMenuDate, min: MIN_DAILY_DATE, max: HASHI_PUZZLE.getDailyDateStr(), onChange: function onChange(e) {
+                  return setDailyMenuDate(clampDailyDate(e.target.value));
+                }, className: 'border-2 border-slate-800 rounded-md px-1.5 py-1 font-bold text-sm bg-white text-slate-800 outline-none' }),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setDailyMenuDate(function (d) {
+                      return clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, 1));
+                    });
+                  }, disabled: dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr(), className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none' },
+                '\u25B6'
+              )
+            ),
+            dailyStatus && React.createElement(
+              'p',
+              { className: 'text-slate-600 font-bold text-sm -mt-2' },
+              dailyStatus.done ? '\u2705 \u5DF2\u5B8C\u6210 ' + formatTime(dailyStatus.done.time) : '\uD83D\uDCC5 ' + dailyStatus.dateStr,
+              dailyStatus.streak > 1 ? '  \uD83D\uDD25 \u9023\u64CA x' + dailyStatus.streak : ''
+            ),
+            React.createElement(
+              'button',
+              { onClick: openTutorial, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-lg text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+              '\u2753 \u73A9\u6CD5\u8AAA\u660E'
+            )
+          )
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10' },
+        'Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v2.18 \u6E2C\u8A66\u7248)'
+      ),
+      tutorialOverlay
+    );
+  }
+
+  if (screen === 'join') {
+    return React.createElement(
+      'div',
+      { className: 'h-screen w-screen flex flex-col items-center justify-center p-4 relative animate-fadeIn' },
+      React.createElement(
+        'div',
+        { className: 'bg-[#f3fbf3] border-4 border-slate-800 p-8 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-2xl w-full z-10 transform rotate-1' },
+        React.createElement(
+          'h2',
+          { className: 'text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#4ade80] pb-1 select-none' },
+          '\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA\u9078\u55AE'
+        ),
+        joinStep === 'choose' && React.createElement(
+          'div',
+          { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                window.HASHI_SOUND.play('click');setJoinStep('hostSetup');
+              }, disabled: isConnecting, className: 'bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 text-left' },
+            React.createElement(
+              'div',
+              { className: 'font-black text-2xl mb-1' },
+              '\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593'
+            ),
+            React.createElement(
+              'div',
+              { className: 'text-xs font-bold opacity-90 leading-relaxed' },
+              '\u4F60\u662F\u623F\u4E3B\uFF01\u4EE3\u78BC\u56FA\u5B9A\u4E0D\u8B8A\uFF0C\u670B\u53CB\u7528\u540C\u4E00\u7D44\u4EE3\u78BC\u52A0\u5165'
+            )
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                window.HASHI_SOUND.play('click');setJoinStep('guestSetup');
+              }, disabled: isConnecting, className: 'bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 text-left' },
+            React.createElement(
+              'div',
+              { className: 'font-black text-2xl mb-1' },
+              '\uD83D\uDEAA \u52A0\u5165\u623F\u9593'
+            ),
+            React.createElement(
+              'div',
+              { className: 'text-xs font-bold opacity-80 leading-relaxed' },
+              '\u8F38\u5165\u670B\u53CB\u7D66\u4F60\u7684 4 \u4F4D\u6578\u4EE3\u78BC'
+            )
+          )
+        ),
+        joinStep === 'hostSetup' && React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'div',
+            { className: 'mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
+            React.createElement(
+              'label',
+              { className: 'block text-slate-800 font-black text-sm mb-2' },
+              '\u9078\u64C7\u904A\u6232\u6A21\u5F0F'
+            ),
+            React.createElement(
+              'div',
+              { className: 'grid grid-cols-2 gap-3' },
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    setMpMode('coop');mpModeRef.current = 'coop';window.HASHI_SOUND.play('click');
+                  }, disabled: isConnecting, className: "py-3 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + (mpMode === 'coop' ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-400') },
+                '\uD83E\uDD1D \u5408\u4F5C'
+              ),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    setMpMode('race');mpModeRef.current = 'race';window.HASHI_SOUND.play('click');
+                  }, disabled: isConnecting, className: "py-3 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + (mpMode === 'race' ? 'bg-red-400 text-slate-900' : 'bg-white text-slate-400') },
+                '\uD83C\uDFC1 \u7AF6\u901F'
+              )
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-xs text-slate-500 font-bold mt-2' },
+              mpMode === 'race' ? '🏁 兩人挑戰同一題目，比誰先解完！（來賓以房主選擇為準）' : '🤝 和朋友在同一張地圖上合作解題。'
+            )
+          ),
+          React.createElement(
+            'button',
+            { onClick: hostCreateRoom, disabled: isConnecting, className: 'w-full py-4 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed' },
+            '\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setJoinStep('choose');
+              }, disabled: isConnecting, className: 'mt-4 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
+            '\u2190 \u8FD4\u56DE'
+          )
+        ),
+        joinStep === 'guestSetup' && React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'div',
+            { className: 'mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
+            React.createElement(
+              'label',
+              { className: 'block text-slate-800 font-black text-sm mb-2' },
+              '\u8F38\u5165\u670B\u53CB\u7684 4 \u4F4D\u6578\u4EE3\u78BC'
+            ),
+            React.createElement('input', { type: 'text', maxLength: '5', placeholder: '4 \u4F4D\u6578\u4EE3\u78BC', value: tempRoomId, onChange: function onChange(e) {
+                return setTempRoomId(e.target.value.toUpperCase());
+              }, disabled: isConnecting, className: 'w-full border-4 border-slate-800 rounded-xl p-3 font-black text-center text-2xl tracking-widest outline-none bg-white uppercase shadow-[4px_4px_0px_rgba(30,41,59,1)] disabled:opacity-50' })
+          ),
+          React.createElement(
+            'button',
+            { onClick: guestConnectRoom, disabled: isConnecting, className: 'w-full py-4 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed' },
+            '\uD83D\uDEAA \u52A0\u5165\u623F\u9593'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setJoinStep('choose');
+              }, disabled: isConnecting, className: 'mt-4 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
+            '\u2190 \u8FD4\u56DE'
+          )
+        ),
+        joinStep === 'connecting' && React.createElement(
+          'div',
+          { className: 'bg-white p-8 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-center' },
+          React.createElement(
+            'p',
+            { className: 'text-slate-800 font-black text-xl animate-pulse' },
+            joinRoleRef.current === 'host' ? "🏠 建立房間中…" : "🔌 連線中…"
+          ),
+          React.createElement(
+            'p',
+            { className: 'text-slate-500 font-bold text-sm mt-2' },
+            '\u8ACB\u7A0D\u5019\u4E00\u4E0B\u4E0B'
+          )
+        ),
+        joinStep === 'nick' && React.createElement(
+          'div',
+          { className: 'bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
+          joinRoleRef.current === 'host' ? React.createElement(
+            'div',
+            { className: 'mb-4 bg-blue-50 border-2 border-dashed border-blue-400 rounded-lg p-3 text-center' },
+            React.createElement(
+              'p',
+              { className: 'font-black text-slate-800 text-lg' },
+              '\uD83C\uDFE0 \u623F\u9593 ',
+              React.createElement(
+                'span',
+                { className: 'text-2xl tracking-[0.3em]' },
+                roomId
+              ),
+              ' \u5DF2\u5EFA\u7ACB\uFF01'
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-xs text-slate-600 font-bold mt-1' },
+              '\u628A\u9019\u7D44\u4EE3\u78BC\u50B3\u7D66\u670B\u53CB\u5427'
+            )
+          ) : React.createElement(
+            'div',
+            { className: 'mb-4 bg-emerald-50 border-2 border-dashed border-emerald-400 rounded-lg p-3 text-center' },
+            React.createElement(
+              'p',
+              { className: 'font-black text-slate-800 text-lg' },
+              '\uD83D\uDEAA \u5DF2\u9023\u4E0A\u623F\u9593 ',
+              React.createElement(
+                'span',
+                { className: 'text-2xl tracking-[0.3em]' },
+                roomId
+              )
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-xs text-slate-600 font-bold mt-1' },
+              '\u53D6\u500B\u540D\u5B57\u5C31\u53EF\u4EE5\u9032\u53BB\u4E86'
+            )
+          ),
+          React.createElement(
+            'label',
+            { className: 'block text-slate-800 font-black text-sm mb-2' },
+            '\u53D6\u500B\u540D\u5B57 ',
+            React.createElement(
+              'span',
+              { className: 'text-slate-400 font-bold' },
+              '\uFF08\u53EF\u7559\u767D\uFF0C\u62C9\u9738\u6A5F\u5E6B\u4F60\u62BD\uFF01\uFF09'
+            )
+          ),
+          React.createElement('input', { ref: nameInputRef, type: 'text', maxLength: 12, placeholder: "例如：" + namePlaceholderAnimal + "（留白隨機抽一個！）", value: tempPlayerName, onChange: function onChange(e) {
+              setTempPlayerName(e.target.value);setNickError("");
+            }, disabled: isConnecting, className: 'w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-green-50 outline-none focus:ring-2 ring-[#4ade80] disabled:opacity-50' }),
+          nickError && React.createElement(
+            'p',
+            { className: 'text-red-600 font-black text-sm mt-2 animate-fadeIn' },
+            '\u26A0\uFE0F ',
+            nickError
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex gap-2 mt-4' },
+            React.createElement(
+              'button',
+              { onClick: backToChoose, disabled: isConnecting, className: 'px-4 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
+              '\u2190 \u8FD4\u56DE'
+            ),
+            React.createElement(
+              'button',
+              { onClick: openSlotForNick, disabled: isConnecting, className: 'flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
+              '\uD83C\uDFB0 \u96A8\u6A5F\u62BD\u4E00\u500B'
+            ),
+            React.createElement(
+              'button',
+              { onClick: confirmNickAndEnter, disabled: isConnecting, className: 'flex-1 py-3 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
+              isConnecting ? "進入中…" : "進入房間"
+            )
+          )
+        ),
+        joinStep === 'choose' && React.createElement(
+          'button',
+          { onClick: function onClick() {
+              window.HASHI_SOUND.play('click');setTutorialStep(Math.max(0, TUTORIAL_STEPS.findIndex(function (s) {
+                return s.demo === 'connect';
+              })));setShowTutorial(true);
+            }, className: 'mt-4 w-full text-slate-500 font-bold text-sm hover:text-slate-800 hover:underline text-center transition-colors' },
+          '\uD83D\uDD0C \u4E0D\u77E5\u9053\u600E\u9EBC\u8DDF\u670B\u53CB\u9023\u7DDA\uFF1F\u770B\u52D5\u756B\u6559\u5B78'
+        ),
+        (joinStep === 'choose' || joinStep === 'hostSetup' || joinStep === 'guestSetup') && React.createElement(
+          'button',
+          { onClick: function onClick() {
+              return setScreen('home');
+            }, disabled: isConnecting, className: 'mt-8 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
+          '\u53D6\u6D88\u8FD4\u56DE\u4E3B\u9078\u55AE'
+        )
+      ),
+      showSlotMachine && React.createElement(
+        'div',
+        { className: 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4' },
+        React.createElement(
+          'div',
+          { className: 'bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter text-center' },
+          React.createElement(
+            'h2',
+            { className: 'text-2xl font-black text-slate-800 mb-1' },
+            '\uD83C\uDFB0 \u66B1\u7A31\u62C9\u9738\u6A5F'
+          ),
+          React.createElement(
+            'p',
+            { className: 'text-xs font-bold text-slate-500 mb-4' },
+            '\u6C92\u586B\u540D\u5B57\uFF1F\u90A3\u5C31\u4EA4\u7D66\u547D\u904B\u5427\uFF01'
+          ),
+          React.createElement(
+            'div',
+            { className: 'bg-slate-800 rounded-xl border-4 border-[#4ade80] px-4 mb-4 min-h-[96px] flex items-center justify-center' },
+            slotWaiting ? React.createElement(
+              'p',
+              { className: 'text-white font-black animate-pulse text-lg' },
+              '\u6B63\u5728\u78BA\u8A8D\u53EF\u7528\u540D\u5B57\u2026'
+            ) : React.createElement(
+              'p',
+              { key: 'slot-' + slotRound + '-' + (slotFinalName || 'spinning'), className: "font-black text-white " + (slotFinalName && !slotSpinning ? "text-3xl animate-popUpCenter" : "text-2xl text-yellow-200") },
+              slotName || "…"
+            )
+          ),
+          !slotWaiting && React.createElement(
+            'div',
+            { className: 'flex gap-3 mb-3' },
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  try {
+                    window.HASHI_SOUND.play('click');
+                  } catch (e) {}spinSlot(slotPoolRef.current);
+                }, disabled: slotSpinning, className: 'flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
+              '\uD83D\uDD04 \u518D\u8F49\u4E00\u6B21'
+            ),
+            React.createElement(
+              'button',
+              { onClick: confirmSlotName, disabled: slotSpinning || !slotFinalName, className: 'flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
+              '\u2705 \u5C31\u7528\u9019\u500B\u9032\u5165'
+            )
+          ),
+          React.createElement(
+            'button',
+            { onClick: closeSlotModal, className: 'w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors text-sm' },
+            '\u53D6\u6D88'
+          )
+        )
+      ),
+      toastMsg && React.createElement(
+        'div',
+        { className: 'fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade' },
+        toastMsg
+      ),
+      tutorialOverlay
+    );
+  }
+
+  var sortedBridges = [].concat(_toConsumableArray(bridges)).sort(function (a, b) {
+    var aActive = a.count + (a.draftCount || 0) > 0 ? 1 : 0;
+    var bActive = b.count + (b.draftCount || 0) > 0 ? 1 : 0;
+    return aActive - bActive;
+  });
+
+  return React.createElement(
+    'div',
+    { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
+    React.createElement(
+      'div',
+      { className: 'w-full max-w-[1200px] bg-[#f3fbf3] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden' },
+      React.createElement(
+        'div',
+        { className: 'bg-gradient-to-b from-[#ffd633] to-[#4ade80] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2' },
+        React.createElement(
+          'div',
+          { className: 'flex items-center justify-between gap-1 w-full' },
+          React.createElement(
+            'div',
+            { className: 'flex items-center gap-2 flex-wrap' },
+            React.createElement(
+              'h1',
+              { className: 'font-black tracking-tight uppercase text-lg md:text-2xl text-[#2d2a26] flex items-center gap-1' },
+              '\uD83C\uDF09',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u6578\u6A4B'
+              ),
+              React.createElement(
+                'span',
+                { className: 'bg-[#2d2a26] text-[#4ade80] text-[10px] md:text-xs px-1.5 py-0.5 rounded-md tracking-widest' },
+                '\u6E2C\u8A66\u7248'
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-1 bg-[#2d2a26] text-white px-2 py-1 rounded-md font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-xs md:text-sm whitespace-nowrap' },
+              React.createElement(GameTimer, { startTime: startTime, endTime: endTime, isRunning: !isWon && screen === 'game' })
+            ),
+            isDailyMode && React.createElement(
+              'span',
+              { className: 'flex items-center gap-0.5 bg-[#4ade80] text-[#2d2a26] pl-1 pr-1.5 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap' },
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return startDailyMode(HASHI_PUZZLE.shiftDateStr(dailyDateStr, -1));
+                  }, disabled: dailyDateStr <= MIN_DAILY_DATE, className: 'disabled:opacity-30 px-1', title: '\u524D\u4E00\u5929\u7684\u984C\u76EE' },
+                '\u25C0'
+              ),
+              React.createElement(
+                'span',
+                null,
+                '\uD83D\uDCC5 ',
+                dailyDateStr
+              ),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return startDailyMode(HASHI_PUZZLE.shiftDateStr(dailyDateStr, 1));
+                  }, disabled: dailyDateStr >= HASHI_PUZZLE.getDailyDateStr(), className: 'disabled:opacity-30 px-1', title: '\u5F8C\u4E00\u5929\u7684\u984C\u76EE' },
+                '\u25B6'
+              )
+            ),
+            isDailyMode && dailyStreak > 0 && React.createElement(
+              'span',
+              { className: 'bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#2d2a26] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap' },
+              '\uD83D\uDD25 x',
+              dailyStreak
+            ),
+            (videoOn || Object.keys(remoteVideos).length > 0) && React.createElement(
+              'div',
+              { className: 'px-4 py-2 bg-slate-800 flex gap-3 items-start overflow-x-auto shrink-0' },
+              React.createElement(
+                'div',
+                { className: 'flex flex-col items-center shrink-0' },
+                React.createElement(
+                  'div',
+                  { className: 'w-14 h-14 rounded-full overflow-hidden border-[3px] border-[#4ade80] shadow relative bg-slate-600' },
+                  localStream ? React.createElement('video', { ref: function ref(el) {
+                      if (el) el.srcObject = localStream;
+                    }, autoPlay: true, playsInline: true, muted: true, className: 'w-full h-full object-cover', style: { transform: 'scaleX(-1)' } }) : React.createElement(
+                    'div',
+                    { className: 'w-full h-full flex items-center justify-center text-white font-black text-lg', style: { backgroundColor: myColorRef.current === 'rainbow' ? '#a855f7' : myColorRef.current || '#3b82f6' } },
+                    (myNameRef.current || '你').slice(0, 1)
+                  )
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'text-white text-[10px] font-bold mt-0.5' },
+                  '\u4F60',
+                  micMuted ? ' 🔇' : ''
+                )
+              ),
+              Object.entries(remoteVideos).map(function (entry) {
+                var uid = entry[0];var stream = entry[1];
+                var pl = playersList.find(function (p) {
+                  return p.id === uid;
+                });
+                var nm = pl ? pl.name : '對手';
+                return React.createElement(
+                  'div',
+                  { key: uid, className: 'flex flex-col items-center shrink-0' },
+                  React.createElement(
+                    'div',
+                    { className: 'w-14 h-14 rounded-full overflow-hidden border-[3px] border-white shadow relative bg-slate-600' },
+                    React.createElement('video', { ref: function ref(el) {
+                        if (el) {
+                          el.srcObject = stream;try {
+                            el.muted = !speakerOnRef.current;
+                          } catch (e) {}
+                        }
+                      }, autoPlay: true, playsInline: true, muted: true, className: 'remote-video-el w-full h-full object-cover' })
+                  ),
+                  React.createElement(
+                    'span',
+                    { className: 'text-white text-[10px] font-bold mt-0.5 max-w-[64px] truncate' },
+                    nm,
+                    remoteMic[uid] === false ? ' 🎤' : ''
+                  )
+                );
+              })
+            ),
+            isMultiplayer && React.createElement(
+              'span',
+              { className: 'bg-emerald-400 text-slate-900 px-2 py-1 rounded-md border-2 border-slate-800 font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 whitespace-nowrap' },
+              isHostRef.current ? '👑 主機' : '👤 玩家',
+              ' | \u4EE3\u78BC: ',
+              roomId
+            )
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setIsHeaderCollapsed(!isHeaderCollapsed);
+              }, className: 'flex px-2 md:px-3 py-1 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap' },
+            isHeaderCollapsed ? '🔽 展開規則' : '🔼 縮小面板'
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 ' + (isHeaderCollapsed ? 'max-h-0 opacity-0 scale-y-95' : 'max-h-[500px] opacity-100 scale-y-100') },
+          React.createElement(
+            'div',
+            { className: 'bg-white border-[3px] border-[#2d2a26] rounded-xl p-3 text-[#2d2a26] shadow-[4px_4px_0px_#2d2a26] flex flex-col md:flex-row gap-3' },
+            React.createElement(
+              'div',
+              { className: 'flex-1' },
+              React.createElement(
+                'h3',
+                { className: 'text-sm md:text-base font-black mb-1 border-b-[3px] border-[#4ade80] inline-block pb-0.5' },
+                '\uD83D\uDCDC \u904A\u6232\u56DB\u5927\u898F\u5247'
+              ),
+              React.createElement(
+                'ol',
+                { className: 'list-decimal list-outside ml-4 space-y-1 text-xs md:text-sm leading-relaxed font-bold' },
+                React.createElement(
+                  'li',
+                  null,
+                  '\u6BCF\u500B\u5713\u5708\u662F\u4E00\u5EA7\u300C\u5CF6\u300D\uFF0C\u6578\u5B57\u4EE3\u8868\u9700\u8981\u5E7E\u5EA7\u6A4B\u6A11\u3002'
+                ),
+                React.createElement(
+                  'li',
+                  null,
+                  '\u6A4B\u6A11\u5FC5\u9808\u662F\u5782\u76F4\u6216\u6C34\u5E73\u65B9\u5411\u3002'
+                ),
+                React.createElement(
+                  'li',
+                  null,
+                  '\u6A4B\u6A11\u4E4B\u9593\u7D55\u5C0D\u4E0D\u80FD\u4EA4\u53C9\u6216\u91CD\u758A\u3002'
+                ),
+                React.createElement(
+                  'li',
+                  null,
+                  '\u5169\u5EA7\u5CF6\u4E4B\u9593\u6700\u591A\u67B6\u8A2D 2 \u5EA7\u6A4B\uFF0C\u4E14\u5B8C\u6210\u6642\u6240\u6709\u5CF6\u5DBC\u5FC5\u9808\u5168\u90E8\u9023\u901A\u3002'
+                )
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'md:w-1/3 bg-[#4ade80]/20 p-2 md:p-3 rounded-xl border-[3px] border-dashed border-[#2d2a26] flex flex-col justify-center' },
+              React.createElement(
+                'p',
+                { className: 'text-[#2d2a26] font-black text-xs md:text-sm mb-1 flex items-center gap-1' },
+                React.createElement(
+                  'span',
+                  null,
+                  '\uD83D\uDCA1'
+                ),
+                ' \u63D0\u793A\u8207\u72C0\u614B\uFF1A'
+              ),
+              React.createElement(
+                'p',
+                { className: 'text-slate-700 text-xs md:text-sm font-bold leading-relaxed' },
+                cLevel.description
+              )
+            )
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex flex-wrap gap-1.5 items-center justify-between w-full' },
+          React.createElement(
+            'select',
+            { disabled: isDailyMode || inRace || isMultiplayer && !isHostRef.current, value: currentLevelId, onChange: function onChange(e) {
+                var val = e.target.value;
+                handleLevelChange(val === 'custom' ? 'custom' : Number(val));
+              }, className: 'px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#2d2a26] font-bold bg-white text-[#2d2a26] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#2d2a26] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed' },
+            LEVELS.map(function (level) {
+              var isCustomActive = level.id === 'custom' && currentLevelId === 'custom' && randomLevelData;
+              var displayName = isCustomActive ? '\u2699\uFE0F \u81EA\u8A02 (' + randomLevelData.width + 'x' + randomLevelData.height + ')' : level.name;
+              return React.createElement(
+                'option',
+                { key: level.id, value: level.id },
+                displayName
+              );
+            })
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex gap-1 md:gap-2 flex-wrap items-center ml-auto' },
+            !isWon && hasSolution && !showSolution && !inRace && React.createElement(
+              'button',
+              { onClick: handleShowSolution, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#2d2a26] border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u89E3\u7B54' },
+              '\uD83D\uDCA1',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u89E3\u7B54'
+              )
+            ),
+            !isDailyMode && !inRace && React.createElement(
+              'button',
+              { onClick: handleRegenerateRandom, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u65B0\u984C' },
+              '\uD83C\uDFB2',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u65B0\u984C'
+              )
+            ),
+            !isMultiplayer && React.createElement(
+              'button',
+              { onClick: handleUndo, disabled: history.length === 0 || isWon, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26]', title: '\u5FA9\u539F' },
+              '\u21A9\uFE0F',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u5FA9\u539F'
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: handleReset, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u91CD\u7F6E' },
+              '\uD83D\uDD04',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u91CD\u7F6E'
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setShowSaveModal(true);
+                }, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u5B58\u6A94/\u8B80\u6A94' },
+              '\uD83D\uDCBE',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                '\u5B58\u6A94'
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  var m = window.HASHI_SOUND.toggleMute();setMuted(m);if (!m) window.HASHI_SOUND.play('click');
+                }, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26]', title: muted ? "取消靜音" : "靜音" },
+              muted ? '🔇' : '🔊'
+            ),
+            React.createElement(
+              'button',
+              { onClick: handleGoHome, className: 'bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
+              !isMultiplayer ? '🏠' : '🔌',
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline ml-1' },
+                !isMultiplayer ? '回首頁' : '退出'
+              )
+            )
+          )
+        )
+      ),
+      isMultiplayer && React.createElement(
+        'div',
+        { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-40 shadow-inner shrink-0' },
+        React.createElement(
+          'span',
+          { className: 'font-black text-slate-800 text-sm' },
+          '\uD83D\uDC65 \u9023\u7DDA\u73A9\u5BB6\uFF1A'
+        ),
+        playersList.map(function (p, idx) {
+          var isMe = p.id === myId;
+          var isRainbow = p.color === 'rainbow';
+          return React.createElement(
+            'div',
+            { key: idx, className: 'relative inline-flex' },
+            React.createElement(
+              'span',
+              {
+                onClick: function onClick() {
+                  return setColorPickerTarget(function (prev) {
+                    return prev === p.id ? null : p.id;
+                  });
+                },
+                title: isMe ? "點擊可切換你的代表色" : "點擊可為這位玩家更換顏色",
+                className: 'px-2 py-0.5 rounded text-xs font-bold bg-white text-slate-800 flex items-center shadow-[1px_1px_0px_rgba(30,41,59,1)] cursor-pointer hover:bg-slate-100 transition-colors relative border-2 border-slate-800',
+                style: { borderLeftWidth: '6px', borderLeftColor: isRainbow ? 'transparent' : p.color } },
+              isRainbow && React.createElement(
+                'svg',
+                { className: 'absolute top-[-2px] left-[-6px] w-[6px] pointer-events-none', style: { height: 'calc(100% + 4px)', borderRadius: '2px 0 0 2px' } },
+                React.createElement('rect', { width: '100%', height: '100%', fill: 'url(#rainbowGrad)' })
+              ),
+              p.name,
+              ' ',
+              p.isHost && '👑',
+              ' ',
+              isMe && '(你)'
+            ),
+            colorPickerTarget === p.id && React.createElement(
+              'div',
+              { className: 'absolute top-full mt-2 left-0 sm:left-0 bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] w-[180px] animate-fadeIn' },
+              React.createElement(
+                'div',
+                { className: 'flex justify-between items-center mb-2 border-b-2 border-slate-800 pb-1' },
+                React.createElement(
+                  'h3',
+                  { className: 'text-xs font-black text-slate-800' },
+                  '\uD83C\uDFA8 \u9078\u8272'
+                ),
+                React.createElement(
+                  'button',
+                  { onClick: function onClick(e) {
+                      e.stopPropagation();setColorPickerTarget(null);setColorSeq([]);
+                    }, className: 'text-slate-400 hover:text-slate-800 font-black leading-none' },
+                  '\u2715'
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-5 gap-1.5' },
+                COLORS.map(function (color) {
+                  return React.createElement('button', {
+                    key: color,
+                    onClick: function onClick(e) {
+                      e.stopPropagation();
+                      var colorIdx = COLORS.indexOf(color);
+                      var newSeq = [].concat(_toConsumableArray(colorSeq), [colorIdx]);
+                      var targetSeq = [0, 4, 15, 19];
+
+                      var isValid = true;
+                      for (var i = 0; i < newSeq.length; i++) {
+                        if (newSeq[i] !== targetSeq[i]) {
+                          isValid = false;break;
+                        }
+                      }
+
+                      if (isValid) {
+                        setColorSeq(newSeq);
+                        if (newSeq.length === 4) {
+                          handlePlayerColorChange(p.id, 'rainbow');
+                          setColorPickerTarget(null);
+                          showToast("🌈 解鎖隱藏彩色漸變！");
+                          setColorSeq([]);
+                        } else {
+                          handlePlayerColorChange(p.id, color);
+                        }
+                      } else {
+                        setColorSeq([]);
+                        handlePlayerColorChange(p.id, color);
+                        setColorPickerTarget(null);
+                      }
+                    },
+                    className: 'w-6 h-6 rounded-full border-[2px] border-slate-800 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none',
+                    style: { backgroundColor: color },
+                    title: color
+                  });
+                })
+              )
+            )
+          );
+        }),
+        engineRef.current === 'peerjs' && React.createElement(
+          'div',
+          { className: 'ml-auto flex items-center gap-1.5' },
+          React.createElement(
+            'button',
+            {
+              onClick: function onClick() {
+                setChatOpen(function (prev) {
+                  if (!prev) setChatMin(false);return !prev;
+                });
+              },
+              className: 'relative flex items-center gap-1 text-xs md:text-sm font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border-2 border-slate-300 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:bg-slate-200 transition-colors',
+              title: '\u804A\u5929\u5BA4'
+            },
+            '\uD83D\uDCAC \u804A\u5929',
+            unreadChat > 0 && React.createElement(
+              'span',
+              { className: 'absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white' },
+              unreadChat > 99 ? '99+' : unreadChat
+            )
+          ),
+          React.createElement(
+            'button',
+            {
+              onClick: toggleVideo,
+              className: "flex items-center gap-1 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (videoOn ? "text-white bg-slate-800 border-slate-800" : "text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200"),
+              title: videoOn ? '關閉視訊' : '開啟視訊（圓形頭像）'
+            },
+            videoOn ? '📹' : '🎥',
+            ' \u8996\u8A0A'
+          ),
+          videoOn && React.createElement(
+            'button',
+            {
+              onClick: toggleMic,
+              className: 'flex items-center text-xs md:text-sm font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md border-2 border-slate-300 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:bg-slate-200 transition-colors',
+              title: micMuted ? '取消靜音' : '靜音'
+            },
+            micMuted ? '🔇' : '🎤'
+          ),
+          (videoOn || Object.keys(remoteVideos).length > 0) && React.createElement(
+            'button',
+            {
+              onClick: function onClick() {
+                return setSpeakerOn(function (prev) {
+                  return !prev;
+                });
+              },
+              className: "flex items-center gap-1 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (speakerOn ? "text-white bg-slate-800 border-slate-800" : "text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200"),
+              title: speakerOn ? '喇叭開啟中（點按關閉）' : '喇叭關閉中（點按開啟，才聽得到對方）'
+            },
+            speakerOn ? '🔊' : '🔈',
+            ' \u5587\u53ED'
+          ),
+          React.createElement(
+            'label',
+            { title: mpMode === 'race' ? '競速模式停用顯示游標（防作弊）' : '', className: "flex items-center gap-1.5 text-xs md:text-sm font-bold px-2 py-1 rounded-md border-2 shadow-[1px_1px_0px_rgba(30,41,59,1)] transition-colors " + (mpMode === 'race' ? "text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed opacity-70" : "cursor-pointer text-slate-700 hover:text-slate-900 bg-slate-100 border-slate-300 hover:bg-slate-200") },
+            React.createElement('input', {
+              type: 'checkbox',
+              checked: showOtherCursors,
+              disabled: mpMode === 'race',
+              onChange: function onChange(e) {
+                return setShowOtherCursors(e.target.checked);
+              },
+              className: 'w-3.5 h-3.5 md:w-4 md:h-4 accent-emerald-500'
+            }),
+            '\u986F\u793A\u6E38\u6A19',
+            mpMode === 'race' ? ' 🔒' : ''
+          )
+        )
+      ),
+      inRace && raceState !== 'lobby' && React.createElement(
+        'div',
+        { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 shrink-0 relative z-40' },
+        React.createElement(
+          'div',
+          { className: 'flex flex-col gap-1.5' },
+          React.createElement(
+            'p',
+            { className: 'text-xs font-black text-slate-500' },
+            '\uD83C\uDFC1 \u7AF6\u901F\u9032\u5EA6'
+          ),
+          Object.keys(raceProgress).map(function (uid) {
+            var info = raceProgress[uid];
+            var pct = Math.round(info.progress * 100);
+            return React.createElement(
+              'div',
+              { key: uid, className: 'flex items-center gap-2' },
+              React.createElement(
+                'span',
+                { className: 'text-xs font-black text-slate-800 w-24 truncate' },
+                info.name,
+                uid === myId ? '(你)' : ''
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex-1 h-4 bg-slate-200 border-2 border-slate-800 rounded-full overflow-hidden' },
+                React.createElement('div', { className: 'h-full bg-emerald-400 transition-all duration-500', style: { width: pct + '%' } })
+              ),
+              React.createElement(
+                'span',
+                { className: 'text-xs font-black text-slate-800 w-12 text-right' },
+                pct,
+                '%'
+              )
+            );
+          })
+        )
+      ),
+      !isHeaderCollapsed && React.createElement(
+        'div',
+        { className: 'h-8 shrink-0 flex items-center justify-center bg-slate-800 text-white border-b-4 border-slate-800 relative z-30 font-bold tracking-wide' },
+        React.createElement(
+          'span',
+          { className: 'text-xs md:text-sm hidden md:inline' },
+          '\u9EDE\u64CA\u6216\u5F9E\u5CF6\u5DBC\u62D6\u66F3\u67B6\u6A4B\uFF1A\u4E00\u4E0B1\u5EA7\u3001\u5169\u4E0B2\u5EA7\u3001\u4E09\u4E0B\u53D6\u6D88\uFF1B\u6EFE\u8F2A\u7E2E\u653E\u3002'
+        ),
+        React.createElement(
+          'span',
+          { className: 'text-xs md:text-sm md:hidden' },
+          '\u9EDE\u64CA\u6216\u62D6\u66F3\u5CF6\u5DBC\u67B6\u6A4B\uFF1A\u4E00\u4E0B1\u5EA7\u3001\u5169\u4E0B2\u5EA7\u3001\u4E09\u4E0B\u53D6\u6D88\u3002'
+        )
+      ),
+      React.createElement(
+        'div',
+        { className: 'relative z-0 flex-1 flex flex-col min-h-0 bg-[#f3fbf3]' },
+        isGenerating && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[40] flex items-center justify-center pointer-events-none' },
+          React.createElement(
+            'div',
+            { className: 'text-slate-800/30 font-black text-3xl md:text-5xl tracking-widest flex items-center select-none animate-pulse' },
+            '\u5730\u5716\u7522\u751F\u4E2D',
+            React.createElement('span', { className: 'animate-loading-dots inline-block w-[1.5em] text-left' })
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'absolute bottom-4 right-4 md:bottom-6 md:right-6 flex flex-col gap-2 md:gap-3 z-[5] pointer-events-auto items-end' },
+          React.createElement(
+            'div',
+            { className: 'flex items-center' },
+            interactionMode === 2 && React.createElement(
+              'div',
+              { className: 'flex items-center gap-2 animate-fadeIn bg-white/80 p-1.5 rounded-full border-2 border-slate-300 backdrop-blur-sm mr-2 shadow-[2px_2px_0px_rgba(30,41,59,1)]' },
+              React.createElement(
+                'button',
+                {
+                  onClick: function onClick() {
+                    return setDrawSubMode('pen');
+                  },
+                  className: 'w-9 h-9 md:w-10 md:h-10 border-2 border-slate-800 rounded-full font-black text-lg flex items-center justify-center shadow-sm transition-[transform,color] relative overflow-hidden ' + (drawSubMode === 'pen' ? 'text-white scale-110 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'),
+                  style: drawSubMode === 'pen' && myCurrentColor !== 'rainbow' ? { backgroundColor: myCurrentColor } : { backgroundColor: drawSubMode === 'pen' && myCurrentColor === 'rainbow' ? 'transparent' : undefined },
+                  title: '\u756B\u7B46 (\u53EF\u76F4\u63A5\u5728\u756B\u5E03\u4E0A\u4EFB\u610F\u505A\u8A18\u865F)'
+                },
+                drawSubMode === 'pen' && myCurrentColor === 'rainbow' && React.createElement(
+                  'svg',
+                  { className: 'absolute inset-0 w-full h-full pointer-events-none -z-10' },
+                  React.createElement('rect', { width: '100%', height: '100%', fill: 'url(#rainbowGrad)' })
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'relative z-10' },
+                  '\uD83D\uDD8C\uFE0F'
+                )
+              ),
+              React.createElement(
+                'button',
+                {
+                  onClick: function onClick() {
+                    return setDrawSubMode('eraser');
+                  },
+                  onDoubleClick: clearOwnStrokes,
+                  className: 'w-9 h-9 md:w-10 md:h-10 border-2 border-slate-800 rounded-full font-black text-lg flex items-center justify-center shadow-sm transition-[transform,color] relative overflow-hidden ' + (drawSubMode === 'eraser' ? 'text-white scale-110 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'),
+                  style: drawSubMode === 'eraser' && myCurrentColor !== 'rainbow' ? { backgroundColor: myCurrentColor } : { backgroundColor: drawSubMode === 'eraser' && myCurrentColor === 'rainbow' ? 'transparent' : undefined },
+                  title: '\u6A61\u76AE\u64E6 (\u9023\u9EDE\u5169\u4E0B\u6E05\u7A7A\u81EA\u5DF1\u7684\u6240\u6709\u5857\u9D09)'
+                },
+                drawSubMode === 'eraser' && myCurrentColor === 'rainbow' && React.createElement(
+                  'svg',
+                  { className: 'absolute inset-0 w-full h-full pointer-events-none -z-10' },
+                  React.createElement('rect', { width: '100%', height: '100%', fill: 'url(#rainbowGrad)' })
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'relative z-10' },
+                  '\uD83E\uDDFD'
+                )
+              ),
+              isHostRef.current && React.createElement(
+                'button',
+                {
+                  onClick: clearAllStrokes,
+                  className: 'w-9 h-9 md:w-10 md:h-10 bg-red-500 hover:bg-red-600 text-white border-2 border-slate-800 rounded-full font-black text-lg transition-all flex items-center justify-center shadow-sm ml-1',
+                  title: '\u623F\u4E3B\u7279\u6B0A\uFF1A\u4E00\u9375\u6E05\u7A7A\u6240\u6709\u4EBA\u7684\u5857\u9D09'
+                },
+                '\uD83D\uDEA8'
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: toggleInteractionMode, title: '\u5207\u63DB\u6A21\u5F0F (\u76EE\u524D: ' + modeTitles[interactionMode] + ')', className: 'w-10 h-10 md:w-12 md:h-12 border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center ' + (interactionMode > 0 ? 'bg-[#4ade80] text-slate-800' : 'bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-100') },
+              modeIcons[interactionMode]
+            )
+          ),
+          React.createElement(
+            'button',
+            { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-10 h-10 md:w-12 md:h-12 bg-white border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:bg-slate-100 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-slate-800' },
+            '\uFF0B'
+          ),
+          React.createElement(
+            'button',
+            { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-10 h-10 md:w-12 md:h-12 bg-white border-2 border-slate-800 rounded-full font-black text-2xl md:text-3xl shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:bg-slate-100 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-slate-800' },
+            '\uFF0D'
+          ),
+          React.createElement(
+            'button',
+            { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F', className: 'w-10 h-10 md:w-12 md:h-12 bg-slate-800 border-2 border-slate-800 rounded-full font-black text-xs md:text-sm shadow-[3px_3px_0px_rgba(0,0,0,0.3)] hover:bg-slate-700 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white' },
+            zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
+          )
+        ),
+        React.createElement(
+          'div',
+          { ref: zoomContainerRef, className: 'p-2 md:p-6 flex-1 overflow-auto custom-scrollbar relative z-0' },
+          React.createElement(
+            'div',
+            { key: boardFadeKey, className: 'flex justify-center items-center min-w-max min-h-max m-auto pb-24 pr-20 animate-boardFade' },
+            React.createElement(
+              'svg',
+              {
+                ref: svgRef,
+                onPointerMove: handlePointerMove,
+                onPointerDown: handlePointerDown,
+                onPointerUp: handlePointerUp,
+                onPointerLeave: function onPointerLeave(e) {
+                  if (eraserRef.current) eraserRef.current.style.display = 'none';
+                },
+                onPointerCancel: handlePointerUp,
+                viewBox: '0 0 ' + svgW + ' ' + svgH,
+                className: 'bg-transparent transition-transform duration-100 ease-out origin-center select-none',
+                style: {
+                  width: svgW * zoomLevel + 'px',
+                  height: svgH * zoomLevel + 'px',
+                  // 全模式 touch-action:none：iOS 對 SVG 內層 <g> 的 touch-action 支援不可靠，
+                  // 曾導致拖曳手勢被瀏覽器捲動劫持（pointercancel）而永遠觸發不了；
+                  // 改由 svg 統一吃掉手勢，空白處捲動改走手動 pan（見 panRef）
+                  touchAction: 'none',
+                  WebkitTouchCallout: 'none' // iOS 長按不跳系統選單（拖曳需要長按）
+                } },
+              React.createElement(
+                'defs',
+                null,
+                React.createElement(
+                  'pattern',
+                  { id: 'grid', width: SCALE, height: SCALE, patternUnits: 'userSpaceOnUse' },
+                  React.createElement('path', { d: 'M ' + SCALE + ' 0 L 0 0 0 ' + SCALE, fill: 'none', stroke: '#d97706', strokeOpacity: '0.28', strokeWidth: '1' })
+                ),
+                React.createElement(
+                  'pattern',
+                  { id: 'warningStripe', width: '16', height: '16', patternTransform: 'rotate(45 0 0)', patternUnits: 'userSpaceOnUse' },
+                  React.createElement('line', { x1: '0', y1: '0', x2: '0', y2: '16', stroke: '#facc15', strokeWidth: '8', strokeOpacity: '0.7' })
+                ),
+                React.createElement(
+                  'radialGradient',
+                  { id: 'islandShine' },
+                  React.createElement('stop', { offset: '0%', stopColor: '#ffffff', stopOpacity: '0.55' }),
+                  React.createElement('stop', { offset: '100%', stopColor: '#ffffff', stopOpacity: '0' })
+                ),
+                React.createElement(
+                  'linearGradient',
+                  { id: 'rainbowGrad', gradientUnits: 'userSpaceOnUse', x1: '0', y1: '0', x2: svgW, y2: svgH },
+                  React.createElement('stop', { offset: '0%', className: 'rainbow-stop' }),
+                  React.createElement('stop', { offset: '100%', className: 'rainbow-stop' })
+                )
+              ),
+              React.createElement('rect', { id: 'svg-bg', width: '100%', height: '100%', fill: 'url(#grid)', transform: 'translate(' + PADDING + ', ' + PADDING + ')', className: 'pointer-events-none' }),
+              showSolution && cLevel.solution && cLevel.solution.map(function (sol, idx) {
+                var islandsMap = {};islandsToRender.forEach(function (i) {
+                  islandsMap[i.id] = i;
+                });
+                var f = islandsMap[sol.from],
+                    t = islandsMap[sol.to];
+                if (!f || !t) return null;
+                var x1 = f.x * SCALE + PADDING,
+                    y1 = f.y * SCALE + PADDING,
+                    x2 = t.x * SCALE + PADDING,
+                    y2 = t.y * SCALE + PADDING;
+
+                if (sol.count === 1) {
+                  return React.createElement('line', { key: 'sol-' + idx, x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#ef4444', strokeWidth: '6', strokeOpacity: '0.4', strokeDasharray: '8,6', className: 'solution-line pointer-events-none' });
+                } else if (sol.count === 2) {
+                  if (sol.type === 'h') {
+                    return React.createElement(
+                      'g',
+                      { key: 'sol-' + idx, className: 'pointer-events-none' },
+                      React.createElement('line', { x1: x1, y1: y1 - 5, x2: x2, y2: y2 - 5, stroke: '#ef4444', strokeWidth: '5', strokeOpacity: '0.4', strokeDasharray: '8,6', className: 'solution-line' }),
+                      React.createElement('line', { x1: x1, y1: y1 + 5, x2: x2, y2: y2 + 5, stroke: '#ef4444', strokeWidth: '5', strokeOpacity: '0.4', strokeDasharray: '8,6', className: 'solution-line' })
+                    );
+                  } else {
+                    return React.createElement(
+                      'g',
+                      { key: 'sol-' + idx, className: 'pointer-events-none' },
+                      React.createElement('line', { x1: x1 - 5, y1: y1, x2: x2 - 5, y2: y2, stroke: '#ef4444', strokeWidth: '5', strokeOpacity: '0.4', strokeDasharray: '8,6', className: 'solution-line' }),
+                      React.createElement('line', { x1: x1 + 5, y1: y1, x2: x2 + 5, y2: y2, stroke: '#ef4444', strokeWidth: '5', strokeOpacity: '0.4', strokeDasharray: '8,6', className: 'solution-line' })
+                    );
+                  }
+                }
+                return null;
+              }),
+              strokes.map(function (s) {
+                var strokeUid = s.uid || s.id.split('-')[1];
+                var isOwnStroke = strokeUid === myId;
+
+                var strokeColor = s.color;
+                var strokeOpacity = 1;
+                var isRainbow = false;
+
+                if (isMultiplayer && strokeUid) {
+                  strokeColor = getPlayerColor(strokeUid);
+                  if (strokeColor === 'rainbow') isRainbow = true;
+                  strokeOpacity = isOwnStroke ? 1 : 0.5;
+                }
+
+                return React.createElement('path', {
+                  key: s.id,
+                  d: s.path,
+                  fill: 'none',
+                  stroke: isRainbow ? undefined : strokeColor,
+                  strokeOpacity: strokeOpacity,
+                  strokeWidth: '8',
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  className: 'doodle-stroke ' + (isRainbow ? 'rainbow-stroke' : ''),
+                  'data-stroke-id': s.id,
+                  style: { pointerEvents: interactionMode === 2 && drawSubMode === 'eraser' && isOwnStroke ? 'stroke' : 'none' }
+                });
+              }),
+              React.createElement('path', {
+                ref: drawingPathRef,
+                fill: 'none',
+                stroke: myCurrentColor === 'rainbow' ? undefined : myCurrentColor,
+                strokeOpacity: 1,
+                strokeWidth: '8',
+                strokeLinecap: 'round',
+                strokeLinejoin: 'round',
+                className: 'pointer-events-none ' + (myCurrentColor === 'rainbow' ? 'rainbow-stroke' : ''),
+                style: { display: 'none' }
+              }),
+              sortedBridges.map(function (b) {
+                var totalLines = b.count + (b.draftCount || 0);
+                var islMap = {};islandsToRender.forEach(function (i) {
+                  islMap[i.id] = i;
+                });
+                var f = islMap[b.from],
+                    t = islMap[b.to];
+                if (!f || !t) return null;
+                var x1 = f.x * SCALE + PADDING,
+                    y1 = f.y * SCALE + PADDING,
+                    x2 = t.x * SCALE + PADDING,
+                    y2 = t.y * SCALE + PADDING;
+
+                var lineStroke = "#1e293b";
+                var lineOpacity = 1;
+                var isRainbow = false;
+
+                if (isMultiplayer && totalLines > 0 && b.owner) {
+                  lineStroke = getPlayerColor(b.owner);
+                  if (lineStroke === 'rainbow') isRainbow = true;
+                  lineOpacity = b.owner === myId ? 1 : 0.5;
+                }
+
+                var isCrossed = crossedBridgeIds.has(b.id);
+                var isIslandHovered = (hoveredIslandId === b.from || hoveredIslandId === b.to) && interactionMode < 2;
+
+                var bridgeGroupClass = interactionMode >= 2 || isCrossed && totalLines === 0 ? "pointer-events-none" : "cursor-pointer group";
+
+                var bridgeRectClass = interactionMode >= 2 ? "fill-transparent bridge-hotzone" : 'transition-colors duration-300 bridge-hotzone ' + (isIslandHovered ? 'fill-yellow-300/40' : 'fill-transparent group-hover:fill-yellow-300/40');
+                var bridgeLineClass = 'pointer-events-none ' + (isRainbow ? 'rainbow-stroke' : 'transition-colors duration-300');
+
+                if (totalLines === 0) {
+                  return React.createElement(
+                    'g',
+                    { key: b.id,
+                      onPointerDown: function onPointerDown(e) {
+                        return handleBridgePointerDown(e, b);
+                      },
+                      style: interactionMode < 2 ? { touchAction: 'none' } : undefined,
+                      onPointerEnter: function onPointerEnter(e) {
+                        if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredBridgeId(b.id);
+                      },
+                      onPointerLeave: function onPointerLeave(e) {
+                        if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredBridgeId(null);
+                      },
+                      className: bridgeGroupClass },
+                    b.type === 'h' ? React.createElement('rect', { x: Math.min(x1, x2) + ISLAND_RADIUS, y: y1 - 20, width: Math.abs(x1 - x2) - ISLAND_RADIUS * 2, height: 40, className: isCrossed ? 'fill-transparent' : bridgeRectClass }) : React.createElement('rect', { x: x1 - 20, y: Math.min(y1, y2) + ISLAND_RADIUS, width: 40, height: Math.abs(y1 - y2) - ISLAND_RADIUS * 2, className: isCrossed ? 'fill-transparent' : bridgeRectClass }),
+                    isCrossed && isIslandHovered && (b.type === 'h' ? React.createElement('rect', { x: Math.min(x1, x2) + ISLAND_RADIUS, y: y1 - 8, width: Math.abs(x1 - x2) - ISLAND_RADIUS * 2, height: 16, fill: 'url(#warningStripe)', className: 'pointer-events-none animate-fadeIn' }) : React.createElement('rect', { x: x1 - 8, y: Math.min(y1, y2) + ISLAND_RADIUS, width: 16, height: Math.abs(y1 - y2) - ISLAND_RADIUS * 2, fill: 'url(#warningStripe)', className: 'pointer-events-none animate-fadeIn' }))
+                  );
+                }
+
+                var linesToDraw = [];
+                if (totalLines === 1) {
+                  linesToDraw.push({ isDraft: b.draftCount === 1, offset: 0 });
+                } else if (totalLines === 2) {
+                  if (b.count === 2) {
+                    linesToDraw.push({ isDraft: false, offset: -5 });
+                    linesToDraw.push({ isDraft: false, offset: 5 });
+                  } else if ((b.draftCount || 0) === 2) {
+                    linesToDraw.push({ isDraft: true, offset: -5 });
+                    linesToDraw.push({ isDraft: true, offset: 5 });
+                  } else {
+                    linesToDraw.push({ isDraft: false, offset: -5 });
+                    linesToDraw.push({ isDraft: true, offset: 5 });
+                  }
+                }
+
+                return React.createElement(
+                  'g',
+                  { key: b.id,
+                    onPointerDown: function onPointerDown(e) {
+                      return handleBridgePointerDown(e, b);
+                    },
+                    style: interactionMode < 2 ? { touchAction: 'none' } : undefined,
+                    onPointerEnter: function onPointerEnter(e) {
+                      if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredBridgeId(b.id);
+                    },
+                    onPointerLeave: function onPointerLeave(e) {
+                      if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredBridgeId(null);
+                    },
+                    className: bridgeGroupClass },
+                  b.type === 'h' ? React.createElement('rect', { x: Math.min(x1, x2) + ISLAND_RADIUS, y: y1 - 20, width: Math.abs(x1 - x2) - ISLAND_RADIUS * 2, height: 40, className: bridgeRectClass }) : React.createElement('rect', { x: x1 - 20, y: Math.min(y1, y2) + ISLAND_RADIUS, width: 40, height: Math.abs(y1 - y2) - ISLAND_RADIUS * 2, className: bridgeRectClass }),
+                  linesToDraw.map(function (lineObj, lIdx) {
+                    var isDraft = lineObj.isDraft;
+                    var off = lineObj.offset;
+                    var w = totalLines === 1 ? isDraft ? "5" : "6" : isDraft ? "4" : "5";
+                    var op = isDraft ? lineOpacity * 0.4 : lineOpacity;
+                    var dash = isDraft ? "8,6" : "none";
+                    if (b.type === 'h') {
+                      return React.createElement('line', { key: lIdx, x1: x1, y1: y1 + off, x2: x2, y2: y2 + off, stroke: isRainbow ? undefined : lineStroke, strokeWidth: w, strokeLinecap: 'round', strokeOpacity: op, strokeDasharray: dash, className: bridgeLineClass, style: { filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' } });
+                    } else {
+                      return React.createElement('line', { key: lIdx, x1: x1 + off, y1: y1, x2: x2 + off, y2: y2, stroke: isRainbow ? undefined : lineStroke, strokeWidth: w, strokeLinecap: 'round', strokeOpacity: op, strokeDasharray: dash, className: bridgeLineClass, style: { filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))' } });
+                    }
+                  })
+                );
+              }),
+              React.createElement('line', {
+                ref: dragPreviewLineRef,
+                x1: '0', y1: '0', x2: '0', y2: '0',
+                stroke: myCurrentColor === 'rainbow' ? '#fbbf24' : myCurrentColor,
+                strokeWidth: '7',
+                strokeLinecap: 'round',
+                strokeOpacity: '0.9',
+                className: 'solution-line pointer-events-none',
+                style: { display: 'none' }
+              }),
+              React.createElement('circle', {
+                ref: dragPreviewTipRef,
+                cx: '0', cy: '0', r: '9',
+                fill: myCurrentColor === 'rainbow' ? '#fbbf24' : myCurrentColor,
+                fillOpacity: '0.9',
+                className: 'pointer-events-none animate-pulse',
+                style: { display: 'none' }
+              }),
+              islandsToRender.map(function (island) {
+                var cx = island.x * SCALE + PADDING;var cy = island.y * SCALE + PADDING;var current = islandCurrentCounts[island.id].total;
+                var strokeColor = "#1e293b";var bgColor = "#ffffff";var textColor = "#1e293b";
+                if (current === island.req) {
+                  strokeColor = "#059669";bgColor = "#d1fae5";textColor = "#065f46";
+                } else if (current > island.req) {
+                  strokeColor = "#dc2626";bgColor = "#fee2e2";textColor = "#991b1b";
+                }
+
+                var showHighlight = highlightedIslandIds.has(island.id) && interactionMode < 2;
+                var isDirectlyHovered = hoveredIslandId === island.id && interactionMode < 2;
+
+                return React.createElement(
+                  'g',
+                  { key: 'island-' + island.id,
+                    onPointerEnter: function onPointerEnter(e) {
+                      if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredIslandId(island.id);
+                    },
+                    onPointerLeave: function onPointerLeave(e) {
+                      if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredIslandId(null);
+                    },
+                    onPointerDown: function onPointerDown(e) {
+                      return handleIslandPointerDown(e, island);
+                    },
+                    style: interactionMode < 2 ? { touchAction: 'none' } : undefined
+                  },
+                  showHighlight && React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS + 8, fill: '#fde047', fillOpacity: '0.5', className: 'pointer-events-none transition-all duration-300' }),
+                  React.createElement('circle', { cx: cx + 3, cy: cy + 3, r: ISLAND_RADIUS, fill: 'rgba(30,41,59,0.2)', className: 'pointer-events-none' }),
+                  React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS, fill: bgColor, stroke: strokeColor, strokeWidth: '4', className: 'transition-colors duration-300' }),
+                  React.createElement('circle', { cx: cx - 6, cy: cy - 7, r: ISLAND_RADIUS * 0.55, fill: 'url(#islandShine)', className: 'pointer-events-none' }),
+                  React.createElement(
+                    'text',
+                    { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans pointer-events-none select-none transition-colors duration-300', fill: textColor },
+                    island.req
+                  ),
+                  isDirectlyHovered && activeHints.map(function (b) {
+                    if (!crossedBridgeIds.has(b.id)) return null;
+
+                    var dotCx = cx;
+                    var dotCy = cy;
+                    var offset = ISLAND_RADIUS + 14;
+                    if (b.type === 'h') {
+                      if (b.from === island.id) dotCx += offset;else dotCx -= offset;
+                    } else {
+                      if (b.from === island.id) dotCy += offset;else dotCy -= offset;
+                    }
+
+                    return React.createElement(
+                      'g',
+                      { key: 'hint-' + b.id, className: 'pointer-events-none animate-pulse', transform: 'translate(' + dotCx + ', ' + dotCy + ')' },
+                      React.createElement('line', { x1: '-5', y1: '-5', x2: '5', y2: '5', stroke: '#ef4444', strokeWidth: '4', strokeLinecap: 'round' }),
+                      React.createElement('line', { x1: '5', y1: '-5', x2: '-5', y2: '5', stroke: '#ef4444', strokeWidth: '4', strokeLinecap: 'round' })
+                    );
+                  })
+                );
+              }),
+              bursts.map(function (b) {
+                return React.createElement(
+                  'g',
+                  { key: b.id, className: 'pointer-events-none' },
+                  b.parts.map(function (pt, i) {
+                    return React.createElement('circle', { key: i, cx: b.x, cy: b.y, r: '5', fill: b.color, className: 'burst-particle', style: { '--bx': pt.dx + 'px', '--by': pt.dy + 'px' } });
+                  })
+                );
+              }),
+              React.createElement('circle', {
+                ref: eraserRef,
+                r: '15',
+                fill: myCurrentColor === 'rainbow' ? undefined : myCurrentColor,
+                fillOpacity: '0.4',
+                stroke: myCurrentColor === 'rainbow' ? undefined : myCurrentColor,
+                strokeWidth: '2',
+                className: 'pointer-events-none ' + (myCurrentColor === 'rainbow' ? 'rainbow-stroke rainbow-fill' : ''),
+                style: { display: 'none' }
+              }),
+              showOtherCursors && mpMode !== 'race' && engineRef.current === 'peerjs' && Object.entries(cursors).map(function (entry) {
+                var uid = entry[0];var pos = entry[1];
+                if (uid === myId) return null;
+                var player = playersList.find(function (p) {
+                  return p.id === uid;
+                });
+                if (!player) return null;
+                var isRainbow = player.color === 'rainbow';
+                return React.createElement(
+                  'g',
+                  { key: 'cursor-' + uid, transform: 'translate(' + pos.x + ', ' + pos.y + ')', className: 'pointer-events-none transition-transform duration-75 ease-linear' },
+                  React.createElement('path', { d: 'M0,0 L16,6 L10,10 L15,19 L11,21 L6,12 L0,18 Z', fill: isRainbow ? undefined : player.color, stroke: 'white', strokeWidth: '2', className: isRainbow ? 'rainbow-fill' : '' }),
+                  React.createElement('rect', { x: '14', y: '22', rx: '4', ry: '4', width: player.name.length * 14 + 12, height: '22', fill: 'rgba(0,0,0,0.6)' }),
+                  React.createElement(
+                    'text',
+                    { x: '20', y: '37', fill: 'white', fontSize: '13', fontWeight: 'bold' },
+                    player.name
+                  )
+                );
+              }),
+              (engineRef.current === 'peerjs' ? showOtherCursors : true) && ripples.map(function (r) {
+                var player = playersList.find(function (p) {
+                  return p.id === r.uid;
+                });
+                var color = player ? player.color : '#3b82f6';
+                var isRainbow = color === 'rainbow';
+                return React.createElement('circle', { key: r.id, cx: r.x, cy: r.y, r: '20', fill: 'none', stroke: isRainbow ? undefined : color, className: 'pointer-events-none ' + (isRainbow ? 'rainbow-stroke' : ''), style: { transformOrigin: r.x + 'px ' + r.y + 'px', animation: 'rippleAnim 0.8s ease-out forwards' } });
+              })
+            )
+          )
+        ),
+        inRace && raceState === 'lobby' && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
+          React.createElement(
+            'div',
+            { className: 'bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] max-w-sm w-full animate-popUpCenter' },
+            React.createElement(
+              'div',
+              { className: 'text-5xl mb-2' },
+              '\uD83C\uDFC1'
+            ),
+            React.createElement(
+              'h2',
+              { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
+              '\u7AF6\u901F\u5927\u5EF3'
+            ),
+            React.createElement(
+              'div',
+              { className: 'mb-4 flex flex-col gap-2' },
+              playersList.map(function (p) {
+                return React.createElement(
+                  'div',
+                  { key: p.id, className: 'flex items-center justify-center gap-2 bg-green-50 border-2 border-slate-800 rounded-xl px-4 py-2 font-black text-slate-800' },
+                  React.createElement('span', { className: 'w-4 h-4 rounded-full border-2 border-slate-800 inline-block', style: { backgroundColor: p.color === 'rainbow' ? '#fbbf24' : p.color } }),
+                  p.name,
+                  ' ',
+                  p.isHost && '👑',
+                  ' ',
+                  p.id === myId && '(你)'
+                );
+              })
+            ),
+            isHostRef.current ? React.createElement(
+              'div',
+              null,
+              React.createElement(
+                'button',
+                { onClick: startRace, disabled: playersList.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
+                '\uD83C\uDFC1 \u958B\u59CB\u7AF6\u901F'
+              ),
+              React.createElement(
+                'p',
+                { className: 'text-xs text-slate-500 font-bold' },
+                playersList.length < 2 ? '等待對手加入...' : '雙方將同時挑戰同一題目，比誰先解完！'
+              )
+            ) : React.createElement(
+              'p',
+              { className: 'font-black text-slate-700 animate-pulse' },
+              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u7AF6\u901F...'
+            ),
+            React.createElement(
+              'button',
+              { onClick: handleGoHome, className: 'mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline' },
+              '\u96E2\u958B'
+            )
+          )
+        ),
+        raceCountdown !== null && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[65] flex items-center justify-center pointer-events-none' },
+          React.createElement(
+            'div',
+            { key: raceCountdown, className: 'animate-countdownPop text-8xl md:text-9xl font-black text-[#2d2a26] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]' },
+            raceCountdown === 0 ? 'GO!' : raceCountdown
+          )
+        ),
+        inRace && raceWaiting && raceState === 'racing' && React.createElement(
+          'div',
+          { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[58] bg-slate-800 text-white px-5 py-2 rounded-full font-black border-[3px] border-white shadow-lg animate-pulse whitespace-nowrap' },
+          '\u23F3 \u7B49\u5F85\u5C0D\u624B\u5B8C\u6210...'
+        ),
+        inRace && raceState === 'finished' && raceResult && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
+          React.createElement(
+            'div',
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[300px] max-w-md w-full animate-popUpCenter' },
+            React.createElement(
+              'div',
+              { className: 'text-5xl mb-2' },
+              '\uD83C\uDFC1'
+            ),
+            React.createElement(
+              'h2',
+              { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
+              '\u7AF6\u901F\u7D50\u679C'
+            ),
+            raceResult.entries.map(function (e) {
+              return React.createElement(
+                'div',
+                { key: e.uid, className: 'flex items-center justify-between gap-4 px-4 py-2 mb-2 rounded-xl border-[3px] ' + (e.uid === raceResult.winnerUid ? 'bg-[#4ade80] border-slate-800' : 'bg-slate-50 border-slate-300') },
+                React.createElement(
+                  'span',
+                  { className: 'font-black text-slate-800' },
+                  e.uid === raceResult.winnerUid ? '🏆 ' : '',
+                  e.name,
+                  e.uid === myId ? '(你)' : ''
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'font-mono font-black text-slate-800' },
+                  formatTime(Math.floor(e.timeMs / 1000))
+                )
+              );
+            }),
+            raceResult.winnerUid === myId ? React.createElement(
+              'p',
+              { className: 'text-emerald-600 font-black text-lg my-2' },
+              '\uD83C\uDF89 \u4F60\u8D0F\u4E86\uFF01'
+            ) : React.createElement(
+              'p',
+              { className: 'text-slate-500 font-black text-lg my-2' },
+              '\u5C0D\u624B\u5FEB\u4E86\u4E00\u6B65\uFF0C\u518D\u63A5\u518D\u53B2\uFF01'
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex justify-center gap-2 my-3' },
+              [0, 1, 2].map(function (i) {
+                return React.createElement(
+                  'span',
+                  { key: i, className: i < stars ? "animate-starPop text-4xl inline-block" : "text-4xl inline-block opacity-20 grayscale", style: i < stars ? { animationDelay: i * 0.3 + 's' } : {} },
+                  '\u2B50'
+                );
+              })
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex justify-center gap-3 mt-4' },
+              isHostRef.current ? React.createElement(
+                'button',
+                { onClick: rematchRace, className: 'px-5 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                '\uD83C\uDFC1 \u518D\u4F86\u4E00\u5C40'
+              ) : React.createElement(
+                'p',
+                { className: 'font-bold text-slate-500 self-center' },
+                '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u4E0B\u4E00\u5C40...'
+              ),
+              React.createElement(
+                'button',
+                { onClick: handleGoHome, className: 'px-5 py-3 bg-white text-slate-800 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                '\u96E2\u958B'
+              )
+            )
+          )
+        ),
+        confetti.length > 0 && !hideVictoryModal && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[55] pointer-events-none overflow-hidden' },
+          confetti.map(function (c) {
+            return React.createElement('div', { key: c.id, className: 'confetti-piece absolute -top-4', style: { left: c.left + '%', width: c.w + 'px', height: c.h + 'px', backgroundColor: c.color, animationDuration: c.dur + 's', animationDelay: c.delay + 's' } });
+          })
+        ),
+        isWon && !hideVictoryModal && !inRace && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ' + (isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn') },
+          React.createElement(
+            'div',
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] md:min-w-[320px] relative ' + (isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter') },
+            React.createElement(
+              'button',
+              { onClick: closeVictoryModal, className: 'absolute top-2 right-4 text-slate-400 hover:text-[#2d2a26] text-2xl font-black' },
+              '\u2715'
+            ),
+            React.createElement(
+              'div',
+              { className: 'text-5xl md:text-6xl mb-3' },
+              '\uD83D\uDCA5\uD83C\uDFC6'
+            ),
+            React.createElement(
+              'h2',
+              { className: 'text-2xl md:text-3xl font-black text-[#2d2a26] mb-2 uppercase tracking-wide' },
+              'PERFECT!'
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-slate-600 mb-1 text-sm md:text-base font-bold' },
+              '\u6240\u6709\u7684\u5CF6\u5DBC\u90FD\u6210\u529F\u9023\u7D50\u4E86\uFF01'
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-blue-600 mb-1 text-sm md:text-base font-bold' },
+              '\u5B8C\u6210\u6642\u9593\uFF1A',
+              endTime ? formatTime(Math.floor((endTime - startTime) / 1000)) : "00:00"
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex justify-center gap-2 my-3' },
+              [0, 1, 2].map(function (i) {
+                return React.createElement(
+                  'span',
+                  { key: i, className: i < stars ? "animate-starPop text-4xl md:text-5xl inline-block" : "text-4xl md:text-5xl inline-block opacity-20 grayscale", style: i < stars ? { animationDelay: i * 0.3 + 's' } : {} },
+                  '\u2B50'
+                );
+              })
+            ),
+            isNewBest && React.createElement(
+              'p',
+              { className: 'text-amber-600 font-black mb-2 animate-pulse' },
+              '\uD83C\uDF89 \u65B0\u7D00\u9304\uFF01'
+            ),
+            isDailyMode ? React.createElement(
+              'p',
+              { className: 'text-emerald-600 mb-6 text-sm md:text-base font-black border-b-[3px] border-dashed border-slate-300 pb-4' },
+              '\u2705 \u4ECA\u65E5\u6311\u6230\u5B8C\u6210\uFF01\u660E\u5929\u518D\u4F86'
+            ) : React.createElement('div', { className: 'border-b-[3px] border-dashed border-slate-300 mb-6' }),
+            React.createElement(
+              'div',
+              { className: 'flex justify-center gap-3' },
+              isDailyMode ? React.createElement(
+                'button',
+                { onClick: triggerDailyHome, className: 'px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },
+                '\u56DE\u4E3B\u9078\u55AE \uD83C\uDFE0'
+              ) : React.createElement(
+                'button',
+                { onClick: triggerRegenerate, className: 'px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },
+                '\u518D\u4F86\u4E00\u5C40 \u2794'
+              )
+            )
+          )
+        ),
+        isWon && hideVictoryModal && React.createElement(
+          'div',
+          { className: 'absolute bottom-6 inset-x-0 flex justify-center z-50 pointer-events-none' },
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setHideVictoryModal(false);
+              }, className: 'pointer-events-auto bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] px-6 py-3 rounded-full shadow-[6px_6px_0px_#2d2a26] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg' },
+            '\uD83C\uDFC6 \u986F\u793A\u6210\u7E3E'
+          )
+        )
+      )
+    ),
+    showSaveModal && React.createElement(
+      'div',
+      { className: 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4' },
+      React.createElement(
+        'div',
+        { className: 'bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUp' },
+        React.createElement(
+          'h2',
+          { className: 'text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1' },
+          '\uD83D\uDCBE \u5B58\u6A94\u8207\u8B80\u6A94'
+        ),
+        React.createElement(
+          'p',
+          { className: 'text-sm font-bold text-slate-600 mb-4' },
+          '\u5C07\u9032\u5EA6\u8F49\u63DB\u70BA\u4EE3\u78BC\uFF0C\u4E0B\u6B21\u8CBC\u4E0A\u4EE3\u78BC\u5373\u53EF\u6062\u5FA9\uFF01'
+        ),
+        React.createElement(
+          'div',
+          { className: 'mb-6' },
+          React.createElement(
+            'button',
+            { onClick: handleSaveCode, className: 'w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg' },
+            '\u7522\u751F\u9032\u5EA6\u4EE3\u78BC (\u81EA\u52D5\u8907\u88FD)'
+          ),
+          React.createElement(
+            'div',
+            { className: 'relative' },
+            React.createElement('textarea', { id: 'saveCodeTextarea', value: saveCode, onChange: function onChange(e) {
+                return setSaveCode(e.target.value);
+              }, placeholder: '\u9EDE\u64CA\u4E0A\u65B9\u6309\u9215\u751F\u6210\uFF0C\u6216\u662F\u624B\u52D5\u8CBC\u4E0A\u820A\u4EE3\u78BC\u81F3\u6B64\u8655', rows: '4', className: 'w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white' }),
+            React.createElement(
+              'button',
+              { onClick: handleQuickPaste, className: 'absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none' },
+              '\uD83D\uDCCB \u5FEB\u901F\u8CBC\u4E0A'
+            )
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex gap-4' },
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setShowSaveModal(false);
+              }, className: 'flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+            '\u95DC\u9589'
+          ),
+          React.createElement(
+            'button',
+            { onClick: handleLoadCode, className: 'flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+            '\u8F09\u5165\u4EE3\u78BC'
+          )
+        )
+      )
+    ),
+    showCustomModal && React.createElement(
+      'div',
+      { className: 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4' },
+      React.createElement(
+        'div',
+        { className: 'bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter' },
+        React.createElement(
+          'div',
+          { className: 'flex justify-between items-center mb-4 border-b-4 border-slate-800 pb-2' },
+          React.createElement(
+            'h2',
+            { className: 'text-xl font-black text-slate-800' },
+            '\u2699\uFE0F \u81EA\u8A02\u5730\u5716\u5C3A\u5BF8'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                setShowCustomModal(false);
+                setCurrentLevelId(stateRef.current.levelId);
+              }, className: 'text-slate-400 hover:text-slate-800 text-2xl font-black' },
+            '\u2715'
+          )
+        ),
+        React.createElement(
+          'p',
+          { className: 'text-xs font-bold text-slate-500 mb-4' },
+          '\u8F38\u5165\u5C08\u5C6C\u9577\u5BEC\uFF085 ~ 100\uFF09\uFF0C\u751F\u6210\u8D85\u5927\u578B\u5408\u4F5C\u5730\u5716\uFF1A'
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex flex-col gap-4 mb-6' },
+          React.createElement(
+            'div',
+            null,
+            React.createElement(
+              'label',
+              { className: 'block text-sm font-bold text-slate-800 mb-1' },
+              '\u5BEC\u5EA6 (\u6A6B\u5411\u5CF6\u5DBC\u6578):'
+            ),
+            React.createElement('input', { type: 'number', min: '5', max: '100', value: tempWidth, onChange: function onChange(e) {
+                return setTempWidth(parseInt(e.target.value) || 5);
+              }, className: 'w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#4ade80] outline-none' })
+          ),
+          React.createElement(
+            'div',
+            null,
+            React.createElement(
+              'label',
+              { className: 'block text-sm font-bold text-slate-800 mb-1' },
+              '\u9577\u5EA6 (\u76F4\u5411\u5CF6\u5DBC\u6578):'
+            ),
+            React.createElement('input', { type: 'number', min: '5', max: '100', value: tempHeight, onChange: function onChange(e) {
+                return setTempHeight(parseInt(e.target.value) || 5);
+              }, className: 'w-full border-2 border-slate-800 rounded-md p-2 font-bold focus:ring-2 ring-[#4ade80] outline-none' })
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex gap-3' },
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                setShowCustomModal(false);
+                setCurrentLevelId(stateRef.current.levelId);
+              }, className: 'flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300 active:translate-y-1 active:shadow-none transition-all' },
+            '\u53D6\u6D88'
+          ),
+          React.createElement(
+            'button',
+            { onClick: handleCustomGenerate, className: 'flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800] active:translate-y-1 active:shadow-none transition-all' },
+            '\u7522\u751F'
+          )
+        )
+      )
+    ),
+    toastMsg && React.createElement(
+      'div',
+      { className: 'fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade' },
+      toastMsg
+    ),
+    speakPrompt && !speakerOn && React.createElement(
+      'div',
+      { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[96] bg-slate-800 text-white pl-4 pr-2 py-2 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.35)] border-[3px] border-white flex items-center gap-2 whitespace-nowrap max-w-[calc(100%-16px)]' },
+      React.createElement(
+        'span',
+        { className: 'truncate' },
+        '\uD83D\uDD0A ',
+        speakPrompt.name,
+        ' \u767C\u8A00\u4E2D\uFF0C\u958B\u555F\u97F3\u6548\uFF1F'
+      ),
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return setSpeakerOn(true);
+          }, className: 'bg-[#4ade80] text-slate-900 px-3 py-1 rounded-full font-black border-2 border-slate-900 shrink-0' },
+        '\u958B\u555F'
+      ),
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return setSpeakPrompt(null);
+          }, className: 'bg-white/20 text-white px-2 py-1 rounded-full font-black shrink-0' },
+        '\u2715'
+      )
+    ),
+    chatOpen && engineRef.current === 'peerjs' && React.createElement(
+      'div',
+      { className: 'absolute inset-0 z-[95] flex items-end justify-center pointer-events-none p-3' },
+      React.createElement(
+        'div',
+        { className: 'pointer-events-auto w-full max-w-md bg-[#f6fdf6]/90 backdrop-blur-[2px] border-4 border-slate-800 rounded-2xl shadow-[4px_4px_0px_rgba(30,41,59,0.6)] flex flex-col overflow-hidden', style: chatMin ? {} : { height: '40vh', maxHeight: '380px' } },
+        React.createElement(
+          'div',
+          { onClick: function onClick() {
+              return setChatMin(function (prev) {
+                return !prev;
+              });
+            }, className: 'flex items-center justify-between px-3 py-2 bg-[#4ade80] border-b-[3px] border-slate-800 shrink-0 cursor-pointer select-none' },
+          React.createElement(
+            'span',
+            { className: 'font-black text-slate-900' },
+            '\uD83D\uDCAC \u804A\u5929\u5BA4 ',
+            unreadChat > 0 && React.createElement(
+              'span',
+              { className: 'ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black inline-flex items-center justify-center border-2 border-white align-middle' },
+              unreadChat > 99 ? '99+' : unreadChat
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex items-center gap-2' },
+            React.createElement(
+              'span',
+              { className: 'font-black text-slate-800' },
+              chatMin ? '🔼' : '🔽'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick(e) {
+                  e.stopPropagation();setChatOpen(false);
+                }, className: 'w-7 h-7 rounded-full bg-white border-2 border-slate-800 font-black text-slate-800 text-sm leading-none' },
+              '\u2715'
+            )
+          )
+        ),
+        !chatMin && React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            'div',
+            { ref: chatListRef, className: 'flex-1 overflow-y-auto px-3 py-2 space-y-2' },
+            chatMsgs.length === 0 && React.createElement(
+              'p',
+              { className: 'text-center text-slate-400 text-xs font-bold py-8' },
+              '\u9084\u6C92\u6709\u8A0A\u606F\uFF0C\u6253\u500B\u62DB\u547C\u5427\uFF01\uD83D\uDC4B'
+            ),
+            chatMsgs.map(function (m) {
+              return React.createElement(
+                'div',
+                { key: m.id, className: "flex " + (m.mine ? "justify-end" : "justify-start") },
+                React.createElement(
+                  'div',
+                  { className: "max-w-[82%] px-2.5 py-1.5 rounded-xl border-2 border-slate-800 " + (m.mine ? "bg-[#4ade80]" : "bg-white") },
+                  !m.mine && React.createElement(
+                    'div',
+                    { className: 'text-[10px] font-black leading-tight', style: { color: m.color === 'rainbow' ? '#a855f7' : m.color } },
+                    m.name
+                  ),
+                  React.createElement(
+                    'div',
+                    { className: 'break-words text-sm font-bold text-slate-900 leading-snug' },
+                    m.text
+                  )
+                )
+              );
+            })
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex gap-2 p-2 border-t-[3px] border-slate-800 shrink-0 bg-white' },
+            React.createElement('input', {
+              value: chatInput,
+              onChange: function onChange(e) {
+                return setChatInput(e.target.value);
+              },
+              onKeyDown: function onKeyDown(e) {
+                if (e.key === 'Enter') sendChat();
+              },
+              placeholder: '\u8F38\u5165\u8A0A\u606F\u2026',
+              maxLength: 200,
+              className: 'flex-1 min-w-0 px-3 py-2 rounded-xl border-2 border-slate-800 text-sm font-bold outline-none focus:border-emerald-500'
+            }),
+            React.createElement(
+              'button',
+              { onClick: sendChat, className: 'px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none shrink-0' },
+              '\u9001\u51FA'
+            )
+          )
+        )
+      )
+    ),
+    tutorialOverlay
+  );
+}
+var root = ReactDOM.createRoot(document.getElementById('hashi-root'));
+root.render(React.createElement(window.PlatBoundary, null, React.createElement(HashiGame, null)));

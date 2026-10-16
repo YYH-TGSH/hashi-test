@@ -5,26 +5,90 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="數橋測試版">
-  <title>數橋測試版 - Hashi Puzzle</title>
+  <meta name="apple-mobile-web-app-title" content="數獨×數橋">
+  <title>數獨 × 數橋 遊戲平台</title>
+  <link rel="icon" href="platform-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="platform-icon.png">
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234ade80%22 rx=%2220%22/><text y=%2272%22 x=%2216%22 font-size=%2265%22>🌉</text></svg>">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
+  <script>
+    // 儲存安全網：某些環境（App 預覽 webview 等）會封鎖 localStorage，存取直接丟 SecurityError。
+    // 先探測；被擋就換上記憶體版，讓兩款遊戲照常運作（該次開啟期間有效）。正式網站（https）不會觸發。
+    (function () {
+      function makeShim() {
+        var mem = {};
+        var s = {
+          getItem: function (k) { k = String(k); return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+          setItem: function (k, v) { mem[String(k)] = String(v); },
+          removeItem: function (k) { delete mem[String(k)]; },
+          clear: function () { mem = {}; },
+          key: function (i) { var ks = Object.keys(mem); return i < ks.length ? ks[i] : null; }
+        };
+        Object.defineProperty(s, 'length', { get: function () { return Object.keys(mem).length; } });
+        return s;
+      }
+      try {
+        var t = '__plat_ls_probe__';
+        window.localStorage.setItem(t, '1');
+        window.localStorage.removeItem(t);
+      } catch (e) {
+        try { Object.defineProperty(window, 'localStorage', { value: makeShim(), configurable: true }); } catch (e2) {}
+        try { Object.defineProperty(window, 'sessionStorage', { value: makeShim(), configurable: true }); } catch (e3) {}
+        window.__PLAT_STORAGE_SHIMMED = true;
+      }
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://unpkg.com/regenerator-runtime@0.14.1/runtime.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <link rel="stylesheet" href="css/style.css">
+
+  <link rel="stylesheet" href="css/sudoku.css">
+  <link rel="stylesheet" href="css/hashi.css">
+  <link rel="stylesheet" href="css/platform.css">
 </head>
-<body>
+<body data-view="home">
 
-  <div id="root"></div>
+  <button id="plat-back" style="display:none" onclick="PLAT_show('home')">🏠 平台</button>
 
-  <script src="js/sound.js"></script>
-  <script src="js/solver.js"></script>
-  <script src="js/puzzle.js"></script>
-  <script type="text/babel" src="js/app.js"></script>
+  
+
+  <div id="view-home" class="plat-view active">
+    <div class="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div class="flex-1 flex flex-col justify-center w-full max-w-md items-center">
+        <div class="bg-white border-4 border-slate-800 p-8 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
+          <h1 class="font-black text-slate-800 mb-8 flex justify-center gap-2">
+            <span class="inline-block bg-[#ffcc00] px-3 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">數</span>
+            <span class="inline-block bg-[#ffcc00] px-3 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">獨</span>
+            <span class="inline-block self-center font-black text-2xl text-slate-400">×</span>
+            <span class="inline-block bg-[#4ade80] px-3 py-2 border-4 border-slate-800 rounded-xl transform rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">數</span>
+            <span class="inline-block bg-[#4ade80] px-3 py-2 border-4 border-slate-800 rounded-xl transform -rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">橋</span>
+          </h1>
+          <div class="flex flex-col gap-5">
+            <button onclick="PLAT_show('sudoku')" class="w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">🔢 數獨 Sudoku</button>
+            <button onclick="PLAT_show('hashi')" class="w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌉 數橋 Hashi</button>
+          </div>
+        </div>
+      </div>
+      <div class="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (整合測試版 v0.1)</div>
+    </div>
+  </div>
+
+  <div id="view-sudoku" class="plat-view">
+    <div id="sudoku-root"></div>
+  </div>
+
+  <div id="view-hashi" class="plat-view">
+    <div id="hashi-root"></div>
+  </div>
+
+  <script src="js/hashi/sound.js"></script>
+  <script src="js/hashi/solver.js"></script>
+  <script src="js/hashi/puzzle.js"></script>
+  <script src="js/sudoku/engine.js"></script>
+
+
+
+  <script src="js/platform/shell.js"></script>
 </body>
 </html>

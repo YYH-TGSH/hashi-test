@@ -1,0 +1,392 @@
+/* 隱藏滾動條但保持可滾動 */
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes slideUpFade {
+        0% {
+            transform: translate(-50%, 20px);
+            opacity: 0;
+        }
+
+        100% {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slideUpFade {
+        animation: slideUpFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popUpCenter {
+        0% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .animate-popUpCenter {
+        animation: popUpCenter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popOutCenter {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+    }
+
+    .animate-popOutCenter {
+        animation: popOutCenter 0.3s ease-in forwards;
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+
+    .animate-fadeOut {
+        animation: fadeOut 0.3s ease-in forwards;
+    }
+
+    @keyframes rippleAnim {
+        0% {
+            transform: scale(0.1);
+            opacity: 0.8;
+            stroke-width: 6px;
+        }
+
+        100% {
+            transform: scale(3);
+            opacity: 0;
+            stroke-width: 2px;
+        }
+    }
+
+    @keyframes dotAnim {
+        0% {
+            content: '';
+        }
+
+        25% {
+            content: '.';
+        }
+
+        50% {
+            content: '..';
+        }
+
+        75% {
+            content: '...';
+        }
+
+        100% {
+            content: '';
+        }
+    }
+
+    .animate-loading-dots::after {
+        content: '';
+        animation: dotAnim 1.5s infinite;
+    }
+
+    @keyframes ghostPulse {
+
+        0%,
+        100% {
+            opacity: 0.6;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    .ghost-highlight {
+        animation: ghostPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes giftPop {
+        0% {
+            transform: scale(0) translateY(-20px);
+            opacity: 0;
+        }
+
+        60% {
+            transform: scale(1.1) translateY(5px);
+            opacity: 1;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+        }
+
+        100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+        }
+    }
+
+    .anim-gift {
+        animation: giftPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* 按鍵翻轉對調動畫 */
+    @keyframes keyFlip {
+        0% {
+            transform: perspective(400px) rotateY(0);
+        }
+
+        50% {
+            transform: perspective(400px) rotateY(90deg);
+            background-color: #ef4444;
+            color: white;
+            opacity: 0.8;
+        }
+
+        100% {
+            transform: perspective(400px) rotateY(0);
+        }
+    }
+
+    .anim-key-flip {
+        animation: keyFlip 0.6s ease-in-out forwards;
+    }
+
+    /* 水球噴濺入場動畫 */
+    @keyframes splatIn {
+        0% {
+            transform: scale(0) rotate(-20deg);
+            opacity: 0;
+        }
+
+        55% {
+            transform: scale(1.15) rotate(5deg);
+            opacity: 1;
+        }
+
+        78% {
+            transform: scale(0.95) rotate(-2deg);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+    }
+
+    /* 水球霧化特效：顯示10秒，最後漸變透明消失 */
+    @keyframes fogFade {
+        0% {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        3% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        90% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0;
+        }
+    }
+
+    /* 橡皮擦特效：顯示0.5秒後往上且變透明 */
+    @keyframes eraseFade {
+        0% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        90% {
+            opacity: 0;
+            transform: translateY(-15px);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(-15px);
+        }
+    }
+
+    /* 武器按鈕浮動 */
+    @keyframes weaponFloat {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-4px);
+        }
+    }
+
+    .anim-weapon {
+        animation: weaponFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes rainbowStopAnim {
+        0% {
+            stop-color: #E3002B;
+        }
+
+        5% {
+            stop-color: #F35B00;
+        }
+
+        10% {
+            stop-color: #FFC90E;
+        }
+
+        15% {
+            stop-color: #D7157A;
+        }
+
+        20% {
+            stop-color: #E895C0;
+        }
+
+        25% {
+            stop-color: #007A61;
+        }
+
+        30% {
+            stop-color: #87D300;
+        }
+
+        35% {
+            stop-color: #C4D600;
+        }
+
+        40% {
+            stop-color: #8DD1BF;
+        }
+
+        45% {
+            stop-color: #616130;
+        }
+
+        50% {
+            stop-color: #00538A;
+        }
+
+        55% {
+            stop-color: #008CC1;
+        }
+
+        60% {
+            stop-color: #00C1D5;
+        }
+
+        65% {
+            stop-color: #79C8ED;
+        }
+
+        70% {
+            stop-color: #CDBB79;
+        }
+
+        75% {
+            stop-color: #41136A;
+        }
+
+        80% {
+            stop-color: #935CB9;
+        }
+
+        85% {
+            stop-color: #BCA8D1;
+        }
+
+        90% {
+            stop-color: #7A0026;
+        }
+
+        95% {
+            stop-color: #BC7B70;
+        }
+
+        100% {
+            stop-color: #E3002B;
+        }
+    }
+
+    .rainbow-stop {
+        animation: rainbowStopAnim 20s linear infinite;
+    }
+
+    .rainbow-stroke {
+        stroke: url(#rainbowGrad) !important;
+    }
+
+    .rainbow-fill {
+        fill: url(#rainbowGrad) !important;
+    }
+
+    .key-btn {
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, box-shadow 0.2s;
+        backface-visibility: hidden;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-left: 2px solid #1e293b;
+        border-top: 2px solid #1e293b;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border: 2px solid #1e293b;
+        border-radius: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }

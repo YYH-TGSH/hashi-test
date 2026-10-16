@@ -1,0 +1,39 @@
+body[data-view="sudoku"] {
+overscroll-behavior-y: none;
+        background-color: #fdf5e6;
+        background-image: radial-gradient(#d3c5ab 2px, transparent 2px);
+        background-size: 12px 12px;
+        margin: 0;
+        padding: 0;
+        font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+}
+body[data-view="hashi"] {
+overscroll-behavior-y: none;
+      background-color: #e9f7e9;
+      background-image:
+        radial-gradient(#c9e8c9 3px, transparent 3.5px),
+        radial-gradient(#b7ddb7 1.5px, transparent 2px),
+        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
+      background-size: 28px 28px, 12px 12px, 100% 100%;
+      margin: 0; padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+}
+
+/* 平台殼樣式（body 背景由 build 依各遊戲 body 規則產生 data-view 版本） */
+body[data-view="home"] {
+  overscroll-behavior-y: none;
+  background-color: #fdf5e6;
+  background-image: radial-gradient(#d3c5ab 2px, transparent 2px);
+  background-size: 12px 12px;
+  margin: 0; padding: 0;
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+}
+.plat-view { display: none; }
+.plat-view.active { display: block; }
+#plat-back {
+  position: fixed; top: 10px; left: 10px; z-index: 9999;
+  background: #fff; border: 3px solid #1e293b; border-radius: 9999px;
+  padding: 6px 14px; font-weight: 900; font-size: 14px; color: #1e293b;
+  box-shadow: 3px 3px 0 rgba(30,41,59,1); cursor: pointer;
+}
+#plat-back:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(30,41,59,1); }
