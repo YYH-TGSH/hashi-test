@@ -862,111 +862,133 @@ function HashiGame() {
       _useState142 = _slicedToArray(_useState141, 2),
       brawlBoards = _useState142[0],
       setBrawlBoards = _useState142[1];
+  // 🎮 統一多人框架：等待室 + 大亂鬥設定 + 本局選手名單
 
-  var _useState143 = useState(null),
+
+  var _useState143 = useState(false),
       _useState144 = _slicedToArray(_useState143, 2),
-      godViewUid = _useState144[0],
-      setGodViewUid = _useState144[1];
+      roomOpen = _useState144[0],
+      setRoomOpen = _useState144[1];
 
-  var _useState145 = useState([]),
+  var _useState145 = useState(false),
       _useState146 = _slicedToArray(_useState145, 2),
-      myItems = _useState146[0],
-      setMyItems = _useState146[1];
+      showRoomSettings = _useState146[0],
+      setShowRoomSettings = _useState146[1];
 
-  var _useState147 = useState({}),
+  var _useState147 = useState({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true }),
       _useState148 = _slicedToArray(_useState147, 2),
-      fxFog = _useState148[0],
-      setFxFog = _useState148[1];
+      brawlSettings = _useState148[0],
+      setBrawlSettings = _useState148[1];
 
-  var _useState149 = useState({}),
+  var _useState149 = useState([]),
       _useState150 = _slicedToArray(_useState149, 2),
-      fxPhantom = _useState150[0],
-      setFxPhantom = _useState150[1];
+      raceRacers = _useState150[0],
+      setRaceRacers = _useState150[1];
 
-  var _useState151 = useState(0),
+  var _useState151 = useState(null),
       _useState152 = _slicedToArray(_useState151, 2),
-      fxInvertUntil = _useState152[0],
-      setFxInvertUntil = _useState152[1];
+      godViewUid = _useState152[0],
+      setGodViewUid = _useState152[1];
 
-  var _useState153 = useState(Date.now()),
+  var _useState153 = useState([]),
       _useState154 = _slicedToArray(_useState153, 2),
-      fxNow = _useState154[0],
-      setFxNow = _useState154[1];
+      myItems = _useState154[0],
+      setMyItems = _useState154[1];
 
-  var _useState155 = useState(null),
+  var _useState155 = useState({}),
       _useState156 = _slicedToArray(_useState155, 2),
-      raceResult = _useState156[0],
-      setRaceResult = _useState156[1];
+      fxFog = _useState156[0],
+      setFxFog = _useState156[1];
 
-  var _useState157 = useState(false),
+  var _useState157 = useState({}),
       _useState158 = _slicedToArray(_useState157, 2),
-      raceWaiting = _useState158[0],
-      setRaceWaiting = _useState158[1];
+      fxPhantom = _useState158[0],
+      setFxPhantom = _useState158[1];
 
-  var _useState159 = useState(null),
+  var _useState159 = useState(0),
       _useState160 = _slicedToArray(_useState159, 2),
-      raceCountdown = _useState160[0],
-      setRaceCountdown = _useState160[1];
+      fxInvertUntil = _useState160[0],
+      setFxInvertUntil = _useState160[1];
+
+  var _useState161 = useState(Date.now()),
+      _useState162 = _slicedToArray(_useState161, 2),
+      fxNow = _useState162[0],
+      setFxNow = _useState162[1];
+
+  var _useState163 = useState(null),
+      _useState164 = _slicedToArray(_useState163, 2),
+      raceResult = _useState164[0],
+      setRaceResult = _useState164[1];
+
+  var _useState165 = useState(false),
+      _useState166 = _slicedToArray(_useState165, 2),
+      raceWaiting = _useState166[0],
+      setRaceWaiting = _useState166[1];
+
+  var _useState167 = useState(null),
+      _useState168 = _slicedToArray(_useState167, 2),
+      raceCountdown = _useState168[0],
+      setRaceCountdown = _useState168[1];
 
   // ⭐ 星級評分
 
 
-  var _useState161 = useState(0),
-      _useState162 = _slicedToArray(_useState161, 2),
-      stars = _useState162[0],
-      setStars = _useState162[1];
+  var _useState169 = useState(0),
+      _useState170 = _slicedToArray(_useState169, 2),
+      stars = _useState170[0],
+      setStars = _useState170[1];
 
-  var _useState163 = useState(false),
-      _useState164 = _slicedToArray(_useState163, 2),
-      isNewBest = _useState164[0],
-      setIsNewBest = _useState164[1];
+  var _useState171 = useState(false),
+      _useState172 = _slicedToArray(_useState171, 2),
+      isNewBest = _useState172[0],
+      setIsNewBest = _useState172[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState165 = useState([]),
-      _useState166 = _slicedToArray(_useState165, 2),
-      bursts = _useState166[0],
-      setBursts = _useState166[1];
+  var _useState173 = useState([]),
+      _useState174 = _slicedToArray(_useState173, 2),
+      bursts = _useState174[0],
+      setBursts = _useState174[1];
 
-  var _useState167 = useState([]),
-      _useState168 = _slicedToArray(_useState167, 2),
-      confetti = _useState168[0],
-      setConfetti = _useState168[1];
+  var _useState175 = useState([]),
+      _useState176 = _slicedToArray(_useState175, 2),
+      confetti = _useState176[0],
+      setConfetti = _useState176[1];
 
   // 每日一題
 
 
-  var _useState169 = useState(false),
-      _useState170 = _slicedToArray(_useState169, 2),
-      isDailyMode = _useState170[0],
-      setIsDailyMode = _useState170[1];
+  var _useState177 = useState(false),
+      _useState178 = _slicedToArray(_useState177, 2),
+      isDailyMode = _useState178[0],
+      setIsDailyMode = _useState178[1];
 
-  var _useState171 = useState(""),
-      _useState172 = _slicedToArray(_useState171, 2),
-      dailyDateStr = _useState172[0],
-      setDailyDateStr = _useState172[1];
+  var _useState179 = useState(""),
+      _useState180 = _slicedToArray(_useState179, 2),
+      dailyDateStr = _useState180[0],
+      setDailyDateStr = _useState180[1];
 
-  var _useState173 = useState(0),
-      _useState174 = _slicedToArray(_useState173, 2),
-      dailyStreak = _useState174[0],
-      setDailyStreak = _useState174[1];
+  var _useState181 = useState(0),
+      _useState182 = _slicedToArray(_useState181, 2),
+      dailyStreak = _useState182[0],
+      setDailyStreak = _useState182[1];
 
-  var _useState175 = useState(null),
-      _useState176 = _slicedToArray(_useState175, 2),
-      dailyDone = _useState176[0],
-      setDailyDone = _useState176[1];
+  var _useState183 = useState(null),
+      _useState184 = _slicedToArray(_useState183, 2),
+      dailyDone = _useState184[0],
+      setDailyDone = _useState184[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState177 = useState(function () {
+  var _useState185 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState178 = _slicedToArray(_useState177, 2),
-      dailyMenuDate = _useState178[0],
-      setDailyMenuDate = _useState178[1];
+      _useState186 = _slicedToArray(_useState185, 2),
+      dailyMenuDate = _useState186[0],
+      setDailyMenuDate = _useState186[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -975,6 +997,18 @@ function HashiGame() {
 
   var isMultiplayer = engine !== 'none';
   var inRace = raceState !== 'idle';
+  var spectateUid = godViewUid && brawlBoards[godViewUid] ? godViewUid : raceRacers.find(function (u) {
+    return brawlBoards[u];
+  }) || null;
+  var myPlayerEntry = playersList.find(function (p) {
+    return p.id === myId;
+  });
+  var roomRacers = playersList.filter(function (p) {
+    return !p.isSpectator;
+  });
+  var roomAllReady = roomRacers.length >= 2 && roomRacers.every(function (p) {
+    return p.isReady;
+  });
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
   var isDrawingRef = useRef(false);
@@ -1015,6 +1049,8 @@ function HashiGame() {
   var myItemsRef = useRef([]);
   var raceProgressRef = useRef({});
   var hostMilestonesRef = useRef({});
+  var brawlSettingsRef = useRef({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true });
+  var racersRef = useRef([]);
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
   var fxRef = useRef({ fog: {}, phantom: {}, invertUntil: 0 });
@@ -1203,6 +1239,20 @@ function HashiGame() {
   useEffect(function () {
     playersListRef.current = playersList;
   }, [playersList]);
+  useEffect(function () {
+    raceProgressRef.current = raceProgress;
+  }, [raceProgress]);
+  // 房主：選手全員準備好 → 自動開始（比照數獨；不等的話房主可強制開始）
+  useEffect(function () {
+    if (!isHostRef.current || !roomOpen) return;
+    if (mpModeRef.current !== 'race' || raceStateRef.current !== 'lobby') return;
+    var racers = playersList.filter(function (p) {
+      return !p.isSpectator;
+    });
+    if (racers.length >= 2 && racers.every(function (p) {
+      return p.isReady;
+    })) startRace();
+  }, [playersList, roomOpen]);
 
   // ✨ 島嶼完成粒子：偵測「未完成 → 完成」
   useEffect(function () {
@@ -1831,6 +1881,17 @@ function HashiGame() {
 
   // ⚔️ 大亂鬥道具系統
   var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧水球', w: 2 }, { key: 'phantom', icon: '❓', name: '數字幻影', w: 2 }, { key: 'invert', icon: '🔀', name: '單雙顛倒', w: 2 }, { key: 'magnet', icon: '🧲', name: '磁鐵', w: 2 }];
+  var applyBrawlSettings = function applyBrawlSettings(settings, broadcast) {
+    if (!settings) return;
+    brawlSettingsRef.current = settings;
+    setBrawlSettings(settings);
+    stateRef.current = _extends({}, stateRef.current, { brawlSettings: settings });
+    if (broadcast && isHostRef.current) {
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({ type: 'BRAWL_SETTINGS', settings: settings });
+      });
+    }
+  };
   var sendBrawlMsg = function sendBrawlMsg(msg) {
     try {
       if (isHostRef.current) {
@@ -1855,6 +1916,7 @@ function HashiGame() {
   // 里程碑發放（房主執行，比照數獨）：抽一件道具，再依進度加權抽一位玩家——越落後權重越高，但不是永遠最後一名
   var handleBrawlMilestone = function handleBrawlMilestone(m) {
     if (!isHostRef.current) return;
+    if (!brawlSettingsRef.current.itemsEnabled) return;
     var key = m.uid + '@' + m.threshold;
     if (hostMilestonesRef.current[key]) return;
     hostMilestonesRef.current[key] = true;
@@ -2018,10 +2080,8 @@ function HashiGame() {
     var ni = myItemsRef.current.slice();ni.splice(idx, 1);
     myItemsRef.current = ni;setMyItems(ni);
   };
-  // 👁️ 上帝視角：唯讀即時檢視對手盤面
-  var renderGodModal = function renderGodModal() {
-    if (!godViewUid) return null;
-    var board = brawlBoards[godViewUid];
+  // 👁️ 上帝視角盤面（唯讀）：modal 與觀戰面板共用；島數字受「上帝視角顯示數字」設定
+  var renderGodBoard = function renderGodBoard(board) {
     if (!board || !randomLevelData) return null;
     var isls = randomLevelData.islands || [];
     if (!isls.length) return null;
@@ -2042,6 +2102,58 @@ function HashiGame() {
     }).concat([6]));
     var gw = (maxGX + 1) * SCALE + PADDING * 2;
     var gh = (maxGY + 1) * SCALE + PADDING * 2;
+    return React.createElement(
+      'svg',
+      { viewBox: '0 0 ' + gw + ' ' + gh, className: 'w-full h-auto bg-[#f3fbf3] rounded-xl border-2 border-slate-200' },
+      (board.bridges || []).map(function (b) {
+        var f = islMap[b.from],
+            t = islMap[b.to];
+        if (!f || !t || b.count === 0 && !(b.draftCount > 0)) return null;
+        var x1 = f.x * SCALE + PADDING,
+            y1 = f.y * SCALE + PADDING,
+            x2 = t.x * SCALE + PADDING,
+            y2 = t.y * SCALE + PADDING;
+        var horiz = f.y === t.y;
+        var off = 4;
+        var lines = [];
+        if (b.count >= 1) {
+          if (b.count === 2) {
+            lines.push(React.createElement('line', { key: b.id + '-a', x1: x1 + (horiz ? 0 : -off), y1: y1 + (horiz ? -off : 0), x2: x2 + (horiz ? 0 : -off), y2: y2 + (horiz ? -off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+            lines.push(React.createElement('line', { key: b.id + '-b', x1: x1 + (horiz ? 0 : off), y1: y1 + (horiz ? off : 0), x2: x2 + (horiz ? 0 : off), y2: y2 + (horiz ? off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+          } else {
+            lines.push(React.createElement('line', { key: b.id, x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+          }
+        } else if (b.draftCount > 0) {
+          lines.push(React.createElement('line', { key: b.id + '-d', x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#94a3b8', strokeWidth: '4', strokeDasharray: '6 5', strokeLinecap: 'round' }));
+        }
+        return React.createElement(
+          'g',
+          { key: 'gb-' + b.id },
+          lines
+        );
+      }),
+      isls.map(function (i) {
+        var cx = i.x * SCALE + PADDING,
+            cy = i.y * SCALE + PADDING;
+        var done = counts[i.id] === i.req,
+            over = counts[i.id] > i.req;
+        return React.createElement(
+          'g',
+          { key: 'gi-' + i.id },
+          React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS, fill: done ? '#d1fae5' : over ? '#fee2e2' : '#ffffff', stroke: done ? '#059669' : over ? '#dc2626' : '#1e293b', strokeWidth: '4' }),
+          React.createElement(
+            'text',
+            { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans', fill: '#1e293b' },
+            brawlSettings.godNumbers ? i.req : '?'
+          )
+        );
+      })
+    );
+  };
+  var renderGodModal = function renderGodModal() {
+    if (!godViewUid) return null;
+    var board = brawlBoards[godViewUid];
+    if (!board || !randomLevelData) return null;
     var opps = Object.keys(brawlBoards);
     return React.createElement(
       'div',
@@ -2086,53 +2198,7 @@ function HashiGame() {
             );
           })
         ),
-        React.createElement(
-          'svg',
-          { viewBox: '0 0 ' + gw + ' ' + gh, className: 'w-full h-auto bg-[#f3fbf3] rounded-xl border-2 border-slate-200' },
-          (board.bridges || []).map(function (b) {
-            var f = islMap[b.from],
-                t = islMap[b.to];
-            if (!f || !t || b.count === 0 && !(b.draftCount > 0)) return null;
-            var x1 = f.x * SCALE + PADDING,
-                y1 = f.y * SCALE + PADDING,
-                x2 = t.x * SCALE + PADDING,
-                y2 = t.y * SCALE + PADDING;
-            var horiz = f.y === t.y;
-            var off = 4;
-            var lines = [];
-            if (b.count >= 1) {
-              if (b.count === 2) {
-                lines.push(React.createElement('line', { key: b.id + '-a', x1: x1 + (horiz ? 0 : -off), y1: y1 + (horiz ? -off : 0), x2: x2 + (horiz ? 0 : -off), y2: y2 + (horiz ? -off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
-                lines.push(React.createElement('line', { key: b.id + '-b', x1: x1 + (horiz ? 0 : off), y1: y1 + (horiz ? off : 0), x2: x2 + (horiz ? 0 : off), y2: y2 + (horiz ? off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
-              } else {
-                lines.push(React.createElement('line', { key: b.id, x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
-              }
-            } else if (b.draftCount > 0) {
-              lines.push(React.createElement('line', { key: b.id + '-d', x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#94a3b8', strokeWidth: '4', strokeDasharray: '6 5', strokeLinecap: 'round' }));
-            }
-            return React.createElement(
-              'g',
-              { key: 'gb-' + b.id },
-              lines
-            );
-          }),
-          isls.map(function (i) {
-            var cx = i.x * SCALE + PADDING,
-                cy = i.y * SCALE + PADDING;
-            var done = counts[i.id] === i.req,
-                over = counts[i.id] > i.req;
-            return React.createElement(
-              'g',
-              { key: 'gi-' + i.id },
-              React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS, fill: done ? '#d1fae5' : over ? '#fee2e2' : '#ffffff', stroke: done ? '#059669' : over ? '#dc2626' : '#1e293b', strokeWidth: '4' }),
-              React.createElement(
-                'text',
-                { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans', fill: '#1e293b' },
-                i.req
-              )
-            );
-          })
-        ),
+        renderGodBoard(board),
         React.createElement(
           'p',
           { className: 'text-[11px] font-bold text-slate-400 mt-2 text-center' },
@@ -2141,9 +2207,6 @@ function HashiGame() {
       )
     );
   };
-  useEffect(function () {
-    raceProgressRef.current = raceProgress;
-  }, [raceProgress]);
   // 特效計時：到期自動清除
   useEffect(function () {
     var hasFx = fxInvertUntil > 0 || Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
@@ -2190,11 +2253,13 @@ function HashiGame() {
       if (counts[isl.id] === isl.req) done++;
     });
     var p = done / islands.length;
-    [0.25, 0.5, 0.75].forEach(function (t) {
-      if (p >= t && !milestonesRef.current[t]) {
-        milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
-      }
-    });
+    if (brawlSettingsRef.current.itemsEnabled) {
+      [0.25, 0.5, 0.75].forEach(function (t) {
+        if (p >= t && !milestonesRef.current[t]) {
+          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
+        }
+      });
+    }
     var nowB = Date.now();
     if (nowB - lastBrawlSentRef.current > 700) {
       lastBrawlSentRef.current = nowB;
@@ -2829,6 +2894,7 @@ function HashiGame() {
 
   // 房主在 nick 步確認暱稱 → 進遊戲（競速則進大廳）
   var hostConfirmName = function hostConfirmName(pName) {
+    setRoomOpen(true);
     var name = (pName || "").trim();
     if (!name) return;
     // 房裡可能已有提早進來的來賓，本地即時檢查
@@ -3019,9 +3085,10 @@ function HashiGame() {
                     return pl.id === m.uid ? _extends({}, pl, { name: m.pName }) : pl;
                   });
                 } else {
-                  // 新玩家加入
+                  // 新玩家加入（比賽進行中加入 → 自動觀戰，比照數獨）
                   var newColor = m.color || getAvailableColor(prev);
-                  nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor }]);
+                  var lateSpec = mpModeRef.current === 'race' && (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing' || raceStateRef.current === 'finished');
+                  nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor, isReady: false, isSpectator: lateSpec }]);
                 }
                 // 強制派發最新地圖與名單
                 connsRef.current.forEach(function (conn) {
@@ -3146,6 +3213,26 @@ function HashiGame() {
               });
             } else if (m.type === 'BRAWL_MILESTONE') {
               handleBrawlMilestone(m);
+            } else if (m.type === 'REQ_READY') {
+              setPlayersList(function (prev) {
+                var nList = prev.map(function (pl) {
+                  return pl.id === m.uid ? _extends({}, pl, { isReady: !!m.ready }) : pl;
+                });
+                connsRef.current.forEach(function (conn) {
+                  if (conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
+            } else if (m.type === 'REQ_SPECTATE') {
+              setPlayersList(function (prev) {
+                var nList = prev.map(function (pl) {
+                  return pl.id === m.uid ? _extends({}, pl, { isSpectator: !!m.spectator, isReady: false }) : pl;
+                });
+                connsRef.current.forEach(function (conn) {
+                  if (conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
             }
           });
 
@@ -3218,6 +3305,8 @@ function HashiGame() {
           if (m.type === 'INIT') {
             if (m.players) setPlayersList(m.players);
             if (m.data) syncState(m.data, false);
+            if (m.data && m.data.brawlSettings) applyBrawlSettings(m.data.brawlSettings, false);
+            setRoomOpen(!(m.data && m.data.coopStarted));
             if (m.mpMode === 'race') {
               setMpMode('race');mpModeRef.current = 'race';
               setRaceState('lobby');raceStateRef.current = 'lobby';
@@ -3227,9 +3316,7 @@ function HashiGame() {
           } else if (m.type === 'PLAYERS_UPDATE') {
             if (m.players) setPlayersList(m.players);
           } else if (m.type === 'RACE_START') {
-            beginRace(m.data, m.startAt);
-          } else if (m.type === 'RACE_REMATCH') {
-            showToast("🏁 房主發起了再來一局！");
+            beginRace(m.data, m.startAt, m.racers, m.settings);
           } else if (m.type === 'RACE_PROGRESS') {
             setRaceProgress(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { progress: m.progress, name: m.name, color: m.color }));
@@ -3244,6 +3331,19 @@ function HashiGame() {
             applyBrawlItem(m);
           } else if (m.type === 'BRAWL_GRANT') {
             applyBrawlGrant(m);
+          } else if (m.type === 'BRAWL_SETTINGS') {
+            applyBrawlSettings(m.settings, false);
+          } else if (m.type === 'MP_MODE') {
+            setMpMode(m.mode);mpModeRef.current = m.mode;
+            if (m.mode === 'race') {
+              setRaceState('lobby');raceStateRef.current = 'lobby';
+            } else {
+              setRaceState('idle');raceStateRef.current = 'idle';
+            }
+          } else if (m.type === 'COOP_START') {
+            setRoomOpen(false);
+          } else if (m.type === 'TO_LOBBY') {
+            returnToLobbyLocal();
           } else if (m.type === 'CURSOR') {
             setCursors(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { x: m.x, y: m.y }));
@@ -3305,6 +3405,7 @@ function HashiGame() {
   };
 
   var handleGoHome = function handleGoHome() {
+    setRoomOpen(false);setShowRoomSettings(false);
     if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
     if (engineRef.current !== 'none') {
       if (!isHostRef.current && engineRef.current === 'peerjs' && connRef.current) {
@@ -3331,29 +3432,145 @@ function HashiGame() {
 
   // ==================== 🏁 競速模式 ====================
   var startRace = function startRace() {
-    if (!isHostRef.current || playersListRef.current.length < 2) return;
-    var targetLevelDef = { id: 2, name: "10x10 標準", width: 10, height: 10, description: "🏁 大亂鬥專用題目，祝好運！" };
+    if (!isHostRef.current) return;
+    var racers = playersListRef.current.filter(function (p) {
+      return !p.isSpectator;
+    });
+    if (racers.length < 2) return;
+    var st = brawlSettingsRef.current;
+    var def = LEVELS.find(function (l) {
+      return l.id === st.sizeId;
+    }) || LEVELS[1];
+    var targetLevelDef = { id: def.id, name: def.name, width: def.width, height: def.height, description: "🏁 大亂鬥專用題目，祝好運！" };
     var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
     var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
     var startAt = Date.now() + 3500;
-    var payload = { randomLevelData: newRandomData, bridges: empty, levelId: 2, showSolution: false, startTime: startAt, strokes: [] };
-    connsRef.current.forEach(function (c) {
-      if (c.open) c.send({ type: 'RACE_START', data: payload, startAt: startAt });
+    var payload = { randomLevelData: newRandomData, bridges: empty, levelId: def.id, showSolution: false, startTime: startAt, strokes: [] };
+    var racersIds = racers.map(function (p) {
+      return p.id;
     });
-    beginRace(payload, startAt);
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'RACE_START', data: payload, startAt: startAt, racers: racersIds, settings: st });
+    });
+    beginRace(payload, startAt, racersIds, st);
   };
 
-  var rematchRace = function rematchRace() {
+  // 回等待室（房主廣播全員；來賓收到 TO_LOBBY 也走這支本地版）
+  var returnToLobbyLocal = function returnToLobbyLocal() {
+    // 回等待室先清除全員準備狀態（比照數獨），避免一回房就被自動開始拉走
+    setPlayersList(function (prev) {
+      return prev.map(function (pl) {
+        return _extends({}, pl, { isReady: false });
+      });
+    });
+    if (isHostRef.current) {
+      var nList = playersListRef.current.map(function (pl) {
+        return _extends({}, pl, { isReady: false });
+      });
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
+      });
+    }
+    setRaceState('lobby');raceStateRef.current = 'lobby';
+    setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);
+    setRaceProgress({});raceResultsRef.current = {};myFinishTimeRef.current = null;
+    myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
+    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
+    setRoomOpen(true);
+  };
+  var returnToLobby = function returnToLobby() {
+    if (isHostRef.current) connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'TO_LOBBY' });
+    });
+    returnToLobbyLocal();
+  };
+  var startCoop = function startCoop() {
     if (!isHostRef.current) return;
+    stateRef.current = _extends({}, stateRef.current, { coopStarted: true });
     connsRef.current.forEach(function (c) {
-      if (c.open) c.send({ type: 'RACE_REMATCH' });
+      if (c.open) c.send({ type: 'COOP_START' });
     });
-    showToast("🏁 再來一局！");
-    startRace();
+    setRoomOpen(false);
+    showToast('🤝 合作開始！');
+  };
+  var applyCoopLevel = function applyCoopLevel(levelDef) {
+    if (!isHostRef.current) return;
+    var data = HASHI_PUZZLE.generateUniqueHashi(levelDef);
+    var empty = HASHI_PUZZLE.generateEmptyBridges(data);
+    syncState({ randomLevelData: data, bridges: empty, levelId: levelDef.id, showSolution: false, strokes: [], startTime: Date.now() });
+    setIsWon(false);setEndTime(null);resetWinMeta();
+  };
+  var setMyReady = function setMyReady(v) {
+    setPlayersList(function (prev) {
+      return prev.map(function (pl) {
+        return pl.id === myId ? _extends({}, pl, { isReady: v }) : pl;
+      });
+    });
+    if (isHostRef.current) {
+      var nList = playersListRef.current.map(function (pl) {
+        return pl.id === myId ? _extends({}, pl, { isReady: v }) : pl;
+      });
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
+      });
+    } else if (connRef.current && connRef.current.open) {
+      connRef.current.send({ type: 'REQ_READY', uid: myId, ready: v });
+    }
+  };
+  var setMySpectator = function setMySpectator(v) {
+    setPlayersList(function (prev) {
+      return prev.map(function (pl) {
+        return pl.id === myId ? _extends({}, pl, { isSpectator: v, isReady: false }) : pl;
+      });
+    });
+    if (isHostRef.current) {
+      var nList = playersListRef.current.map(function (pl) {
+        return pl.id === myId ? _extends({}, pl, { isSpectator: v, isReady: false }) : pl;
+      });
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
+      });
+    } else if (connRef.current && connRef.current.open) {
+      connRef.current.send({ type: 'REQ_SPECTATE', uid: myId, spectator: v });
+    }
+  };
+  var setMpModeHost = function setMpModeHost(mode) {
+    if (!isHostRef.current) return;
+    setMpMode(mode);mpModeRef.current = mode;
+    if (mode === 'race') {
+      setRaceState('lobby');raceStateRef.current = 'lobby';
+    } else {
+      setRaceState('idle');raceStateRef.current = 'idle';
+    }
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'MP_MODE', mode: mode });
+    });
   };
 
-  var beginRace = function beginRace(payload, startAt) {
+  var beginRace = function beginRace(payload, startAt, racersIds, settings) {
+    if (settings) applyBrawlSettings(settings, false);
+    var rIds = racersIds || playersListRef.current.filter(function (p) {
+      return !p.isSpectator;
+    }).map(function (p) {
+      return p.id;
+    });
+    racersRef.current = rIds;
+    setRaceRacers(rIds);
+    stateRef.current = _extends({}, stateRef.current, { racers: rIds });
+    setRoomOpen(false);
     var seq = ++raceSeqRef.current;
+    if (rIds.indexOf(myId) < 0) {
+      // 👁️ 觀戰者：不進賽局，改看上帝視角面板
+      setRandomLevelData(payload.randomLevelData);
+      setCurrentLevelId(payload.levelId || 2);
+      stateRef.current = _extends({}, stateRef.current, payload);
+      setBrawlBoards({});setGodViewUid(null);
+      setRaceResult(null);setRaceWaiting(false);
+      myItemsRef.current = [];setMyItems([]);
+      setRaceState('spectating');raceStateRef.current = 'spectating';
+      levelDimRef.current = { w: payload.randomLevelData.width, h: payload.randomLevelData.height };
+      return;
+    }
     setRandomLevelData(payload.randomLevelData);
     setBridges(payload.bridges);
     setCurrentLevelId(payload.levelId || 2);
@@ -3417,9 +3634,7 @@ function HashiGame() {
     } else if (connRef.current && connRef.current.open) {
       connRef.current.send(msg);
     }
-    if (Object.keys(raceResultsRef.current).length > 0) {
-      showRaceResult();
-    } else {
+    if (!maybeFinalize()) {
       setRaceWaiting(true);
       showToast("⏳ 你完成了！等待對手...");
     }
@@ -3428,37 +3643,77 @@ function HashiGame() {
   var onRaceOpponentFinish = function onRaceOpponentFinish(uid, m) {
     if (raceResultsRef.current[uid]) return;
     raceResultsRef.current[uid] = { name: m.name || '對手', color: m.color, timeMs: m.timeMs };
-    if (myFinishTimeRef.current != null) {
-      showRaceResult();
-    } else {
-      showToast("🏁 " + (m.name || '對手') + " 已完成！加油！");
+    if (!maybeFinalize()) {
+      if (myFinishTimeRef.current == null && raceStateRef.current === 'racing') showToast("🏁 " + (m.name || '對手') + " 已完成！加油！");
     }
   };
 
-  var showRaceResult = function showRaceResult() {
-    var myTime = myFinishTimeRef.current || 0;
-    var entries = [{ uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: myTime }];
+  // 結束名次制：完賽人數達標（或全員完賽）→ 結算；未完成者以進度排名（比照數獨）
+  var maybeFinalize = function maybeFinalize() {
+    if (raceStateRef.current === 'finished') return true;
+    var racers = racersRef.current || [];
+    if (!racers.length) return false;
+    var finCount = (myFinishTimeRef.current != null && racers.indexOf(myId) >= 0 ? 1 : 0) + Object.keys(raceResultsRef.current).filter(function (uid) {
+      return racers.indexOf(uid) >= 0;
+    }).length;
+    var target = Math.min(brawlSettingsRef.current.winnersCount || 3, racers.length);
+    if (finCount >= target || finCount >= racers.length) {
+      finalizeRace();return true;
+    }
+    return false;
+  };
+
+  var finalizeRace = function finalizeRace() {
+    var prog = raceProgressRef.current || {};
+    var nameOf = function nameOf(uid) {
+      var p = playersListRef.current.find(function (x) {
+        return x.id === uid;
+      });return p ? p.name : prog[uid] ? prog[uid].name : '玩家';
+    };
+    var colorOf = function colorOf(uid) {
+      var p = playersListRef.current.find(function (x) {
+        return x.id === uid;
+      });return p ? p.color : prog[uid] ? prog[uid].color : '#94a3b8';
+    };
+    var entries = [];
+    if (myFinishTimeRef.current != null && racersRef.current.indexOf(myId) >= 0) entries.push({ uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: myFinishTimeRef.current, finished: true });
     Object.keys(raceResultsRef.current).forEach(function (uid) {
+      if (racersRef.current.indexOf(uid) < 0) return;
       var r = raceResultsRef.current[uid];
-      entries.push({ uid: uid, name: r.name, color: r.color, timeMs: r.timeMs });
+      entries.push({ uid: uid, name: r.name, color: r.color, timeMs: r.timeMs, finished: true });
     });
     entries.sort(function (a, b) {
       return a.timeMs - b.timeMs;
     });
-    var islCount = (stateRef.current.randomLevelData && stateRef.current.randomLevelData.islands || []).length || 1;
-    var s = computeStars(Math.floor(myTime / 1000), islCount, false);
-    setStars(s);
-    for (var si = 0; si < s; si++) {
-      setTimeout(function () {
-        return window.HASHI_SOUND.play('star');
-      }, 200 + si * 320);
-    }
-    setRaceResult({ winnerUid: entries[0].uid, entries: entries });
+    var finUids = {};entries.forEach(function (e) {
+      finUids[e.uid] = true;
+    });
+    var dnf = racersRef.current.filter(function (uid) {
+      return !finUids[uid];
+    }).map(function (uid) {
+      return { uid: uid, name: nameOf(uid), color: colorOf(uid), progress: prog[uid] ? prog[uid].progress : 0, finished: false };
+    });
+    dnf.sort(function (a, b) {
+      return b.progress - a.progress;
+    });
+    var all = entries.concat(dnf);
+    if (myFinishTimeRef.current != null) {
+      var islCount = (stateRef.current.randomLevelData && stateRef.current.randomLevelData.islands || []).length || 1;
+      var s = computeStars(Math.floor(myFinishTimeRef.current / 1000), islCount, false);
+      setStars(s);
+      for (var si = 0; si < s; si++) {
+        setTimeout(function () {
+          return window.HASHI_SOUND.play('star');
+        }, 200 + si * 320);
+      }
+    } else setStars(0);
+    setRaceResult({ winnerUid: all.length ? all[0].uid : null, entries: all });
     setRaceWaiting(false);
     setRaceState('finished');raceStateRef.current = 'finished';
   };
 
   var exitRaceToSolo = function exitRaceToSolo() {
+    setRoomOpen(false);
     myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
     fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
     setRaceState('idle');raceStateRef.current = 'idle';
@@ -5020,7 +5275,7 @@ function HashiGame() {
               { className: 'text-[11px] font-bold text-slate-400' },
               '\uD83C\uDF92 \u91CC\u7A0B\u7891\uFF0825%\uFF0F50%\uFF0F75%\uFF09\u6703\u767C\u9053\u5177\u7D66\u843D\u5F8C\u8005\uFF0C\u5728\u5E95\u90E8\u5713\u9215\u4F7F\u7528'
             ),
-            React.createElement(
+            raceState === 'finished' && React.createElement(
               'button',
               { onClick: function onClick() {
                   var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
@@ -5555,21 +5810,59 @@ function HashiGame() {
             )
           )
         ),
-        inRace && raceState === 'lobby' && React.createElement(
+        roomOpen && React.createElement(
           'div',
-          { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
+          { className: 'absolute inset-0 z-[60] overflow-y-auto bg-[#f6fdf6] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] max-w-sm w-full animate-popUpCenter' },
+            { className: 'max-w-md mx-auto bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-5 mt-2 animate-popUpCenter' },
             React.createElement(
               'div',
-              { className: 'text-5xl mb-2' },
-              '\uD83C\uDFC1'
+              { className: 'flex items-center justify-between mb-3' },
+              React.createElement(
+                'h2',
+                { className: 'text-2xl font-black text-[#2d2a26]' },
+                '\uD83C\uDFAE \u904A\u6232\u5927\u5EF3'
+              ),
+              React.createElement(
+                'span',
+                { className: 'font-black text-sm text-slate-500' },
+                '\u623F\u9593\u4EE3\u78BC ',
+                React.createElement(
+                  'span',
+                  { className: 'bg-slate-800 text-white font-mono px-2 py-0.5 rounded-md tracking-widest' },
+                  roomId
+                )
+              )
+            ),
+            isHostRef.current ? React.createElement(
+              'div',
+              { className: 'flex gap-2 mb-4' },
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setMpModeHost('coop');
+                  }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+                '\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F'
+              ),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setMpModeHost('race');
+                  }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+                '\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F'
+              )
+            ) : React.createElement(
+              'p',
+              { className: 'mb-4 font-black text-slate-600' },
+              '\u76EE\u524D\u6A21\u5F0F\uFF1A',
+              mpMode === 'race' ? '⚔️ 大亂鬥' : '🤝 合作',
+              '\uFF08\u7531\u623F\u4E3B\u6C7A\u5B9A\uFF09'
             ),
             React.createElement(
-              'h2',
-              { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
-              '\u5927\u4E82\u9B25\u5927\u5EF3'
+              'div',
+              { className: 'font-black text-slate-700 text-sm mb-1.5' },
+              '\u73A9\u5BB6\u540D\u55AE'
             ),
             React.createElement(
               'div',
@@ -5577,38 +5870,259 @@ function HashiGame() {
               playersList.map(function (p) {
                 return React.createElement(
                   'div',
-                  { key: p.id, className: 'flex items-center justify-center gap-2 bg-green-50 border-2 border-slate-800 rounded-xl px-4 py-2 font-black text-slate-800' },
-                  React.createElement('span', { className: 'w-4 h-4 rounded-full border-2 border-slate-800 inline-block', style: { backgroundColor: p.color === 'rainbow' ? '#fbbf24' : p.color } }),
-                  p.name,
-                  ' ',
-                  p.isHost && '👑',
-                  ' ',
-                  p.id === myId && '(你)'
+                  { key: p.id, className: 'flex items-center gap-2 bg-green-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800' },
+                  React.createElement('span', { className: 'w-4 h-4 rounded-full border-2 border-slate-800 inline-block shrink-0', style: { backgroundColor: p.color === 'rainbow' ? '#fbbf24' : p.color } }),
+                  React.createElement(
+                    'span',
+                    { className: 'truncate' },
+                    p.name,
+                    p.isHost ? ' 👑' : '',
+                    p.id === myId ? '（你）' : ''
+                  ),
+                  React.createElement(
+                    'span',
+                    { className: 'ml-auto flex gap-1 shrink-0' },
+                    p.isSpectator ? React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-sky-100 border border-sky-400 text-sky-700 px-1.5 py-0.5 rounded-md' },
+                      '\uD83D\uDC41\uFE0F \u89C0\u6230'
+                    ) : mpMode === 'race' ? p.isReady ? React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-emerald-100 border border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-md' },
+                      '\u2705 \u6E96\u5099\u597D\u4E86'
+                    ) : React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md' },
+                      '\u672A\u6E96\u5099'
+                    ) : null
+                  )
                 );
               })
             ),
-            isHostRef.current ? React.createElement(
+            React.createElement(
+              'div',
+              { className: 'flex gap-2 mb-4' },
+              mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) && React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));
+                  }, className: "flex-1 py-2.5 rounded-xl border-[3px] border-slate-800 font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myPlayerEntry && myPlayerEntry.isReady ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500') },
+                '\u270B ',
+                myPlayerEntry && myPlayerEntry.isReady ? '已準備（點擊取消）' : '準備好了'
+              ),
+              mpMode === 'race' && React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));
+                  }, className: "px-3 py-2.5 rounded-xl border-[3px] border-slate-800 font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myPlayerEntry && myPlayerEntry.isSpectator ? 'bg-sky-300 text-slate-900' : 'bg-white text-slate-500') },
+                '\uD83D\uDC41\uFE0F \u89C0\u6230'
+              )
+            ),
+            mpMode === 'race' ? isHostRef.current ? React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setShowRoomSettings(true);
+                }, className: 'w-full mb-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
+              '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
+            ) : React.createElement(
+              'p',
+              { className: 'mb-3 text-xs font-bold text-slate-400' },
+              '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A\uFF08\u623F\u4E3B\uFF09\uFF1A',
+              (LEVELS.find(function (l) {
+                return l.id === brawlSettings.sizeId;
+              }) || {}).name || '10x10',
+              '\u30FB\u7D50\u675F\u540D\u6B21 ',
+              brawlSettings.winnersCount,
+              '\u30FB\u9053\u5177',
+              brawlSettings.itemsEnabled ? '開' : '關'
+            ) : isHostRef.current ? React.createElement(
+              'div',
+              { className: 'mb-3' },
+              React.createElement(
+                'div',
+                { className: 'font-black text-slate-700 text-sm mb-1.5' },
+                '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A \u2014 \u95DC\u5361\uFF08\u623F\u4E3B\u9078\uFF0C\u5168\u54E1\u540C\u6B65\uFF09'
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex flex-wrap gap-1.5' },
+                LEVELS.filter(function (l) {
+                  return l.id !== 'custom';
+                }).map(function (l) {
+                  return React.createElement(
+                    'button',
+                    { key: l.id, onClick: function onClick() {
+                        return applyCoopLevel(l);
+                      }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (currentLevelId === l.id ? 'bg-[#4ade80] text-slate-900' : 'bg-white text-slate-500') },
+                    l.name
+                  );
+                })
+              )
+            ) : React.createElement(
+              'p',
+              { className: 'mb-3 text-xs font-bold text-slate-400' },
+              '\u2699\uFE0F \u95DC\u5361\u7531\u623F\u4E3B\u8A2D\u5B9A\uFF1A',
+              (LEVELS.find(function (l) {
+                return l.id === currentLevelId;
+              }) || {}).name || ''
+            ),
+            isHostRef.current ? mpMode === 'race' ? React.createElement(
               'div',
               null,
               React.createElement(
                 'button',
-                { onClick: startRace, disabled: playersList.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
-                '\uD83C\uDFC1 \u958B\u59CB\u5927\u4E82\u9B25'
+                { onClick: startRace, disabled: roomRacers.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
+                roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始'
               ),
               React.createElement(
                 'p',
-                { className: 'text-xs text-slate-500 font-bold' },
-                playersList.length < 2 ? '等待對手加入...' : '雙方將同時挑戰同一題目，比誰先解完！'
+                { className: 'text-xs text-slate-500 font-bold text-center' },
+                roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了！' : '全員準備好會自動開始，也可以強制開始'
               )
             ) : React.createElement(
+              'button',
+              { onClick: startCoop, className: 'w-full py-3 bg-[#4ade80] text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-2' },
+              '\uD83E\uDD1D \u958B\u59CB\u5408\u4F5C'
+            ) : React.createElement(
               'p',
-              { className: 'font-black text-slate-700 animate-pulse' },
-              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u5927\u4E82\u9B25...'
+              { className: 'font-black text-slate-700 animate-pulse text-center' },
+              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...'
             ),
             React.createElement(
               'button',
-              { onClick: handleGoHome, className: 'mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline' },
-              '\u96E2\u958B'
+              { onClick: handleGoHome, className: 'w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline' },
+              '\u96E2\u958B\u623F\u9593'
+            )
+          )
+        ),
+        showRoomSettings && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4', onClick: function onClick() {
+              return setShowRoomSettings(false);
+            } },
+          React.createElement(
+            'div',
+            { className: 'bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] w-full max-w-sm animate-popUpCenter', onClick: function onClick(e) {
+                return e.stopPropagation();
+              } },
+            React.createElement(
+              'h3',
+              { className: 'text-xl font-black text-[#2d2a26] border-b-4 border-purple-500 inline-block pb-1 mb-4' },
+              '\u2699\uFE0F \u5927\u4E82\u9B25\u8A2D\u5B9A'
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex flex-col gap-4' },
+              React.createElement(
+                'div',
+                null,
+                React.createElement(
+                  'div',
+                  { className: 'font-bold text-slate-800 mb-1.5' },
+                  '\u984C\u76EE\u5C3A\u5BF8'
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'flex flex-wrap gap-1.5' },
+                  LEVELS.filter(function (l) {
+                    return l.id !== 'custom';
+                  }).map(function (l) {
+                    return React.createElement(
+                      'button',
+                      { key: l.id, onClick: function onClick() {
+                          return applyBrawlSettings(_extends({}, brawlSettings, { sizeId: l.id }), true);
+                        }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (brawlSettings.sizeId === l.id ? 'bg-purple-600 text-white' : 'bg-white text-slate-500') },
+                      l.name
+                    );
+                  })
+                )
+              ),
+              React.createElement(
+                'label',
+                { className: 'flex items-center justify-between font-bold text-slate-800' },
+                React.createElement(
+                  'span',
+                  null,
+                  '\u7D50\u675F\u540D\u6B21\uFF08\u7B2C\u5E7E\u540D\u5B8C\u8CFD\u5C31\u7D50\u7B97\uFF09'
+                ),
+                React.createElement('input', { type: 'number', min: '1', max: '5', value: brawlSettings.winnersCount, onChange: function onChange(e) {
+                    return applyBrawlSettings(_extends({}, brawlSettings, { winnersCount: Math.max(1, Math.min(5, Number(e.target.value) || 1)) }), true);
+                  }, className: 'w-16 border-2 border-slate-800 rounded p-1 text-center font-black' })
+              ),
+              React.createElement(
+                'label',
+                { className: 'flex items-center justify-between font-bold text-slate-800 cursor-pointer' },
+                React.createElement(
+                  'span',
+                  null,
+                  '\u91CC\u7A0B\u7891\u9053\u5177\u767C\u653E'
+                ),
+                React.createElement('input', { type: 'checkbox', checked: brawlSettings.itemsEnabled, onChange: function onChange(e) {
+                    return applyBrawlSettings(_extends({}, brawlSettings, { itemsEnabled: e.target.checked }), true);
+                  }, className: 'w-5 h-5 accent-purple-500' })
+              ),
+              React.createElement(
+                'label',
+                { className: 'flex items-center justify-between font-bold text-slate-800 cursor-pointer' },
+                React.createElement(
+                  'span',
+                  null,
+                  '\u4E0A\u5E1D\u8996\u89D2\u986F\u793A\u6578\u5B57\uFF08\u89C0\u6230/\u5B8C\u8CFD\u6AA2\u8996\uFF09'
+                ),
+                React.createElement('input', { type: 'checkbox', checked: brawlSettings.godNumbers, onChange: function onChange(e) {
+                    return applyBrawlSettings(_extends({}, brawlSettings, { godNumbers: e.target.checked }), true);
+                  }, className: 'w-5 h-5 accent-purple-500' })
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setShowRoomSettings(false);
+                }, className: 'w-full mt-5 py-2.5 bg-slate-800 text-white rounded-xl font-black' },
+              '\u5B8C\u6210'
+            )
+          )
+        ),
+        raceState === 'spectating' && React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
+          React.createElement(
+            'div',
+            { className: 'max-w-md mx-auto bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-5 mt-2' },
+            React.createElement(
+              'div',
+              { className: 'flex items-center justify-between mb-3' },
+              React.createElement(
+                'h2',
+                { className: 'text-2xl font-black text-[#2d2a26]' },
+                '\uD83D\uDC41\uFE0F \u89C0\u6230\u4E2D'
+              ),
+              React.createElement(
+                'span',
+                { className: 'text-xs font-black text-slate-400' },
+                '\u6BD4\u8CFD\u7D50\u675F\u5F8C\u81EA\u52D5\u986F\u793A\u7D50\u679C'
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex gap-1.5 mb-3 flex-wrap' },
+              raceRacers.map(function (uid) {
+                var p = playersList.find(function (x) {
+                  return x.id === uid;
+                });
+                return React.createElement(
+                  'button',
+                  { key: uid, onClick: function onClick() {
+                      return setGodViewUid(uid);
+                    }, className: "px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (spectateUid === uid ? "bg-slate-800 text-white" : "bg-white text-slate-700") },
+                  p ? p.name : '選手'
+                );
+              })
+            ),
+            spectateUid && brawlBoards[spectateUid] ? renderGodBoard(brawlBoards[spectateUid]) : React.createElement(
+              'p',
+              { className: 'font-bold text-slate-400 text-center py-8' },
+              '\u7B49\u5F85\u9078\u624B\u76E4\u9762\u540C\u6B65\u2026'
             )
           )
         ),
@@ -5624,39 +6138,47 @@ function HashiGame() {
         inRace && raceWaiting && raceState === 'racing' && React.createElement(
           'div',
           { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[58] bg-slate-800 text-white px-5 py-2 rounded-full font-black border-[3px] border-white shadow-lg animate-pulse whitespace-nowrap' },
-          '\u23F3 \u7B49\u5F85\u5C0D\u624B\u5B8C\u6210...'
+          '\u23F3 \u7B49\u5F85\u5C0D\u624B\u5B8C\u6210... ',
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
+              }, className: 'underline ml-1' },
+            '\uD83D\uDC41\uFE0F \u89C0\u6230\u5C0D\u624B'
+          )
         ),
         inRace && raceState === 'finished' && raceResult && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[300px] max-w-md w-full animate-popUpCenter' },
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto' },
             React.createElement(
               'div',
               { className: 'text-5xl mb-2' },
-              '\uD83C\uDFC1'
+              '\uD83C\uDFC6'
             ),
             React.createElement(
               'h2',
               { className: 'text-2xl font-black text-[#2d2a26] mb-4' },
               '\u5927\u4E82\u9B25\u7D50\u679C'
             ),
-            raceResult.entries.map(function (e) {
+            raceResult.entries.map(function (e, idx) {
               return React.createElement(
                 'div',
-                { key: e.uid, className: 'flex items-center justify-between gap-4 px-4 py-2 mb-2 rounded-xl border-[3px] ' + (e.uid === raceResult.winnerUid ? 'bg-[#4ade80] border-slate-800' : 'bg-slate-50 border-slate-300') },
+                { key: e.uid, className: 'flex items-center justify-between gap-3 px-4 py-2 mb-2 rounded-xl border-[3px] ' + (idx === 0 ? 'bg-[#4ade80] border-slate-800' : 'bg-slate-50 border-slate-300') },
                 React.createElement(
                   'span',
-                  { className: 'font-black text-slate-800' },
-                  e.uid === raceResult.winnerUid ? '🏆 ' : '',
+                  { className: 'font-black text-slate-800 truncate' },
+                  ['🥇', '🥈', '🥉'][idx] || idx + 1 + '.',
+                  ' ',
                   e.name,
                   e.uid === myId ? '(你)' : ''
                 ),
                 React.createElement(
                   'span',
-                  { className: 'font-mono font-black text-slate-800' },
-                  formatTime(Math.floor(e.timeMs / 1000))
+                  { className: 'font-mono font-black text-slate-800 shrink-0' },
+                  e.finished ? formatTime(Math.floor(e.timeMs / 1000)) : '未完成 · ' + Math.round((e.progress || 0) * 100) + '%'
                 )
               );
             }),
@@ -5667,9 +6189,13 @@ function HashiGame() {
             ) : React.createElement(
               'p',
               { className: 'text-slate-500 font-black text-lg my-2' },
-              '\u5C0D\u624B\u5FEB\u4E86\u4E00\u6B65\uFF0C\u518D\u63A5\u518D\u53B2\uFF01'
+              raceResult.entries.some(function (e) {
+                return e.uid === myId && e.finished;
+              }) ? '完賽了，名次如上！' : '比賽結束，結果如上'
             ),
-            React.createElement(
+            raceResult.entries.some(function (e) {
+              return e.uid === myId && e.finished;
+            }) && React.createElement(
               'div',
               { className: 'flex justify-center gap-2 my-3' },
               [0, 1, 2].map(function (i) {
@@ -5682,21 +6208,29 @@ function HashiGame() {
             ),
             React.createElement(
               'div',
-              { className: 'flex justify-center gap-3 mt-4' },
-              isHostRef.current ? React.createElement(
+              { className: 'flex justify-center gap-2 mt-4 flex-wrap' },
+              React.createElement(
                 'button',
-                { onClick: rematchRace, className: 'px-5 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
-                '\uD83C\uDFC1 \u518D\u4F86\u4E00\u5C40'
-              ) : React.createElement(
-                'p',
-                { className: 'font-bold text-slate-500 self-center' },
-                '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u4E0B\u4E00\u5C40...'
+                { onClick: function onClick() {
+                    var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
+                  }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-4 py-3 bg-sky-200 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all disabled:opacity-40' },
+                '\uD83D\uDC41\uFE0F \u770B\u76E4\u9762'
               ),
               React.createElement(
                 'button',
-                { onClick: handleGoHome, className: 'px-5 py-3 bg-white text-slate-800 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                { onClick: returnToLobby, className: 'px-4 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                '\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4'
+              ),
+              React.createElement(
+                'button',
+                { onClick: handleGoHome, className: 'px-4 py-3 bg-white text-slate-800 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
                 '\u96E2\u958B'
               )
+            ),
+            !isHostRef.current && React.createElement(
+              'p',
+              { className: 'text-xs font-bold text-slate-400 mt-3' },
+              '\u623F\u4E3B\u6309\u56DE\u7B49\u5F85\u5BA4\u6703\u5E36\u5168\u54E1\u4E00\u8D77\u56DE\u53BB'
             )
           )
         ),
