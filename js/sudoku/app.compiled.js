@@ -294,41 +294,97 @@ function SudokuGame() {
     } catch (e) {}
   }, [inputMode]);
 
-  // 禮物與反擊機制 (盤面直接覆蓋)
-  var _useState79 = useState({}),
+  // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
+  var _useState79 = useState(0),
     _useState80 = _slicedToArray(_useState79, 2),
-    unopenedGifts = _useState80[0],
-    setUnopenedGifts = _useState80[1];
-  var _useState81 = useState(initialDataRef.current.sizeDef.chars),
+    dockTick = _useState80[0],
+    setDockTick = _useState80[1];
+  useEffect(function () {
+    if (window.PlatDock) return window.PlatDock.subscribe(function () {
+      return setDockTick(function (t) {
+        return t + 1;
+      });
+    });
+  }, []);
+  var platDock = window.__PLAT_PLATFORM && window.PlatDock && window.PlatDock.isActive() ? window.PlatDock.getState() : null;
+  var renderDockCapsule = function renderDockCapsule(withLobby) {
+    if (!platDock) return null;
+    var PD = window.PlatDock;
+    var dbtn = function dbtn(active) {
+      return "px-2.5 md:px-3 py-1.5 md:py-2 rounded-xl font-black text-base md:text-lg flex items-center justify-center transition-all relative " + (active ? "bg-[#ffcc00] text-slate-900 shadow-md" : "text-slate-400 hover:text-white");
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner"
+    }, withLobby && /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return PD.goLobby();
+      },
+      className: dbtn(false),
+      title: "\u56DE\u5927\u5EF3\u9078\u904A\u6232"
+    }, "\uD83C\uDFE0"), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return PD.toggleChat();
+      },
+      className: dbtn(platDock.chatOpen),
+      title: "\u804A\u5929\u5BA4"
+    }, "\uD83D\uDCAC", platDock.unread > 0 && /*#__PURE__*/React.createElement("span", {
+      className: "absolute -top-1 -right-1 w-4 h-4 bg-red-500 border border-white rounded-full text-[9px] text-white flex items-center justify-center font-black"
+    }, platDock.unread > 9 ? '9+' : platDock.unread)), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return PD.toggleVideo();
+      },
+      className: dbtn(platDock.videoOn),
+      title: "\u8996\u8A0A"
+    }, platDock.videoOn ? '📹' : '🎥'), platDock.videoOn && /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return PD.toggleMic();
+      },
+      className: dbtn(!platDock.micMuted),
+      title: "\u9EA5\u514B\u98A8"
+    }, platDock.micMuted ? '🔇' : '🎤'), (platDock.videoOn || platDock.remoteCount > 0) && /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return PD.toggleSpeaker();
+      },
+      className: dbtn(platDock.speakerOn),
+      title: "\u5587\u53ED"
+    }, platDock.speakerOn ? '🔊' : '🔈'));
+  };
+
+  // 禮物與反擊機制 (盤面直接覆蓋)
+  var _useState81 = useState({}),
     _useState82 = _slicedToArray(_useState81, 2),
-    keyMapping = _useState82[0],
-    setKeyMapping = _useState82[1];
-  var _useState83 = useState([]),
+    unopenedGifts = _useState82[0],
+    setUnopenedGifts = _useState82[1];
+  var _useState83 = useState(initialDataRef.current.sizeDef.chars),
     _useState84 = _slicedToArray(_useState83, 2),
-    flippedKeys = _useState84[0],
-    setFlippedKeys = _useState84[1];
+    keyMapping = _useState84[0],
+    setKeyMapping = _useState84[1];
   var _useState85 = useState([]),
     _useState86 = _slicedToArray(_useState85, 2),
-    flares = _useState86[0],
-    setFlares = _useState86[1];
-
-  // === 道具系統：水球霧化 + 格子清除 ===
+    flippedKeys = _useState86[0],
+    setFlippedKeys = _useState86[1];
   var _useState87 = useState([]),
     _useState88 = _slicedToArray(_useState87, 2),
-    myWeapons = _useState88[0],
-    setMyWeapons = _useState88[1]; // ['balloon','eraser',...]
-  var _useState89 = useState({}),
+    flares = _useState88[0],
+    setFlares = _useState88[1];
+
+  // === 道具系統：水球霧化 + 格子清除 ===
+  var _useState89 = useState([]),
     _useState90 = _slicedToArray(_useState89, 2),
-    foggedBoxes = _useState90[0],
-    setFoggedBoxes = _useState90[1]; // { boxId: expiryTimestamp }
+    myWeapons = _useState90[0],
+    setMyWeapons = _useState90[1]; // ['balloon','eraser',...]
   var _useState91 = useState({}),
     _useState92 = _slicedToArray(_useState91, 2),
-    erasingCells = _useState92[0],
-    setErasingCells = _useState92[1]; // { cellId: { value, timestamp } }
-  var _useState93 = useState('my'),
+    foggedBoxes = _useState92[0],
+    setFoggedBoxes = _useState92[1]; // { boxId: expiryTimestamp }
+  var _useState93 = useState({}),
     _useState94 = _slicedToArray(_useState93, 2),
-    finishViewMode = _useState94[0],
-    setFinishViewMode = _useState94[1]; // 'my' | 'god'
+    erasingCells = _useState94[0],
+    setErasingCells = _useState94[1]; // { cellId: { value, timestamp } }
+  var _useState95 = useState('my'),
+    _useState96 = _slicedToArray(_useState95, 2),
+    finishViewMode = _useState96[0],
+    setFinishViewMode = _useState96[1]; // 'my' | 'god'
   var lastMilestoneRef = useRef(0); // 已跨越的 10% 里程碑數量（0~9）
 
   var processedEventsRef = useRef(new Set());
@@ -336,104 +392,118 @@ function SudokuGame() {
   var scrambledCharsRef = useRef(new Set());
   var modeIcons = ['🖋️', '✏️', '🖌️'];
   var modeTitles = ['填答模式', '草稿模式', '畫筆作記號'];
-  var _useState95 = useState(3),
-    _useState96 = _slicedToArray(_useState95, 2),
-    zoomModeIdx = _useState96[0],
-    setZoomModeIdx = _useState96[1];
-  var _useState97 = useState({
+  var _useState97 = useState(3),
+    _useState98 = _slicedToArray(_useState97, 2),
+    zoomModeIdx = _useState98[0],
+    setZoomModeIdx = _useState98[1];
+  var _useState99 = useState({
       value: 1.0,
       visible: false
     }),
-    _useState98 = _slicedToArray(_useState97, 2),
-    zoomIndicator = _useState98[0],
-    setZoomIndicator = _useState98[1];
-  var zoomIndicatorTimer = useRef(null);
-  var _useState99 = useState(false),
     _useState100 = _slicedToArray(_useState99, 2),
-    isClosingModal = _useState100[0],
-    setIsClosingModal = _useState100[1];
-
-  // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
+    zoomIndicator = _useState100[0],
+    setZoomIndicator = _useState100[1];
+  var zoomIndicatorTimer = useRef(null);
   var _useState101 = useState(false),
     _useState102 = _slicedToArray(_useState101, 2),
-    zoomMenuOpen = _useState102[0],
-    setZoomMenuOpen = _useState102[1];
-  var _useState103 = useState({
+    isClosingModal = _useState102[0],
+    setIsClosingModal = _useState102[1];
+
+  // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
+  var _useState103 = useState(false),
+    _useState104 = _slicedToArray(_useState103, 2),
+    zoomMenuOpen = _useState104[0],
+    setZoomMenuOpen = _useState104[1];
+  var _useState105 = useState({
       x: -1,
       y: -1
     }),
-    _useState104 = _slicedToArray(_useState103, 2),
-    zoomMenuPos = _useState104[0],
-    setZoomMenuPos = _useState104[1];
-  var _useState105 = useState(false),
     _useState106 = _slicedToArray(_useState105, 2),
-    isDraggingZoom = _useState106[0],
-    setIsDraggingZoom = _useState106[1];
-  var wasZoomDragged = useRef(false);
-  var zoomDragTimer = useRef(null);
+    zoomMenuPos = _useState106[0],
+    setZoomMenuPos = _useState106[1];
   var _useState107 = useState(false),
     _useState108 = _slicedToArray(_useState107, 2),
-    modeSubOpen = _useState108[0],
-    setModeSubOpen = _useState108[1];
-  var _useState109 = useState({
+    isDraggingZoom = _useState108[0],
+    setIsDraggingZoom = _useState108[1];
+  var wasZoomDragged = useRef(false);
+  var zoomDragTimer = useRef(null);
+  var _useState109 = useState(false),
+    _useState110 = _slicedToArray(_useState109, 2),
+    modeSubOpen = _useState110[0],
+    setModeSubOpen = _useState110[1];
+  var _useState111 = useState(false),
+    _useState112 = _slicedToArray(_useState111, 2),
+    zoomOpen = _useState112[0],
+    setZoomOpen = _useState112[1];
+  var cycleInteractionMode = function cycleInteractionMode() {
+    if (interactionMode === 2 && !modeSubOpen) {
+      setModeSubOpen(true);
+      return;
+    }
+    var next = (interactionMode + 1) % 3;
+    setInteractionMode(next);
+    setModeSubOpen(next === 2);
+    showToast(next === 0 ? '🖋️ 填答模式' : next === 1 ? '✏️ 筆記模式' : '🖌️ 塗鴉模式');
+  };
+  var _useState113 = useState({
       x: -1,
       y: -1
     }),
-    _useState110 = _slicedToArray(_useState109, 2),
-    modeMenuPos = _useState110[0],
-    setModeMenuPos = _useState110[1];
-  var _useState111 = useState(false),
-    _useState112 = _slicedToArray(_useState111, 2),
-    isDraggingMode = _useState112[0],
-    setIsDraggingMode = _useState112[1];
-  var wasModeDragged = useRef(false);
-  var modeDragTimer = useRef(null);
-  var _useState113 = useState(true),
     _useState114 = _slicedToArray(_useState113, 2),
-    menuVertical = _useState114[0],
-    setMenuVertical = _useState114[1]; // 共用排列方向偏好
+    modeMenuPos = _useState114[0],
+    setModeMenuPos = _useState114[1];
   var _useState115 = useState(false),
     _useState116 = _slicedToArray(_useState115, 2),
-    isGenerating = _useState116[0],
-    setIsGenerating = _useState116[1];
-  var _useState117 = useState(""),
+    isDraggingMode = _useState116[0],
+    setIsDraggingMode = _useState116[1];
+  var wasModeDragged = useRef(false);
+  var modeDragTimer = useRef(null);
+  var _useState117 = useState(true),
     _useState118 = _slicedToArray(_useState117, 2),
-    genProgress = _useState118[0],
-    setGenProgress = _useState118[1];
-  var isAutoFillingRef = useRef(false);
-  var _useState119 = useState(null),
+    menuVertical = _useState118[0],
+    setMenuVertical = _useState118[1]; // 共用排列方向偏好
+  var _useState119 = useState(false),
     _useState120 = _slicedToArray(_useState119, 2),
-    colorPickerTarget = _useState120[0],
-    setColorPickerTarget = _useState120[1];
-  var _useState121 = useState([]),
+    isGenerating = _useState120[0],
+    setIsGenerating = _useState120[1];
+  var _useState121 = useState(""),
     _useState122 = _slicedToArray(_useState121, 2),
-    colorSeq = _useState122[0],
-    setColorSeq = _useState122[1];
-  var _useState123 = useState(""),
+    genProgress = _useState122[0],
+    setGenProgress = _useState122[1];
+  var isAutoFillingRef = useRef(false);
+  var _useState123 = useState(null),
     _useState124 = _slicedToArray(_useState123, 2),
-    editName = _useState124[0],
-    setEditName = _useState124[1];
-  var _useState125 = useState(""),
+    colorPickerTarget = _useState124[0],
+    setColorPickerTarget = _useState124[1];
+  var _useState125 = useState([]),
     _useState126 = _slicedToArray(_useState125, 2),
-    roomId = _useState126[0],
-    setRoomId = _useState126[1];
-  var _useState127 = useState(false),
+    colorSeq = _useState126[0],
+    setColorSeq = _useState126[1];
+  var _useState127 = useState(""),
     _useState128 = _slicedToArray(_useState127, 2),
-    isHost = _useState128[0],
-    setIsHost = _useState128[1];
-  var isHostRef = useRef(false);
+    editName = _useState128[0],
+    setEditName = _useState128[1];
   var _useState129 = useState(""),
     _useState130 = _slicedToArray(_useState129, 2),
-    tempRoomId = _useState130[0],
-    setTempRoomId = _useState130[1];
-  var _useState131 = useState(""),
+    roomId = _useState130[0],
+    setRoomId = _useState130[1];
+  var _useState131 = useState(false),
     _useState132 = _slicedToArray(_useState131, 2),
-    tempPlayerName = _useState132[0],
-    setTempPlayerName = _useState132[1];
-  var _useState133 = useState('entry'),
+    isHost = _useState132[0],
+    setIsHost = _useState132[1];
+  var isHostRef = useRef(false);
+  var _useState133 = useState(""),
     _useState134 = _slicedToArray(_useState133, 2),
-    setupStep = _useState134[0],
-    setSetupStep = _useState134[1]; // entry | create | join（比照數橋三段式）
+    tempRoomId = _useState134[0],
+    setTempRoomId = _useState134[1];
+  var _useState135 = useState(""),
+    _useState136 = _slicedToArray(_useState135, 2),
+    tempPlayerName = _useState136[0],
+    setTempPlayerName = _useState136[1];
+  var _useState137 = useState('entry'),
+    _useState138 = _slicedToArray(_useState137, 2),
+    setupStep = _useState138[0],
+    setSetupStep = _useState138[1]; // entry | create | join（比照數橋三段式）
   // ===== 每日一題（比照數橋） =====
   var dailyTodayStr = function dailyTodayStr() {
     var d = new Date();
@@ -444,29 +514,29 @@ function SudokuGame() {
     d.setDate(d.getDate() + delta);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
-  var _useState135 = useState(function () {
+  var _useState139 = useState(function () {
       return dailyTodayStr();
     }),
-    _useState136 = _slicedToArray(_useState135, 2),
-    dailyPickDate = _useState136[0],
-    setDailyPickDate = _useState136[1];
-  var _useState137 = useState(null),
-    _useState138 = _slicedToArray(_useState137, 2),
-    dailyDate = _useState138[0],
-    setDailyDate = _useState138[1]; // 進行中的每日題日期（null=非每日模式）
+    _useState140 = _slicedToArray(_useState139, 2),
+    dailyPickDate = _useState140[0],
+    setDailyPickDate = _useState140[1];
+  var _useState141 = useState(null),
+    _useState142 = _slicedToArray(_useState141, 2),
+    dailyDate = _useState142[0],
+    setDailyDate = _useState142[1]; // 進行中的每日題日期（null=非每日模式）
   var dailyRef = useRef(null);
   var dailyRecordedRef = useRef(false);
-  var _useState139 = useState(function () {
+  var _useState143 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
       } catch (e) {
         return {};
       }
     }),
-    _useState140 = _slicedToArray(_useState139, 2),
-    dailyRecords = _useState140[0],
-    setDailyRecords = _useState140[1];
-  var _useState141 = useState(function () {
+    _useState144 = _slicedToArray(_useState143, 2),
+    dailyRecords = _useState144[0],
+    setDailyRecords = _useState144[1];
+  var _useState145 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
       } catch (e) {
@@ -476,22 +546,51 @@ function SudokuGame() {
         };
       }
     }),
-    _useState142 = _slicedToArray(_useState141, 2),
-    dailyStreak = _useState142[0],
-    setDailyStreak = _useState142[1];
-  var _useState143 = useState(false),
-    _useState144 = _slicedToArray(_useState143, 2),
-    showTutorial = _useState144[0],
-    setShowTutorial = _useState144[1];
-  var _useState145 = useState(false),
     _useState146 = _slicedToArray(_useState145, 2),
-    stableMode = _useState146[0],
-    setStableMode = _useState146[1];
-  var _useState147 = useState(0),
+    dailyStreak = _useState146[0],
+    setDailyStreak = _useState146[1];
+  var _useState147 = useState(false),
     _useState148 = _slicedToArray(_useState147, 2),
-    titleClicks = _useState148[0],
-    setTitleClicks = _useState148[1];
-  var _useState149 = useState([{
+    showTutorial = _useState148[0],
+    setShowTutorial = _useState148[1];
+  // 暱稱拉霸機（比照數橋/平台大廳）
+  var _useState149 = useState(''),
+    _useState150 = _slicedToArray(_useState149, 2),
+    slotDisplay = _useState150[0],
+    setSlotDisplay = _useState150[1];
+  var _useState151 = useState(false),
+    _useState152 = _slicedToArray(_useState151, 2),
+    slotSpinning = _useState152[0],
+    setSlotSpinning = _useState152[1];
+  var slotTimerRef = useRef(null);
+  var spinSlotName = function spinSlotName() {
+    if (slotSpinning || isConnecting) return;
+    setSlotSpinning(true);
+    var ticks = 0;
+    var total = 24 + Math.floor(Math.random() * 8);
+    var step = function step() {
+      ticks++;
+      var name = SUDOKU_SLOT_NAMES[Math.floor(Math.random() * SUDOKU_SLOT_NAMES.length)];
+      setSlotDisplay(name);
+      if (ticks >= total) {
+        setTempPlayerName(name);
+        setSlotSpinning(false);
+        slotTimerRef.current = null;
+        return;
+      }
+      slotTimerRef.current = setTimeout(step, 45 + Math.pow(ticks / total, 2) * 170);
+    };
+    step();
+  };
+  var _useState153 = useState(false),
+    _useState154 = _slicedToArray(_useState153, 2),
+    stableMode = _useState154[0],
+    setStableMode = _useState154[1];
+  var _useState155 = useState(0),
+    _useState156 = _slicedToArray(_useState155, 2),
+    titleClicks = _useState156[0],
+    setTitleClicks = _useState156[1];
+  var _useState157 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -499,37 +598,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
-    _useState150 = _slicedToArray(_useState149, 2),
-    playersList = _useState150[0],
-    setPlayersList = _useState150[1];
-  var _useState151 = useState(false),
-    _useState152 = _slicedToArray(_useState151, 2),
-    isConnecting = _useState152[0],
-    setIsConnecting = _useState152[1];
-  var _useState153 = useState(""),
-    _useState154 = _slicedToArray(_useState153, 2),
-    connectionStatus = _useState154[0],
-    setConnectionStatus = _useState154[1];
-  var _useState155 = useState(false),
-    _useState156 = _slicedToArray(_useState155, 2),
-    showCancelButton = _useState156[0],
-    setShowCancelButton = _useState156[1];
-  var _useState157 = useState(true),
     _useState158 = _slicedToArray(_useState157, 2),
-    showOtherCursors = _useState158[0],
-    setShowOtherCursors = _useState158[1];
-  var _useState159 = useState(true),
+    playersList = _useState158[0],
+    setPlayersList = _useState158[1];
+  var _useState159 = useState(false),
     _useState160 = _slicedToArray(_useState159, 2),
-    showGhostProgress = _useState160[0],
-    setShowGhostProgress = _useState160[1];
-  var _useState161 = useState({}),
+    isConnecting = _useState160[0],
+    setIsConnecting = _useState160[1];
+  var _useState161 = useState(""),
     _useState162 = _slicedToArray(_useState161, 2),
-    cursors = _useState162[0],
-    setCursors = _useState162[1];
-  var _useState163 = useState([]),
+    connectionStatus = _useState162[0],
+    setConnectionStatus = _useState162[1];
+  var _useState163 = useState(false),
     _useState164 = _slicedToArray(_useState163, 2),
-    ripples = _useState164[0],
-    setRipples = _useState164[1];
+    showCancelButton = _useState164[0],
+    setShowCancelButton = _useState164[1];
+  var _useState165 = useState(true),
+    _useState166 = _slicedToArray(_useState165, 2),
+    showOtherCursors = _useState166[0],
+    setShowOtherCursors = _useState166[1];
+  var _useState167 = useState(true),
+    _useState168 = _slicedToArray(_useState167, 2),
+    showGhostProgress = _useState168[0],
+    setShowGhostProgress = _useState168[1];
+  var _useState169 = useState({}),
+    _useState170 = _slicedToArray(_useState169, 2),
+    cursors = _useState170[0],
+    setCursors = _useState170[1];
+  var _useState171 = useState([]),
+    _useState172 = _slicedToArray(_useState171, 2),
+    ripples = _useState172[0],
+    setRipples = _useState172[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -4739,7 +4838,11 @@ function SudokuGame() {
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        return setScreen('join');
+        if (window.__PLAT_PLATFORM) {
+          window.PLAT_show('lobby');
+          return;
+        }
+        setScreen('join');
       },
       className: "w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
     }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA"), /*#__PURE__*/React.createElement("button", {
@@ -4779,7 +4882,14 @@ function SudokuGame() {
         return setShowTutorial(true);
       },
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
-    }, "\u2753 \u73A9\u6CD5\u6559\u5B78")))), /*#__PURE__*/React.createElement("div", {
+    }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), platDock && /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return window.PlatDock.goLobby();
+      },
+      className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+    }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v3.13.4)"), tutorialOverlay);
   }
@@ -4829,12 +4939,21 @@ function SudokuGame() {
       className: "mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, /*#__PURE__*/React.createElement("label", {
       className: "block text-slate-800 font-black text-sm mb-2"
-    }, "\u8A2D\u5B9A\u986F\u793A\u66B1\u7A31"), /*#__PURE__*/React.createElement("input", {
+    }, "\u8A2D\u5B9A\u986F\u793A\u66B1\u7A31"), /*#__PURE__*/React.createElement("div", {
+      className: "bg-[#fffbeb] border-[3px] border-dashed border-slate-800 rounded-xl mb-2 min-h-[62px] flex items-center justify-center px-2"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-3xl font-black text-slate-800 text-center"
+    }, slotDisplay || tempPlayerName || '🎰 拉霸機')), /*#__PURE__*/React.createElement("button", {
+      onClick: spinSlotName,
+      disabled: isConnecting || slotSpinning,
+      className: "w-full py-2.5 mb-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
+    }, slotSpinning ? '🎰 轉動中…' : '🎲 拉霸機選名字'), /*#__PURE__*/React.createElement("input", {
       type: "text",
-      placeholder: "\u4F8B\u5982\uFF1A\u738B\u5C0F\u660E",
+      placeholder: "\u6216\u81EA\u5DF1\u8F38\u5165\u66B1\u7A31",
       value: tempPlayerName,
       onChange: function onChange(e) {
-        return setTempPlayerName(e.target.value);
+        setTempPlayerName(e.target.value);
+        setSlotDisplay('');
       },
       disabled: isConnecting,
       className: "w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-yellow-50 outline-none focus:ring-2 ring-[#ffcc00] disabled:opacity-50"
@@ -5070,7 +5189,9 @@ function SudokuGame() {
     onClick: handleForceStart,
     className: "w-full py-4 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all",
     title: "\u7121\u8996\u6E96\u5099\u72C0\u614B\u76F4\u63A5\u958B\u59CB"
-  }, "\u26A1 \u5F37\u5236\u958B\u59CB")))))), countdownValue !== null && !isGenerating && /*#__PURE__*/React.createElement("div", {
+  }, "\u26A1 \u5F37\u5236\u958B\u59CB"))), platDock && /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center mt-3"
+  }, renderDockCapsule(false))))), countdownValue !== null && !isGenerating && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 backdrop-blur-md pointer-events-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[12rem] font-black text-red-500 drop-shadow-[0_0_30px_rgba(255,0,0,0.8)] animate-pulse",
@@ -6253,26 +6374,32 @@ function SudokuGame() {
   }, myWeapons.filter(function (w) {
     return w === 'eraser';
   }).length))), /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 h-16 md:h-20 flex items-center justify-between px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+    className: "bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300"
+    className: "flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: handleCycleZoom,
-    className: "w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-xs md:text-sm font-black transition-all hover:bg-[#ffcc00] group",
-    title: "\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F"
+    onClick: function onClick() {
+      return setZoomOpen(!zoomOpen);
+    },
+    className: "w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#ffcc00]",
+    title: "\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09"
   }, zoomIndicator.visible ? /*#__PURE__*/React.createElement("span", {
-    className: "text-blue-600 scale-110"
-  }, zoomIndicator.value.toFixed(1), "X") : zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'), /*#__PURE__*/React.createElement("div", {
-    className: "w-[2px] h-6 bg-slate-300 hidden md:block"
-  }), /*#__PURE__*/React.createElement("button", {
+    className: "text-blue-600 scale-110 text-xs md:text-sm"
+  }, zoomIndicator.value.toFixed(1), "X") : '🔍'), zoomOpen && /*#__PURE__*/React.createElement("div", {
+    className: "absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleZoomIn,
+    className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    title: "\u653E\u5927"
+  }, "\uFF0B"), /*#__PURE__*/React.createElement("button", {
     onClick: handleZoomOut,
-    className: "w-10 h-10 md:w-12 md:h-12 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-xl font-black",
+    className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
     title: "\u7E2E\u5C0F"
   }, "\uFF0D"), /*#__PURE__*/React.createElement("button", {
-    onClick: handleZoomIn,
-    className: "w-10 h-10 md:w-12 md:h-12 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-xl font-black",
-    title: "\u653E\u5927"
-  }, "\uFF0B")), /*#__PURE__*/React.createElement("div", {
+    onClick: handleCycleZoom,
+    className: "w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    title: "\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09"
+  }, zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner",
     title: "\u8F38\u5165\u65B9\u5F0F"
   }, /*#__PURE__*/React.createElement("button", {
@@ -6290,32 +6417,16 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDC46"), /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u683C\u5B50\u5148\u884C"))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner"
+    className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setInteractionMode(0);
-    },
-    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ".concat(interactionMode === 0 ? 'bg-[#ffcc00] text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-white')
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD8B\uFE0F"), /*#__PURE__*/React.createElement("span", {
+    onClick: cycleInteractionMode,
+    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md ".concat(interactionMode === 2 ? 'bg-emerald-400 text-slate-900' : 'bg-[#ffcc00] text-slate-900'),
+    title: "\u5207\u63DB\u6A21\u5F0F\uFF08\u586B\u7B54/\u7B46\u8A18/\u5857\u9D09\uFF09"
+  }, /*#__PURE__*/React.createElement("span", null, interactionMode === 0 ? '🖋️' : interactionMode === 1 ? '✏️' : '🖌️'), /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
-  }, "\u586B\u7B54")), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setInteractionMode(1);
-    },
-    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ".concat(interactionMode === 1 ? 'bg-[#ffcc00] text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-white')
-  }, /*#__PURE__*/React.createElement("span", null, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("span", {
-    className: "hidden sm:inline"
-  }, "\u7B46\u8A18")), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      if (interactionMode === 2) setModeSubOpen(!modeSubOpen);else {
-        setInteractionMode(2);
-        setModeSubOpen(true);
-      }
-    },
-    className: "px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all relative ".concat(interactionMode === 2 ? 'bg-emerald-400 text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-white')
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD8C\uFE0F"), /*#__PURE__*/React.createElement("span", {
-    className: "hidden sm:inline"
-  }, "\u5857\u9D09"), interactionMode === 2 && modeSubOpen && /*#__PURE__*/React.createElement("div", {
+  }, interactionMode === 0 ? '填答' : interactionMode === 1 ? '筆記' : '塗鴉'), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] opacity-60"
+  }, "\u25BE")), interactionMode === 2 && modeSubOpen && /*#__PURE__*/React.createElement("div", {
     className: "absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick(e) {
@@ -6342,7 +6453,7 @@ function SudokuGame() {
     },
     className: "w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]",
     title: "\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09"
-  }, "\uD83D\uDEAE")))))));
+  }, "\uD83D\uDEAE"))), renderDockCapsule(false))));
 }
 var renderApp = function renderApp() {
   var root = ReactDOM.createRoot(document.getElementById('sudoku-root'));

@@ -24,7 +24,7 @@ var COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', 
 var LEVELS = [{ id: 1, name: "5x5 幼幼班", width: 5, height: 5, description: "最簡單的暖身關卡，試著連連看。" }, { id: 2, name: "10x10 標準", width: 10, height: 10, description: "標準難度，注意所有島嶼都要連通喔！" }, { id: 3, name: "10x20 手機直式", width: 10, height: 20, description: "適合手機滑動的長條形地圖。" }, { id: 4, name: "15x15 魔王", width: 15, height: 15, description: "極具挑戰性！找尋角落的大數字作為突破口。" }, { id: 5, name: "20x20 史詩", width: 20, height: 20, description: "超大地圖，請善用右下角的畫面縮放功能。" }, { id: 'custom', name: "⚙️ 自訂尺寸", width: 30, height: 30, description: "自訂地圖長寬，適合多人合作挑戰！" }];
 
 // === 首次教學導覽步驟 ===
-var TUTORIAL_STEPS = [{ icon: "🌉", title: "歡迎來到數橋！", body: "每個圓圈是一座「島」，上面的數字代表這座島需要幾座橋。你的任務：用橋把所有島連成一張網！" }, { icon: "👆", title: "怎麼架橋？", body: "從島嶼按住拖曳，會看到預覽線跟著手指，放開即架橋；按住不放也會進入拖曳預覽；也可以直接點擊兩座島之間的空白處：點一下架 1 座橋、點兩下架 2 座、點第三下取消。橋只能走直線或橫線，而且橋跟橋之間不能交叉喔！", demo: 'bridge' }, { icon: "✏️", title: "草稿模式", body: "右下角按鈕可以切換到 ✏️ 草稿模式，先用虛線記下不確定的橋，確定後再轉成實線。", demo: 'draft' }, { icon: "🔍", title: "縮放與操作", body: "雙指開合可以縮放地圖，也可以用右下角的 ＋ － 按鈕。向下滑動畫布可以自動收合上方選單，爭取更多空間。" }, { icon: "🌐", title: "多人合作", body: "從主選單進入「多人合作」，一人按「建立房間」拿到 4 位數代碼，朋友按「加入房間」輸入代碼就能一起解題！每個人的橋會用不同顏色顯示。" }, { icon: "🔌", title: "跟朋友連線", body: "房主建立房間拿代碼 → 把代碼傳給朋友 → 朋友輸入代碼加入 → 連線成功！", demo: 'connect' }];
+var TUTORIAL_STEPS = [{ icon: "🌉", title: "歡迎來到數橋！", body: "每個圓圈是一座「島」，上面的數字代表這座島需要幾座橋。你的任務：用橋把所有島連成一張網！" }, { icon: "👆", title: "怎麼架橋？", body: "從島嶼按住拖曳，會看到預覽線跟著手指，放開即架橋；按住不放也會進入拖曳預覽；也可以直接點擊兩座島之間的空白處：點一下架 1 座橋、點兩下架 2 座、點第三下取消。橋只能走直線或橫線，而且橋跟橋之間不能交叉喔！", demo: 'bridge' }, { icon: "✏️", title: "草稿模式", body: "遊戲下方的工具列可以切換到 ✏️ 草稿模式，先用虛線記下不確定的橋，確定後再轉成實線。", demo: 'draft' }, { icon: "🔍", title: "縮放與操作", body: "雙指開合可以縮放地圖，也可以用右下角的 ＋ － 按鈕。向下滑動畫布可以自動收合上方選單，爭取更多空間。" }, { icon: "🌐", title: "多人合作", body: "從主選單進入「多人合作」，一人按「建立房間」拿到 4 位數代碼，朋友按「加入房間」輸入代碼就能一起解題！每個人的橋會用不同顏色顯示。" }, { icon: "🔌", title: "跟朋友連線", body: "房主建立房間拿代碼 → 把代碼傳給朋友 → 朋友輸入代碼加入 → 連線成功！", demo: 'connect' }];
 
 var getAvailableColor = function getAvailableColor(currentPlayers) {
   var usedColors = currentPlayers.map(function (p) {
@@ -1017,6 +1017,83 @@ function HashiGame() {
   var isHostRef = useRef(false);
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
+
+  var _useState187 = useState(false),
+      _useState188 = _slicedToArray(_useState187, 2),
+      zoomOpen = _useState188[0],
+      setZoomOpen = _useState188[1];
+
+  var _useState189 = useState(false),
+      _useState190 = _slicedToArray(_useState189, 2),
+      drawSubOpen = _useState190[0],
+      setDrawSubOpen = _useState190[1];
+  // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
+
+
+  var _useState191 = useState(0),
+      _useState192 = _slicedToArray(_useState191, 2),
+      dockTick = _useState192[0],
+      setDockTick = _useState192[1];
+
+  useEffect(function () {
+    if (window.PlatDock) return window.PlatDock.subscribe(function () {
+      return setDockTick(function (t) {
+        return t + 1;
+      });
+    });
+  }, []);
+  var platDock = PLAT_MODE && window.PlatDock && window.PlatDock.isActive() ? window.PlatDock.getState() : null;
+  var renderDockCapsule = function renderDockCapsule(withLobby) {
+    if (!platDock) return null;
+    var PD = window.PlatDock;
+    var dbtn = function dbtn(active) {
+      return "px-2.5 md:px-3 py-1.5 md:py-2 rounded-xl font-black text-base md:text-lg flex items-center justify-center transition-all relative " + (active ? "bg-[#4ade80] text-slate-900 shadow-md" : "text-slate-400 hover:text-white");
+    };
+    return React.createElement(
+      'div',
+      { className: 'flex items-center gap-1 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner' },
+      withLobby && React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return PD.goLobby();
+          }, className: dbtn(false), title: '\u56DE\u5927\u5EF3\u9078\u904A\u6232' },
+        '\uD83C\uDFE0'
+      ),
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return PD.toggleChat();
+          }, className: dbtn(platDock.chatOpen), title: '\u804A\u5929\u5BA4' },
+        '\uD83D\uDCAC',
+        platDock.unread > 0 && React.createElement(
+          'span',
+          { className: 'absolute -top-1 -right-1 w-4 h-4 bg-red-500 border border-white rounded-full text-[9px] text-white flex items-center justify-center font-black' },
+          platDock.unread > 9 ? '9+' : platDock.unread
+        )
+      ),
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return PD.toggleVideo();
+          }, className: dbtn(platDock.videoOn), title: '\u8996\u8A0A' },
+        platDock.videoOn ? '📹' : '🎥'
+      ),
+      platDock.videoOn && React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return PD.toggleMic();
+          }, className: dbtn(!platDock.micMuted), title: '\u9EA5\u514B\u98A8' },
+        platDock.micMuted ? '🔇' : '🎤'
+      ),
+      (platDock.videoOn || platDock.remoteCount > 0) && React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return PD.toggleSpeaker();
+          }, className: dbtn(platDock.speakerOn), title: '\u5587\u53ED' },
+        platDock.speakerOn ? '🔊' : '🔈'
+      )
+    );
+  };
   var platAutoRef = useRef(null);
   var connRef = useRef(null);
   var connsRef = useRef([]);
@@ -2515,6 +2592,10 @@ function HashiGame() {
 
   var handleShowSolution = function handleShowSolution() {
     syncState({ showSolution: true });
+  };
+
+  var switchMode = function switchMode(m) {
+    setInteractionMode(m);showToast(modeIcons[m] + ' \u5DF2\u5207\u63DB\u70BA ' + modeTitles[m]);
   };
 
   var toggleInteractionMode = function toggleInteractionMode() {
@@ -4405,7 +4486,9 @@ function HashiGame() {
             React.createElement(
               'button',
               { onClick: function onClick() {
-                  setJoinStep('choose');setTempPlayerName("");setNickError("");setScreen('join');
+                  if (PLAT_MODE) {
+                    window.PLAT_show('lobby');return;
+                  }setJoinStep('choose');setTempPlayerName("");setNickError("");setScreen('join');
                 }, className: 'w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1' },
               '\uD83C\uDF10 \u591A\u4EBA\u5408\u4F5C'
             ),
@@ -4456,6 +4539,18 @@ function HashiGame() {
               'button',
               { onClick: openTutorial, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-lg text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
               '\u2753 \u73A9\u6CD5\u8AAA\u660E'
+            ),
+            platDock && React.createElement(
+              'div',
+              { className: 'flex items-center gap-2' },
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return window.PlatDock.goLobby();
+                  }, className: 'flex-1 py-2.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
+                '\uD83C\uDFE0 \u56DE\u5927\u5EF3'
+              ),
+              renderDockCapsule(false)
             )
           )
         )
@@ -5371,94 +5466,10 @@ function HashiGame() {
         ),
         React.createElement(
           'div',
-          { className: 'absolute bottom-4 right-4 md:bottom-6 md:right-6 flex flex-col gap-2 md:gap-3 z-[5] pointer-events-auto items-end' },
-          React.createElement(
-            'div',
-            { className: 'flex items-center' },
-            interactionMode === 2 && React.createElement(
-              'div',
-              { className: 'flex items-center gap-2 animate-fadeIn bg-white/80 p-1.5 rounded-full border-2 border-slate-300 backdrop-blur-sm mr-2 shadow-[2px_2px_0px_rgba(30,41,59,1)]' },
-              React.createElement(
-                'button',
-                {
-                  onClick: function onClick() {
-                    return setDrawSubMode('pen');
-                  },
-                  className: 'w-9 h-9 md:w-10 md:h-10 border-2 border-slate-800 rounded-full font-black text-lg flex items-center justify-center shadow-sm transition-[transform,color] relative overflow-hidden ' + (drawSubMode === 'pen' ? 'text-white scale-110 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'),
-                  style: drawSubMode === 'pen' && myCurrentColor !== 'rainbow' ? { backgroundColor: myCurrentColor } : { backgroundColor: drawSubMode === 'pen' && myCurrentColor === 'rainbow' ? 'transparent' : undefined },
-                  title: '\u756B\u7B46 (\u53EF\u76F4\u63A5\u5728\u756B\u5E03\u4E0A\u4EFB\u610F\u505A\u8A18\u865F)'
-                },
-                drawSubMode === 'pen' && myCurrentColor === 'rainbow' && React.createElement(
-                  'svg',
-                  { className: 'absolute inset-0 w-full h-full pointer-events-none -z-10' },
-                  React.createElement('rect', { width: '100%', height: '100%', fill: 'url(#rainbowGrad)' })
-                ),
-                React.createElement(
-                  'span',
-                  { className: 'relative z-10' },
-                  '\uD83D\uDD8C\uFE0F'
-                )
-              ),
-              React.createElement(
-                'button',
-                {
-                  onClick: function onClick() {
-                    return setDrawSubMode('eraser');
-                  },
-                  onDoubleClick: clearOwnStrokes,
-                  className: 'w-9 h-9 md:w-10 md:h-10 border-2 border-slate-800 rounded-full font-black text-lg flex items-center justify-center shadow-sm transition-[transform,color] relative overflow-hidden ' + (drawSubMode === 'eraser' ? 'text-white scale-110 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'),
-                  style: drawSubMode === 'eraser' && myCurrentColor !== 'rainbow' ? { backgroundColor: myCurrentColor } : { backgroundColor: drawSubMode === 'eraser' && myCurrentColor === 'rainbow' ? 'transparent' : undefined },
-                  title: '\u6A61\u76AE\u64E6 (\u9023\u9EDE\u5169\u4E0B\u6E05\u7A7A\u81EA\u5DF1\u7684\u6240\u6709\u5857\u9D09)'
-                },
-                drawSubMode === 'eraser' && myCurrentColor === 'rainbow' && React.createElement(
-                  'svg',
-                  { className: 'absolute inset-0 w-full h-full pointer-events-none -z-10' },
-                  React.createElement('rect', { width: '100%', height: '100%', fill: 'url(#rainbowGrad)' })
-                ),
-                React.createElement(
-                  'span',
-                  { className: 'relative z-10' },
-                  '\uD83E\uDDFD'
-                )
-              ),
-              isHostRef.current && React.createElement(
-                'button',
-                {
-                  onClick: clearAllStrokes,
-                  className: 'w-9 h-9 md:w-10 md:h-10 bg-red-500 hover:bg-red-600 text-white border-2 border-slate-800 rounded-full font-black text-lg transition-all flex items-center justify-center shadow-sm ml-1',
-                  title: '\u623F\u4E3B\u7279\u6B0A\uFF1A\u4E00\u9375\u6E05\u7A7A\u6240\u6709\u4EBA\u7684\u5857\u9D09'
-                },
-                '\uD83D\uDEA8'
-              )
-            ),
-            React.createElement(
-              'button',
-              { onClick: toggleInteractionMode, title: '\u5207\u63DB\u6A21\u5F0F (\u76EE\u524D: ' + modeTitles[interactionMode] + ')', className: 'w-10 h-10 md:w-12 md:h-12 border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center ' + (interactionMode > 0 ? 'bg-[#4ade80] text-slate-800' : 'bg-white text-slate-400 hover:text-slate-800 hover:bg-slate-100') },
-              modeIcons[interactionMode]
-            )
-          ),
-          React.createElement(
-            'button',
-            { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-10 h-10 md:w-12 md:h-12 bg-white border-2 border-slate-800 rounded-full font-black text-xl md:text-2xl shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:bg-slate-100 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-slate-800' },
-            '\uFF0B'
-          ),
-          React.createElement(
-            'button',
-            { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-10 h-10 md:w-12 md:h-12 bg-white border-2 border-slate-800 rounded-full font-black text-2xl md:text-3xl shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:bg-slate-100 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-slate-800' },
-            '\uFF0D'
-          ),
-          React.createElement(
-            'button',
-            { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F', className: 'w-10 h-10 md:w-12 md:h-12 bg-slate-800 border-2 border-slate-800 rounded-full font-black text-xs md:text-sm shadow-[3px_3px_0px_rgba(0,0,0,0.3)] hover:bg-slate-700 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white' },
-            zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
-          )
-        ),
-        React.createElement(
-          'div',
           { ref: zoomContainerRef, className: 'p-2 md:p-6 flex-1 overflow-auto custom-scrollbar relative z-0' },
           React.createElement(
             'div',
-            { key: boardFadeKey, className: 'flex justify-center items-center min-w-max min-h-max m-auto pb-24 pr-20 animate-boardFade' },
+            { key: boardFadeKey, className: 'flex justify-center items-center min-w-max min-h-max m-auto pb-2 pr-2 animate-boardFade' },
             React.createElement(
               'svg',
               {
@@ -5810,6 +5821,91 @@ function HashiGame() {
             )
           )
         ),
+        React.createElement(
+          'div',
+          { className: 'shrink-0 bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] relative z-30' },
+          React.createElement(
+            'div',
+            { className: 'flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative' },
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setZoomOpen(!zoomOpen);
+                }, title: '\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09', className: 'w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#4ade80]' },
+              '\uD83D\uDD0D'
+            ),
+            zoomOpen && React.createElement(
+              'div',
+              { className: 'absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50' },
+              React.createElement(
+                'button',
+                { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                '\uFF0B'
+              ),
+              React.createElement(
+                'button',
+                { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                '\uFF0D'
+              ),
+              React.createElement(
+                'button',
+                { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09', className: 'w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
+              )
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'flex items-center gap-1 md:gap-2 ml-auto bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative' },
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  if (interactionMode === 2 && !drawSubOpen) {
+                    setDrawSubOpen(true);return;
+                  }var nextMode = interactionMode === 0 ? 1 : interactionMode === 1 ? engine === 'peerjs' ? 2 : 0 : 0;switchMode(nextMode);setDrawSubOpen(nextMode === 2);
+                }, title: '\u5207\u63DB\u6A21\u5F0F\uFF08\u756B\u7B46/\u8349\u7A3F/\u7E6A\u5716\uFF09', className: 'px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md ' + (interactionMode === 2 ? 'bg-emerald-400 text-slate-900' : 'bg-[#4ade80] text-slate-900') },
+              React.createElement(
+                'span',
+                null,
+                interactionMode === 0 ? '🖋️' : interactionMode === 1 ? '✏️' : '🖌️'
+              ),
+              React.createElement(
+                'span',
+                { className: 'hidden sm:inline' },
+                interactionMode === 0 ? '畫筆' : interactionMode === 1 ? '草稿' : '繪圖'
+              ),
+              React.createElement(
+                'span',
+                { className: 'text-[10px] opacity-60' },
+                '\u25BE'
+              )
+            ),
+            interactionMode === 2 && drawSubOpen && React.createElement(
+              'div',
+              { className: 'absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto' },
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setDrawSubMode('pen');
+                  }, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'pen' ? 'bg-emerald-100 scale-110 border-emerald-600' : 'bg-white hover:bg-slate-50'), title: '\u756B\u7B46\u6A21\u5F0F' },
+                '\uD83D\uDD8C\uFE0F'
+              ),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    return setDrawSubMode('eraser');
+                  }, onDoubleClick: clearOwnStrokes, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'eraser' ? 'bg-orange-100 scale-110 border-orange-600' : 'bg-white hover:bg-slate-50'), title: '\u6A61\u76AE\u64E6 (\u96D9\u64CA\u6E05\u9664\u81EA\u5DF1\u6240\u6709\u5857\u9D09)' },
+                '\uD83E\uDDFD'
+              ),
+              isHostRef.current && React.createElement(
+                'button',
+                { onClick: clearAllStrokes, className: 'w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]', title: '\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09' },
+                '\uD83D\uDEAE'
+              )
+            )
+          ),
+          renderDockCapsule(false)
+        ),
         roomOpen && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[60] overflow-y-auto bg-[#f6fdf6] p-4' },
@@ -5987,6 +6083,11 @@ function HashiGame() {
               'p',
               { className: 'font-black text-slate-700 animate-pulse text-center' },
               '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...'
+            ),
+            platDock && React.createElement(
+              'div',
+              { className: 'flex justify-center mt-4' },
+              renderDockCapsule(false)
             ),
             React.createElement(
               'button',

@@ -71,6 +71,7 @@
     var btn = document.getElementById('plat-back');
     if (!btn) return;
     if (currentView === 'home' || currentView === 'lobby') { btn.style.display = 'none'; return; }
+    if (window.__PLAT_SESSION_ACTIVE) { btn.style.display = 'none'; return; }
     var root = document.getElementById(currentView + '-root');
     var onHome = !!(root && root.textContent && root.textContent.indexOf(HOME_MARKERS[currentView]) >= 0);
     btn.style.display = onHome ? 'block' : 'none';
@@ -162,6 +163,7 @@
   function renderUnread() {
     var b = $('dock-chat-badge'); if (b) { b.style.display = Net.unread > 0 ? 'flex' : 'none'; b.textContent = Net.unread > 99 ? '99+' : Net.unread; }
     var u = $('plat-chat-unread'); if (u) { u.style.display = (Net.chatOpen && Net.chatMin && Net.unread > 0) ? 'inline-block' : 'none'; u.textContent = Net.unread > 99 ? '99+' : Net.unread; }
+    if (window.PlatDock) window.PlatDock._emit();
   }
   function openChat() {
     Net.chatOpen = true; Net.chatMin = false; Net.unread = 0; renderUnread();
@@ -436,12 +438,34 @@
   function updateDock() {
     var dock = $('plat-dock'); if (!dock) return;
     dock.style.display = Net.active ? 'flex' : 'none';
+    document.body.classList.toggle('dock-on', !!Net.active);
+    window.__PLAT_SESSION_ACTIVE = !!Net.active;
+    if (window.PlatDock) window.PlatDock._emit();
     var v = $('dock-video'); v.className = Net.videoOn ? 'on' : ''; v.textContent = Net.videoOn ? '📹' : '🎥';
     var mic = $('dock-mic'); mic.style.display = Net.videoOn ? 'flex' : 'none'; mic.textContent = Net.micMuted ? '🔇' : '🎤'; mic.className = Net.micMuted ? '' : 'on';
     var sp = $('dock-speaker');
     sp.style.display = (Net.videoOn || Object.keys(Net.remoteStreams).length > 0) ? 'flex' : 'none';
     sp.textContent = Net.speakerOn ? '🔊' : '🔈'; sp.className = Net.speakerOn ? 'on' : '';
   }
+  // 遊戲內底部列的平台按鈕 API（💬/🎥/🎤/🔈/回大廳）：遊戲在平台模式＋連線中時
+  // 把這些按鈕畫進自己的底部工具列（與遊戲按鈕同排同款），殼的 strip 只留在大廳。
+  window.PlatDock = {
+    _subs: [],
+    isActive: function () { return !!Net.active; },
+    getState: function () {
+      return { unread: Net.unread || 0, chatOpen: !!Net.chatOpen, videoOn: !!Net.videoOn, micMuted: !!Net.micMuted, speakerOn: !!Net.speakerOn, remoteCount: Object.keys(Net.remoteStreams).length };
+    },
+    toggleChat: function () { if (Net.chatOpen) closeChat(); else openChat(); if (window.PlatDock) window.PlatDock._emit(); },
+    toggleVideo: function () { toggleVideo(); },
+    toggleMic: function () { toggleMic(); },
+    toggleSpeaker: function () { toggleSpeaker(); },
+    goLobby: function () { window.PLAT_show('lobby'); },
+    subscribe: function (fn) {
+      window.PlatDock._subs.push(fn);
+      return function () { var i = window.PlatDock._subs.indexOf(fn); if (i >= 0) window.PlatDock._subs.splice(i, 1); };
+    },
+    _emit: function () { window.PlatDock._subs.slice().forEach(function (f) { try { f(); } catch (e) {} }); }
+  };
   function nameOf(pid) {
     var p = Net.roster.find(function (x) { return x.pid === pid; });
     return p ? (p.name || '玩家') : '玩家';
