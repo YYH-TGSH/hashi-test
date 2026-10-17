@@ -160,7 +160,15 @@ function clampDailyDate(d) {
 function HashiGame() {
   var _this = this;
 
-  var playerIdRef = useRef(Math.random().toString(36).substring(2, 12));
+  var playerIdRef = useRef(function () {
+    try {
+      var u = localStorage.getItem('plat_uid_hashi');if (!u) {
+        u = Math.random().toString(36).substring(2, 12);localStorage.setItem('plat_uid_hashi', u);
+      }return u;
+    } catch (e) {
+      return Math.random().toString(36).substring(2, 12);
+    }
+  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
   var myColorRef = useRef(COLORS[0]);
@@ -211,6 +219,11 @@ function HashiGame() {
       _useState18 = _slicedToArray(_useState17, 2),
       isWon = _useState18[0],
       setIsWon = _useState18[1];
+
+  var isWonRef = useRef(false);
+  useEffect(function () {
+    isWonRef.current = isWon;
+  }, [isWon]);
 
   var _useState19 = useState(false),
       _useState20 = _slicedToArray(_useState19, 2),
@@ -422,6 +435,8 @@ function HashiGame() {
   var joinActiveRef = useRef(false); // 是否正在 join 流程中（供斷線／錯誤判斷）
   var suppressCloseRef = useRef(false); // 主動清理連線時壓住 close 事件雜訊
   var autoNameRef = useRef(false); // 本次加入用的名字是否來自拉霸機（REQ_REJOIN 沿用）
+  var myJoinNameRef = useRef(""); // 本次 JOIN 用的名字（名單自我修復重送 JOIN 用，不從 playersList 反推）
+  var promotingRef = useRef(false); // 房主接管升格中（open handler 不洗名單）
   var hostRoomRetryRef = useRef(false); // 房主固定代碼衝突時只自動重試一次
   // 🎰 暱稱拉霸機
 
@@ -862,8 +877,12 @@ function HashiGame() {
       _useState142 = _slicedToArray(_useState141, 2),
       brawlBoards = _useState142[0],
       setBrawlBoards = _useState142[1];
-  // 🎮 統一多人框架：等待室 + 大亂鬥設定 + 本局選手名單
 
+  var brawlBoardsRef = useRef({});
+  useEffect(function () {
+    brawlBoardsRef.current = brawlBoards;
+  }, [brawlBoards]);
+  // 🎮 統一多人框架：等待室 + 大亂鬥設定 + 本局選手名單
 
   var _useState143 = useState(false),
       _useState144 = _slicedToArray(_useState143, 2),
@@ -2656,8 +2675,25 @@ function HashiGame() {
 
   var roomCfgRef = useRef(null);
   var roomCfgStable = useRef(null);
+  var toggleSpectatorById = function toggleSpectatorById(pid) {
+    var pl = playersListRef.current.find(function (pp) {
+      return String(pp.id) === String(pid);
+    });
+    if (!pl) return;
+    if (pl.id === myId) {
+      setMySpectator(!pl.isSpectator);return;
+    }
+    if (!isHostRef.current) return;
+    var nList = playersListRef.current.map(function (pp) {
+      return pp.id === pl.id ? _extends({}, pp, { isSpectator: !pp.isSpectator, isReady: false }) : pp;
+    });
+    setPlayersList(nList);
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
+    });
+  };
   roomCfgRef.current = { onAction: function onAction(n, key) {
-      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
+      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'player-toggle') toggleSpectatorById(key);else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
         if (mpMode === 'race') startRace();else startCoop();
       } else if (n === 'leave') handleGoHome();
     } };
@@ -2686,15 +2722,20 @@ function HashiGame() {
       players: playersList.map(function (pl) {
         return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, online: null,
           badge: pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
-          toggle: null, clickable: false };
+          toggle: pl.id === myId || isHostRef.current ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: false };
       }),
       myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
       readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
-      mySpectator: mpMode === 'race' ? !!(myPlayerEntry && myPlayerEntry.isSpectator) : null,
+      mySpectator: null,
       start: isHostRef.current ? mpMode === 'race' ? { label: roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始', kind: 'danger', disabled: roomRacers.length < 2, note: roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了！' : '全員準備好會自動開始，也可以強制開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
       waitingText: !isHostRef.current ? '等待房主開始...' : null
     });
   });
+
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatCountdown) return;
+    if (raceCountdown !== null) window.PlatCountdown.show(raceCountdown === 0 ? 'GO!' : raceCountdown);else window.PlatCountdown.hide();
+  }, [raceCountdown]);
 
   var handleUndo = function handleUndo() {
     if (history.length === 0 || isWon || engineRef.current !== 'none') return;
@@ -3132,6 +3173,7 @@ function HashiGame() {
     setTempPlayerName(name);
     saveNickname(name);
     if (connRef.current && connRef.current.open) {
+      myJoinNameRef.current = name;
       guestJoinedRef.current = true;
       joinActiveRef.current = false;
       connRef.current.send({ type: 'JOIN', pName: name, uid: myId, auto: auto });
@@ -3183,6 +3225,49 @@ function HashiGame() {
     }
   };
 
+  // 名單自我修復：來賓若發現自己不在房主名單裡（JOIN 在房主遊戲就緒前送達被漏接、
+  // 或房主重進遊戲換了新 id），每 2.5 秒自動重送 JOIN，直到名單上有自己為止。
+  useEffect(function () {
+    var t = setInterval(function () {
+      if (isHostRef.current || !guestJoinedRef.current) return;
+      if (!connRef.current || !connRef.current.open) return;
+      var list = playersListRef.current || [];
+      if (list.some(function (pl) {
+        return pl.id === myId;
+      })) return;
+      var nm = myJoinNameRef.current || myNameRef.current;
+      if (!nm) return;
+      try {
+        connRef.current.send({ type: 'JOIN', pName: nm, uid: myId, color: myColorRef.current, auto: autoNameRef.current });
+      } catch (e) {}
+    }, 2500);
+    return function () {
+      return clearInterval(t);
+    };
+  }, []);
+
+  // 進度列以玩家名單為準：名單上沒有的 uid（舊連線殘留/重進前的殭屍列）直接修剪掉
+  useEffect(function () {
+    var ids = new Set(playersList.map(function (pl) {
+      return String(pl.id);
+    }));
+    ids.add(String(myId));
+    (racersRef.current || []).forEach(function (uid) {
+      return ids.add(String(uid));
+    });
+    setRaceProgress(function (prev) {
+      var keys = Object.keys(prev);
+      if (keys.every(function (k) {
+        return ids.has(String(k));
+      })) return prev;
+      var next = {};
+      keys.forEach(function (k) {
+        if (ids.has(String(k))) next[k] = prev[k];
+      });
+      return next;
+    });
+  }, [playersList]);
+
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
   useEffect(function () {
     if (!PLAT_MODE) return;
@@ -3210,11 +3295,33 @@ function HashiGame() {
       },
       exit: function exit() {
         handleGoHome();
+      },
+      migrate: function migrate(amHost, sess) {
+        setEngine('peerjs');engineRef.current = 'peerjs';
+        if (amHost) {
+          promotingRef.current = true;
+          isHostRef.current = true;setIsHost(true);
+          joinRoleRef.current = 'host';joinActiveRef.current = true;
+          setupPeerJS(sess.code, true);
+        } else {
+          joinRoleRef.current = 'guest';joinActiveRef.current = true;
+          guestJoinedRef.current = false;guestNamesResolvedRef.current = false;
+          platAutoRef.current = { name: sess.name };
+          setIsConnecting(true);
+          setupPeerJS(sess.code, false);
+        }
       }
     };
   }, []);
 
   var setupPeerJS = function setupPeerJS(rId, isCreating) {
+    // 冪等重設：重複 setup（接管/重入）先清掉舊 peer 與 conn refs，避免訊息送進死連線或重複綁定
+    if (peerRef.current) {
+      try {
+        peerRef.current.destroy();
+      } catch (e) {}peerRef.current = null;
+    }
+    connsRef.current = [];connRef.current = null;
     if (isCreating) {
       var p = new Peer(rId + '-host');
       peerRef.current = p;
@@ -3224,9 +3331,23 @@ function HashiGame() {
         setRoomId(rId);setIsConnecting(false);
         setJoinStep('nick');
         // 空名字先佔位，等 nick 步確認後再填上
-        setPlayersList([{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }]);
-        if (platAutoRef.current) {
-          var nmH = platAutoRef.current.name;platAutoRef.current = null;hostConfirmName(nmH);
+        if (promotingRef.current) {
+          // 接管升格：保留原名單（只移除舊房主、自己標房主），朋友以同 uid 回座
+          promotingRef.current = false;
+          setPlayersList(function (prev) {
+            var others = prev.filter(function (pl) {
+              return !pl.isHost && pl.id !== myId;
+            });
+            var me = prev.find(function (pl) {
+              return pl.id === myId;
+            }) || { id: myId, name: myNameRef.current || '玩家', color: myColorRef.current };
+            return [_extends({}, me, { isHost: true })].concat(_toConsumableArray(others));
+          });
+        } else {
+          setPlayersList([{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }]);
+          if (platAutoRef.current) {
+            var nmH = platAutoRef.current.name;platAutoRef.current = null;hostConfirmName(nmH);
+          }
         }
 
         p.on('connection', function (c) {
@@ -3272,6 +3393,11 @@ function HashiGame() {
                 });
                 return nList;
               });
+              // 🏁 比賽進行中回座/加入：補發 RACE_RESUME（選手還原盤面快照、觀戰者進上帝視角）
+              if (mpModeRef.current === 'race' && (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing')) {
+                var snap = brawlBoardsRef.current[m.uid];
+                c.send({ type: 'RACE_RESUME', data: { randomLevelData: stateRef.current.randomLevelData, levelId: stateRef.current.levelId, showSolution: false, startTime: raceStartAtRef.current, strokes: [] }, startAt: raceStartAtRef.current, racers: racersRef.current, settings: brawlSettingsRef.current, bridges: snap ? snap.bridges : null, progress: raceProgressRef.current });
+              }
               // 📹 若房主已開視訊，自動撥給新加入的玩家，並同步麥克風狀態
               if (!PLAT_MODE && videoOnRef.current && localStreamRef.current && c.open) {
                 try {
@@ -3305,20 +3431,24 @@ function HashiGame() {
                   return pl.name;
                 }) });
             } else if (m.type === 'LEAVE') {
-              if (raceStateRef.current !== 'idle') {
-                showToast("⚠️ 對手離開，大亂鬥結束");
-                exitRaceToSolo();
-              }
-              // 玩家主動按退出時，觸發在線名單更新
-              setPlayersList(function (prev) {
-                var nList = prev.filter(function (pl) {
-                  return pl.id !== m.uid;
-                });
+              var inRaceNow = raceStateRef.current === 'countdown' || raceStateRef.current === 'racing';
+              if (inRaceNow) {
+                markRacerDnf(m.uid);
                 connsRef.current.forEach(function (conn) {
-                  if (conn !== c && conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                  if (conn !== c && conn.open) conn.send({ type: 'RACE_DNF', uid: m.uid });
                 });
-                return nList;
-              });
+                showToast("👋 一位選手離開，以未完成計入名次");
+              } else {
+                setPlayersList(function (prev) {
+                  var nList = prev.filter(function (pl) {
+                    return pl.id !== m.uid;
+                  });
+                  connsRef.current.forEach(function (conn) {
+                    if (conn !== c && conn.open) conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                  });
+                  return nList;
+                });
+              }
             } else if (m.type === 'SYNC') {
               syncState(m.data, false);
               connsRef.current.forEach(function (conn) {
@@ -3405,20 +3535,32 @@ function HashiGame() {
                 });
                 return nList;
               });
+            } else if (m.type === 'REQ_PLAY_AGAIN') {
+              if (mpModeRef.current === 'race') {
+                if (raceStateRef.current === 'finished') startRace();
+              } else if (isWonRef.current) {
+                hostCoopAgain();
+              }
+            } else if (m.type === 'REQ_TO_LOBBY') {
+              returnToLobby();
             }
           });
 
           c.on('close', function () {
             if (suppressCloseRef.current) return;
-            if (c.uid && raceStateRef.current !== 'idle') {
-              showToast("⚠️ 對手斷線，大亂鬥結束");
-              exitRaceToSolo();
+            var inRaceNow = raceStateRef.current === 'countdown' || raceStateRef.current === 'racing';
+            if (c.uid && inRaceNow) {
+              markRacerDnf(c.uid);
+              connsRef.current.forEach(function (conn) {
+                if (conn !== c && conn.open) conn.send({ type: 'RACE_DNF', uid: c.uid });
+              });
+              showToast("👋 一位選手斷線，比賽繼續");
             }
             connsRef.current = connsRef.current.filter(function (conn) {
               return conn.peer !== c.peer;
             });
-            if (c.uid) {
-              // 如果斷線的是已知玩家，自動拔除並廣播
+            if (c.uid && !inRaceNow) {
+              // 非比賽期間斷線才拔除名單並廣播
               var goneUid = c.uid;
               setRemoteVideos(function (prev) {
                 var n = _extends({}, prev);delete n[goneUid];return n;
@@ -3489,12 +3631,18 @@ function HashiGame() {
             if (m.players) setPlayersList(m.players);
           } else if (m.type === 'RACE_START') {
             beginRace(m.data, m.startAt, m.racers, m.settings);
+          } else if (m.type === 'RACE_RESUME') {
+            beginRace(m.data, m.startAt, m.racers, m.settings);
+            if (m.bridges) setBridges(m.bridges);
+            if (m.progress) setRaceProgress(m.progress);
           } else if (m.type === 'RACE_PROGRESS') {
             setRaceProgress(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { progress: m.progress, name: m.name, color: m.color }));
             });
           } else if (m.type === 'RACE_FINISH') {
             onRaceOpponentFinish(m.uid, m);
+          } else if (m.type === 'RACE_DNF') {
+            markRacerDnf(m.uid);
           } else if (m.type === 'BRAWL_STATE') {
             setBrawlBoards(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { bridges: m.bridges, progress: m.progress, name: m.name, color: m.color }));
@@ -3551,6 +3699,9 @@ function HashiGame() {
         });
         c.on('close', function () {
           if (suppressCloseRef.current) return;
+          if (PLAT_MODE) {
+            showToast("📡 房主連線中斷，正在自動重連…");return;
+          }
           if (joinActiveRef.current) {
             // 還在 join 流程（connecting/nick/拉霸機）→ 回 choose 步
             showToast("⚠️ 連線中斷，請重試");
@@ -3655,6 +3806,40 @@ function HashiGame() {
       if (c.open) c.send({ type: 'TO_LOBBY' });
     });
     returnToLobbyLocal();
+  };
+  // 合作再來一局（房主）：同關卡重生成 + 廣播 COOP_START 讓全員一起重開
+  var hostCoopAgain = function hostCoopAgain() {
+    var lv = LEVELS.find(function (l) {
+      return l.id === (stateRef.current.levelId || currentLevelId);
+    }) || LEVELS[1];
+    applyCoopLevel(lv);
+    stateRef.current = _extends({}, stateRef.current, { coopStarted: true });
+    connsRef.current.forEach(function (c) {
+      if (c.open) c.send({ type: 'COOP_START' });
+    });
+    setRoomOpen(false);
+  };
+  // 結算「再來一局」：房主直接重開；來賓送請求給房主（全員同進退，不回等待室）
+  var playAgain = function playAgain() {
+    if (engineRef.current !== 'peerjs') {
+      handleRegenerateRandom();return;
+    }
+    if (isHostRef.current) {
+      if (mpModeRef.current === 'race') startRace();else hostCoopAgain();
+    } else if (connRef.current && connRef.current.open) {
+      connRef.current.send({ type: 'REQ_PLAY_AGAIN' });
+      showToast('已向房主送出再來一局請求');
+    }
+  };
+  // 結算「回等待室」：來賓送請求，房主帶全員一起回
+  var requestLobby = function requestLobby() {
+    if (isHostRef.current) {
+      returnToLobby();return;
+    }
+    if (connRef.current && connRef.current.open) {
+      connRef.current.send({ type: 'REQ_TO_LOBBY' });
+      showToast('已向房主送出回等待室請求');
+    }
   };
   var startCoop = function startCoop() {
     if (!isHostRef.current) return;
@@ -3820,6 +4005,20 @@ function HashiGame() {
     }
   };
 
+  // 選手中途離開/斷線：記為 DNF（未完成，保留最後進度），比賽繼續，其他人照常結算
+  var markRacerDnf = function markRacerDnf(uid) {
+    if (!uid) return;
+    if (raceStateRef.current !== 'countdown' && raceStateRef.current !== 'racing') return;
+    if ((racersRef.current || []).indexOf(uid) < 0) return;
+    if (raceResultsRef.current[uid]) return;
+    var prog = raceProgressRef.current || {};
+    var pl = (playersListRef.current || []).find(function (x) {
+      return x.id === uid;
+    });
+    raceResultsRef.current[uid] = { name: pl ? pl.name : prog[uid] ? prog[uid].name : '玩家', color: pl ? pl.color : prog[uid] ? prog[uid].color : '#94a3b8', timeMs: null, dnf: true, progress: prog[uid] ? prog[uid].progress : 0 };
+    maybeFinalize();
+  };
+
   // 結束名次制：完賽人數達標（或全員完賽）→ 結算；未完成者以進度排名（比照數獨）
   var maybeFinalize = function maybeFinalize() {
     if (raceStateRef.current === 'finished') return true;
@@ -3852,6 +4051,7 @@ function HashiGame() {
     Object.keys(raceResultsRef.current).forEach(function (uid) {
       if (racersRef.current.indexOf(uid) < 0) return;
       var r = raceResultsRef.current[uid];
+      if (r.dnf) return; // DNF 走下方未完成桶
       entries.push({ uid: uid, name: r.name, color: r.color, timeMs: r.timeMs, finished: true });
     });
     entries.sort(function (a, b) {
@@ -3863,7 +4063,7 @@ function HashiGame() {
     var dnf = racersRef.current.filter(function (uid) {
       return !finUids[uid];
     }).map(function (uid) {
-      return { uid: uid, name: nameOf(uid), color: colorOf(uid), progress: prog[uid] ? prog[uid].progress : 0, finished: false };
+      var rr = raceResultsRef.current[uid];return { uid: uid, name: nameOf(uid), color: colorOf(uid), progress: rr && rr.progress != null ? rr.progress : prog[uid] ? prog[uid].progress : 0, finished: false };
     });
     dnf.sort(function (a, b) {
       return b.progress - a.progress;
@@ -4985,84 +5185,114 @@ function HashiGame() {
     return aActive - bActive;
   });
 
-  var hashiRoomMode = React.createElement(
-    React.Fragment,
-    null,
+  var hashiRoomSettings = React.createElement(
+    'div',
+    { className: 'bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-6 shadow-[4px_4px_0px_#1e293b] flex flex-col gap-3 text-left' },
+    React.createElement(
+      'h3',
+      { className: 'font-black border-b-2 border-slate-100 pb-2 mb-1 flex items-center justify-between' },
+      React.createElement(
+        'span',
+        null,
+        '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
+      ),
+      isHostRef.current && React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return setShowRoomSettings(true);
+          }, className: 'bg-slate-700 text-white px-3 py-1 rounded border-2 border-slate-800 font-black text-sm shadow-[2px_2px_0px_#1e293b] hover:translate-y-[1px] hover:shadow-none transition-all' },
+        '\u904A\u6232\u8A2D\u5B9A'
+      )
+    ),
     isHostRef.current ? React.createElement(
       'div',
-      { className: 'flex gap-2 mb-4' },
+      { className: 'flex flex-wrap gap-2 items-center mb-1' },
+      React.createElement(
+        'span',
+        { className: 'font-bold text-slate-500 w-12 text-sm' },
+        '\u6A21\u5F0F'
+      ),
       React.createElement(
         'button',
         { onClick: function onClick() {
             return setMpModeHost('coop');
-          }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+          }, className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-slate-100') },
         '\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F'
       ),
       React.createElement(
         'button',
         { onClick: function onClick() {
             return setMpModeHost('race');
-          }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+          }, className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-white') },
         '\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F'
       )
     ) : React.createElement(
-      'p',
-      { className: 'mb-4 font-black text-slate-600' },
-      '\u76EE\u524D\u6A21\u5F0F\uFF1A',
-      mpMode === 'race' ? '⚔️ 大亂鬥' : '🤝 合作',
-      '\uFF08\u7531\u623F\u4E3B\u6C7A\u5B9A\uFF09'
-    )
-  );
-  var hashiRoomSettings = React.createElement(
-    React.Fragment,
-    null,
-    mpMode === 'race' ? isHostRef.current ? React.createElement(
-      'button',
-      { onClick: function onClick() {
-          return setShowRoomSettings(true);
-        }, className: 'w-full mb-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
-      '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
-    ) : React.createElement(
-      'p',
-      { className: 'mb-3 text-xs font-bold text-slate-400' },
-      '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A\uFF08\u623F\u4E3B\uFF09\uFF1A',
-      (LEVELS.find(function (l) {
-        return l.id === brawlSettings.sizeId;
-      }) || {}).name || '10x10',
-      '\u30FB\u7D50\u675F\u540D\u6B21 ',
-      brawlSettings.winnersCount,
-      '\u30FB\u9053\u5177',
-      brawlSettings.itemsEnabled ? '開' : '關'
-    ) : isHostRef.current ? React.createElement(
       'div',
-      { className: 'mb-3' },
+      { className: 'flex justify-between items-center mb-1' },
       React.createElement(
-        'div',
-        { className: 'font-black text-slate-700 text-sm mb-1.5' },
-        '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A \u2014 \u95DC\u5361\uFF08\u623F\u4E3B\u9078\uFF0C\u5168\u54E1\u540C\u6B65\uFF09'
+        'span',
+        { className: 'font-bold text-slate-500 text-sm' },
+        '\u7576\u524D\u6A21\u5F0F'
       ),
       React.createElement(
-        'div',
-        { className: 'flex flex-wrap gap-1.5' },
+        'span',
+        { className: 'font-black text-slate-800' },
+        mpMode === 'race' ? '⚔️ 亂鬥模式' : '🤝 合作模式'
+      )
+    ),
+    isHostRef.current ? React.createElement(
+      'div',
+      { className: 'flex gap-2 font-bold text-slate-600 text-sm mt-2' },
+      React.createElement(
+        'select',
+        { value: mpMode === 'race' ? brawlSettings.sizeId : currentLevelId, onChange: function onChange(e) {
+            var lv = LEVELS.find(function (l) {
+              return String(l.id) === String(e.target.value);
+            });if (!lv) return;if (mpMode === 'race') applyBrawlSettings(_extends({}, brawlSettings, { sizeId: lv.id }), true);else applyCoopLevel(lv);
+          }, className: 'flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none' },
         LEVELS.filter(function (l) {
           return l.id !== 'custom';
         }).map(function (l) {
           return React.createElement(
-            'button',
-            { key: l.id, onClick: function onClick() {
-                return applyCoopLevel(l);
-              }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (currentLevelId === l.id ? 'bg-[#4ade80] text-slate-900' : 'bg-white text-slate-500') },
+            'option',
+            { key: l.id, value: l.id },
             l.name
+          );
+        })
+      ),
+      mpMode === 'race' && React.createElement(
+        'select',
+        { value: brawlSettings.winnersCount, onChange: function onChange(e) {
+            return applyBrawlSettings(_extends({}, brawlSettings, { winnersCount: Number(e.target.value) }), true);
+          }, className: 'flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none' },
+        [1, 2, 3, 4, 5].map(function (n) {
+          return React.createElement(
+            'option',
+            { key: n, value: n },
+            '\u524D ',
+            n,
+            ' \u540D\u7D50\u675F'
           );
         })
       )
     ) : React.createElement(
-      'p',
-      { className: 'mb-3 text-xs font-bold text-slate-400' },
-      '\u2699\uFE0F \u95DC\u5361\u7531\u623F\u4E3B\u8A2D\u5B9A\uFF1A',
-      (LEVELS.find(function (l) {
-        return l.id === currentLevelId;
-      }) || {}).name || ''
+      'div',
+      { className: 'flex justify-between font-bold text-slate-600 text-sm mt-1' },
+      React.createElement(
+        'span',
+        null,
+        '\u95DC\u5361\uFF1A',
+        (LEVELS.find(function (l) {
+          return l.id === (mpMode === 'race' ? brawlSettings.sizeId : currentLevelId);
+        }) || {}).name
+      ),
+      mpMode === 'race' && React.createElement(
+        'span',
+        null,
+        '\u7D50\u675F\u540D\u6B21\uFF1A\u524D ',
+        brawlSettings.winnersCount,
+        ' \u540D'
+      )
     )
   );
   return React.createElement(
@@ -5355,7 +5585,7 @@ function HashiGame() {
       ),
       isMultiplayer && React.createElement(
         'div',
-        { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-40 shadow-inner shrink-0' },
+        { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-[70] shadow-inner shrink-0' },
         React.createElement(
           'span',
           { className: 'font-black text-slate-800 text-sm' },
@@ -5562,11 +5792,6 @@ function HashiGame() {
           (raceState === 'racing' || raceState === 'finished') && React.createElement(
             'div',
             { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
-            React.createElement(
-              'span',
-              { className: 'text-[11px] font-bold text-slate-400' },
-              '\uD83C\uDF92 \u91CC\u7A0B\u7891\uFF0825%\uFF0F50%\uFF0F75%\uFF09\u6703\u767C\u9053\u5177\u7D66\u843D\u5F8C\u8005\uFF0C\u5728\u5E95\u90E8\u5713\u9215\u4F7F\u7528'
-            ),
             raceState === 'finished' && React.createElement(
               'button',
               { onClick: function onClick() {
@@ -5628,7 +5853,7 @@ function HashiGame() {
         ),
         inRace && (raceState === 'racing' || raceState === 'finished') && myItems.length > 0 && React.createElement(
           'div',
-          { className: 'absolute bottom-4 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-2.5' },
+          { className: 'absolute bottom-24 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-2.5' },
           Object.keys(myItems.reduce(function (acc, k) {
             acc[k] = (acc[k] || 0) + 1;return acc;
           }, {})).map(function (k) {
@@ -6115,12 +6340,7 @@ function HashiGame() {
             'div',
             { className: 'max-w-xl mx-auto mt-2' },
             React.createElement('div', { ref: roomMountRef }),
-            roomSlot && ReactDOM.createPortal(React.createElement(
-              React.Fragment,
-              null,
-              hashiRoomMode,
-              hashiRoomSettings
-            ), roomSlot)
+            roomSlot && ReactDOM.createPortal(hashiRoomSettings, roomSlot)
           )
         ) : React.createElement(
           'div',
@@ -6147,7 +6367,6 @@ function HashiGame() {
                 )
               )
             ),
-            hashiRoomMode,
             React.createElement(
               'div',
               { className: 'font-black text-slate-700 text-sm mb-1.5' },
@@ -6373,7 +6592,7 @@ function HashiGame() {
             )
           )
         ),
-        raceCountdown !== null && React.createElement(
+        raceCountdown !== null && !(typeof window !== 'undefined' && window.PlatCountdown) && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[65] flex items-center justify-center pointer-events-none' },
           React.createElement(
@@ -6465,7 +6684,12 @@ function HashiGame() {
               ),
               React.createElement(
                 'button',
-                { onClick: returnToLobby, className: 'px-4 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                { onClick: playAgain, className: 'px-4 py-3 bg-[#4ade80] text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
+                '\uD83D\uDD01 \u518D\u4F86\u4E00\u5C40'
+              ),
+              React.createElement(
+                'button',
+                { onClick: requestLobby, className: 'px-4 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all' },
                 '\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4'
               ),
               React.createElement(
@@ -6477,7 +6701,7 @@ function HashiGame() {
             !isHostRef.current && React.createElement(
               'p',
               { className: 'text-xs font-bold text-slate-400 mt-3' },
-              '\u623F\u4E3B\u6309\u56DE\u7B49\u5F85\u5BA4\u6703\u5E36\u5168\u54E1\u4E00\u8D77\u56DE\u53BB'
+              '\u518D\u4F86\u4E00\u5C40\uFF0F\u56DE\u7B49\u5F85\u5BA4\u90FD\u6703\u5E36\u5168\u54E1\u4E00\u8D77'
             )
           )
         ),
@@ -6548,6 +6772,19 @@ function HashiGame() {
                 'button',
                 { onClick: triggerDailyHome, className: 'px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },
                 '\u56DE\u4E3B\u9078\u55AE \uD83C\uDFE0'
+              ) : engine === 'peerjs' ? React.createElement(
+                React.Fragment,
+                null,
+                React.createElement(
+                  'button',
+                  { onClick: playAgain, className: 'px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },
+                  '\u518D\u4F86\u4E00\u5C40 \u2794'
+                ),
+                React.createElement(
+                  'button',
+                  { onClick: requestLobby, className: 'px-5 py-3 bg-white text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },
+                  '\u56DE\u7B49\u5F85\u5BA4'
+                )
               ) : React.createElement(
                 'button',
                 { onClick: triggerRegenerate, className: 'px-5 py-3 bg-[#4ade80] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] transition-all text-base md:text-lg' },

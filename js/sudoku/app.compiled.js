@@ -61,7 +61,18 @@ function GameTimer(_ref) {
 }
 function SudokuGame() {
   var _SIZES$find, _DIFFICULTIES$find;
-  var playerIdRef = useRef(Math.random().toString(36).substring(2, 12));
+  var playerIdRef = useRef(function () {
+    try {
+      var u = localStorage.getItem('plat_uid_sudoku');
+      if (!u) {
+        u = Math.random().toString(36).substring(2, 12);
+        localStorage.setItem('plat_uid_sudoku', u);
+      }
+      return u;
+    } catch (e) {
+      return Math.random().toString(36).substring(2, 12);
+    }
+  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
   var myColorRef = useRef(COLORS[Math.floor(Math.random() * COLORS.length)]);
@@ -777,6 +788,10 @@ function SudokuGame() {
       setCountdownValue(null);
     }
   }, [matchPhase, countdownTarget]);
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatCountdown) return;
+    if (countdownValue !== null && !isGenerating) window.PlatCountdown.show(countdownValue);else window.PlatCountdown.hide();
+  }, [countdownValue, isGenerating]);
 
   // --- 漂浮選單拖動邏輯 (通用) ---
   useEffect(function () {
@@ -853,12 +868,13 @@ function SudokuGame() {
   useEffect(function () {
     if (!isHostRef.current && isMultiplayer) return;
     if (matchPhase === 'waiting' && playersList.length > 0) {
-      var allReady = playersList.every(function (p) {
+      var racers = playersList.filter(function (p) {
+        return !p.isSpectator;
+      });
+      var allReady = racers.length > 0 && racers.every(function (p) {
         return p.isReady;
       });
-      if (allReady && playersList.filter(function (p) {
-        return !p.isSpectator;
-      }).length > 0) {
+      if (allReady) {
         var target = Date.now() + 5000;
         syncState({
           matchPhase: 'countdown',
@@ -3926,7 +3942,7 @@ function SudokuGame() {
             text: '✔ 已準備',
             kind: 'ready'
           } : null,
-          toggle: canEdit && isBrawlMode ? {
+          toggle: canEdit ? {
             on: !pl.isSpectator,
             labelOn: '🎮 參賽',
             labelOff: '👁️ 上帝'
@@ -4285,10 +4301,25 @@ function SudokuGame() {
       },
       exit: function exit() {
         handleGoHome();
+      },
+      migrate: function migrate(amHost, sess) {
+        // 房主接管：以目前對局狀態原地重建連線（房主 open handler 有 isMigrating 續局邏輯）
+        setEngine('peerjs');
+        engineRef.current = 'peerjs';
+        setupPeerJS(sess.code, sess.name, !!amHost);
       }
     };
   }, []);
   var setupPeerJS = function setupPeerJS(rId, pName, isCreating) {
+    // 冪等重設：重複 setup（接管/重入/launch 重播）先清掉舊 peer 與 conn refs，避免 SYNC 送進死連線或重複綁定
+    if (peerRef.current) {
+      try {
+        peerRef.current.destroy();
+      } catch (e) {}
+      peerRef.current = null;
+    }
+    connsRef.current = [];
+    connRef.current = null;
     var savedProg = loadLocalProgress(rId, myId);
     setConnectionStatus(isCreating ? "正在啟動通訊模組..." : "\u6B63\u5728\u5C0B\u627E\u623F\u9593 ".concat(rId, "..."));
     if (isCreating) {
@@ -4705,9 +4736,7 @@ function SudokuGame() {
         });
         c.on('close', function () {
           if (window.__PLAT_PLATFORM) {
-            showToast("⚠️ 與主機連線中斷");
-            switchToOffline();
-            if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('host-gone');
+            showToast("📡 房主連線中斷，正在自動重連…");
             return;
           }
           var list = playersListRef.current;
@@ -5368,7 +5397,7 @@ function SudokuGame() {
     title: "\u7121\u8996\u6E96\u5099\u72C0\u614B\u76F4\u63A5\u958B\u59CB"
   }, "\u26A1 \u5F37\u5236\u958B\u59CB"))), platDock && /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mt-3"
-  }, renderDockCapsule(false))))), countdownValue !== null && !isGenerating && /*#__PURE__*/React.createElement("div", {
+  }, renderDockCapsule(false))))), countdownValue !== null && !isGenerating && !(typeof window !== 'undefined' && window.PlatCountdown) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 backdrop-blur-md pointer-events-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[12rem] font-black text-red-500 drop-shadow-[0_0_30px_rgba(255,0,0,0.8)] animate-pulse",

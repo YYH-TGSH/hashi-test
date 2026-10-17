@@ -75,10 +75,10 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
 }
 /* 視訊圓形頭像條（右側直排） */
 #plat-videos {
-  position: fixed; right: 8px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 99989;
-  display: flex; flex-direction: row; gap: 8px; align-items: flex-end;
+  position: fixed; inset: 0; z-index: 99989; pointer-events: none;
 }
-.plat-vid { display: flex; flex-direction: column; align-items: center; width: 60px; }
+.plat-vid { display: flex; flex-direction: column; align-items: center; width: 60px; position: absolute; pointer-events: auto; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
+.plat-vid:active { cursor: grabbing; }
 .plat-vid .circ {
   width: 56px; height: 56px; border-radius: 9999px; overflow: hidden;
   border: 3px solid #1e293b; background: #475569; box-shadow: 2px 2px 0 rgba(30,41,59,1);
@@ -146,3 +146,5 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
 @keyframes slotLand { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #slot-display.slot-spinning { animation: slotShake .12s linear infinite; color: #b45309; }
 #slot-display.slot-land { animation: slotLand .35s ease-out; }
+
+@keyframes platCountPulse { from { transform: scale(1); } to { transform: scale(1.07); } }

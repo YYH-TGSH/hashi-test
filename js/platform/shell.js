@@ -223,9 +223,12 @@
       var b = document.createElement('button');
       b.style.background = c; b.title = c;
       if (Net.me.color === c) b.className = 'sel';
-      b.onclick = function () { pickColor(i, c); };
+      b.setAttribute('data-lob-color', String(i));
+      b.onclick = function () { tapColorSeq(i); };
       wrap.appendChild(b);
     });
+    var dot = $('lob-color-dot');
+    if (dot) dot.style.background = (Net.me.color === 'rainbow') ? RAINBOW_BG : (Net.me.color || '#ccc');
     if (unlocked) {
       var rb = document.createElement('button');
       rb.style.background = RAINBOW_BG; rb.title = 'rainbow';
@@ -235,12 +238,35 @@
     }
   }
   var tapSeq = [];
-  function pickColor(i, c) {
-    Net.me.color = c; storeSet('plat_color', c); renderColors();
+  function tapColorSeq(i) {
+    // 代表色預設不能點選（用拉霸決定）；點色塊只累計彩虹密碼
     tapSeq.push(i); if (tapSeq.length > 4) tapSeq.shift();
     if (tapSeq.join(',') === '0,4,15,19' && storeGet('plat_rainbow') !== '1') {
       storeSet('plat_rainbow', '1'); renderColors(); lobbyMsg('🌈 解鎖隱藏代表色 rainbow！');
     }
+  }
+  var colorSpinning = false;
+  function spinColor() {
+    if (colorSpinning) return;
+    colorSpinning = true;
+    var btn = $('lob-color-spin'); if (btn) btn.disabled = true;
+    var dot = $('lob-color-dot');
+    var start = Date.now(), dur = 1150, timer = null;
+    var tick = function () {
+      var t = (Date.now() - start) / dur;
+      var c = PLAT_COLORS[Math.floor(Math.random() * PLAT_COLORS.length)];
+      if (dot) dot.style.background = c;
+      if (t >= 1) {
+        Net.me.color = c; storeSet('plat_color', c);
+        if (storeGet('plat_rainbow') === '1' && Net.me.color === 'rainbow') Net.me.color = c;
+        colorSpinning = false;
+        if (btn) btn.disabled = false;
+        renderColors(); renderLobby();
+        return;
+      }
+      timer = setTimeout(tick, 50 + 160 * t * t);
+    };
+    tick();
   }
   function readIdentity() { return Net.me.name || ''; }
 
@@ -263,7 +289,7 @@
     delete Net.conns[pid];
     closeCallOf(pid);
     if (!Net.isHost) {
-      if (pid === Net.hostPid) { endSession('⚠️ 房主已離線，連線結束'); }
+      if (pid === Net.hostPid) { onHostConnLost(); }
     } else {
       var gone = null;
       Net.roster = Net.roster.filter(function (p) { if (p.pid === pid) { gone = p; return false; } return true; });
@@ -317,9 +343,78 @@
         renderVideos();
         break;
       }
-      case 'launch': if (!Net.isHost) doLaunch(d.game, d.mode); break;
+      case 'launch': if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); } else if (!Net.isHost) doLaunch(d.game, d.mode); break;
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
     }
+  }
+  // ---------- 房主斷線接管（未收到 bye 的意外斷線才走這裡；主動解散已在 endSession 處理） ----------
+  function onHostConnLost() {
+    if (Net.isHost || !Net.active || Net.migrating) return;
+    Net.migrating = true;
+    sysChat('📡 房主連線中斷，正在自動接管重連…');
+    lobbyMsg('📡 房主連線中斷，正在自動接管重連…');
+    var cand = null;
+    for (var i = 0; i < Net.roster.length; i++) { if (!Net.roster[i].host) { cand = Net.roster[i]; break; } }
+    if (cand && cand.pid === Net.myPid) promoteToHost();
+    else waitForNewHost();
+  }
+  function promoteToHost() {
+    var code = Net.code;
+    Net.roster = Net.roster.filter(function (pp) { return !pp.host; });
+    Net.roster.forEach(function (pp) { if (pp.pid === Net.myPid) pp.host = true; });
+    var tries = 0;
+    (function attempt() {
+      if (!Net.migrating) return;
+      var peer = new RealPeer('yyh-tgsh-' + code + '-host');
+      Net.peer = peer;
+      peer.on('open', function (id) {
+        Net.hostPid = id; Net.isHost = true; Net.migrating = false;
+        sysChat('👑 你已接管成為新房主，朋友們正在重連…');
+        renderLobby(); updateDock();
+        platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
+        migrateGame(true);
+      });
+      peer.on('connection', function (c) {
+        Net.conns[c.peer] = c; wireConn(c);
+        if (Net.gamePeer && !Net.gamePeer._destroyed) Net.gamePeer._deliver(c);
+      });
+      peer.on('call', function (call) { handleCall(call); });
+      peer.on('error', function (err) {
+        if (err && err.type === 'unavailable-id' && tries < 10 && Net.migrating) {
+          tries++; try { peer.destroy(); } catch (e) {}
+          setTimeout(attempt, 2000); return;
+        }
+        if (Net.migrating) { Net.migrating = false; endSession('⚠️ 接管失敗，連線結束'); }
+      });
+    })();
+  }
+  function waitForNewHost() {
+    var tries = 0;
+    (function attempt() {
+      if (!Net.migrating) return;
+      tries++;
+      if (tries > 16) { Net.migrating = false; endSession('⚠️ 房主離線且接管逾時，連線結束'); return; }
+      var c = Net.peer.connect(Net.hostPid);
+      var done = false;
+      c.on('open', function () {
+        if (done) return; done = true;
+        Net.conns[Net.hostPid] = c; wireConn(c);
+        Net.migrating = false;
+        Net.restored = true; // 接管重連：遊戲由 migrateGame 重設，launch 重播不可再 enter 一次（雙重 setup 會弄亂 refs）
+        platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color });
+        sysChat('📡 已重連到新房主');
+        renderLobby(); updateDock();
+        migrateGame(false);
+      });
+      setTimeout(function () { if (!done && Net.migrating) { try { c.close(); } catch (e) {} attempt(); } }, 3000);
+    })();
+  }
+  function migrateGame(amHost) {
+    var g = Net.inMatch; if (!g) return;
+    var hk = window['__PLAT_HOOKS_' + g]; if (!hk) return;
+    var sess = { code: Net.code, name: Net.me.name, isHost: amHost, mode: Net.matchMode || 'coop' };
+    if (hk.migrate) { try { hk.migrate(amHost, sess); } catch (e) {} }
+    else if (hk.enter) { try { hk.enter(sess); } catch (e) {} }
   }
   function teardownPeer() {
     Net.ending = true;
@@ -327,6 +422,7 @@
     Net.peer = null; Net.conns = {}; Net.active = false; Net.ending = false;
   }
   function endSession(msg) {
+    Net.migrating = false;
     if (!Net.active && !Net.peer) { showIdle(); return; }
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     stopVideo();
@@ -343,6 +439,7 @@
     var code = storeGet('plat_code');
     if (!code) { code = String(Math.floor(1000 + Math.random() * 9000)); storeSet('plat_code', code); }
     Net.code = code; Net.joinRetry = false;
+    storeSet('plat_room', code);
     lobbyMsg('正在建立房間…');
     makeHostPeer(code);
   }
@@ -379,6 +476,7 @@
     var code = ($('lob-code').value || '').trim();
     if (code.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
     Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host';
+    storeSet('plat_room', code);
     lobbyMsg('正在連線到房間 ' + code + '…');
     var p = new RealPeer();
     Net.peer = p;
@@ -395,7 +493,7 @@
     });
     p.on('call', function (call) { handleCall(call); });
     p.on('error', function (err) {
-      if (err && err.type === 'peer-unavailable') { lobbyMsg('⚠️ 找不到這個房號，房主可能還沒建立房間'); teardownPeer(); showIdle(); return; }
+      if (err && err.type === 'peer-unavailable') { lobbyMsg('⚠️ 找不到這個房號，房主可能還沒建立房間'); storeSet('plat_room', ''); teardownPeer(); showIdle(); return; }
       if (!Net.active) { lobbyMsg('⚠️ 連線失敗：' + (err && err.type ? err.type : '')); teardownPeer(); showIdle(); }
     });
   }
@@ -403,6 +501,7 @@
     if (!Net.active) { showIdle(); return; }
     if (Net.isHost) platBroadcast({ kind: 'bye' });
     else platToHost({ kind: 'leave', pid: Net.myPid });
+    storeSet('plat_room', '');
     endSession('');
     lobbyMsg('已離開房間');
   }
@@ -438,7 +537,7 @@
       if (Net.isHost) { platBroadcast({ kind: 'return' }); doReturnToLobby(); }
       else Net.inMatch = null;
     } else if (type === 'host-gone') {
-      endSession('⚠️ 與主機連線中斷');
+      onHostConnLost(); // 接管流程（殼層選舉升格），不再直接結束連線
     }
   };
 
@@ -547,6 +646,11 @@
     }
     h += '</div>';
     PB.el.innerHTML = h;
+    // popover（視訊控制/縮放/塗鴉）開啟時要浮在視訊頭像上面，否則會被自己的頭像遮住按不到
+    var anyPop = PB.dockOpen || PB.zoomOpen || PB.drawOpen;
+    PB.el.style.position = 'relative';
+    PB.el.style.zIndex = anyPop ? '99990' : '';
+    var vv = $('plat-videos'); if (vv) vv.style.zIndex = anyPop ? '9990' : '';
   }
   function pbAct(name, payload) { if (PB.cfg && PB.cfg.onAction) { try { PB.cfg.onAction(name, payload); } catch (e) {} } }
   function pbClick(e) {
@@ -732,6 +836,26 @@
     else if (k === 'player-click' || k === 'player-toggle') prAct(k, t.getAttribute('data-key'));
     else prAct(k);
   }
+  // ===== PlatCountdown：兩款共用倒數 overlay（同一套邏輯，不寫兩遍）=====
+  window.PlatCountdown = (function () {
+    var el = null, numEl = null;
+    function ensure() {
+      if (el) return;
+      el = document.createElement('div');
+      el.id = 'plat-countdown';
+      el.style.cssText = 'position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)';
+      numEl = document.createElement('div');
+      numEl.style.cssText = 'font-size:11rem;line-height:1;font-weight:900;color:#ef4444;text-shadow:6px 6px 0 #fff,-6px -6px 0 #fff,6px -6px 0 #fff,-6px 6px 0 #fff;filter:drop-shadow(0 0 30px rgba(255,0,0,.8));font-family:inherit';
+      el.appendChild(numEl);
+      document.body.appendChild(el);
+    }
+    return {
+      show: function (v) { ensure(); el.style.display = 'flex'; numEl.textContent = v; numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = 'platCountPulse .45s ease-in-out infinite alternate'; },
+      hide: function () { if (el) el.style.display = 'none'; },
+      _visible: function () { return !!(el && el.style.display === 'flex'); }
+    };
+  })();
+
   window.PlatRoom = {
     attach: function (el, cfg) {
       if (!el) return;
@@ -771,17 +895,67 @@
     var wrap = $('plat-videos'); if (!wrap) return;
     var hasRemote = Object.keys(Net.remoteStreams).length > 0;
     if (!Net.videoOn && !hasRemote) { wrap.style.display = 'none'; wrap.innerHTML = ''; updateDock(); return; }
-    wrap.style.display = 'flex'; wrap.innerHTML = '';
+    wrap.style.display = 'block'; wrap.innerHTML = '';
+    var vidIdx = 0;
     if (Net.videoOn && Net.localStream) {
-      wrap.appendChild(makeCircle('你' + (Net.micMuted ? ' 🔇' : ' 🎤'), Net.localStream, true, Net.me.color));
+      wrap.appendChild(makeCircle('你' + (Net.micMuted ? ' 🔇' : ' 🎤'), Net.localStream, true, Net.me.color, 'self', vidIdx++));
     }
     Object.keys(Net.remoteStreams).forEach(function (pid) {
       var nm = nameOf(pid) + (Net.remoteMic[pid] === false ? ' 🎤' : '');
-      wrap.appendChild(makeCircle(nm, Net.remoteStreams[pid], false, null));
+      wrap.appendChild(makeCircle(nm, Net.remoteStreams[pid], false, null, pid, vidIdx++));
     });
     updateDock();
   }
-  function makeCircle(label, stream, mirror, color) {
+  // 視訊頭像位置：每位玩家在本機自己拖曳決定（不與其他玩家同步），存在 localStorage
+  var vidPosCache = null;
+  function vidPosMap() {
+    if (vidPosCache) return vidPosCache;
+    try { vidPosCache = JSON.parse(storeGet('plat_vpos') || '{}') || {}; } catch (e) { vidPosCache = {}; }
+    return vidPosCache;
+  }
+  function applyVidPos(d, key, idx) {
+    var p = vidPosMap()[key];
+    var W = window.innerWidth || 360, H = window.innerHeight || 640;
+    if (p && typeof p.fx === 'number' && typeof p.fy === 'number') {
+      d.style.left = Math.max(0, Math.min(Math.max(1, W - 60), p.fx * Math.max(1, W - 60))) + 'px';
+      d.style.top = Math.max(0, Math.min(Math.max(1, H - 84), p.fy * Math.max(1, H - 84))) + 'px';
+    } else {
+      d.style.right = (8 + idx * 68) + 'px';
+      d.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0px))';
+    }
+    attachVidDrag(d, key);
+  }
+  function attachVidDrag(d, key) {
+    d.addEventListener('pointerdown', function (e) {
+      var r = d.getBoundingClientRect();
+      var sx = e.clientX, sy = e.clientY, ox = r.left, oy = r.top, moved = false;
+      try { d.setPointerCapture(e.pointerId); } catch (err) {}
+      d.style.right = ''; d.style.bottom = ''; d.style.left = ox + 'px'; d.style.top = oy + 'px';
+      function mv(ev) {
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+        var W = window.innerWidth || 360, H = window.innerHeight || 640;
+        d.style.left = Math.max(0, Math.min(Math.max(1, W - 60), ox + dx)) + 'px';
+        d.style.top = Math.max(0, Math.min(Math.max(1, H - 84), oy + dy)) + 'px';
+      }
+      function up() {
+        d.removeEventListener('pointermove', mv);
+        d.removeEventListener('pointerup', up);
+        d.removeEventListener('pointercancel', up);
+        if (moved) {
+          var W = window.innerWidth || 360, H = window.innerHeight || 640;
+          var m = vidPosMap();
+          m[key] = { fx: (parseFloat(d.style.left) || 0) / Math.max(1, W - 60), fy: (parseFloat(d.style.top) || 0) / Math.max(1, H - 84) };
+          try { storeSet('plat_vpos', JSON.stringify(m)); } catch (err) {}
+        }
+      }
+      d.addEventListener('pointermove', mv);
+      d.addEventListener('pointerup', up);
+      d.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+  }
+  function makeCircle(label, stream, mirror, color, key, idx) {
     var d = document.createElement('div'); d.className = 'plat-vid';
     var c = document.createElement('div'); c.className = 'circ';
     if (stream) {
@@ -796,6 +970,7 @@
     }
     var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = label;
     d.appendChild(c); d.appendChild(nm);
+    applyVidPos(d, key || label, idx || 0);
     return d;
   }
   function broadcastMic() {
@@ -967,8 +1142,19 @@
     renderColors();
     $('lob-go-create').onclick = function () { Net.lobMode = 'create'; $('lob-joinrow').style.display = 'none'; lobbyMsg(''); showStep('nick'); };
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
+    var rjBtn = $('lob-rejoin');
+    if (rjBtn) {
+      var rc = storeGet('plat_room');
+      if (rc) { rjBtn.style.display = ''; var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; }
+      rjBtn.onclick = function () {
+        Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick');
+        $('lob-code').value = storeGet('plat_room') || '';
+        if (Net.me.name && !$('lob-name').value) $('lob-name').value = Net.me.name;
+      };
+    }
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
     $('slot-spin').onclick = function () { spinSlot(); };
+    var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
       var name = (nameInp.value || '').trim();

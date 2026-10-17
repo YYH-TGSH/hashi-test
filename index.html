@@ -92,6 +92,7 @@
               <div class="text-xs font-bold opacity-80 leading-relaxed">輸入朋友給你的 4 位數代碼</div>
             </button>
           </div>
+          <button id="lob-rejoin" style="display:none" class="w-full mt-4 py-3 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">↩ 回到房間 <span id="lob-rejoin-code"></span></button>
           <p class="mt-4 text-sm font-bold text-slate-400 text-center">跟朋友約好，一個人建立房間、其他人輸入房號加入</p>
           <button onclick="PLAT_show('home')" class="w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline text-center">取消返回主選單</button>
         </div>
@@ -107,7 +108,11 @@
             <button id="slot-spin" class="flex-1 py-2.5 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸</button>
             <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
           </div>
-          <label class="font-black text-slate-700 text-sm">代表色</label>
+          <label class="font-black text-slate-700 text-sm">代表色（拉霸決定）</label>
+          <div class="flex items-center gap-2 mt-1 mb-2">
+            <span id="lob-color-dot" class="w-9 h-9 rounded-full border-[3px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] inline-block shrink-0"></span>
+            <button id="lob-color-spin" class="flex-1 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸選色</button>
+          </div>
           <div id="lob-colors" class="flex flex-wrap gap-1.5 mt-1 mb-4"></div>
           <button id="lob-confirm" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">✅ 確認，進房間</button>
           <button id="lob-back" class="w-full mt-3 font-bold text-slate-400 underline">← 返回</button>
