@@ -4274,12 +4274,33 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-
+  var _useState175 = useState(false),
+    _useState176 = _slicedToArray(_useState175, 2),
+    platTournLock = _useState176[0],
+    setPlatTournLock = _useState176[1];
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（免重打暱稱/房號） =====
   useEffect(function () {
     if (!window.__PLAT_PLATFORM) return;
     window.__PLAT_HOOKS_sudoku = {
       enter: function enter(sess) {
+        setPlatTournLock(!!sess.tourn);
+        if (sess.tourn && sess.isHost) {
+          // 賽程預設：套用賽程的版型/難度，結束名次設為全員（不提前結束）
+          setSizeId(sess.tourn.sizeId);
+          setDiffId(sess.tourn.diffId);
+          setBrawlSettings(function (prev) {
+            return _objectSpread(_objectSpread({}, prev), {}, {
+              winnersCount: Math.max(1, sess.tourn.entrants || 1)
+            });
+          });
+          stateRef.current = _objectSpread(_objectSpread({}, stateRef.current), {}, {
+            sizeId: sess.tourn.sizeId,
+            diffId: sess.tourn.diffId,
+            brawlSettings: _objectSpread(_objectSpread({}, stateRef.current.brawlSettings), {}, {
+              winnersCount: Math.max(1, sess.tourn.entrants || 1)
+            })
+          });
+        }
         myNameRef.current = sess.name;
         setTempPlayerName(sess.name);
         setEngine('peerjs');
@@ -4300,6 +4321,7 @@ function SudokuGame() {
         }
       },
       exit: function exit() {
+        setPlatTournLock(false);
         handleGoHome();
       },
       migrate: function migrate(amHost, sess) {
@@ -5314,7 +5336,14 @@ function SudokuGame() {
     className: "w-full max-w-xl my-auto"
   }, /*#__PURE__*/React.createElement("div", {
     ref: roomMountRef
-  }), roomSlot && ReactDOM.createPortal(sudokuRoomSettings, roomSlot)) : /*#__PURE__*/React.createElement("div", {
+  }), roomSlot && ReactDOM.createPortal(platTournLock ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "mb-2 text-center font-black text-amber-600 text-sm"
+  }, "\uD83C\uDFC6 \u8CFD\u7A0B\u6A21\u5F0F\uFF1A\u672C\u5C40\u8A2D\u5B9A\u7531\u8CFD\u7A0B\u6C7A\u5B9A\uFF0C\u4E0B\u65B9\u8A2D\u5B9A\u5DF2\u9396\u5B9A"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      pointerEvents: 'none',
+      opacity: 0.5
+    }
+  }, sudokuRoomSettings)) : sudokuRoomSettings, roomSlot)) : /*#__PURE__*/React.createElement("div", {
     className: "bg-[#fffaf0] rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center min-w-[320px] max-w-xl w-full my-auto animate-bounceIn"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-3xl font-black text-slate-800 mb-2 tracking-widest"

@@ -2016,8 +2016,9 @@ function HashiGame() {
     var key = m.uid + '@' + m.threshold;
     if (hostMilestonesRef.current[key]) return;
     hostMilestonesRef.current[key] = true;
+    var racerIds = racersRef.current || [];
     var cands = playersListRef.current.filter(function (pl) {
-      return pl.id;
+      return pl.id && !raceResultsRef.current[pl.id] && !(pl.id === myId && myFinishTimeRef.current != null) && (racerIds.length === 0 || racerIds.indexOf(pl.id) >= 0);
     });
     if (!cands.length) return;
     var item = pickRandomItem();
@@ -2045,6 +2046,7 @@ function HashiGame() {
       return x.key === m.item;
     });
     if (!meta) return;
+    if (myFinishTimeRef.current != null) return; // 已完賽不再獲得道具（盤面凍結）
     if (myItemsRef.current.length >= 3) {
       showToast('🎒 道具已滿，里程碑道具流掉了');return;
     }
@@ -2106,6 +2108,10 @@ function HashiGame() {
   };
   var applyBrawlItem = function applyBrawlItem(m) {
     if (!m || m.targetUid !== myId) return;
+    // 完賽凍結（比照數獨 isSpectator 守衛）：已完賽者的盤面不再受任何道具影響
+    if (myFinishTimeRef.current != null) {
+      showToast('🏁 你已完賽，盤面凍結，' + (m.fromName || '對手') + ' 的道具對你無效！');return;
+    }
     var now = Date.now();
     if (m.item === 'bomb') {
       var cur = (stateRef.current.bridges || []).filter(function (b) {
@@ -2148,6 +2154,9 @@ function HashiGame() {
   };
   var useBrawlItem = function useBrawlItem(key) {
     if (raceStateRef.current !== 'racing') return;
+    if (myFinishTimeRef.current != null) {
+      showToast('🏁 你已完賽，不能再使用道具');return;
+    }
     var idx = myItemsRef.current.indexOf(key);
     if (idx < 0) return;
     var meta = BRAWL_ITEMS.find(function (x) {
@@ -2161,6 +2170,8 @@ function HashiGame() {
           tName = '';
       playersListRef.current.forEach(function (p) {
         if (p.id === myId) return;
+        if (raceResultsRef.current[p.id]) return; // 已完賽者盤面凍結，不可攻擊
+        if ((racersRef.current || []).length && racersRef.current.indexOf(p.id) < 0) return; // 觀戰者不在場上
         var info = raceProgress[p.id];
         var pr = info ? info.progress : 0;
         if (pr > best) {
@@ -3268,11 +3279,22 @@ function HashiGame() {
     });
   }, [playersList]);
 
+  var _useState195 = useState(false),
+      _useState196 = _slicedToArray(_useState195, 2),
+      platTournLock = _useState196[0],
+      setPlatTournLock = _useState196[1];
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
+
+
   useEffect(function () {
     if (!PLAT_MODE) return;
     window.__PLAT_HOOKS_hashi = {
       enter: function enter(sess) {
+        setPlatTournLock(!!sess.tourn);
+        if (sess.tourn && sess.isHost) {
+          // 賽程預設：套用賽程的關卡，結束名次設為全員（不提前結束）
+          applyBrawlSettings(_extends({}, brawlSettingsRef.current, { sizeId: sess.tourn.sizeId, winnersCount: Math.max(1, sess.tourn.entrants || 1) }), true);
+        }
         platAutoRef.current = { name: sess.name };
         var mode = sess.mode === 'brawl' ? 'race' : 'coop';
         setMpMode(mode);mpModeRef.current = mode;
@@ -3294,7 +3316,7 @@ function HashiGame() {
         }
       },
       exit: function exit() {
-        handleGoHome();
+        setPlatTournLock(false);handleGoHome();
       },
       migrate: function migrate(amHost, sess) {
         setEngine('peerjs');engineRef.current = 'peerjs';
@@ -6341,7 +6363,20 @@ function HashiGame() {
             'div',
             { className: 'max-w-xl mx-auto mt-2' },
             React.createElement('div', { ref: roomMountRef }),
-            roomSlot && ReactDOM.createPortal(hashiRoomSettings, roomSlot)
+            roomSlot && ReactDOM.createPortal(platTournLock ? React.createElement(
+              'div',
+              null,
+              React.createElement(
+                'div',
+                { className: 'mb-2 text-center font-black text-amber-600 text-sm' },
+                '\uD83C\uDFC6 \u8CFD\u7A0B\u6A21\u5F0F\uFF1A\u672C\u5C40\u8A2D\u5B9A\u7531\u8CFD\u7A0B\u6C7A\u5B9A\uFF0C\u4E0B\u65B9\u8A2D\u5B9A\u5DF2\u9396\u5B9A'
+              ),
+              React.createElement(
+                'div',
+                { style: { pointerEvents: 'none', opacity: 0.5 } },
+                hashiRoomSettings
+              )
+            ) : hashiRoomSettings, roomSlot)
           )
         ) : React.createElement(
           'div',

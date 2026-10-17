@@ -99,7 +99,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.1.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.2.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_VERSION = PLAT_VERSION;
 
   var PLAT_COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
@@ -117,7 +117,7 @@
     roster: [], conns: {}, gamePeer: null, inMatch: null,
     videoOn: false, localStream: null, micMuted: true, speakerOn: false,
     remoteStreams: {}, remoteMic: {}, calls: {}, speakPrompted: {}, speakPid: null,
-    chatOpen: false, chatMin: false, unread: 0, ending: false, joinRetry: false
+    chatOpen: false, chatMin: false, unread: 0, ending: false, joinRetry: false, tourn: null
   };
   window.__PLAT_NET = Net;
 
@@ -217,6 +217,7 @@
     $('lob-launch').style.display = (Net.isHost && !Net.inMatch) ? 'block' : 'none';
     $('lob-waiting').style.display = (!Net.isHost && !Net.inMatch) ? 'block' : 'none';
     $('lob-inmatch').style.display = Net.inMatch ? 'block' : 'none';
+    renderTourn();
   }
   function renderColors() {
     var wrap = $('lob-colors'); if (!wrap) return;
@@ -281,6 +282,7 @@
   }
   function routeData(c, d) {
     if (d && typeof d === 'object' && d.__plat) { onPlatData(c, d); return; }
+    tournSniff(c.peer, d);
     var vp = Net.gamePeer;
     if (vp && !vp._destroyed) { try { vp.wrapperFor(c)._fire('data', d); } catch (e) {} }
   }
@@ -298,6 +300,7 @@
       Net.roster = Net.roster.filter(function (p) { if (p.pid === pid) { gone = p; return false; } return true; });
       if (gone) {
         sysChat('👋 ' + (gone.name || '玩家') + ' 離開了房間');
+        if (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) { Net.tourn.disc[pid] = true; tournCheckDone(); }
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         renderLobby();
       }
@@ -316,7 +319,8 @@
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }, pid);
         sysChat('👋 ' + (d.name || '玩家') + ' 加入了房間');
-        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop' });
+        if (Net.tourn) platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() });
+        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined });
         renderLobby();
         if (Net.videoOn) callPeer(pid);
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
@@ -346,8 +350,12 @@
         renderVideos();
         break;
       }
-      case 'launch': if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); } else if (!Net.isHost) doLaunch(d.game, d.mode); break;
+      case 'launch': if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); } else if (!Net.isHost) doLaunch(d.game, d.mode, d.tourn); break;
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
+      case 'tourn-setup': Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 混合大亂鬥賽程開始！共 5 局'); renderTourn(); break;
+      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; tst.settled = true; } renderTourn(); break; }
+      case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
+      case 'tourn-abort': tournClear(); renderLobby(); break;
     }
   }
   // ---------- 房主斷線接管（未收到 bye 的意外斷線才走這裡；主動解散已在 endSession 處理） ----------
@@ -376,6 +384,7 @@
         renderLobby(); updateDock();
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         migrateGame(true);
+        if (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) setTimeout(tournEndByHostLoss, 1200);
       });
       peer.on('connection', function (c) {
         Net.conns[c.peer] = c; wireConn(c);
@@ -431,6 +440,7 @@
     stopVideo();
     teardownPeer();
     Net.roster = []; Net.gamePeer = null; Net.isHost = false;
+    tournClear();
     updateDock(); closeChat(); showIdle(); renderLobby();
     if (g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
     window.PLAT_show('lobby');
@@ -518,13 +528,14 @@
       if (++tries < 30) setTimeout(poll, 400);
     })();
   }
-  function doLaunch(game, mode) {
+  function doLaunch(game, mode, tournSess) {
     Net.inMatch = game; Net.matchMode = mode || 'coop';
+    if (tournSess && Net.tourn) { Net.tourn.phase = tournSess.playoff ? 'playoff' : 'playing'; Net.tourn.round = tournSess.round; Net.tourn.curGame = game; Net.tourn.settled = false; }
     renderLobby();
     window.PLAT_show(game);
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
-      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop' }); } catch (e) {}
+      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop', tourn: tournSess || null }); } catch (e) {}
     });
   }
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
@@ -543,6 +554,254 @@
       onHostConnLost(); // 接管流程（殼層選舉升格），不再直接結束連線
     }
   };
+
+
+  // ---------- 混合大亂鬥賽程 PlatTourn（房主權威；嗅探遊戲訊息計分；設計見 phase-d-design.md） ----------
+  var TOURN_PTS = [10, 7, 5, 3, 2];
+  function tournPts(rank) { return rank <= 5 ? TOURN_PTS[rank - 1] : 1; }
+  function tournGameName(g) { return g === 'sudoku' ? '🔢 數獨' : '🌉 數橋'; }
+  function tournPidByName(name) {
+    var t = Net.tourn; if (!t || !name) return null;
+    var n = normName(name);
+    for (var i = 0; i < t.entrants.length; i++) if (normName(t.entrants[i].name) === n) return t.entrants[i].pid;
+    return null;
+  }
+  function tournEntrant(pid) { var t = Net.tourn; if (!t) return null; for (var i = 0; i < t.entrants.length; i++) if (t.entrants[i].pid === pid) return t.entrants[i]; return null; }
+  function tournSess() {
+    var t = Net.tourn; if (!t) return null;
+    return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
+      sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : t.hashi.sizeId, diffId: t.sudoku.diffId, roundSecs: t.roundSecs };
+  }
+  function tournBuildRounds(order) {
+    var rounds = [], i;
+    if (order === 'random') { for (i = 0; i < 5; i++) rounds.push(Math.random() < 0.5 ? 'sudoku' : 'hashi'); return rounds; }
+    var first = order === 'alt-h' ? 'hashi' : 'sudoku', second = first === 'sudoku' ? 'hashi' : 'sudoku';
+    for (i = 0; i < 5; i++) rounds.push(i % 2 === 0 ? first : second);
+    return rounds;
+  }
+  function tournPublicCfg() {
+    var t = Net.tourn;
+    return { rounds: t.rounds, order: t.order, sudoku: t.sudoku, hashi: t.hashi, roundSecs: t.roundSecs, totalRounds: t.totalRounds, entrants: t.entrants };
+  }
+  function tournNewState(cfg, phase) {
+    var totals = {}, wins = {};
+    cfg.entrants.forEach(function (e) { totals[e.pid] = 0; wins[e.pid] = 0; });
+    return { phase: phase, round: 1, totalRounds: cfg.totalRounds, order: cfg.order, rounds: cfg.rounds,
+      sudoku: cfg.sudoku, hashi: cfg.hashi, roundSecs: cfg.roundSecs, entrants: cfg.entrants,
+      totals: totals, wins: wins, history: [], curGame: null, settled: false, startedAt: 0, endsAt: 0,
+      progress: {}, finishOrder: [], uidMap: {}, cellTrack: {}, totalBlanks: 0, disc: {}, timer: null, armTimer: null, tiedPids: null, champion: null, endNote: '' };
+  }
+  function tournCreate() {
+    if (!Net.isHost || Net.tourn) return;
+    var cfg = { order: $('t-order').value,
+      sudoku: { sizeId: Number($('t-s-size').value), diffId: $('t-s-diff').value },
+      hashi: { sizeId: Number($('t-h-size').value) },
+      roundSecs: Number($('t-secs').value), totalRounds: 5, rounds: null,
+      entrants: Net.roster.map(function (p) { return { pid: p.pid, name: p.name, color: p.color }; }) };
+    cfg.rounds = tournBuildRounds(cfg.order);
+    Net.tourn = tournNewState(cfg, 'playing');
+    platBroadcast({ kind: 'tourn-setup', cfg: tournPublicCfg() });
+    sysChat('🏆 混合大亂鬥賽程開始！共 5 局');
+    tournStartRound();
+  }
+  function tournStartRound() {
+    var t = Net.tourn; if (!t) return;
+    t.curGame = t.phase === 'playoff' ? 'hashi' : t.rounds[t.round - 1];
+    t.settled = false; t.startedAt = 0; t.endsAt = 0;
+    t.progress = {}; t.finishOrder = []; t.uidMap = {}; t.cellTrack = {}; t.totalBlanks = 0; t.disc = {};
+    if (t.timer) { clearTimeout(t.timer); t.timer = null; }
+    if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
+    var sess = tournSess();
+    platBroadcast({ kind: 'launch', game: t.curGame, mode: 'brawl', tourn: sess });
+    doLaunch(t.curGame, 'brawl', sess);
+    sysChat('🏆 第 ' + t.round + ' 局：' + tournGameName(t.curGame) + '大亂鬥');
+    if (t.roundSecs > 0) {
+      t.armTimer = setTimeout(function () {
+        if (Net.tourn === t && !t.startedAt && !t.settled) { t.startedAt = Date.now(); t.endsAt = Date.now() + t.roundSecs * 1000; tournArmTimer(); }
+      }, 120000);
+    }
+    renderTourn();
+  }
+  function tournArmTimer() {
+    var t = Net.tourn; if (!t) return;
+    if (t.timer) clearTimeout(t.timer);
+    t.timer = setTimeout(function () { if (Net.tourn === t && !t.settled) tournSettle(); }, Math.max(0, t.endsAt - Date.now()) + 250);
+  }
+  function tournMarkFinished(pid) {
+    var t = Net.tourn; if (!t || !pid || t.settled) return;
+    if (t.finishOrder.indexOf(pid) < 0) { t.finishOrder.push(pid); t.progress[pid] = 100; }
+    tournCheckDone();
+  }
+  function tournCheckDone() {
+    var t = Net.tourn; if (!t || t.settled) return;
+    var done = t.entrants.every(function (e) { return t.finishOrder.indexOf(e.pid) >= 0 || t.disc[e.pid]; });
+    if (done) tournSettle();
+  }
+  function tournDecideChampion() {
+    var t = Net.tourn;
+    var sorted = t.entrants.slice().sort(function (a, b) { return (t.totals[b.pid] || 0) - (t.totals[a.pid] || 0); });
+    var top = t.totals[sorted[0].pid] || 0;
+    var tied = sorted.filter(function (e) { return (t.totals[e.pid] || 0) === top; }).map(function (e) { return e.pid; });
+    if (tied.length === 1) return { champion: tied[0], note: '' };
+    var bestWins = -1; tied.forEach(function (pid) { bestWins = Math.max(bestWins, t.wins[pid] || 0); });
+    var winTied = tied.filter(function (pid) { return (t.wins[pid] || 0) === bestWins; });
+    if (winTied.length === 1) return { champion: winTied[0], note: '同分比冠軍局數（' + bestWins + ' 次第 1 名）決勝' };
+    return { champion: null, tied: winTied };
+  }
+  function tournSettle() {
+    var t = Net.tourn; if (!t || t.settled) return;
+    t.settled = true;
+    if (t.timer) { clearTimeout(t.timer); t.timer = null; }
+    if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
+    var rest = t.entrants.filter(function (e) { return t.finishOrder.indexOf(e.pid) < 0; });
+    rest.sort(function (a, b) { return (t.progress[b.pid] || 0) - (t.progress[a.pid] || 0); });
+    var ordered = t.finishOrder.concat(rest.map(function (e) { return e.pid; }));
+    var placements = ordered.map(function (pid, i) {
+      var en = tournEntrant(pid);
+      return { pid: pid, name: en ? en.name : '玩家', rank: i + 1, pts: tournPts(i + 1), progress: Math.floor(t.progress[pid] || 0), finished: t.finishOrder.indexOf(pid) >= 0 };
+    });
+    placements.forEach(function (pl) { t.totals[pl.pid] = (t.totals[pl.pid] || 0) + pl.pts; if (pl.rank === 1) t.wins[pl.pid] = (t.wins[pl.pid] || 0) + 1; });
+    t.history.push({ round: t.round, game: t.curGame, placements: placements });
+    if (t.phase === 'playoff') {
+      var champPid = null;
+      for (var i = 0; i < placements.length; i++) { if (t.tiedPids && t.tiedPids.indexOf(placements[i].pid) >= 0) { champPid = placements[i].pid; break; } }
+      tournFinish(champPid || placements[0].pid, '同分加賽決勝');
+      return;
+    }
+    if (t.round >= t.totalRounds) {
+      var res = tournDecideChampion();
+      if (res.champion) { tournFinish(res.champion, res.note); return; }
+      t.tiedPids = res.tied;
+      t.phase = 'playoff-pending';
+    } else t.phase = 'standings';
+    platBroadcast({ kind: 'tourn-score', round: t.round, game: t.curGame, placements: placements, totals: t.totals, wins: t.wins, history: t.history, phase: t.phase });
+    tournReturnAll();
+    renderTourn();
+  }
+  function tournFinish(champPid, note) {
+    var t = Net.tourn; if (!t) return;
+    t.phase = 'ended';
+    var en = tournEntrant(champPid);
+    t.champion = { pid: champPid, name: en ? en.name : '玩家' };
+    t.endNote = note || '';
+    platBroadcast({ kind: 'tourn-end', champion: t.champion, totals: t.totals, wins: t.wins, history: t.history, note: t.endNote });
+    tournReturnAll();
+    renderTourn();
+  }
+  function tournReturnAll() {
+    if (Net.isHost) platBroadcast({ kind: 'return' });
+    if (Net.inMatch) doReturnToLobby();
+  }
+  function tournAbort() {
+    if (Net.isHost) platBroadcast({ kind: 'tourn-abort' });
+    tournClear();
+    renderLobby();
+  }
+  function tournClear() {
+    var t = Net.tourn; if (!t) return;
+    if (t.timer) clearTimeout(t.timer);
+    if (t.armTimer) clearTimeout(t.armTimer);
+    Net.tourn = null;
+  }
+  function tournEndByHostLoss() {
+    var t = Net.tourn; if (!t || !Net.isHost) return;
+    if (t.timer) { clearTimeout(t.timer); t.timer = null; }
+    if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
+    t.settled = true;
+    var res = tournDecideChampion();
+    var champ = res.champion || (res.tied && res.tied[0]) || (t.entrants[0] && t.entrants[0].pid);
+    tournFinish(champ, '房主斷線，依當下積分提前結算');
+  }
+  // 嗅探遊戲訊息（只在房主端計分）：fromPid 是傳輸層 pid，身份以訊息內 uid/name 為準（轉發不影響）
+  function tournSniff(fromPid, d) {
+    var t = Net.tourn;
+    if (!t || !Net.isHost || t.settled || !d || typeof d !== 'object' || d.__plat) return;
+    if (t.phase !== 'playing' && t.phase !== 'playoff') return;
+    if (d.type === 'JOIN' && d.uid && d.pName) t.uidMap[d.uid] = tournPidByName(d.pName) || fromPid;
+    if (d.type === 'PLAYERS_UPDATE' && d.players) d.players.forEach(function (p) { if (p.id && p.name) { var pp = tournPidByName(p.name); if (pp) t.uidMap[p.id] = pp; } });
+    if (d.uid && d.name) { var pn = tournPidByName(d.name); if (pn) t.uidMap[d.uid] = pn; }
+    var pidOf = function (uid) { return (uid && t.uidMap[uid]) || null; };
+    if (t.curGame === 'hashi') {
+      if (d.type === 'RACE_START' && !t.startedAt) {
+        t.startedAt = d.startAt || Date.now();
+        if (t.roundSecs > 0) { t.endsAt = t.startedAt + t.roundSecs * 1000; tournArmTimer(); }
+      } else if (d.type === 'RACE_PROGRESS') { var p1 = pidOf(d.uid); if (p1) t.progress[p1] = d.progress || 0; }
+      else if (d.type === 'RACE_FINISH' || d.type === 'RACE_DNF') tournMarkFinished(pidOf(d.uid));
+    } else if (t.curGame === 'sudoku') {
+      if (d.type === 'SYNC' && d.data) {
+        if (d.data.cells && d.data.countdownTarget && !t.startedAt) {
+          t.totalBlanks = d.data.cells.filter(function (c) { return !c.isGiven; }).length || 0;
+          t.startedAt = d.data.countdownTarget;
+          if (t.roundSecs > 0) { t.endsAt = t.startedAt + t.roundSecs * 1000; tournArmTimer(); }
+        }
+        if (d.data.brawlWinners) d.data.brawlWinners.forEach(function (w) { tournMarkFinished(pidOf(w.id)); });
+      } else if (d.type === 'GHOST_I_WON') tournMarkFinished(pidOf(d.senderUid));
+      else if (d.type === 'GHOST_SOLVED' && d.uid) {
+        var m = t.cellTrack[d.uid] || (t.cellTrack[d.uid] = {});
+        m[d.cellId] = d.value;
+        var p2 = pidOf(d.uid);
+        if (p2 && t.totalBlanks > 0) {
+          var cnt = 0; for (var k in m) if (m[k] !== null && m[k] !== undefined) cnt++;
+          t.progress[p2] = Math.floor(cnt * 100 / t.totalBlanks);
+        }
+      }
+    }
+  }
+  function renderTourn() {
+    var setup = $('lob-tourn-setup'), panel = $('lob-tourn');
+    if (!setup || !panel) return;
+    var t = Net.tourn;
+    setup.style.display = (Net.active && Net.isHost && !t && !Net.inMatch) ? 'block' : 'none';
+    if (!t) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    if (t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended') {
+      var ln = $('lob-launch'); if (ln) ln.style.display = 'none';
+      var wt = $('lob-waiting'); if (wt) wt.style.display = 'none';
+    }
+    panel.style.display = 'block';
+    var html = '<div class="lob-game-card"><div class="lob-game-title" style="background:#f59e0b">🏆 混合大亂鬥賽程</div><div class="p-2.5">';
+    html += '<div class="flex flex-wrap gap-1.5 mb-2.5">';
+    for (var i = 0; i < t.rounds.length; i++) {
+      var rn = i + 1, g = t.rounds[i], st = 'bg-slate-100 text-slate-500', mark = '';
+      var doneR = false; t.history.forEach(function (h) { if (h.round === rn) doneR = true; });
+      if (doneR) { st = 'bg-emerald-100 text-emerald-700'; mark = '✓ '; }
+      else if (t.round === rn && (t.phase === 'playing' || t.phase === 'playoff')) { st = 'bg-amber-200 text-slate-800'; mark = '▶ '; }
+      html += '<span class="px-2 py-1 rounded-lg border-2 border-slate-800 text-xs font-black ' + st + '">' + mark + '第' + rn + '局 ' + tournGameName(g) + '</span>';
+    }
+    var hasPlayoff = t.phase === 'playoff' || t.phase === 'playoff-pending';
+    t.history.forEach(function (h) { if (h.round > t.totalRounds) hasPlayoff = true; });
+    if (hasPlayoff) html += '<span class="px-2 py-1 rounded-lg border-2 border-slate-800 text-xs font-black bg-rose-100 text-rose-600">加賽 數橋</span>';
+    html += '</div>';
+    if (t.phase === 'playing' || t.phase === 'playoff') html += '<div class="font-black text-slate-700 text-sm mb-2">▶ ' + (t.phase === 'playoff' ? '加賽' : '第 ' + t.round + ' 局') + '進行中：' + tournGameName(t.curGame) + '大亂鬥' + (t.roundSecs > 0 ? '（限時 ' + Math.round(t.roundSecs / 60) + ' 分鐘）' : '') + '</div>';
+    else if (t.phase === 'standings') html += '<div class="font-black text-slate-700 text-sm mb-2">第 ' + t.round + ' 局結束，下一局：' + tournGameName(t.rounds[t.round]) + '</div>';
+    else if (t.phase === 'playoff-pending') html += '<div class="font-black text-rose-600 text-sm mb-2">⚖️ 總分同分、冠軍局數也同分 — 加賽一局數橋決勝！</div>';
+    else if (t.phase === 'ended' && t.champion) html += '<div class="font-black text-amber-600 text-lg mb-1 text-center">🏆 總冠軍：' + esc(t.champion.name) + '</div>' + (t.endNote ? '<div class="text-center text-xs text-slate-500 font-bold mb-1">' + esc(t.endNote) + '</div>' : '');
+    var rows = t.entrants.slice().sort(function (a, b) { return (t.totals[b.pid] || 0) - (t.totals[a.pid] || 0); });
+    html += '<table class="w-full text-sm font-bold text-slate-600"><tbody>';
+    rows.forEach(function (e, ri) {
+      var cells = '';
+      for (var r = 0; r < t.history.length; r++) {
+        var pl = null;
+        t.history[r].placements.forEach(function (x) { if (x.pid === e.pid) pl = x; });
+        cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
+      }
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + ((e.color === 'rainbow') ? RAINBOW_BG : (e.color || '#ccc')) + ';vertical-align:middle"></span> ' + esc(e.name) + (e.pid === Net.myPid ? '（你）' : '') + (t.wins[e.pid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.pid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.pid] || 0) + ' 分</td></tr>';
+    });
+    html += '</tbody></table>';
+    var last = t.history[t.history.length - 1];
+    if (last && (t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended')) {
+      html += '<div class="mt-2 text-xs font-bold text-slate-500">' + (last.round > t.totalRounds ? '加賽' : '第 ' + last.round + ' 局') + '名次：' + last.placements.map(function (pl) { return pl.rank + '. ' + esc(pl.name) + '（' + pl.pts + ' 分' + (pl.finished ? '' : '・未完成 ' + pl.progress + '%') + '）'; }).join('　') + '</div>';
+    }
+    if (Net.isHost && t.phase === 'standings') html += '<button id="t-next" class="w-full mt-3 py-2.5 bg-[#f59e0b] border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">▶ 開始第 ' + (t.round + 1) + ' 局：' + tournGameName(t.rounds[t.round]) + '</button>';
+    if (Net.isHost && t.phase === 'playoff-pending') html += '<button id="t-playoff" class="w-full mt-3 py-2.5 bg-rose-400 border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">▶ 加賽一局：數橋大亂鬥</button>';
+    if (Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<button id="t-abort" class="w-full mt-2 py-2 bg-white border-[3px] border-slate-300 rounded-xl font-black text-slate-500 active:translate-y-[2px] transition-all">✖ 中止賽程</button>';
+    if (Net.isHost && t.phase === 'ended') html += '<button id="t-abort" class="w-full mt-3 py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 active:translate-y-[2px] transition-all">結束賽程（回房間）</button>';
+    if (!Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<div class="text-center text-slate-400 font-bold text-xs mt-2">⏳ 等待房主開始下一局…</div>';
+    html += '</div></div>';
+    panel.innerHTML = html;
+    var nb = $('t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
+    var pb = $('t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
+    var ab = $('t-abort'); if (ab) ab.onclick = function () { tournAbort(); };
+  }
 
   // ---------- 視訊（v2.18 禮儀：麥克風預設關、喇叭預設關、發言提示） ----------
   function updateDock() {
@@ -1057,7 +1316,7 @@
     if (ev === 'open' && this.open) { var s = this; setTimeout(function () { if (!s._closed) cb(); }, 0); }
     return this;
   };
-  VirtualConn.prototype.send = function (d) { if (this._closed) return; try { this._real.send(d); } catch (e) {} };
+  VirtualConn.prototype.send = function (d) { if (this._closed) return; tournSniff(Net.myPid, d); try { this._real.send(d); } catch (e) {} };
   VirtualConn.prototype.close = function () { this._closed = true; }; // 共用連線：不關實體連線
   VirtualConn.prototype._fire = function (ev, arg) {
     var l = this._cbs[ev] || [];
@@ -1177,6 +1436,7 @@
       } else createRoom();
     };
     $('lob-leave').onclick = leaveRoom;
+    var tStartBtn = $('t-start'); if (tStartBtn) tStartBtn.onclick = tournCreate;
     document.querySelectorAll('[data-launch]').forEach(function (b) {
       b.onclick = function () {
         var parts = (b.getAttribute('data-launch') || '').split('-');
