@@ -121,15 +121,22 @@
 
   var SLOT_NAMES = ['柴犬', '柯基', '虎斑貓', '橘貓', '倉鼠', '兔兔', '刺蝟', '龍貓', '水豚', '樹懶', '狐獴', '羊駝', '企鵝', '海獺', '貓頭鷹', '松鼠', '無尾熊', '台灣黑熊', '石虎', '穿山甲', '梅花鹿', '台灣藍鵲', '帝雉', '獼猴', '山羌', '綠蠵龜', '櫻花鉤吻鮭', '飛魚', '螢火蟲', '獨角仙'];
   var slotName = '', slotTimer = null;
-  function spinSlot() {
+  function spinSlot(cb) {
     if (slotTimer) return;
     var el = $('slot-display'); var t0 = Date.now();
+    el.classList.add('slot-spinning');
     (function tick() {
       slotName = SLOT_NAMES[Math.floor(Math.random() * SLOT_NAMES.length)];
       el.textContent = slotName;
       var elapsed = Date.now() - t0;
-      if (elapsed < 950) slotTimer = setTimeout(tick, 55 + (elapsed / 950) * 140);
-      else { slotTimer = null; $('lob-name').value = slotName; }
+      if (elapsed < 1150) slotTimer = setTimeout(tick, 50 + (elapsed / 1150) * 160);
+      else {
+        slotTimer = null;
+        el.classList.remove('slot-spinning'); el.classList.add('slot-land');
+        setTimeout(function () { el.classList.remove('slot-land'); }, 350);
+        $('lob-name').value = slotName;
+        if (cb) cb();
+      }
     })();
   }
 
@@ -280,6 +287,7 @@
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }, pid);
         sysChat('👋 ' + (d.name || '玩家') + ' 加入了房間');
+        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop' });
         renderLobby();
         if (Net.videoOn) callPeer(pid);
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
@@ -320,7 +328,7 @@
   }
   function endSession(msg) {
     if (!Net.active && !Net.peer) { showIdle(); return; }
-    var g = Net.inMatch; Net.inMatch = null;
+    var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     stopVideo();
     teardownPeer();
     Net.roster = []; Net.gamePeer = null; Net.isHost = false;
@@ -409,7 +417,7 @@
     })();
   }
   function doLaunch(game, mode) {
-    Net.inMatch = game;
+    Net.inMatch = game; Net.matchMode = mode || 'coop';
     renderLobby();
     window.PLAT_show(game);
     waitForHook(game, function (hk) {
@@ -419,7 +427,7 @@
   }
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
   function doReturnToLobby() {
-    var g = Net.inMatch; Net.inMatch = null;
+    var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     if (g) exitGameHook(g);
     renderLobby();
     window.PLAT_show('lobby');
@@ -466,6 +474,295 @@
     },
     _emit: function () { window.PlatDock._subs.slice().forEach(function (f) { try { f(); } catch (e) {} }); }
   };
+
+  // ---------- 共用底部列 PlatBar（單一元件：兩款遊戲的對局底部列都由殼渲染） ----------
+  // 遊戲只負責：留掛載點 div、attach(cfg)、狀態變動時 update(state)、卸載時 detach(el)。
+  // cfg: { accent:'#ffcc00'|'#4ade80', onAction:function(name, payload) }
+  // state: { mode, modes:[{icon,label}], modeTitle, zoomLabel, zoomGlyph,
+  //          showInput, inputMode, showDraw, drawTool, showHostClear }
+  // popover 開合（zoomOpen/drawOpen）由殼持有；模式鈕規則與數獨/數橋原行為一致：
+  // 在塗鴉模式且 popover 關閉時按模式鈕 → 只重開 popover；其餘 → onAction('mode-press') 由遊戲切換。
+  var PB = { el: null, cfg: null, state: null, zoomOpen: false, drawOpen: false, dockOpen: false, lastMode: -1, unsub: null, lastJson: null };
+  function pbEsc(t) { return String(t == null ? '' : t); }
+  function pbRender() {
+    if (!PB.el || !PB.state || !PB.cfg) return;
+    var st = PB.state, ac = PB.cfg.accent || '#ffcc00';
+    var dock = window.PlatDock;
+    var ds = dock && dock.isActive() ? dock.getState() : null;
+    var drawIdx = st.modes.length - 1;
+    var h = '';
+    h += '<div class="bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-nowrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]" style="width:100%">';
+    // 縮放組
+    h += '<div class="flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative">';
+    h += '<button data-pb="zoom-toggle" title="縮放（點開/收合）" class="w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all" style="--pba:' + ac + '">' + (st.zoomLabel && st.zoomLabel !== '🔍' ? '<span class="text-xs md:text-sm">' + pbEsc(st.zoomLabel) + '</span>' : '🔍') + '</button>';
+    if (PB.zoomOpen) {
+      h += '<div class="absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">';
+      h += '<button data-pb="zoom-in" title="放大" class="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">＋</button>';
+      h += '<button data-pb="zoom-out" title="縮小" class="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">－</button>';
+      h += '<button data-pb="zoom-cycle" title="循環切換縮放模式（自動適應）" class="w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">' + pbEsc(st.zoomGlyph || '🔲') + '</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+    // 輸入方式組（數獨專屬，遊戲以 showInput 開啟）
+    if (st.showInput) {
+      var numOn = st.inputMode !== 'cell';
+      h += '<div class="flex items-center bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner">';
+      h += '<button data-pb="input-num" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ' + (numOn ? 'shadow-md' : 'text-slate-400 hover:text-white') + '"' + (numOn ? ' style="background:' + ac + ';color:#0f172a"' : '') + '><span class="text-lg md:text-xl leading-none">🔢</span><span class="hidden sm:inline">數字先行</span></button>';
+      h += '<button data-pb="input-cell" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all ' + (!numOn ? 'shadow-md' : 'text-slate-400 hover:text-white') + '"' + (!numOn ? ' style="background:#38bdf8;color:#0f172a"' : '') + '><span class="sm:hidden text-lg leading-none">👆</span><span class="hidden sm:inline">👆 格子先行</span></button>';
+      h += '</div>';
+    }
+    // 模式組
+    var md = st.modes[st.mode] || st.modes[0];
+    var modeBg = (st.mode === drawIdx && st.modes.length > 2) ? '#34d399' : ac;
+    h += '<div class="flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative">';
+    h += '<button data-pb="mode-press" title="' + pbEsc(st.modeTitle || '切換模式') + '" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md" style="background:' + modeBg + ';color:#0f172a"><span>' + pbEsc(md.icon) + '</span><span class="hidden sm:inline">' + pbEsc(md.label) + '</span><span style="font-size:10px;opacity:.6">▾</span></button>';
+    if (st.showDraw && PB.drawOpen) {
+      var penOn = st.drawTool !== 'eraser';
+      h += '<div class="absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter z-50">';
+      h += '<button data-pb="draw-pen" title="畫筆模式" class="w-12 h-12 border-[3px] rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (penOn ? 'bg-emerald-100 border-emerald-600' : 'bg-white border-slate-800 hover:bg-slate-50') + '"' + (penOn ? ' style="transform:scale(1.1)"' : '') + '>🖌️</button>';
+      h += '<button data-pb="draw-eraser" title="橡皮擦 (雙擊清除自己所有塗鴉)" class="w-12 h-12 border-[3px] rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (!penOn ? 'bg-orange-100 border-orange-600' : 'bg-white border-slate-800 hover:bg-slate-50') + '"' + (!penOn ? ' style="transform:scale(1.1)"' : '') + '>🧽</button>';
+      if (st.showHostClear) h += '<button data-pb="draw-clear" title="房主：清除全場塗鴉" class="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]">🚮</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+    // 平台 dock capsule（連線中才出現）：列上只留 💬＋🎥；視訊相關控制（麥克風/喇叭/關閉）
+    // 收進 🎥 的往上展開 popover（比照縮放/塗鴉），底部列永遠不換行成兩排。
+    if (ds) {
+      if (!ds.videoOn && ds.remoteCount === 0) PB.dockOpen = false;
+      var dbtn = 'position:relative;display:flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:12px;font-size:17px;line-height:1;background:transparent;border:none;cursor:pointer';
+      var hasVidCtl = ds.videoOn || ds.remoteCount > 0;
+      var popBtn = 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all bg-white';
+      h += '<div class="flex items-center gap-0.5 md:gap-1 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative">';
+      h += '<button data-pb="dock-chat" title="聊天室" style="' + dbtn + (ds.chatOpen ? ';background:' + ac : '') + '">💬' + (ds.unread > 0 && !ds.chatOpen ? '<span style="position:absolute;top:1px;right:1px;min-width:15px;height:15px;padding:0 3px;border-radius:9999px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:1.5px solid #1e293b">' + ds.unread + '</span>' : '') + '</button>';
+      h += '<button data-pb="dock-video" title="視訊" style="' + dbtn + (ds.videoOn ? ';background:' + ac : '') + '">' + (ds.videoOn ? '📹' : '🎥') + (hasVidCtl ? '<span style="font-size:9px;opacity:.75;margin-left:1px">▴</span>' : '') + '</button>';
+      if (hasVidCtl && PB.dockOpen) {
+        h += '<div class="absolute bottom-full mb-3 right-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">';
+        if (ds.videoOn) h += '<button data-pb="dock-mic" title="麥克風" class="' + popBtn + '"' + (!ds.micMuted ? ' style="background:' + ac + '"' : '') + '>' + (ds.micMuted ? '🔇' : '🎤') + '</button>';
+        h += '<button data-pb="dock-speaker" title="喇叭" class="' + popBtn + '"' + (ds.speakerOn ? ' style="background:' + ac + '"' : '') + '>' + (ds.speakerOn ? '🔊' : '🔈') + '</button>';
+        if (ds.videoOn) h += '<button data-pb="dock-stop" title="關閉視訊" class="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 rounded-xl flex items-center justify-center shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"><span style="font-size:19px">📹</span><span style="font-size:10px;vertical-align:top;color:#9f1239;font-weight:900">✕</span></button>';
+        else h += '<button data-pb="dock-start" title="開啟視訊" class="' + popBtn + '">🎥</button>';
+        h += '</div>';
+      }
+      h += '</div>';
+    }
+    h += '</div>';
+    PB.el.innerHTML = h;
+  }
+  function pbAct(name, payload) { if (PB.cfg && PB.cfg.onAction) { try { PB.cfg.onAction(name, payload); } catch (e) {} } }
+  function pbClick(e) {
+    var t = e.target && e.target.closest ? e.target.closest('[data-pb]') : null;
+    if (!t || !PB.el.contains(t)) return;
+    var k = t.getAttribute('data-pb');
+    if (k === 'zoom-toggle') { PB.zoomOpen = !PB.zoomOpen; pbRender(); }
+    else if (k === 'zoom-in') pbAct('zoom-in');
+    else if (k === 'zoom-out') pbAct('zoom-out');
+    else if (k === 'zoom-cycle') pbAct('zoom-cycle');
+    else if (k === 'input-num') pbAct('input-set', 'num');
+    else if (k === 'input-cell') pbAct('input-set', 'cell');
+    else if (k === 'mode-press') {
+      var st = PB.state; if (!st) return;
+      var drawIdx = st.modes.length - 1;
+      if (st.showDraw && st.mode === drawIdx && !PB.drawOpen) { PB.drawOpen = true; pbRender(); return; }
+      pbAct('mode-press');
+    }
+    else if (k === 'draw-pen') pbAct('draw-tool', 'pen');
+    else if (k === 'draw-eraser') pbAct('draw-tool', 'eraser');
+    else if (k === 'draw-clear') pbAct('draw-clear');
+    else if (k === 'dock-chat' && window.PlatDock) window.PlatDock.toggleChat();
+    else if (k === 'dock-video' && window.PlatDock) {
+      var ds2 = window.PlatDock.isActive() ? window.PlatDock.getState() : null;
+      if (ds2 && (ds2.videoOn || ds2.remoteCount > 0)) { PB.dockOpen = !PB.dockOpen; pbRender(); }
+      else window.PlatDock.toggleVideo();
+    }
+    else if (k === 'dock-start' && window.PlatDock) { PB.dockOpen = false; window.PlatDock.toggleVideo(); }
+    else if (k === 'dock-stop' && window.PlatDock) { PB.dockOpen = false; window.PlatDock.toggleVideo(); }
+    else if (k === 'dock-mic' && window.PlatDock) window.PlatDock.toggleMic();
+    else if (k === 'dock-speaker' && window.PlatDock) window.PlatDock.toggleSpeaker();
+  }
+  function pbDblClick(e) {
+    var t = e.target && e.target.closest ? e.target.closest('[data-pb]') : null;
+    if (!t || !PB.el.contains(t)) return;
+    if (t.getAttribute('data-pb') === 'draw-eraser') pbAct('draw-erase-dbl');
+  }
+  window.PlatBar = {
+    attach: function (el, cfg) {
+      if (!el) return;
+      if (PB.el && PB.el !== el) window.PlatBar.detach(PB.el);
+      PB.el = el; PB.cfg = cfg || {}; PB.lastJson = null;
+      el.removeEventListener('click', pbClick);
+      el.addEventListener('click', pbClick);
+      el.removeEventListener('dblclick', pbDblClick);
+      el.addEventListener('dblclick', pbDblClick);
+      if (!PB.unsub && window.PlatDock) PB.unsub = window.PlatDock.subscribe(function () { pbRender(); });
+      pbRender();
+    },
+    update: function (state) {
+      if (!state) return;
+      var j = null;
+      try { j = JSON.stringify(state); } catch (e) {}
+      if (j && j === PB.lastJson && PB.state) { PB.state = state; return; }
+      PB.lastJson = j;
+      var prevMode = PB.state ? PB.state.mode : -1;
+      PB.state = state;
+      if (state.mode !== prevMode) {
+        var drawIdx = state.modes.length - 1;
+        PB.drawOpen = !!(state.showDraw && state.mode === drawIdx);
+        PB.lastMode = state.mode;
+      }
+      pbRender();
+    },
+    detach: function (el) {
+      if (!PB.el || (el && el !== PB.el)) return;
+      PB.el.removeEventListener('click', pbClick);
+      PB.el.removeEventListener('dblclick', pbDblClick);
+      PB.el.innerHTML = '';
+      PB.el = null; PB.cfg = null; PB.state = null; PB.lastJson = null; PB.zoomOpen = false; PB.drawOpen = false; PB.dockOpen = false;
+      if (PB.unsub) { PB.unsub(); PB.unsub = null; }
+    },
+    isAttached: function () { return !!PB.el; },
+    _debug: function () { return { attached: !!PB.el, inDoc: !!(PB.el && PB.el.isConnected), hasState: !!PB.state, htmlLen: PB.el ? PB.el.innerHTML.length : -1, zoomOpen: PB.zoomOpen, drawOpen: PB.drawOpen }; }
+  };
+  // ---------- 共用等待室 PlatRoom（兩款遊戲的多人等待室由殼渲染同一張卡） ----------
+  // 遊戲負責：留掛載點、attach(cfg)、update(state)、把自己的「對局設定」JSX 用
+  // ReactDOM.createPortal 塞進 PlatRoom.getSlot() 的設定槽（殼不碰那個節點）。
+  // state: { title, code, showRefresh,
+  //   players:[{key,name,color,isMe,isHost,online,badge:{text,kind}|null,
+  //             toggle:{on,labelOn,labelOff}|null, clickable}],
+  //   myReady(bool|null), readyOn, readyOff, mySpectator(bool|null),
+  //   start:{label,kind:'primary'|'danger',disabled,note}|null, waitingText }
+  // actions: refresh / ready / spectator / start / leave /
+  //          player-click(key) / player-toggle(key)
+  var PR = { el: null, cfg: null, state: null, lastJson: null, unsub: null, slot: null };
+  function prRegion(name) { return PR.el ? PR.el.querySelector('[data-pr-region="' + name + '"]') : null; }
+  function prAct(name, payload) { if (PR.cfg && PR.cfg.onAction) { try { PR.cfg.onAction(name, payload); } catch (e) {} } }
+  function prDockHtml(ac) {
+    var dock = window.PlatDock;
+    if (!dock || !dock.isActive()) return '';
+    var ds = dock.getState();
+    var dbtn = 'position:relative;display:flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:12px;font-size:17px;line-height:1;background:transparent;border:none;cursor:pointer';
+    var h = '<div class="flex items-center gap-0.5 md:gap-1 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner">';
+    h += '<button data-pr="dock-chat" title="聊天室" style="' + dbtn + (ds.chatOpen ? ';background:' + ac : '') + '">💬' + (ds.unread > 0 && !ds.chatOpen ? '<span style="position:absolute;top:1px;right:1px;min-width:15px;height:15px;padding:0 3px;border-radius:9999px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:1.5px solid #1e293b">' + ds.unread + '</span>' : '') + '</button>';
+    h += '<button data-pr="dock-video" title="視訊" style="' + dbtn + (ds.videoOn ? ';background:' + ac : '') + '">' + (ds.videoOn ? '📹' : '🎥') + '</button>';
+    if (ds.videoOn) h += '<button data-pr="dock-mic" title="麥克風" style="' + dbtn + (!ds.micMuted ? ';background:' + ac : '') + '">' + (ds.micMuted ? '🔇' : '🎤') + '</button>';
+    if (ds.videoOn || ds.remoteCount > 0) h += '<button data-pr="dock-speaker" title="喇叭" style="' + dbtn + (ds.speakerOn ? ';background:' + ac : '') + '">' + (ds.speakerOn ? '🔊' : '🔈') + '</button>';
+    return h + '</div>';
+  }
+  function prRenderRegions() {
+    if (!PR.el || !PR.state) return;
+    var st = PR.state, ac = (PR.cfg && PR.cfg.accent) || '#ffcc00';
+    var t = prRegion('title'); if (t) t.textContent = st.title || '🎮 遊戲大廳';
+    var cd = prRegion('code'); if (cd) cd.textContent = st.code || '';
+    var rf = prRegion('refresh'); if (rf) rf.style.display = st.showRefresh ? '' : 'none';
+    var ro = prRegion('roster');
+    if (ro) {
+      var h = '';
+      (st.players || []).forEach(function (pl) {
+        var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : (pl.color || '#ccc');
+        h += '<div class="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer"' : '') + '>';
+        h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner" style="background:' + bg + '"></span>';
+        if (pl.online !== undefined && pl.online !== null) h += '<span class="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ' + (pl.online ? 'bg-green-500' : 'bg-slate-300') + '"></span>';
+        h += '</span>';
+        h += '<span class="truncate">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + '</span>';
+        h += '<span class="ml-auto flex gap-1 shrink-0 items-center">';
+        if (pl.toggle) {
+          var tg = pl.toggle;
+          h += '<button data-pr="player-toggle" data-key="' + pbEsc(pl.key) + '" class="flex items-center gap-1 cursor-pointer select-none bg-transparent border-none">';
+          h += '<span class="font-black text-[10px] ' + (tg.on ? 'text-slate-700' : 'text-slate-400') + '">' + pbEsc(tg.on ? tg.labelOn : tg.labelOff) + '</span>';
+          h += '<span class="w-10 h-5 rounded-full border-2 border-slate-800 relative shadow-inner inline-block ' + (tg.on ? 'bg-emerald-400' : 'bg-slate-300') + '"><span class="w-3.5 h-3.5 bg-white rounded-full border-2 border-slate-800 absolute top-[1px]" style="left:' + (tg.on ? '18px' : '1px') + '"></span></span>';
+          h += '</button>';
+        }
+        if (pl.badge) {
+          var bk = pl.badge.kind === 'ready' ? 'bg-emerald-100 border-emerald-500 text-emerald-700' : pl.badge.kind === 'spec' ? 'bg-sky-100 border-sky-400 text-sky-700' : 'bg-slate-100 border-slate-300 text-slate-400';
+          h += '<span class="text-[10px] border px-1.5 py-0.5 rounded-md ' + bk + '">' + pbEsc(pl.badge.text) + '</span>';
+        }
+        h += '</span></div>';
+      });
+      ro.innerHTML = h;
+    }
+    var ct = prRegion('controls');
+    if (ct) {
+      var c = '';
+      if (st.myReady !== null && st.myReady !== undefined || st.mySpectator !== null && st.mySpectator !== undefined) {
+        c += '<div class="flex gap-2 mb-4">';
+        if (st.myReady !== null && st.myReady !== undefined) {
+          c += '<button data-pr="ready" class="flex-1 py-3 rounded-xl border-[3px] border-slate-800 font-black text-base shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all" style="background:' + (st.myReady ? ac : '#ffffff') + ';color:' + (st.myReady ? '#0f172a' : '#64748b') + '">' + pbEsc(st.myReady ? (st.readyOn || '✅ 已準備') : (st.readyOff || '✋ 準備好了')) + '</button>';
+        }
+        if (st.mySpectator !== null && st.mySpectator !== undefined) {
+          c += '<button data-pr="spectator" class="px-4 py-3 rounded-xl border-[3px] border-slate-800 font-black text-base shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all ' + (st.mySpectator ? 'bg-sky-300 text-slate-900' : 'bg-white text-slate-500') + '">👁️ 觀戰</button>';
+        }
+        c += '</div>';
+      }
+      if (st.start) {
+        var sk = st.start.kind === 'danger' ? 'background:#f87171;color:#0f172a' : 'background:' + ac + ';color:#0f172a';
+        c += '<button data-pr="start"' + (st.start.disabled ? ' disabled' : '') + ' class="w-full py-3.5 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed" style="' + sk + '">' + pbEsc(st.start.label || '開始') + '</button>';
+        if (st.start.note) c += '<p class="text-xs text-slate-500 font-bold text-center mt-2">' + pbEsc(st.start.note) + '</p>';
+      } else if (st.waitingText) {
+        c += '<p class="font-black text-slate-700 animate-pulse text-center">' + pbEsc(st.waitingText) + '</p>';
+      }
+      ct.innerHTML = c;
+    }
+    var dk = prRegion('dock'); if (dk) dk.innerHTML = prDockHtml(ac);
+  }
+  function prSkeleton() {
+    PR.el.innerHTML =
+      '<div class="bg-white border-4 border-slate-800 rounded-3xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-5 md:p-6 w-full animate-popUpCenter">' +
+      '<div class="flex items-center justify-between gap-2 mb-4">' +
+      '<h2 data-pr-region="title" class="text-2xl md:text-3xl font-black text-slate-800 tracking-widest">🎮 遊戲大廳</h2>' +
+      '<div class="flex items-center gap-2 shrink-0">' +
+      '<span class="font-black text-sm text-slate-500">房間代碼 <span data-pr-region="code" class="bg-slate-800 text-white font-mono px-2 py-0.5 rounded-md tracking-widest"></span></span>' +
+      '<button data-pr="refresh" data-pr-region="refresh" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded border border-slate-400 font-bold shadow-sm transition-colors" style="display:none">🔄 重整名單</button>' +
+      '</div></div>' +
+      '<div data-pr-slot="settings"></div>' +
+      '<div class="font-black text-slate-700 text-sm mb-1.5 text-left">玩家名單</div>' +
+      '<div data-pr-region="roster" class="mb-4 flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1"></div>' +
+      '<div data-pr-region="controls"></div>' +
+      '<div data-pr-region="dock" class="flex justify-center mt-4"></div>' +
+      '<button data-pr="leave" class="w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline bg-transparent border-none cursor-pointer">離開房間</button>' +
+      '</div>';
+    PR.slot = PR.el.querySelector('[data-pr-slot="settings"]');
+  }
+  function prClick(e) {
+    var t = e.target && e.target.closest ? e.target.closest('[data-pr]') : null;
+    if (!t || !PR.el.contains(t)) return;
+    var k = t.getAttribute('data-pr');
+    if (k === 'dock-chat' && window.PlatDock) window.PlatDock.toggleChat();
+    else if (k === 'dock-video' && window.PlatDock) window.PlatDock.toggleVideo();
+    else if (k === 'dock-mic' && window.PlatDock) window.PlatDock.toggleMic();
+    else if (k === 'dock-speaker' && window.PlatDock) window.PlatDock.toggleSpeaker();
+    else if (k === 'player-click' || k === 'player-toggle') prAct(k, t.getAttribute('data-key'));
+    else prAct(k);
+  }
+  window.PlatRoom = {
+    attach: function (el, cfg) {
+      if (!el) return;
+      if (PR.el && PR.el !== el) window.PlatRoom.detach(PR.el);
+      PR.el = el; PR.cfg = cfg || {}; PR.lastJson = null;
+      el.removeEventListener('click', prClick);
+      el.addEventListener('click', prClick);
+      prSkeleton();
+      if (!PR.unsub && window.PlatDock) PR.unsub = window.PlatDock.subscribe(function () { var dk = prRegion('dock'); if (dk && PR.state) dk.innerHTML = prDockHtml((PR.cfg && PR.cfg.accent) || '#ffcc00'); });
+      prRenderRegions();
+    },
+    update: function (state) {
+      if (!state) return;
+      var j = null;
+      try { j = JSON.stringify(state); } catch (e) {}
+      if (j && j === PR.lastJson && PR.state) { PR.state = state; return; }
+      PR.lastJson = j; PR.state = state;
+      prRenderRegions();
+    },
+    detach: function (el) {
+      if (!PR.el || (el && el !== PR.el)) return;
+      PR.el.removeEventListener('click', prClick);
+      PR.el.innerHTML = '';
+      PR.el = null; PR.cfg = null; PR.state = null; PR.lastJson = null; PR.slot = null;
+      if (PR.unsub) { PR.unsub(); PR.unsub = null; }
+    },
+    getSlot: function () { return PR.slot; },
+    isAttached: function () { return !!PR.el; },
+    _elConnected: function () { return !!(PR.el && PR.el.isConnected); }
+  };
+
   function nameOf(pid) {
     var p = Net.roster.find(function (x) { return x.pid === pid; });
     return p ? (p.name || '玩家') : '玩家';
@@ -661,10 +958,8 @@
   // ---------- 初始化 UI 綁定 ----------
   function init() {
     var nameInp = $('lob-name');
-    var savedName = storeGet('plat_name') || '';
-    if (nameInp) nameInp.value = savedName;
-    if (savedName) { Net.me.name = savedName; slotName = savedName; $('slot-display').textContent = savedName; }
-    else { slotName = SLOT_NAMES[Math.floor(Math.random() * SLOT_NAMES.length)]; $('slot-display').textContent = slotName; }
+    if (nameInp) nameInp.value = '';
+    slotName = ''; $('slot-display').textContent = '🎰';
     var savedColor = storeGet('plat_color');
     if (savedColor) Net.me.color = savedColor;
     var codeInp = $('lob-code');
@@ -673,11 +968,16 @@
     $('lob-go-create').onclick = function () { Net.lobMode = 'create'; $('lob-joinrow').style.display = 'none'; lobbyMsg(''); showStep('nick'); };
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
-    $('slot-spin').onclick = spinSlot;
+    $('slot-spin').onclick = function () { spinSlot(); };
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
-      var name = (nameInp.value || '').trim() || slotName;
-      if (!name) { lobbyMsg('⚠️ 先拉霸或輸入暱稱'); return; }
+      var name = (nameInp.value || '').trim();
+      if (!name) {
+        if (slotTimer) return;
+        lobbyMsg('🎰 名字空白，幫你拉霸選一個…');
+        spinSlot(function () { $('lob-confirm').click(); });
+        return;
+      }
       Net.me.name = name; storeSet('plat_name', name);
       if (Net.lobMode === 'join') {
         var c = ($('lob-code').value || '').trim();

@@ -75,7 +75,7 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
 }
 /* 視訊圓形頭像條（右側直排） */
 #plat-videos {
-  position: fixed; right: 8px; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); z-index: 99989;
+  position: fixed; right: 8px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 99989;
   display: flex; flex-direction: row; gap: 8px; align-items: flex-end;
 }
 .plat-vid { display: flex; flex-direction: column; align-items: center; width: 60px; }
@@ -101,7 +101,7 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
 #plat-chat { position: fixed; inset: 0; z-index: 99992; pointer-events: none; }
 #plat-chat-panel {
   pointer-events: auto; position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: calc(62px + env(safe-area-inset-bottom, 0px)); width: min(560px, 94vw);
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: min(560px, 94vw);
   background: rgba(255,255,255,.92); backdrop-filter: blur(6px);
   border: 3px solid #1e293b; border-radius: 16px; overflow: hidden;
   box-shadow: 4px 4px 0 rgba(30,41,59,1); display: flex; flex-direction: column;
@@ -140,3 +140,9 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
   box-shadow: 2px 2px 0 rgba(30,41,59,1);
 }
 .lob-mode-btn:active { transform: translate(2px,2px); box-shadow: none; }
+
+/* 拉霸機動畫：轉動時抖動＋名字快速翻動，停下時彈一下 */
+@keyframes slotShake { 0% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-2px) rotate(1.5deg); } 100% { transform: translateY(0) rotate(-1.5deg); } }
+@keyframes slotLand { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+#slot-display.slot-spinning { animation: slotShake .12s linear infinite; color: #b45309; }
+#slot-display.slot-land { animation: slotLand .35s ease-out; }

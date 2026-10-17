@@ -249,7 +249,7 @@ function SudokuGame() {
     _useState62 = _slicedToArray(_useState61, 2),
     zoomLevel = _useState62[0],
     setZoomLevel = _useState62[1];
-  var _useState63 = useState(false),
+  var _useState63 = useState(true),
     _useState64 = _slicedToArray(_useState63, 2),
     isHeaderCollapsed = _useState64[0],
     setIsHeaderCollapsed = _useState64[1];
@@ -435,15 +435,18 @@ function SudokuGame() {
     _useState112 = _slicedToArray(_useState111, 2),
     zoomOpen = _useState112[0],
     setZoomOpen = _useState112[1];
+  var advanceInteractionMode = function advanceInteractionMode() {
+    var next = (interactionMode + 1) % 3;
+    setInteractionMode(next);
+    setModeSubOpen(next === 2);
+    showToast(next === 0 ? '🖋️ 填答模式' : next === 1 ? '✏️ 筆記模式' : '🖌️ 塗鴉模式');
+  };
   var cycleInteractionMode = function cycleInteractionMode() {
     if (interactionMode === 2 && !modeSubOpen) {
       setModeSubOpen(true);
       return;
     }
-    var next = (interactionMode + 1) % 3;
-    setInteractionMode(next);
-    setModeSubOpen(next === 2);
-    showToast(next === 0 ? '🖋️ 填答模式' : next === 1 ? '✏️ 筆記模式' : '🖌️ 塗鴉模式');
+    advanceInteractionMode();
   };
   var _useState113 = useState({
       x: -1,
@@ -3630,6 +3633,20 @@ function SudokuGame() {
       }
     }
     nextCells[targetIdx] = nextCell;
+    if (interactionMode !== 1 && nextCell.value !== null) {
+      var placed = nextCell.value;
+      for (var i = 0; i < nextCells.length; i++) {
+        if (i === targetIdx) continue;
+        var c = nextCells[i];
+        if ((c.x === target.x || c.y === target.y || c.boxId === target.boxId) && c.drafts && c.drafts.includes(placed)) {
+          nextCells[i] = _objectSpread(_objectSpread({}, c), {}, {
+            drafts: c.drafts.filter(function (d) {
+              return d !== placed;
+            })
+          });
+        }
+      }
+    }
     if (isBrawlMode) {
       syncState({
         localCells: nextCells
@@ -3824,6 +3841,157 @@ function SudokuGame() {
       svgRef.current.style.height = "".concat(svgH * next, "px");
     }
   };
+
+  // === 共用底部列 PlatBar（平台模式由殼渲染單一元件；獨立版走舊列） ===
+  var platBarRef = useRef(null);
+  var platBarCfgRef = useRef(null);
+  // PlatRoom（殼共用等待室）：掛載點 + 設定槽 + cfg 轉發
+  var roomMountRef = useRef(null);
+  var _useState173 = useState(null),
+    _useState174 = _slicedToArray(_useState173, 2),
+    roomSlot = _useState174[0],
+    setRoomSlot = _useState174[1];
+  var roomCfgRef = useRef(null);
+  var roomCfgStable = useRef(null);
+  roomCfgRef.current = {
+    onAction: function onAction(n, key) {
+      if (n === 'ready') handleReady();else if (n === 'start') handleForceStart();else if (n === 'leave') handleGoHome();else if (n === 'refresh') {
+        var list = playersListRef.current;
+        connsRef.current.forEach(function (conn) {
+          if (conn.open) conn.send({
+            type: 'PLAYERS_UPDATE',
+            players: list
+          });
+        });
+        showToast("🔄 已向所有玩家重新廣播名單");
+      } else if (n === 'player-click') {
+        var pl = playersListRef.current.find(function (x) {
+          return String(x.id) === String(key);
+        });
+        if (pl && (pl.id === myId || isHostRef.current)) {
+          setEditName(pl.name);
+          setColorPickerTarget(pl.id);
+        }
+      } else if (n === 'player-toggle') {
+        var _pl = playersListRef.current.find(function (x) {
+          return String(x.id) === String(key);
+        });
+        if (_pl && (_pl.id === myId || isHostRef.current)) toggleSpectator(_pl.id);
+      }
+    }
+  };
+  var sudokuRoomVisible = matchPhase === 'waiting' && engine !== 'local';
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatRoom) return;
+    var el = roomMountRef.current;
+    if (el) {
+      if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
+      if (!window.PlatRoom.isAttached()) {
+        if (!roomCfgStable.current) roomCfgStable.current = {
+          accent: '#ffcc00',
+          onAction: function onAction(n, k) {
+            if (roomCfgRef.current) roomCfgRef.current.onAction(n, k);
+          }
+        };
+        window.PlatRoom.attach(el, roomCfgStable.current);
+        setRoomSlot(window.PlatRoom.getSlot());
+      }
+    } else if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) {
+      window.PlatRoom.detach();
+      setRoomSlot(null);
+    }
+  });
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatRoom || !window.PlatRoom.isAttached()) return;
+    if (!sudokuRoomVisible) return;
+    var me = playersList.find(function (pl) {
+      return pl.id === myId;
+    }) || {};
+    window.PlatRoom.update({
+      title: '🎮 遊戲大廳',
+      code: roomId,
+      showRefresh: !!isHostRef.current,
+      players: playersList.map(function (pl) {
+        var canEdit = pl.id === myId || isHostRef.current;
+        return {
+          key: String(pl.id),
+          name: pl.name,
+          color: pl.color,
+          isMe: pl.id === myId,
+          isHost: !!pl.isHost,
+          online: !!(pl.isHost || connsRef.current.some(function (c) {
+            return c.uid === pl.id && c.open;
+          })),
+          badge: pl.isReady ? {
+            text: '✔ 已準備',
+            kind: 'ready'
+          } : null,
+          toggle: canEdit && isBrawlMode ? {
+            on: !pl.isSpectator,
+            labelOn: '🎮 參賽',
+            labelOff: '👁️ 上帝'
+          } : null,
+          clickable: canEdit
+        };
+      }),
+      myReady: !!me.isReady,
+      readyOn: '✅ 已準備',
+      readyOff: '✋ 準備好了',
+      mySpectator: null,
+      start: isHost ? {
+        label: '⚡ 強制開始',
+        kind: 'danger'
+      } : null,
+      waitingText: !isHost ? '等待房主開始...' : null
+    });
+  });
+  platBarCfgRef.current = {
+    accent: '#ffcc00',
+    onAction: function onAction(name, payload) {
+      if (name === 'zoom-in') handleZoomIn();else if (name === 'zoom-out') handleZoomOut();else if (name === 'zoom-cycle') handleCycleZoom();else if (name === 'input-set') setInputMode(payload);else if (name === 'mode-press') advanceInteractionMode();else if (name === 'draw-tool') setDrawSubMode(payload);else if (name === 'draw-erase-dbl') clearOwnStrokes();else if (name === 'draw-clear') clearAllStrokes();
+    }
+  };
+  var platBarCfgStable = useRef(null);
+  if (!platBarCfgStable.current) platBarCfgStable.current = {
+    accent: '#ffcc00',
+    onAction: function onAction(n, p) {
+      if (platBarCfgRef.current) platBarCfgRef.current.onAction(n, p);
+    }
+  };
+  useEffect(function () {
+    var el = platBarRef.current;
+    if (el && typeof window.PlatBar !== 'undefined') {
+      window.PlatBar.attach(el, platBarCfgStable.current);
+      return function () {
+        if (typeof window.PlatBar !== 'undefined') window.PlatBar.detach(el);
+      };
+    }
+  }, [screen]);
+  useEffect(function () {
+    if (typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
+    var st = {
+      mode: interactionMode,
+      modes: [{
+        icon: '🖋️',
+        label: '填答'
+      }, {
+        icon: '✏️',
+        label: '筆記'
+      }, {
+        icon: '🖌️',
+        label: '塗鴉'
+      }],
+      modeTitle: '切換模式（填答/筆記/塗鴉）',
+      zoomLabel: zoomIndicator.visible ? zoomIndicator.value.toFixed(1) + 'X' : '🔍',
+      zoomGlyph: zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲',
+      showInput: true,
+      inputMode: inputMode,
+      showDraw: interactionMode === 2,
+      drawTool: drawSubMode,
+      showHostClear: !!(isHostRef.current && !isBrawlMode)
+    };
+    window.PlatBar.update(st);
+  });
   var startDailyGame = function startDailyGame(dateStr) {
     switchToOffline();
     dailyRef.current = dateStr;
@@ -4137,7 +4305,7 @@ function SudokuGame() {
         setIsSpectator(false);
         setRoomId(rId);
         setScreen('game');
-        setIsHeaderCollapsed(false);
+        setIsHeaderCollapsed(true);
         setIsConnecting(false);
         syncState({
           matchPhase: targetPhase
@@ -4450,7 +4618,7 @@ function SudokuGame() {
             setConnectionStatus("同步完成，進入遊戲！");
             setRoomId(rId);
             setScreen('game');
-            setIsHeaderCollapsed(false);
+            setIsHeaderCollapsed(true);
             setIsConnecting(false);
             // 強制立刻儲存一次，避開 syncState 的狀態更新延遲 (v3.8.15)
             saveLocalProgress(rId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells);
@@ -4996,76 +5164,7 @@ function SudokuGame() {
       className: "fixed top-10 left-1/2 transform -translate-x-1/2 bg-white text-slate-800 px-6 py-3 rounded-xl border-[3px] border-slate-800 font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] animate-slideUpFade flex items-center justify-center gap-2 whitespace-pre-line text-center"
     }, toastMsg));
   }
-  return /*#__PURE__*/React.createElement("div", {
-    className: "h-screen w-screen p-1 md:p-2 flex flex-col items-center font-sans relative",
-    style: {
-      backgroundColor: '#fdf5e6',
-      backgroundImage: 'radial-gradient(#d3c5ab 2px, transparent 2px)',
-      backgroundSize: '12px 12px'
-    }
-  }, matchPhase === 'waiting' && /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/80 backdrop-blur-md pointer-events-auto p-4 overflow-y-auto"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffaf0] rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center min-w-[320px] max-w-xl w-full my-auto animate-bounceIn"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-3xl font-black text-slate-800 mb-2 tracking-widest"
-  }, engine === 'local' ? "🧩 單機挑戰設定" : "🎮 遊戲大廳"), engine === 'local' ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col gap-6 mb-8 text-left"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform rotate-1"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2 h-2 bg-amber-400 rounded-full animate-pulse"
-  }), " \uD83D\uDCD0 \u9078\u64C7\u7248\u578B"), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-3"
-  }, SIZES.map(function (s) {
-    return /*#__PURE__*/React.createElement("button", {
-      key: s.id,
-      onClick: function onClick() {
-        return setSizeId(s.id);
-      },
-      className: "py-3 border-2 border-slate-800 rounded-xl font-black text-sm transition-all " + (sizeId === s.id ? 'bg-[#ffcc00] text-slate-900 shadow-[3px_3px_0px_#1e293b] -translate-y-0.5' : 'bg-slate-50 text-slate-400 hover:bg-white')
-    }, s.name);
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform -rotate-1"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2 h-2 bg-emerald-400 rounded-full animate-pulse"
-  }), " \uD83D\uDD25 \u6311\u6230\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-3"
-  }, DIFFICULTIES.map(function (d) {
-    return /*#__PURE__*/React.createElement("button", {
-      key: d.id,
-      onClick: function onClick() {
-        return setDiffId(d.id);
-      },
-      className: "py-3 border-2 border-slate-800 rounded-xl font-black text-sm transition-all " + (diffId === d.id ? 'bg-[#ffcc00] text-slate-900 shadow-[3px_3px_0px_#1e293b] -translate-y-0.5' : 'bg-slate-50 text-slate-400 hover:bg-white')
-    }, d.name);
-  })))), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      generateAndSync(sizeId, diffId);
-      setMatchPhase('playing');
-    },
-    className: "w-full py-5 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-2xl font-black shadow-[6px_6px_0px_rgba(30,41,59,1)] text-2xl hover:translate-y-[2px] hover:shadow-none transition-all active:scale-[0.98]"
-  }, "\uD83D\uDE80 \u958B\u59CB\u6311\u6230")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "mb-4 text-slate-600 font-bold flex items-center justify-center gap-4"
-  }, /*#__PURE__*/React.createElement("span", null, "\u623F\u9593\u4EE3\u78BC: ", /*#__PURE__*/React.createElement("span", {
-    className: "bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded shadow-sm select-all"
-  }, roomId)), isHostRef.current && /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      var list = playersListRef.current;
-      connsRef.current.forEach(function (conn) {
-        if (conn.open) conn.send({
-          type: 'PLAYERS_UPDATE',
-          players: list
-        });
-      });
-      showToast("🔄 已向所有玩家重新廣播名單");
-    },
-    className: "text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded border border-slate-400 font-bold shadow-sm transition-colors"
-  }, "\uD83D\uDD04 \u91CD\u6574\u540D\u55AE")), /*#__PURE__*/React.createElement("div", {
+  var sudokuRoomSettings = /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-6 shadow-[4px_4px_0px_#1e293b] flex flex-col gap-3 text-left"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-black border-b-2 border-slate-100 pb-2 mb-1 flex items-center justify-between"
@@ -5128,7 +5227,85 @@ function SudokuGame() {
     return s.id === sizeId;
   }) || {}).name), /*#__PURE__*/React.createElement("span", null, "\u96E3\u5EA6\uFF1A", (DIFFICULTIES.find(function (d) {
     return d.id === diffId;
-  }) || {}).name))), /*#__PURE__*/React.createElement("div", {
+  }) || {}).name)));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "h-screen w-screen p-1 md:p-2 flex flex-col items-center font-sans relative",
+    style: {
+      backgroundColor: '#fdf5e6',
+      backgroundImage: 'radial-gradient(#d3c5ab 2px, transparent 2px)',
+      backgroundSize: '12px 12px'
+    }
+  }, matchPhase === 'waiting' && /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/80 backdrop-blur-md pointer-events-auto p-4 overflow-y-auto"
+  }, engine === 'local' ? /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fffaf0] rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center min-w-[320px] max-w-xl w-full my-auto animate-bounceIn"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-3xl font-black text-slate-800 mb-2 tracking-widest"
+  }, "\uD83E\uDDE9 \u55AE\u6A5F\u6311\u6230\u8A2D\u5B9A"), /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-6 mb-8 text-left"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform rotate-1"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-2 h-2 bg-amber-400 rounded-full animate-pulse"
+  }), " \uD83D\uDCD0 \u9078\u64C7\u7248\u578B"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, SIZES.map(function (s) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: s.id,
+      onClick: function onClick() {
+        return setSizeId(s.id);
+      },
+      className: "py-3 border-2 border-slate-800 rounded-xl font-black text-sm transition-all " + (sizeId === s.id ? 'bg-[#ffcc00] text-slate-900 shadow-[3px_3px_0px_#1e293b] -translate-y-0.5' : 'bg-slate-50 text-slate-400 hover:bg-white')
+    }, s.name);
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform -rotate-1"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-2 h-2 bg-emerald-400 rounded-full animate-pulse"
+  }), " \uD83D\uDD25 \u6311\u6230\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, DIFFICULTIES.map(function (d) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: d.id,
+      onClick: function onClick() {
+        return setDiffId(d.id);
+      },
+      className: "py-3 border-2 border-slate-800 rounded-xl font-black text-sm transition-all " + (diffId === d.id ? 'bg-[#ffcc00] text-slate-900 shadow-[3px_3px_0px_#1e293b] -translate-y-0.5' : 'bg-slate-50 text-slate-400 hover:bg-white')
+    }, d.name);
+  })))), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      generateAndSync(sizeId, diffId);
+      setMatchPhase('playing');
+    },
+    className: "w-full py-5 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-2xl font-black shadow-[6px_6px_0px_rgba(30,41,59,1)] text-2xl hover:translate-y-[2px] hover:shadow-none transition-all active:scale-[0.98]"
+  }, "\uD83D\uDE80 \u958B\u59CB\u6311\u6230"))) : typeof window !== 'undefined' && window.PlatRoom ? /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-xl my-auto"
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: roomMountRef
+  }), roomSlot && ReactDOM.createPortal(sudokuRoomSettings, roomSlot)) : /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fffaf0] rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center min-w-[320px] max-w-xl w-full my-auto animate-bounceIn"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-3xl font-black text-slate-800 mb-2 tracking-widest"
+  }, "\uD83C\uDFAE \u904A\u6232\u5927\u5EF3"), /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "mb-4 text-slate-600 font-bold flex items-center justify-center gap-4"
+  }, /*#__PURE__*/React.createElement("span", null, "\u623F\u9593\u4EE3\u78BC: ", /*#__PURE__*/React.createElement("span", {
+    className: "bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded shadow-sm select-all"
+  }, roomId)), isHostRef.current && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      var list = playersListRef.current;
+      connsRef.current.forEach(function (conn) {
+        if (conn.open) conn.send({
+          type: 'PLAYERS_UPDATE',
+          players: list
+        });
+      });
+      showToast("🔄 已向所有玩家重新廣播名單");
+    },
+    className: "text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded border border-slate-400 font-bold shadow-sm transition-colors"
+  }, "\uD83D\uDD04 \u91CD\u6574\u540D\u55AE")), sudokuRoomSettings, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 mb-6 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar"
   }, playersList.map(function (p) {
     var canEdit = p.id === myId || isHostRef.current;
@@ -5724,7 +5901,7 @@ function SudokuGame() {
   }, activeCells.map(function (cell) {
     var hasConflict = conflictCellIds.has(cell.id);
     var yellowAllowed = stateRef.current.brawlSettings.allowYellowHint;
-    var isExactMatch = yellowAllowed && selectedChar !== null && cell.value === selectedChar && interactionMode < 2;
+    var isExactMatch = selectedChar !== null && cell.value === selectedChar && interactionMode < 2;
     var isHighlightZone = yellowAllowed && highlightZones.has(cell.id);
     var isFilledWithOther = yellowAllowed && selectedChar !== null && cell.value !== null && cell.value !== selectedChar && interactionMode < 2;
     var fillColor = '#ffffff';
@@ -6373,7 +6550,9 @@ function SudokuGame() {
     className: "absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800"
   }, myWeapons.filter(function (w) {
     return w === 'eraser';
-  }).length))), /*#__PURE__*/React.createElement("div", {
+  }).length))), typeof window.PlatBar !== 'undefined' ? /*#__PURE__*/React.createElement("div", {
+    ref: platBarRef
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, ")}", /*#__PURE__*/React.createElement("div", {
     className: "bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative"
@@ -6453,7 +6632,7 @@ function SudokuGame() {
     },
     className: "w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]",
     title: "\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09"
-  }, "\uD83D\uDEAE"))), renderDockCapsule(false))));
+  }, "\uD83D\uDEAE"))), renderDockCapsule(false)))));
 }
 var renderApp = function renderApp() {
   var root = ReactDOM.createRoot(document.getElementById('sudoku-root'));

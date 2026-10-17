@@ -2604,6 +2604,97 @@ function HashiGame() {
     setInteractionMode(nextMode);
     showToast(modeIcons[nextMode] + ' \u5DF2\u5207\u63DB\u70BA ' + modeTitles[nextMode]);
   };
+  var advanceHashiMode = function advanceHashiMode() {
+    var nextMode = interactionMode === 0 ? 1 : interactionMode === 1 ? engine === 'peerjs' ? 2 : 0 : 0;
+    switchMode(nextMode);
+    setDrawSubOpen(nextMode === 2);
+  };
+  // === 共用底部列 PlatBar（平台模式由殼渲染單一元件；獨立版走舊列） ===
+  var platBarRef = useRef(null);
+  var platBarCfgRef = useRef(null);
+  platBarCfgRef.current = {
+    accent: '#4ade80',
+    onAction: function onAction(name, payload) {
+      if (name === 'zoom-in') handleZoomIn();else if (name === 'zoom-out') handleZoomOut();else if (name === 'zoom-cycle') handleCycleZoom();else if (name === 'mode-press') advanceHashiMode();else if (name === 'draw-tool') setDrawSubMode(payload);else if (name === 'draw-erase-dbl') clearOwnStrokes();else if (name === 'draw-clear') clearAllStrokes();
+    }
+  };
+  var platBarCfgStable = useRef(null);
+  if (!platBarCfgStable.current) platBarCfgStable.current = { accent: '#4ade80', onAction: function onAction(n, p) {
+      if (platBarCfgRef.current) platBarCfgRef.current.onAction(n, p);
+    } };
+  useEffect(function () {
+    var el = platBarRef.current;
+    if (el && typeof window.PlatBar !== 'undefined') {
+      window.PlatBar.attach(el, platBarCfgStable.current);
+      return function () {
+        if (typeof window.PlatBar !== 'undefined') window.PlatBar.detach(el);
+      };
+    }
+  }, [screen]);
+  useEffect(function () {
+    if (typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
+    var st = {
+      mode: interactionMode,
+      modes: engine === 'peerjs' ? [{ icon: '🖋️', label: '畫筆' }, { icon: '✏️', label: '草稿' }, { icon: '🖌️', label: '繪圖' }] : [{ icon: '🖋️', label: '畫筆' }, { icon: '✏️', label: '草稿' }],
+      modeTitle: '切換模式（畫筆/草稿/繪圖）',
+      zoomLabel: '🔍',
+      zoomGlyph: zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲',
+      showInput: false, inputMode: 'num',
+      showDraw: engine === 'peerjs', drawTool: drawSubMode,
+      showHostClear: !!isHostRef.current
+    };
+    window.PlatBar.update(st);
+  });
+
+  // PlatRoom（殼共用等待室）
+  var roomMountRef = useRef(null);
+
+  var _useState193 = useState(null),
+      _useState194 = _slicedToArray(_useState193, 2),
+      roomSlot = _useState194[0],
+      setRoomSlot = _useState194[1];
+
+  var roomCfgRef = useRef(null);
+  var roomCfgStable = useRef(null);
+  roomCfgRef.current = { onAction: function onAction(n, key) {
+      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
+        if (mpMode === 'race') startRace();else startCoop();
+      } else if (n === 'leave') handleGoHome();
+    } };
+  useEffect(function () {
+    if (typeof window.PlatRoom === 'undefined') return;
+    var el = roomMountRef.current;
+    if (el) {
+      if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
+      if (!window.PlatRoom.isAttached()) {
+        if (!roomCfgStable.current) roomCfgStable.current = { accent: '#4ade80', onAction: function onAction(n, k) {
+            if (roomCfgRef.current) roomCfgRef.current.onAction(n, k);
+          } };
+        window.PlatRoom.attach(el, roomCfgStable.current);
+        setRoomSlot(window.PlatRoom.getSlot());
+      }
+    } else if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) {
+      window.PlatRoom.detach();
+      setRoomSlot(null);
+    }
+  });
+  useEffect(function () {
+    if (typeof window.PlatRoom === 'undefined' || !window.PlatRoom.isAttached()) return;
+    if (!roomOpen) return;
+    window.PlatRoom.update({
+      title: '🎮 遊戲大廳', code: roomId, showRefresh: false,
+      players: playersList.map(function (pl) {
+        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, online: null,
+          badge: pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
+          toggle: null, clickable: false };
+      }),
+      myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
+      readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
+      mySpectator: mpMode === 'race' ? !!(myPlayerEntry && myPlayerEntry.isSpectator) : null,
+      start: isHostRef.current ? mpMode === 'race' ? { label: roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始', kind: 'danger', disabled: roomRacers.length < 2, note: roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了！' : '全員準備好會自動開始，也可以強制開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
+      waitingText: !isHostRef.current ? '等待房主開始...' : null
+    });
+  });
 
   var handleUndo = function handleUndo() {
     if (history.length === 0 || isWon || engineRef.current !== 'none') return;
@@ -4060,8 +4151,21 @@ function HashiGame() {
 
     var sW = (w - 1) * SCALE + PADDING * 2;
     var sH = (h - 1) * SCALE + PADDING * 2;
-    var paddingFactor = 0.95;
-    var newZoom = Math.min(cw / sW, ch / sH) * paddingFactor;
+    // clientWidth 含容器 padding，盤面實際可用空間要扣掉容器與內層包裝的 padding，
+    // 否則手機上盤面會比可視區寬一點點、最右欄被切掉（2026-10-17 修）
+    var cs = window.getComputedStyle(container);
+    var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    var padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    var wrapEl = container.firstElementChild;
+    var wrapPadR = 0,
+        wrapPadB = 0;
+    if (wrapEl) {
+      var ws = window.getComputedStyle(wrapEl);wrapPadR = parseFloat(ws.paddingRight) || 0;wrapPadB = parseFloat(ws.paddingBottom) || 0;
+    }
+    var availW = Math.max(50, cw - padX - wrapPadR);
+    var availH = Math.max(50, ch - padY - wrapPadB);
+    var paddingFactor = 0.98;
+    var newZoom = Math.min(availW / sW, availH / sH) * paddingFactor;
     newZoom = Math.min(Math.max(newZoom, 0.2), 3.5);
     if (sW * newZoom > MAX_SAFE_DIMENSION || sH * newZoom > MAX_SAFE_DIMENSION) {
       newZoom = Math.min(MAX_SAFE_DIMENSION / sW, MAX_SAFE_DIMENSION / sH);
@@ -4074,6 +4178,19 @@ function HashiGame() {
     if (svgRef.current) {
       svgRef.current.style.width = sW * newZoom + 'px';
       svgRef.current.style.height = sH * newZoom + 'px';
+    }
+    // 保底：若實際捲動寬度仍大於可視寬度，依比例縮到剛好（只縮不放大）
+    if (container.scrollWidth > container.clientWidth + 1 && sW * newZoom > 0) {
+      var fix = container.clientWidth / container.scrollWidth;
+      if (fix < 1) {
+        newZoom = newZoom * fix;
+        zoomLevelRef.current = newZoom;
+        setZoomLevel(newZoom);
+        if (svgRef.current) {
+          svgRef.current.style.width = sW * newZoom + 'px';
+          svgRef.current.style.height = sH * newZoom + 'px';
+        }
+      }
     }
     return true;
   };
@@ -4868,6 +4985,86 @@ function HashiGame() {
     return aActive - bActive;
   });
 
+  var hashiRoomMode = React.createElement(
+    React.Fragment,
+    null,
+    isHostRef.current ? React.createElement(
+      'div',
+      { className: 'flex gap-2 mb-4' },
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return setMpModeHost('coop');
+          }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+        '\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F'
+      ),
+      React.createElement(
+        'button',
+        { onClick: function onClick() {
+            return setMpModeHost('race');
+          }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
+        '\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F'
+      )
+    ) : React.createElement(
+      'p',
+      { className: 'mb-4 font-black text-slate-600' },
+      '\u76EE\u524D\u6A21\u5F0F\uFF1A',
+      mpMode === 'race' ? '⚔️ 大亂鬥' : '🤝 合作',
+      '\uFF08\u7531\u623F\u4E3B\u6C7A\u5B9A\uFF09'
+    )
+  );
+  var hashiRoomSettings = React.createElement(
+    React.Fragment,
+    null,
+    mpMode === 'race' ? isHostRef.current ? React.createElement(
+      'button',
+      { onClick: function onClick() {
+          return setShowRoomSettings(true);
+        }, className: 'w-full mb-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
+      '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
+    ) : React.createElement(
+      'p',
+      { className: 'mb-3 text-xs font-bold text-slate-400' },
+      '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A\uFF08\u623F\u4E3B\uFF09\uFF1A',
+      (LEVELS.find(function (l) {
+        return l.id === brawlSettings.sizeId;
+      }) || {}).name || '10x10',
+      '\u30FB\u7D50\u675F\u540D\u6B21 ',
+      brawlSettings.winnersCount,
+      '\u30FB\u9053\u5177',
+      brawlSettings.itemsEnabled ? '開' : '關'
+    ) : isHostRef.current ? React.createElement(
+      'div',
+      { className: 'mb-3' },
+      React.createElement(
+        'div',
+        { className: 'font-black text-slate-700 text-sm mb-1.5' },
+        '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A \u2014 \u95DC\u5361\uFF08\u623F\u4E3B\u9078\uFF0C\u5168\u54E1\u540C\u6B65\uFF09'
+      ),
+      React.createElement(
+        'div',
+        { className: 'flex flex-wrap gap-1.5' },
+        LEVELS.filter(function (l) {
+          return l.id !== 'custom';
+        }).map(function (l) {
+          return React.createElement(
+            'button',
+            { key: l.id, onClick: function onClick() {
+                return applyCoopLevel(l);
+              }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (currentLevelId === l.id ? 'bg-[#4ade80] text-slate-900' : 'bg-white text-slate-500') },
+            l.name
+          );
+        })
+      )
+    ) : React.createElement(
+      'p',
+      { className: 'mb-3 text-xs font-bold text-slate-400' },
+      '\u2699\uFE0F \u95DC\u5361\u7531\u623F\u4E3B\u8A2D\u5B9A\uFF1A',
+      (LEVELS.find(function (l) {
+        return l.id === currentLevelId;
+      }) || {}).name || ''
+    )
+  );
   return React.createElement(
     'div',
     { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
@@ -5518,7 +5715,7 @@ function HashiGame() {
                   React.createElement('stop', { offset: '100%', className: 'rainbow-stop' })
                 )
               ),
-              React.createElement('rect', { id: 'svg-bg', width: '100%', height: '100%', fill: 'url(#grid)', transform: 'translate(' + PADDING + ', ' + PADDING + ')', className: 'pointer-events-none' }),
+              React.createElement('rect', { id: 'svg-bg', width: gridWidth * SCALE, height: gridHeight * SCALE, fill: 'url(#grid)', transform: 'translate(' + PADDING + ', ' + PADDING + ')', className: 'pointer-events-none' }),
               showSolution && cLevel.solution && cLevel.solution.map(function (sol, idx) {
                 var islandsMap = {};islandsToRender.forEach(function (i) {
                   islandsMap[i.id] = i;
@@ -5821,92 +6018,111 @@ function HashiGame() {
             )
           )
         ),
-        React.createElement(
-          'div',
-          { className: 'shrink-0 bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] relative z-30' },
+        typeof window.PlatBar !== 'undefined' ? React.createElement('div', { ref: platBarRef, className: 'shrink-0 relative z-30' }) : React.createElement(
+          React.Fragment,
+          null,
+          ')}',
           React.createElement(
             'div',
-            { className: 'flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative' },
+            { className: 'shrink-0 bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] relative z-30' },
             React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  return setZoomOpen(!zoomOpen);
-                }, title: '\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09', className: 'w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#4ade80]' },
-              '\uD83D\uDD0D'
-            ),
-            zoomOpen && React.createElement(
               'div',
-              { className: 'absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50' },
-              React.createElement(
-                'button',
-                { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
-                '\uFF0B'
-              ),
-              React.createElement(
-                'button',
-                { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
-                '\uFF0D'
-              ),
-              React.createElement(
-                'button',
-                { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09', className: 'w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
-                zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
-              )
-            )
-          ),
-          React.createElement(
-            'div',
-            { className: 'flex items-center gap-1 md:gap-2 ml-auto bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative' },
-            React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  if (interactionMode === 2 && !drawSubOpen) {
-                    setDrawSubOpen(true);return;
-                  }var nextMode = interactionMode === 0 ? 1 : interactionMode === 1 ? engine === 'peerjs' ? 2 : 0 : 0;switchMode(nextMode);setDrawSubOpen(nextMode === 2);
-                }, title: '\u5207\u63DB\u6A21\u5F0F\uFF08\u756B\u7B46/\u8349\u7A3F/\u7E6A\u5716\uFF09', className: 'px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md ' + (interactionMode === 2 ? 'bg-emerald-400 text-slate-900' : 'bg-[#4ade80] text-slate-900') },
-              React.createElement(
-                'span',
-                null,
-                interactionMode === 0 ? '🖋️' : interactionMode === 1 ? '✏️' : '🖌️'
-              ),
-              React.createElement(
-                'span',
-                { className: 'hidden sm:inline' },
-                interactionMode === 0 ? '畫筆' : interactionMode === 1 ? '草稿' : '繪圖'
-              ),
-              React.createElement(
-                'span',
-                { className: 'text-[10px] opacity-60' },
-                '\u25BE'
-              )
-            ),
-            interactionMode === 2 && drawSubOpen && React.createElement(
-              'div',
-              { className: 'absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto' },
+              { className: 'flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative' },
               React.createElement(
                 'button',
                 { onClick: function onClick() {
-                    return setDrawSubMode('pen');
-                  }, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'pen' ? 'bg-emerald-100 scale-110 border-emerald-600' : 'bg-white hover:bg-slate-50'), title: '\u756B\u7B46\u6A21\u5F0F' },
-                '\uD83D\uDD8C\uFE0F'
+                    return setZoomOpen(!zoomOpen);
+                  }, title: '\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09', className: 'w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#4ade80]' },
+                '\uD83D\uDD0D'
               ),
+              zoomOpen && React.createElement(
+                'div',
+                { className: 'absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50' },
+                React.createElement(
+                  'button',
+                  { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  '\uFF0B'
+                ),
+                React.createElement(
+                  'button',
+                  { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  '\uFF0D'
+                ),
+                React.createElement(
+                  'button',
+                  { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09', className: 'w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
+                )
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-1 md:gap-2 ml-auto bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative' },
               React.createElement(
                 'button',
                 { onClick: function onClick() {
-                    return setDrawSubMode('eraser');
-                  }, onDoubleClick: clearOwnStrokes, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'eraser' ? 'bg-orange-100 scale-110 border-orange-600' : 'bg-white hover:bg-slate-50'), title: '\u6A61\u76AE\u64E6 (\u96D9\u64CA\u6E05\u9664\u81EA\u5DF1\u6240\u6709\u5857\u9D09)' },
-                '\uD83E\uDDFD'
+                    if (interactionMode === 2 && !drawSubOpen) {
+                      setDrawSubOpen(true);return;
+                    }advanceHashiMode();
+                  }, title: '\u5207\u63DB\u6A21\u5F0F\uFF08\u756B\u7B46/\u8349\u7A3F/\u7E6A\u5716\uFF09', className: 'px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md ' + (interactionMode === 2 ? 'bg-emerald-400 text-slate-900' : 'bg-[#4ade80] text-slate-900') },
+                React.createElement(
+                  'span',
+                  null,
+                  interactionMode === 0 ? '🖋️' : interactionMode === 1 ? '✏️' : '🖌️'
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'hidden sm:inline' },
+                  interactionMode === 0 ? '畫筆' : interactionMode === 1 ? '草稿' : '繪圖'
+                ),
+                React.createElement(
+                  'span',
+                  { className: 'text-[10px] opacity-60' },
+                  '\u25BE'
+                )
               ),
-              isHostRef.current && React.createElement(
-                'button',
-                { onClick: clearAllStrokes, className: 'w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]', title: '\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09' },
-                '\uD83D\uDEAE'
+              interactionMode === 2 && drawSubOpen && React.createElement(
+                'div',
+                { className: 'absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto' },
+                React.createElement(
+                  'button',
+                  { onClick: function onClick() {
+                      return setDrawSubMode('pen');
+                    }, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'pen' ? 'bg-emerald-100 scale-110 border-emerald-600' : 'bg-white hover:bg-slate-50'), title: '\u756B\u7B46\u6A21\u5F0F' },
+                  '\uD83D\uDD8C\uFE0F'
+                ),
+                React.createElement(
+                  'button',
+                  { onClick: function onClick() {
+                      return setDrawSubMode('eraser');
+                    }, onDoubleClick: clearOwnStrokes, className: 'w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (drawSubMode === 'eraser' ? 'bg-orange-100 scale-110 border-orange-600' : 'bg-white hover:bg-slate-50'), title: '\u6A61\u76AE\u64E6 (\u96D9\u64CA\u6E05\u9664\u81EA\u5DF1\u6240\u6709\u5857\u9D09)' },
+                  '\uD83E\uDDFD'
+                ),
+                isHostRef.current && React.createElement(
+                  'button',
+                  { onClick: clearAllStrokes, className: 'w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]', title: '\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09' },
+                  '\uD83D\uDEAE'
+                )
               )
-            )
-          ),
-          renderDockCapsule(false)
+            ),
+            renderDockCapsule(false)
+          )
         ),
-        roomOpen && React.createElement(
+        roomOpen && (typeof window !== 'undefined' && window.PlatRoom ? React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4' },
+          React.createElement(
+            'div',
+            { className: 'max-w-xl mx-auto mt-2' },
+            React.createElement('div', { ref: roomMountRef }),
+            roomSlot && ReactDOM.createPortal(React.createElement(
+              React.Fragment,
+              null,
+              hashiRoomMode,
+              hashiRoomSettings
+            ), roomSlot)
+          )
+        ) : React.createElement(
           'div',
           { className: 'absolute inset-0 z-[60] overflow-y-auto bg-[#f6fdf6] p-4' },
           React.createElement(
@@ -5931,30 +6147,7 @@ function HashiGame() {
                 )
               )
             ),
-            isHostRef.current ? React.createElement(
-              'div',
-              { className: 'flex gap-2 mb-4' },
-              React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    return setMpModeHost('coop');
-                  }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
-                '\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F'
-              ),
-              React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    return setMpModeHost('race');
-                  }, className: "flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400') },
-                '\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F'
-              )
-            ) : React.createElement(
-              'p',
-              { className: 'mb-4 font-black text-slate-600' },
-              '\u76EE\u524D\u6A21\u5F0F\uFF1A',
-              mpMode === 'race' ? '⚔️ 大亂鬥' : '🤝 合作',
-              '\uFF08\u7531\u623F\u4E3B\u6C7A\u5B9A\uFF09'
-            ),
+            hashiRoomMode,
             React.createElement(
               'div',
               { className: 'font-black text-slate-700 text-sm mb-1.5' },
@@ -6014,54 +6207,7 @@ function HashiGame() {
                 '\uD83D\uDC41\uFE0F \u89C0\u6230'
               )
             ),
-            mpMode === 'race' ? isHostRef.current ? React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  return setShowRoomSettings(true);
-                }, className: 'w-full mb-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
-              '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
-            ) : React.createElement(
-              'p',
-              { className: 'mb-3 text-xs font-bold text-slate-400' },
-              '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A\uFF08\u623F\u4E3B\uFF09\uFF1A',
-              (LEVELS.find(function (l) {
-                return l.id === brawlSettings.sizeId;
-              }) || {}).name || '10x10',
-              '\u30FB\u7D50\u675F\u540D\u6B21 ',
-              brawlSettings.winnersCount,
-              '\u30FB\u9053\u5177',
-              brawlSettings.itemsEnabled ? '開' : '關'
-            ) : isHostRef.current ? React.createElement(
-              'div',
-              { className: 'mb-3' },
-              React.createElement(
-                'div',
-                { className: 'font-black text-slate-700 text-sm mb-1.5' },
-                '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A \u2014 \u95DC\u5361\uFF08\u623F\u4E3B\u9078\uFF0C\u5168\u54E1\u540C\u6B65\uFF09'
-              ),
-              React.createElement(
-                'div',
-                { className: 'flex flex-wrap gap-1.5' },
-                LEVELS.filter(function (l) {
-                  return l.id !== 'custom';
-                }).map(function (l) {
-                  return React.createElement(
-                    'button',
-                    { key: l.id, onClick: function onClick() {
-                        return applyCoopLevel(l);
-                      }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (currentLevelId === l.id ? 'bg-[#4ade80] text-slate-900' : 'bg-white text-slate-500') },
-                    l.name
-                  );
-                })
-              )
-            ) : React.createElement(
-              'p',
-              { className: 'mb-3 text-xs font-bold text-slate-400' },
-              '\u2699\uFE0F \u95DC\u5361\u7531\u623F\u4E3B\u8A2D\u5B9A\uFF1A',
-              (LEVELS.find(function (l) {
-                return l.id === currentLevelId;
-              }) || {}).name || ''
-            ),
+            hashiRoomSettings,
             isHostRef.current ? mpMode === 'race' ? React.createElement(
               'div',
               null,
@@ -6095,7 +6241,7 @@ function HashiGame() {
               '\u96E2\u958B\u623F\u9593'
             )
           )
-        ),
+        )),
         showRoomSettings && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4', onClick: function onClick() {
