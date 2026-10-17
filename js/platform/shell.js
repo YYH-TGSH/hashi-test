@@ -196,7 +196,8 @@
   function showIdle() { showStep('entry'); }
   function showRoom() { showStep('room'); }
   function renderLobby() {
-    if (!Net.active) { showIdle(); return; }
+    // 未連線時若使用者正在暱稱步，不可把畫面踢回入口步（拉霸選色等 render 呼叫會踩到）
+    if (!Net.active) { var nk = $('lob-step-nick'); if (!nk || nk.style.display !== 'block') showIdle(); return; }
     showRoom();
     $('lob-room-code').textContent = Net.code;
     $('lob-role').textContent = Net.isHost ? '👑 你是房主' : '👤 玩家';
@@ -261,7 +262,7 @@
         if (storeGet('plat_rainbow') === '1' && Net.me.color === 'rainbow') Net.me.color = c;
         colorSpinning = false;
         if (btn) btn.disabled = false;
-        renderColors(); renderLobby();
+        renderColors(); if (Net.active) renderLobby();
         return;
       }
       timer = setTimeout(tick, 50 + 160 * t * t);
