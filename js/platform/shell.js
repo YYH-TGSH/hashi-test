@@ -99,6 +99,8 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
+  var PLAT_VERSION = '1.1.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  window.PLAT_VERSION = PLAT_VERSION;
 
   var PLAT_COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
   var RAINBOW_BG = 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)';
@@ -1141,6 +1143,7 @@
     var codeInp = $('lob-code');
     if (codeInp) codeInp.value = storeGet('plat_last_code') || '';
     renderColors();
+    var pvEl = $('plat-ver'); if (pvEl) pvEl.textContent = 'v' + PLAT_VERSION;
     $('lob-go-create').onclick = function () { Net.lobMode = 'create'; $('lob-joinrow').style.display = 'none'; lobbyMsg(''); showStep('nick'); };
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
     var rjBtn = $('lob-rejoin');

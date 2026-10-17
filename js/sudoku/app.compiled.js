@@ -5088,7 +5088,7 @@ function SudokuGame() {
       className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
-    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v3.13.4)"), tutorialOverlay);
+    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), tutorialOverlay);
   }
   if (screen === 'join') {
     return /*#__PURE__*/React.createElement("div", {
@@ -5796,7 +5796,7 @@ function SudokuGame() {
     className: "h-6 md:h-8 shrink-0 flex items-center justify-center bg-slate-800 text-white border-b-4 border-slate-800 relative z-30 font-bold tracking-wide"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] md:text-sm hidden md:inline"
-  }, "\u652F\u63F4\u6ED1\u9F20\u62D6\u66F3\u3001\u6EFE\u8F2A\u7E2E\u653E\uFF1B\u4E0B\u65B9\u5DE5\u5177\u5217\u53EF\u5207\u63DB\u6A21\u5F0F\u8207\u7E2E\u653E\u3002 (v3.13.4)"), /*#__PURE__*/React.createElement("span", {
+  }, "\u652F\u63F4\u6ED1\u9F20\u62D6\u66F3\u3001\u6EFE\u8F2A\u7E2E\u653E\uFF1B\u4E0B\u65B9\u5DE5\u5177\u5217\u53EF\u5207\u63DB\u6A21\u5F0F\u8207\u7E2E\u653E\u3002", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] md:text-sm md:hidden"
   }, "\u9EDE\u9078\u4E0A\u65B9\u6578\u5B57\u518D\u9EDE\u64CA\u65B9\u683C\u3002\u652F\u63F4\u96D9\u6307\u7E2E\u653E\u8207\u5E73\u79FB\u3002")), /*#__PURE__*/React.createElement("div", {
     className: "relative z-0 flex-1 flex flex-col min-h-0 bg-[#fffaf0]"

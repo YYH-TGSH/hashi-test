@@ -4875,7 +4875,8 @@ function HashiGame() {
       React.createElement(
         'div',
         { className: 'shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10' },
-        'Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (v2.18 \u6E2C\u8A66\u7248)'
+        'Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.',
+        ' (v' + (window.PLAT_VERSION || '2.18') + ' 測試版)'
       ),
       tutorialOverlay
     );
