@@ -1094,6 +1094,9 @@ function HashiGame() {
   var roomRacers = playersList.filter(function (p) {
     return !p.isSpectator;
   });
+  var roomRealRacers = playersList.filter(function (p) {
+    return !p.isSpectator && !p.pending;
+  }); // 已真人到場的選手（未到席位不算人數）
   var roomAllReady = roomRacers.length >= 2 && roomRacers.every(function (p) {
     return p.isReady;
   });
@@ -2810,16 +2813,16 @@ function HashiGame() {
     window.PlatRoom.update({
       title: '🎮 遊戲大廳', code: roomId, showRefresh: false,
       players: playersList.map(function (pl) {
-        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, online: pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
+        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, pending: !!pl.pending, online: pl.pending ? false : pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
             return c.uid === pl.id && c.open;
           }) ? false : null,
-          badge: pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
-          toggle: pl.id === myId || isHostRef.current ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: pl.id === myId || isHostRef.current };
+          badge: pl.pending ? { text: '未到', kind: 'pending' } : pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
+          toggle: !pl.pending && (pl.id === myId || isHostRef.current) ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: !pl.pending && (pl.id === myId || isHostRef.current) };
       }),
       myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
       readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
       mySpectator: null,
-      start: isHostRef.current ? mpMode === 'race' ? { label: '🏁 開始大亂鬥', kind: 'primary', disabled: roomRacers.length < 2 || !canStartGate, note: roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : !canStartGate ? '等待全員準備（或等待 1 分鐘後開放開始）' : roomAllReady ? '全員準備好了，等房主按開始！' : '已等待 1 分鐘，房主可直接開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
+      start: isHostRef.current ? mpMode === 'race' ? { label: '🏁 開始大亂鬥', kind: 'primary', disabled: roomRealRacers.length < 2 || !canStartGate, note: roomRealRacers.length < 2 ? '等待選手加入（至少 2 位）...' : !canStartGate ? '等待全員準備（或等待 1 分鐘後開放開始）' : roomAllReady ? '全員準備好了，等房主按開始！' : '已等待 1 分鐘，房主可直接開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
       waitingText: !isHostRef.current ? '等待房主開始...' : null
     });
   });
@@ -2885,7 +2888,7 @@ function HashiGame() {
           return { key: String(f.uid), name: f.name, color: f.color, isMe: f.uid === myId, right: '⏱ ' + formatTime(Math.floor(f.timeMs / 1000)) };
         }),
         waitingText: '等待其他玩家完成…',
-        buttons: [{ id: 'watch', label: '👁️ 觀戰對手', kind: 'primary' }],
+        buttons: [{ id: 'watch', label: '👁️ 轉變為上帝模式（觀戰）', kind: 'primary' }],
         onAction: function onAction(id) {
           if (id === 'watch') watchAction();
         }
@@ -3447,14 +3450,15 @@ function HashiGame() {
       _useState202 = _slicedToArray(_useState201, 2),
       platTournLock = _useState202[0],
       setPlatTournLock = _useState202[1];
+
+  var tournRosterRef = useRef(null); // 五戰名單帶入：本局預期選手（殼 sess.tourn.roster），等待室先種灰色未到席位（與數獨同款）
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
-
-
   useEffect(function () {
     if (!PLAT_MODE) return;
     window.__PLAT_HOOKS_hashi = {
       enter: function enter(sess) {
         setPlatTournLock(!!sess.tourn);
+        tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         if (sess.tourn && sess.isHost) {
           // 賽程預設：套用賽程的關卡，結束名次設為全員（不提前結束）
           applyBrawlSettings(_extends({}, brawlSettingsRef.current, { sizeId: sess.tourn.sizeId, winnersCount: Math.max(1, sess.tourn.entrants || 1) }), true);
@@ -3480,7 +3484,7 @@ function HashiGame() {
         }
       },
       exit: function exit() {
-        setPlatTournLock(false);handleGoHome();
+        setPlatTournLock(false);tournRosterRef.current = null;handleGoHome();
       },
       migrate: function migrate(amHost, sess) {
         setEngine('peerjs');engineRef.current = 'peerjs';
@@ -3523,6 +3527,9 @@ function HashiGame() {
         if (p.id === myId) {
           next.push(p);return;
         }
+        if (p.pending) {
+          next.push(p);return;
+        } // 未到席位不做離線判定/移除，等真 JOIN 替換或開賽時清掉
         if (!lastSeenRef.current[p.id]) {
           lastSeenRef.current[p.id] = now;next.push(p);return;
         }
@@ -3582,7 +3589,16 @@ function HashiGame() {
             return [_extends({}, me, { isHost: true })].concat(_toConsumableArray(others));
           });
         } else {
-          setPlayersList([{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }]);
+          var seedListH = [{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }];
+          // 五戰名單帶入：還沒進遊戲的選手先種成灰色「未到」席位（真 JOIN 到達時以同名替換）
+          if (tournRosterRef.current) {
+            var selfNameH = platAutoRef.current ? platAutoRef.current.name : null;
+            tournRosterRef.current.forEach(function (e) {
+              if (!e || !e.name || e.name === selfNameH) return;
+              seedListH.push({ id: 'pending:' + e.name, name: e.name, isHost: false, color: e.color || getAvailableColor(seedListH), isReady: false, isSpectator: false, pending: true });
+            });
+          }
+          setPlayersList(seedListH);
           if (platAutoRef.current) {
             var nmH = platAutoRef.current.name;platAutoRef.current = null;hostConfirmName(nmH);
           }
@@ -3602,7 +3618,7 @@ function HashiGame() {
               // 撞名檢查：同 uid 重連允許；不同 uid 同名（大小寫不敏感）拒絕
               var tryName = (m.pName || '').trim();
               var clash = !!tryName && playersListRef.current.some(function (pl) {
-                return pl.id !== m.uid && normName(pl.name) === normName(tryName);
+                return pl.id !== m.uid && !pl.pending && normName(pl.name) === normName(tryName);
               });
               if (clash) {
                 // 連線保持開啟：拉霸機自動名會自動重轉，手動名回 nick 步重填
@@ -3623,9 +3639,18 @@ function HashiGame() {
                   });
                 } else {
                   // 新玩家加入（比賽進行中加入 → 自動觀戰，比照數獨）
-                  var newColor = m.color || getAvailableColor(prev);
                   var lateSpec = mpModeRef.current === 'race' && (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing' || raceStateRef.current === 'finished');
-                  nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor, isReady: false, isSpectator: lateSpec }]);
+                  var pendIdxH = prev.findIndex(function (pl) {
+                    return pl.pending && pl.name === m.pName;
+                  });
+                  if (pendIdxH >= 0) {
+                    // 五戰未到席位被真人頂上：沿用預期名單的顏色與位置
+                    nList = prev.slice();
+                    nList[pendIdxH] = { id: m.uid, name: m.pName, isHost: false, color: prev[pendIdxH].color, isReady: false, isSpectator: lateSpec };
+                  } else {
+                    var newColor = m.color || getAvailableColor(prev);
+                    nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor, isReady: false, isSpectator: lateSpec }]);
+                  }
                 }
                 // 強制派發最新地圖與名單
                 connsRef.current.forEach(function (conn) {
@@ -4019,7 +4044,20 @@ function HashiGame() {
   // ==================== 🏁 競速模式 ====================
   var startRace = function startRace() {
     if (!isHostRef.current) return;
-    var racers = playersListRef.current.filter(function (p) {
+    // 開賽時清掉仍未到的五戰預期席位（遲到者進場會以觀戰者加入，不卡結算）
+    var curListH = playersListRef.current;
+    if ((curListH || []).some(function (p) {
+      return p.pending;
+    })) {
+      curListH = curListH.filter(function (p) {
+        return !p.pending;
+      });
+      setPlayersList(curListH);
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: curListH });
+      });
+    }
+    var racers = curListH.filter(function (p) {
       return !p.isSpectator;
     });
     if (racers.length < 2) return;
@@ -5141,13 +5179,13 @@ function HashiGame() {
               { onClick: openTutorial, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-lg text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
               '\u2753 \u73A9\u6CD5\u8AAA\u660E'
             ),
-            platDock && React.createElement(
+            PLAT_MODE && React.createElement(
               'div',
               { className: 'flex items-center gap-2' },
               React.createElement(
                 'button',
                 { onClick: function onClick() {
-                    return window.PlatDock.goLobby();
+                    if (window.PlatDock && window.PlatDock.isActive()) window.PlatDock.goLobby();else if (window.PLAT_show) window.PLAT_show('lobby');
                   }, className: 'flex-1 py-2.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
                 '\uD83C\uDFE0 \u56DE\u5927\u5EF3'
               ),
@@ -6091,36 +6129,15 @@ function HashiGame() {
             );
           })
         ),
-        (raceState === 'racing' || raceState === 'finished') && React.createElement(
+        raceState === 'finished' && React.createElement(
           'div',
           { className: 'px-4 pb-1.5 flex items-center gap-1.5 flex-wrap' },
-          raceState === 'finished' && React.createElement(
+          React.createElement(
             'button',
             { onClick: function onClick() {
                 var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
               }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
             '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2'
-          ),
-          fxInvertUntil > fxNow && React.createElement(
-            'span',
-            { className: 'px-2 py-1 bg-red-100 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs' },
-            '\uD83D\uDD00 \u985B\u5012\u4E2D ',
-            Math.ceil((fxInvertUntil - fxNow) / 1000),
-            's'
-          ),
-          Object.keys(fxFog).some(function (id) {
-            return fxFog[id] > fxNow;
-          }) && React.createElement(
-            'span',
-            { className: 'px-2 py-1 bg-slate-200 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs' },
-            '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
-          ),
-          Object.keys(fxPhantom).some(function (id) {
-            return fxPhantom[id] > fxNow;
-          }) && React.createElement(
-            'span',
-            { className: 'px-2 py-1 bg-purple-100 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs' },
-            '\u2753 \u5E7B\u5F71\u4E2D'
           )
         )
       ),
@@ -6829,7 +6846,7 @@ function HashiGame() {
               null,
               React.createElement(
                 'button',
-                { onClick: startRace, disabled: roomRacers.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
+                { onClick: startRace, disabled: roomRealRacers.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
                 roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始'
               ),
               React.createElement(
@@ -6998,6 +7015,35 @@ function HashiGame() {
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
+        inRace && raceState === 'racing' && (fxInvertUntil > fxNow || Object.keys(fxFog).some(function (id) {
+          return fxFog[id] > fxNow;
+        }) || Object.keys(fxPhantom).some(function (id) {
+          return fxPhantom[id] > fxNow;
+        })) && React.createElement(
+          'div',
+          { className: 'absolute top-2 left-2 z-[57] flex gap-1.5 pointer-events-none' },
+          fxInvertUntil > fxNow && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-red-100/95 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs shadow' },
+            '\uD83D\uDD00 \u985B\u5012\u4E2D ',
+            Math.ceil((fxInvertUntil - fxNow) / 1000),
+            's'
+          ),
+          Object.keys(fxFog).some(function (id) {
+            return fxFog[id] > fxNow;
+          }) && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-slate-200/95 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs shadow' },
+            '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
+          ),
+          Object.keys(fxPhantom).some(function (id) {
+            return fxPhantom[id] > fxNow;
+          }) && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-purple-100/95 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs shadow' },
+            '\u2753 \u5E7B\u5F71\u4E2D'
+          )
+        ),
         inRace && raceWaiting && raceState === 'racing' && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(
           'div',
           { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[58] bg-slate-800 text-white px-5 py-2 rounded-full font-black border-[3px] border-white shadow-lg animate-pulse whitespace-nowrap' },
@@ -7007,7 +7053,7 @@ function HashiGame() {
             { onClick: function onClick() {
                 var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
               }, className: 'underline ml-1' },
-            '\uD83D\uDC41\uFE0F \u89C0\u6230\u5C0D\u624B'
+            '\uD83D\uDC41\uFE0F \u8F49\u8B8A\u70BA\u4E0A\u5E1D\u6A21\u5F0F\uFF08\u89C0\u6230\uFF09'
           )
         ),
         inRace && raceState === 'finished' && raceResult && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(

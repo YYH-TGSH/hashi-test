@@ -64,26 +64,14 @@
       }
     });
   }
-  // 「🏠 平台」鈕只在遊戲的主畫面出現；進入對局/大廳就自動隱藏（不擋計時器等遊戲 UI）
-  var HOME_MARKERS = { sudoku: 'Sudoku Master', hashi: 'Hashi Puzzle' };
+  // （v1.8.0 起）左上角「🏠 平台」鈕已移除：回大廳改由兩款遊戲主畫面最下方的藍色大按鈕擔任（使用者指定）
   var currentView = 'home';
-  function updateBackBtn() {
-    var btn = document.getElementById('plat-back');
-    if (!btn) return;
-    if (currentView === 'home' || currentView === 'lobby') { btn.style.display = 'none'; return; }
-    if (window.__PLAT_SESSION_ACTIVE) { btn.style.display = 'none'; return; }
-    var root = document.getElementById(currentView + '-root');
-    var onHome = !!(root && root.textContent && root.textContent.indexOf(HOME_MARKERS[currentView]) >= 0);
-    btn.style.display = onHome ? 'block' : 'none';
-  }
-  setInterval(updateBackBtn, 600);
   window.PLAT_show = function (name) {
     currentView = name;
     ['home', 'sudoku', 'hashi', 'lobby'].forEach(function (v) {
       document.getElementById('view-' + v).classList.toggle('active', v === name);
     });
     document.body.setAttribute('data-view', name);
-    updateBackBtn();
     if (name === 'sudoku' || name === 'hashi') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
@@ -99,7 +87,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.7.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.8.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -216,6 +204,25 @@
     $('lob-step-entry').style.display = (s === 'entry') ? 'block' : 'none';
     $('lob-step-nick').style.display = (s === 'nick') ? 'block' : 'none';
     $('lob-room').style.display = (s === 'room') ? 'block' : 'none';
+    if (s === 'entry') refreshRejoin();
+  }
+  function refreshRejoin() {
+    var rjBtn = $('lob-rejoin'); if (!rjBtn) return;
+    var rc = storeGet('plat_room');
+    rjBtn.style.display = rc ? '' : 'none';
+    if (rc) { var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; }
+  }
+  // 大廳分頁（數獨/數橋/五戰共用同一個大廳框架；切 tab 不離開房間）
+  var lobbyTab = 'sudoku';
+  function setLobbyTab(t) {
+    lobbyTab = t;
+    document.querySelectorAll('[data-lobtab]').forEach(function (b) { if (b.classList) b.classList.toggle('lob-tab-on', b.getAttribute('data-lobtab') === t); });
+    applyLobbyTab();
+  }
+  function applyLobbyTab() {
+    var inM = Net.inMatch;
+    var bar = $('lob-tabsbar'); if (bar) bar.style.display = inM ? 'none' : 'flex';
+    ['sudoku', 'hashi', 'tourn'].forEach(function (k) { var p = $('lob-panel-' + k); if (p) p.style.display = (!inM && lobbyTab === k) ? 'block' : 'none'; });
   }
   function showIdle() { showStep('entry'); }
   function showRoom() { showStep('room'); }
@@ -237,7 +244,8 @@
       li.appendChild(nm);
       ul.appendChild(li);
     });
-    $('lob-launch').style.display = (Net.isHost && !Net.inMatch) ? 'block' : 'none';
+    applyLobbyTab();
+    document.querySelectorAll('[data-launch]').forEach(function (b) { var dis = !(Net.isHost && !Net.inMatch); b.disabled = dis; b.style.opacity = dis ? '0.45' : ''; });
     $('lob-waiting').style.display = (!Net.isHost && !Net.inMatch) ? 'block' : 'none';
     $('lob-inmatch').style.display = Net.inMatch ? 'block' : 'none';
     renderTourn();
@@ -420,7 +428,7 @@
         break;
       }
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
-      case 'tourn-setup': Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 混合大亂鬥賽程開始！共 5 局'); renderTourn(); break;
+      case 'tourn-setup': Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 混合大亂鬥賽程開始！共 5 局'); setLobbyTab('tourn'); renderTourn(); break;
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
           var ta = Net.tourn, all2 = (ta.acks = ta.acks || {});
@@ -432,7 +440,7 @@
         break;
       }
       case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
-      case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
+      case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); setLobbyTab('tourn'); renderTourn(); break; }
       case 'tourn-abort': tournClear(); renderLobby(); break;
     }
   }
@@ -530,7 +538,7 @@
     var code = storeGet('plat_code');
     if (!code) { code = String(Math.floor(1000 + Math.random() * 9000)); storeSet('plat_code', code); }
     Net.code = code; Net.joinRetry = false;
-    storeSet('plat_room', code);
+    storeSet('plat_room', code); storeSet('plat_room_role', 'host');
     lobbyMsg('正在建立房間…');
     makeHostPeer(code);
   }
@@ -567,7 +575,7 @@
     var code = ($('lob-code').value || '').trim();
     if (code.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
     Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host';
-    storeSet('plat_room', code);
+    storeSet('plat_room', code); storeSet('plat_room_role', 'guest');
     lobbyMsg('正在連線到房間 ' + code + '…');
     var p = new RealPeer();
     Net.peer = p;
@@ -616,7 +624,7 @@
     a[what] = round; if (game) a.enteredGame = game;
   }
   function doLaunch(game, mode, tournSess) {
-    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
+    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide(); podHide();
     Net.inMatch = game; Net.matchMode = mode || 'coop';
     if (tournSess && Net.tourn) { Net.tourn.phase = tournSess.playoff ? 'playoff' : 'playing'; Net.tourn.round = tournSess.round; Net.tourn.curGame = game; Net.tourn.settled = false; }
     renderLobby();
@@ -631,6 +639,7 @@
   function doReturnToLobby() {
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     if (g) exitGameHook(g);
+    // 注意：這裡不 podHide——頒獎台是回大廳的儀式，來賓先收到 tourn-score 播台、隨後才被 return 帶回大廳，藏掉就永遠看不到
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
     if (Net.tourn) { if (Net.isHost) tournSelfAck('lobby', Net.tourn.round); else platToHost({ kind: 'tourn-ack', what: 'lobby', round: Net.tourn.round, uid: Net.myUid }); }
     renderLobby();
@@ -669,6 +678,7 @@
   function tournSess() {
     var t = Net.tourn; if (!t) return null;
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
+      roster: t.entrants.map(function (e) { return { uid: e.uid, name: e.name, color: e.color }; }),
       sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : t.hashi.sizeId, diffId: t.sudoku.diffId, roundSecs: t.roundSecs };
   }
   function tournBuildRounds(order) {
@@ -683,6 +693,7 @@
     return { rounds: t.rounds, order: t.order, sudoku: t.sudoku, hashi: t.hashi, roundSecs: t.roundSecs, totalRounds: t.totalRounds, entrants: t.entrants };
   }
   function tournNewState(cfg, phase) {
+    Net._podiumKey = '';
     var totals = {}, wins = {};
     cfg.entrants.forEach(function (e) { totals[e.uid] = 0; wins[e.uid] = 0; });
     return { phase: phase, round: 1, totalRounds: cfg.totalRounds, order: cfg.order, rounds: cfg.rounds,
@@ -701,6 +712,7 @@
     var badVer = Net.roster.filter(function (p) { return p.ver && p.ver !== PLAT_VERSION; });
     if (badVer.length) sysChat('⚠️ ' + badVer.map(function (p) { return (p.name || '玩家') + '（' + p.ver + '）'; }).join('、') + ' 的版本和房主（' + PLAT_VERSION + '）不同，可能連線異常');
     Net.tourn = tournNewState(cfg, 'playing');
+    setLobbyTab('tourn');
     platBroadcast({ kind: 'tourn-setup', cfg: tournPublicCfg() });
     sysChat('🏆 混合大亂鬥賽程開始！共 5 局');
     tournStartRound();
@@ -874,9 +886,11 @@
     if (!setup || !panel) return;
     var t = Net.tourn;
     setup.style.display = (Net.active && Net.isHost && !t && !Net.inMatch) ? 'block' : 'none';
+    var tnote = $('lob-tourn-note'); if (tnote) tnote.style.display = (Net.active && !Net.isHost && !t && !Net.inMatch) ? 'block' : 'none';
     if (!t) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
     if (t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended') {
-      var ln = $('lob-launch'); if (ln) ln.style.display = 'none';
+      var tkey = t.phase + ':' + t.round + ':' + t.history.length;
+      if (Net._tabTournKey !== tkey) { Net._tabTournKey = tkey; setLobbyTab('tourn'); }
       var wt = $('lob-waiting'); if (wt) wt.style.display = 'none';
     }
     panel.style.display = 'block';
@@ -942,6 +956,11 @@
     var ab = $('t-abort'); if (ab) ab.onclick = function () { tournAbort(); };
     panel.querySelectorAll('[data-t-resend]').forEach(function (b) { b.onclick = function () { var pid2 = b.getAttribute('data-t-resend'); var c2 = Net.conns[pid2]; var tt2 = Net.tourn; if (c2 && tt2) { platSend(c2, { kind: 'launch', game: tt2.curGame, mode: 'brawl', tourn: tournSess() }); var en = tt2.entrants.find(function (x) { return x.pid === pid2; }); sysChat('📨 已重送進場邀請給 ' + (en ? en.name : '玩家')); } }; });
     panel.querySelectorAll('[data-t-rtn]').forEach(function (b) { b.onclick = function () { var pid3 = b.getAttribute('data-t-rtn'); var c3 = Net.conns[pid3]; if (c3) { platSend(c3, { kind: 'return' }); sysChat('📨 已請他回大廳'); } }; });
+    // 小局結算頒獎台：history 新增一筆且處於結算相態時播一次（房主/來賓/接管皆經 renderTourn 觸發）
+    if ((t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended') && t.history && t.history.length) {
+      var hk2 = t.history.length + ':' + t.history[t.history.length - 1].round;
+      if (Net._podiumKey !== hk2) { Net._podiumKey = hk2; try { podShow(t.history[t.history.length - 1], t); } catch (e) {} }
+    }
   }
 
   // ---------- 視訊（v2.18 禮儀：麥克風預設關、喇叭預設關、發言提示） ----------
@@ -1165,11 +1184,11 @@
       var h = '';
       (st.players || []).forEach(function (pl) {
         var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : (pl.color || '#ccc');
-        h += '<div class="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer"' : '') + '>';
-        h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner" style="background:' + bg + '"></span>';
+        h += '<div class="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer' + (pl.pending ? ';opacity:.55' : '') + '"' : (pl.pending ? ' style="opacity:.55"' : '')) + '>';
+        h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner" style="background:' + bg + (pl.pending ? ';filter:grayscale(1)' : '') + '"></span>';
         if (pl.online !== undefined && pl.online !== null) h += '<span class="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ' + (pl.online ? 'bg-green-500' : 'bg-slate-300') + '"></span>';
         h += '</span>';
-        h += '<span class="truncate">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + '</span>';
+        h += '<span class="truncate">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + (pl.pending ? '<span class="text-slate-400">（未到）</span>' : '') + '</span>';
         h += '<span class="ml-auto flex gap-1 shrink-0 items-center">';
         if (pl.toggle) {
           var tg = pl.toggle;
@@ -1323,6 +1342,108 @@
     hide: function () { if (!PR2.spec && !PR2.json) return; PR2.spec = null; PR2.json = ''; pr2Render(); },
     _visible: function () { return !!PR2.spec; }
   };
+
+  // ---------- 五戰小局結算頒獎台（PlatPodium）：前三名上山字台、本局分數動畫加進總分、未得名滾下台 ----------
+  var POD = { timer: null, tick: null };
+  function podEl() {
+    var el = document.getElementById('plat-podium');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'plat-podium';
+      el.style.cssText = 'position:fixed;inset:0;z-index:880;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);padding:16px;';
+      el.addEventListener('click', function () { podHide(); });
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function podHide() {
+    var el = document.getElementById('plat-podium'); if (el) el.style.display = 'none';
+    if (POD.timer) { clearTimeout(POD.timer); POD.timer = null; }
+    if (POD.tick) { clearInterval(POD.tick); POD.tick = null; }
+  }
+  function podColorOf(t, uid, name) {
+    var en = (typeof tournEntrant === 'function') ? tournEntrant(uid) : null;
+    if (en && en.color) return en.color;
+    return '#94a3b8';
+  }
+  function podShow(entry, t) {
+    if (!entry || !entry.placements || !entry.placements.length) return;
+    var el = podEl();
+    var pls = entry.placements.slice().sort(function (a, b) { return a.rank - b.rank; });
+    var totals = t.totals || {}, wins = t.wins || {};
+    var rows = pls.map(function (pl) {
+      var after = totals[pl.uid] || 0;
+      return { uid: pl.uid, name: pl.name, rank: pl.rank, pts: pl.pts, after: after, before: after - pl.pts, wins: wins[pl.uid] || 0, color: podColorOf(t, pl.uid, pl.name), finished: pl.finished, progress: pl.progress };
+    });
+    var byTotal = rows.slice().sort(function (a, b) { return (b.after - a.after) || (b.wins - a.wins); });
+    var top3 = rows.filter(function (r) { return r.rank <= 3; });
+    var rest = rows.filter(function (r) { return r.rank > 3; });
+    var medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
+    var blockH = { 1: 96, 2: 66, 3: 48 };
+    var blockBg = { 1: '#fcd34d', 2: '#e2e8f0', 3: '#fed7aa' };
+    var dropDelay = { 1: 0.85, 2: 0.45, 3: 0.15 };
+    function chipHtml(r, big) {
+      var bg = r.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : r.color;
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:96px">' +
+        (r.rank === 1 ? '<div style="font-size:20px;line-height:1">👑</div>' : '') +
+        '<span style="width:' + (big ? 34 : 26) + 'px;height:' + (big ? 34 : 26) + 'px;border-radius:9999px;display:inline-block;border:3px solid #1e293b;background:' + bg + '"></span>' +
+        '<span style="font-weight:900;color:#1e293b;font-size:13px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + pbEsc(r.name) + '</span></div>';
+    }
+    function colHtml(r) {
+      return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:podDrop .55s cubic-bezier(.2,1.6,.4,1) ' + dropDelay[r.rank] + 's both">' +
+        chipHtml(r, r.rank === 1) +
+        '<div style="width:88px;height:' + blockH[r.rank] + 'px;background:' + blockBg[r.rank] + ';border:3px solid #1e293b;border-bottom:none;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;font-weight:900;font-size:22px;color:#1e293b">' + medal[r.rank] + '</div></div>';
+    }
+    var stageOrder = [];
+    var byRank = {}; top3.forEach(function (r) { byRank[r.rank] = r; });
+    if (byRank[2]) stageOrder.push(byRank[2]);
+    if (byRank[1]) stageOrder.push(byRank[1]);
+    if (byRank[3]) stageOrder.push(byRank[3]);
+    var h = '<div style="background:#fff;border:4px solid #1e293b;border-radius:24px;box-shadow:10px 10px 0 rgba(30,41,59,1);padding:20px 18px 14px;width:100%;max-width:430px;text-align:center;animation:podIn .3s ease-out both;max-height:92vh;overflow-y:auto">';
+    h += '<div style="font-weight:900;font-size:22px;color:#1e293b">🏆 第 ' + entry.round + ' 局結果</div>';
+    h += '<div style="font-weight:900;font-size:13px;color:#64748b;margin-bottom:6px">' + tournGameName(entry.game) + '大亂鬥</div>';
+    h += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:6px;border-bottom:4px solid #1e293b;padding:0 4px">' + stageOrder.map(colHtml).join('') + '</div>';
+    if (rest.length) {
+      h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">' + rest.map(function (r, i) {
+        return '<span style="animation:podRoll .9s ease-in ' + (1.15 + i * 0.14) + 's both;display:inline-flex">' + chipHtml(r, false) + '</span>';
+      }).join('') + '</div>';
+      h += '<div style="font-size:11px;font-weight:900;color:#94a3b8;margin-top:2px">未進前三 · 滾下台啦</div>';
+    }
+    h += '<div style="margin-top:14px;display:flex;flex-direction:column;gap:5px;text-align:left">';
+    byTotal.forEach(function (r) {
+      var bg2 = r.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : r.color;
+      h += '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:2px solid #1e293b;border-radius:12px;padding:5px 10px;font-weight:900;color:#1e293b;font-size:14px">' +
+        '<span style="width:14px;height:14px;border-radius:9999px;display:inline-block;border:2px solid #1e293b;background:' + bg2 + ';flex-shrink:0"></span>' +
+        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + pbEsc(r.name) + (r.wins ? ' <span style="color:#d97706;font-size:12px">👑×' + r.wins + '</span>' : '') + '</span>' +
+        '<span style="margin-left:auto;font-size:12px;color:#94a3b8">第 ' + r.rank + ' 名</span>' +
+        '<span class="pod-plus" style="color:#059669;font-size:13px;opacity:0">+' + r.pts + '</span>' +
+        '<span class="pod-score" data-from="' + r.before + '" data-to="' + r.after + '" style="font-family:monospace;font-size:17px;min-width:34px;text-align:right">' + r.before + '</span></div>';
+    });
+    h += '</div>';
+    h += '<div style="margin-top:10px;font-size:11px;font-weight:900;color:#94a3b8">點任意處跳過</div>';
+    h += '</div>';
+    el.innerHTML = h;
+    el.style.display = 'flex';
+    // 分數動畫：+N 浮現 + 總分 0.5s 後開始滾動累加（1.15 秒）
+    var plus = el.querySelectorAll('.pod-plus');
+    setTimeout(function () { plus.forEach(function (s) { s.style.animation = 'podPlus 1.2s ease-out both'; }); }, 450);
+    var scores = el.querySelectorAll('.pod-score');
+    var t0 = Date.now() + 500;
+    if (POD.tick) clearInterval(POD.tick);
+    POD.tick = setInterval(function () {
+      var elap = Date.now() - t0;
+      if (elap < 0) return;
+      var p = Math.min(1, elap / 1150);
+      var e = 1 - Math.pow(1 - p, 3);
+      scores.forEach(function (s) {
+        var f = Number(s.getAttribute('data-from')), to = Number(s.getAttribute('data-to'));
+        s.textContent = String(Math.round(f + (to - f) * e));
+      });
+      if (p >= 1) { clearInterval(POD.tick); POD.tick = null; }
+    }, 40);
+    if (POD.timer) clearTimeout(POD.timer);
+    POD.timer = setTimeout(podHide, 5600);
+  }
+  window.PlatPodium = { show: podShow, hide: podHide, _visible: function () { var el = document.getElementById('plat-podium'); return !!el && el.style.display === 'flex'; } };
 
   window.PlatRoom = {
     attach: function (el, cfg) {
@@ -1626,14 +1747,24 @@
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
     var rjBtn = $('lob-rejoin');
     if (rjBtn) {
-      var rc = storeGet('plat_room');
-      if (rc) { rjBtn.style.display = ''; var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; }
+      refreshRejoin();
       rjBtn.onclick = function () {
-        Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick');
-        $('lob-code').value = storeGet('plat_room') || '';
-        if (Net.me.name && !$('lob-name').value) $('lob-name').value = Net.me.name;
+        var rc = storeGet('plat_room'); if (!rc) return;
+        var savedName = storeGet('plat_name');
+        if (!savedName) { // 尚無身份（第一次）才退回暱稱步，房號已預填
+          Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick');
+          $('lob-code').value = rc;
+          return;
+        }
+        // 一鍵重連：暱稱/顏色/房號/角色都照舊，直接連線，不經暱稱步
+        Net.me.name = savedName;
+        var savedColor = storeGet('plat_color'); if (savedColor) Net.me.color = savedColor;
+        lobbyMsg('');
+        if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) createRoom();
+        else { $('lob-code').value = rc; joinRoom(); }
       };
     }
+    document.querySelectorAll('[data-lobtab]').forEach(function (b) { b.onclick = function () { setLobbyTab(b.getAttribute('data-lobtab')); }; });
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
     $('slot-spin').onclick = function () { spinSlot(); };
     var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };

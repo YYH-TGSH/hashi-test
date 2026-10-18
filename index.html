@@ -49,7 +49,6 @@
 </head>
 <body data-view="home">
 
-  <button id="plat-back" style="display:none" onclick="PLAT_show('home')">🏠 平台</button>
 
   
 
@@ -127,8 +126,12 @@
           </div>
           <div class="font-black text-slate-700 text-sm mb-1">房間成員</div>
           <ul id="lob-roster" class="mb-4 flex flex-col gap-1.5"></ul>
-          <div id="lob-launch">
-            <div class="font-black text-slate-700 text-sm mb-1.5">🎮 遊戲平台（房主選遊戲與模式，全員一起進）</div>
+          <div id="lob-tabsbar" class="flex gap-1.5 mb-2">
+            <button data-lobtab="sudoku" class="lob-tab lob-tab-on">🔢 數獨</button>
+            <button data-lobtab="hashi" class="lob-tab">🌉 數橋</button>
+            <button data-lobtab="tourn" class="lob-tab">🏆 五戰</button>
+          </div>
+          <div id="lob-panel-sudoku">
             <div class="lob-game-card">
               <div class="lob-game-title" style="background:#ffcc00">🔢 數獨 Sudoku</div>
               <div class="flex gap-2 p-2">
@@ -136,6 +139,8 @@
                 <button data-launch="sudoku-brawl" class="lob-mode-btn">⚔️ 大亂鬥</button>
               </div>
             </div>
+          </div>
+          <div id="lob-panel-hashi" style="display:none">
             <div class="lob-game-card">
               <div class="lob-game-title" style="background:#4ade80">🌉 數橋 Hashi</div>
               <div class="flex gap-2 p-2">
@@ -144,6 +149,7 @@
               </div>
             </div>
           </div>
+          <div id="lob-panel-tourn" style="display:none">
           <div id="lob-waiting" class="font-bold text-slate-500 text-center py-2" style="display:none">⏳ 等待房主開始遊戲…</div>
           <div id="lob-inmatch" class="font-bold text-emerald-600 text-center py-2" style="display:none">🎮 對局進行中（用右下角 🏠 回大廳）</div>
           <div id="lob-tourn-setup" style="display:none">
@@ -192,7 +198,9 @@
               </div>
             </div>
           </div>
-          <div id="lob-tourn" style="display:none"></div>
+            <div id="lob-tourn-note" class="font-bold text-slate-500 text-center py-2" style="display:none">🏆 五戰賽程由房主在這個分頁設定並開賽</div>
+            <div id="lob-tourn" style="display:none"></div>
+          </div>
           <button id="lob-leave" class="w-full mt-3 py-2.5 bg-white border-[3px] border-slate-300 rounded-xl font-black text-slate-500 active:translate-y-[2px] transition-all">離開房間</button>
         </div>
       </div>

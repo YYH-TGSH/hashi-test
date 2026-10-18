@@ -109,6 +109,7 @@ function SudokuGame() {
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
   var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
+  var tournRosterRef = useRef(null); // 五戰名單帶入：本局預期選手（殼 sess.tourn.roster），等待室先種灰色未到席位
   var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
   var lastPingRef = useRef(0);
   var myColorRef = useRef(COLORS[Math.floor(Math.random() * COLORS.length)]);
@@ -2467,6 +2468,21 @@ function SudokuGame() {
   // 強制開始邏輯 (v3.8.30)
   var handleForceStart = function handleForceStart() {
     if (!isHostRef.current) return;
+    // 開賽時清掉仍未到的五戰預期席位（遲到者進場會以觀戰者加入，不卡結算）
+    if ((playersListRef.current || []).some(function (p) {
+      return p.pending;
+    })) {
+      var nList = playersListRef.current.filter(function (p) {
+        return !p.pending;
+      });
+      setPlayersList(nList);
+      connsRef.current.forEach(function (c) {
+        if (c.open) c.send({
+          type: 'PLAYERS_UPDATE',
+          players: nList
+        });
+      });
+    }
     var target = Date.now() + 5000;
     syncState({
       matchPhase: 'countdown',
@@ -4137,17 +4153,21 @@ function SudokuGame() {
       code: roomId,
       showRefresh: !!isHostRef.current,
       players: playersList.map(function (pl) {
-        var canEdit = pl.id === myId || isHostRef.current;
+        var canEdit = !pl.pending && (pl.id === myId || isHostRef.current);
         return {
           key: String(pl.id),
           name: pl.name,
           color: pl.color,
           isMe: pl.id === myId,
           isHost: !!pl.isHost,
-          online: pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
+          pending: !!pl.pending,
+          online: pl.pending ? false : pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
             return c.uid === pl.id && c.open;
           }) ? false : null,
-          badge: pl.isReady ? {
+          badge: pl.pending ? {
+            text: '未到',
+            kind: 'pending'
+          } : pl.isReady ? {
             text: '✔ 已準備',
             kind: 'ready'
           } : null,
@@ -4541,6 +4561,7 @@ function SudokuGame() {
     window.__PLAT_HOOKS_sudoku = {
       enter: function enter(sess) {
         setPlatTournLock(!!sess.tourn);
+        tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         if (sess.tourn && sess.isHost) {
           // 賽程預設：套用賽程的版型/難度，結束名次設為全員（不提前結束）
           setSizeId(sess.tourn.sizeId);
@@ -4579,6 +4600,7 @@ function SudokuGame() {
       },
       exit: function exit() {
         setPlatTournLock(false);
+        tournRosterRef.current = null;
         handleGoHome();
       },
       migrate: function migrate(amHost, sess) {
@@ -4618,6 +4640,10 @@ function SudokuGame() {
           next.push(p);
           return;
         }
+        if (p.pending) {
+          next.push(p);
+          return;
+        } // 未到席位不做離線判定/移除，等真 JOIN 替換或開賽時清掉
         if (!lastSeenRef.current[p.id]) {
           lastSeenRef.current[p.id] = now;
           next.push(p);
@@ -4707,6 +4733,23 @@ function SudokuGame() {
             isReady: false,
             isSpectator: false
           })].concat(_toConsumableArray(others));
+          // 五戰名單帶入：把還沒進遊戲的選手先種成灰色「未到」席位（真 JOIN 到達時以同名替換）
+          if (tournRosterRef.current) {
+            tournRosterRef.current.forEach(function (e) {
+              if (!e || !e.name || e.name === pName) return;
+              if (!newList.some(function (pl) {
+                return pl.name === e.name;
+              })) newList.push({
+                id: 'pending:' + e.name,
+                name: e.name,
+                isHost: false,
+                color: e.color || getAvailableColor(newList),
+                isReady: false,
+                isSpectator: false,
+                pending: true
+              });
+            });
+          }
           return newList;
         });
         saveLocalProgress(rId, myId, pName, true, savedProg ? savedProg.d : []);
@@ -4744,7 +4787,7 @@ function SudokuGame() {
                 return;
               }
               if (playersListRef.current.some(function (p) {
-                return p.name === m.pName && p.id !== m.uid;
+                return p.name === m.pName && p.id !== m.uid && !p.pending;
               })) {
                 c.send({
                   type: 'JOIN_REJECTED',
@@ -4775,14 +4818,30 @@ function SudokuGame() {
                     name: m.pName,
                     isSpectator: isSpec
                   }) : pl;
-                });else nList = [].concat(_toConsumableArray(prev), [{
-                  id: m.uid,
-                  name: m.pName || "玩家",
-                  isHost: false,
-                  color: getAvailableColor(prev),
-                  isReady: false,
-                  isSpectator: isSpec
-                }]);
+                });else {
+                  var pendIdx = prev.findIndex(function (pl) {
+                    return pl.pending && pl.name === m.pName;
+                  });
+                  if (pendIdx >= 0) {
+                    // 五戰未到席位被真人頂上：沿用預期名單的顏色與位置
+                    nList = prev.slice();
+                    nList[pendIdx] = {
+                      id: m.uid,
+                      name: m.pName || "玩家",
+                      isHost: false,
+                      color: prev[pendIdx].color,
+                      isReady: false,
+                      isSpectator: isSpec
+                    };
+                  } else nList = [].concat(_toConsumableArray(prev), [{
+                    id: m.uid,
+                    name: m.pName || "玩家",
+                    isHost: false,
+                    color: getAvailableColor(prev),
+                    isReady: false,
+                    isSpectator: isSpec
+                  }]);
+                }
                 connsRef.current.forEach(function (conn) {
                   if (conn === c) conn.send({
                     type: 'INIT',
@@ -5442,11 +5501,11 @@ function SudokuGame() {
         return setShowTutorial(true);
       },
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
-    }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), platDock && /*#__PURE__*/React.createElement("div", {
+    }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), typeof window !== 'undefined' && window.__PLAT_PLATFORM && /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        return window.PlatDock.goLobby();
+        if (window.PlatDock && window.PlatDock.isActive()) window.PlatDock.goLobby();else if (window.PLAT_show) window.PLAT_show('lobby');
       },
       className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
