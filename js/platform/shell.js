@@ -99,18 +99,10 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.7.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.7.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
-  // 連線穿透設定（單一來源，所有 RealPeer 建構點共用）：PeerJS 預設只有 STUN，
-  // 遇到對稱 NAT/電信 CGNAT/擋 UDP 的網路（如雙方不同家、手機網路）資料連線打不通——同區網沒事、跨網路連不上就是這個。
-  // 補免費公共 TURN 中繼（OpenRelay）當最後手段：ICE 仍優先直連，中繼只在直連失敗時才用，零伺服器費用不變。
-  var PEER_OPTS = { config: { iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-  ] } };
+  // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
+  // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
   window.PLAT_VERSION = PLAT_VERSION;
 
   var PLAT_COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
@@ -462,7 +454,7 @@
     var tries = 0;
     (function attempt() {
       if (!Net.migrating) return;
-      var peer = new RealPeer('yyh-tgsh-' + code + '-host', PEER_OPTS);
+      var peer = new RealPeer('yyh-tgsh-' + code + '-host');
       Net.peer = peer;
       peer.on('open', function (id) {
         Net.hostPid = id; Net.isHost = true; Net.migrating = false;
@@ -543,7 +535,7 @@
     makeHostPeer(code);
   }
   function makeHostPeer(code) {
-    var p = new RealPeer('yyh-tgsh-' + code + '-host', PEER_OPTS);
+    var p = new RealPeer('yyh-tgsh-' + code + '-host');
     Net.peer = p;
     p.on('open', function (id) {
       Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true;
@@ -577,7 +569,7 @@
     Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host';
     storeSet('plat_room', code);
     lobbyMsg('正在連線到房間 ' + code + '…');
-    var p = new RealPeer(undefined, PEER_OPTS);
+    var p = new RealPeer();
     Net.peer = p;
     p.on('open', function (id) {
       Net.myPid = id;
@@ -1615,7 +1607,7 @@
 
   function PlatPeer(id) {
     if (Net.active) return new VirtualPeer(id);
-    return new RealPeer(id, PEER_OPTS);
+    return new RealPeer(id);
   }
   window.Peer = PlatPeer;
 
