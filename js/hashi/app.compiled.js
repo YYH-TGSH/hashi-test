@@ -3756,10 +3756,14 @@ function HashiGame() {
       if (!isHostRef.current && engineRef.current === 'peerjs' && connRef.current) {
         // 有禮貌地先傳送退出訊號給房主，再關閉連線
         connRef.current.send({ type: 'LEAVE', uid: myId });
+        var pToKill = peerRef.current;
         setTimeout(function () {
-          if (peerRef.current) {
-            peerRef.current.destroy();peerRef.current = null;
+          if (pToKill) {
+            try {
+              pToKill.destroy();
+            } catch (e) {}
           }
+          if (peerRef.current === pToKill) peerRef.current = null;
         }, 100);
       } else {
         if (peerRef.current) {

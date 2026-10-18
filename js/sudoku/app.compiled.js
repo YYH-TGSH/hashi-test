@@ -1524,6 +1524,26 @@ function SudokuGame() {
     };
   }, [foggedBoxes]);
 
+  // ❄️ 水球凍結：被凍結宮格內的格子暫時不能填、不能清（不再只靠 emoji 遮數字）
+  var frozenToastAtRef = useRef(0);
+  var cellBoxIdOf = function cellBoxIdOf(cellId) {
+    var parts = String(cellId).split('-');
+    var cx = parseInt(parts[0], 10),
+      cy = parseInt(parts[1], 10);
+    if (isNaN(cx) || isNaN(cy)) return -1;
+    return Math.floor(cy / cSizeDef.boxH) * (cSizeDef.size / cSizeDef.boxW) + Math.floor(cx / cSizeDef.boxW);
+  };
+  var isCellFrozen = function isCellFrozen(cellId) {
+    var exp = foggedBoxes[cellBoxIdOf(cellId)];
+    return !!exp && exp > Date.now();
+  };
+  var frozenToast = function frozenToast(what) {
+    var now = Date.now();
+    if (now - frozenToastAtRef.current < 1500) return;
+    frozenToastAtRef.current = now;
+    showToast('❄️ 這個宮格被水球凍結了，暫時不能' + what + '！');
+  };
+
   // 清除特效清理 ticker：每 500ms 清理超過 1 秒的 erasingCells
   useEffect(function () {
     if (Object.keys(erasingCells).length === 0) return;
@@ -1812,7 +1832,7 @@ function SudokuGame() {
     setFoggedBoxes(function (prev) {
       return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, randomBoxId, expiry));
     });
-    showToast("\uD83D\uDCA7 \u6C34\u7403\u547D\u4E2D\uFF01\u5BAE\u683C\u88AB\u984F\u6599\u906E\u4F4F\u4E86 10 \u79D2\uFF01");
+    showToast("\uD83D\uDCA7 \u6C34\u7403\u547D\u4E2D\uFF01\u4E00\u500B\u5BAE\u683C\u88AB\u51CD\u7D50 10 \u79D2\uFF0C\u88E1\u9762\u7684\u683C\u5B50\u66AB\u6642\u4E0D\u80FD\u52D5\uFF01");
     // 10 秒後自動解除
     setTimeout(function () {
       setFoggedBoxes(function (prev) {
@@ -2405,7 +2425,10 @@ function SudokuGame() {
     });
     if (targetIdx === -1) return;
     var target = cur[targetIdx];
-
+    if (isCellFrozen(cellId)) {
+      frozenToast('清除');
+      return;
+    }
     // 只有玩家自己填上的數字能被長按清除，題目或收禮系統填的不能清
     if (target.isGiven || target.isSystemRevealed || target.value === null) return;
     if (engineRef.current === 'none') setHistory(function (past) {
@@ -3607,6 +3630,10 @@ function SudokuGame() {
     if (targetIdx === -1) return;
     var target = cur[targetIdx];
     if (target.isGiven || target.isSystemRevealed) return;
+    if (isCellFrozen(cellId)) {
+      frozenToast('填');
+      return;
+    }
     if (engineRef.current === 'none') setHistory(function (past) {
       return [].concat(_toConsumableArray(past.slice(past.length > 25 ? 1 : 0)), [cur]);
     });
@@ -3719,11 +3746,14 @@ function SudokuGame() {
           type: 'LEAVE',
           uid: myId
         });
+        var pToKill = peerRef.current;
         setTimeout(function () {
-          if (peerRef.current) {
-            peerRef.current.destroy();
-            peerRef.current = null;
+          if (pToKill) {
+            try {
+              pToKill.destroy();
+            } catch (e) {}
           }
+          if (peerRef.current === pToKill) peerRef.current = null;
         }, 100);
       } else if (peerRef.current) {
         peerRef.current.destroy();
@@ -3961,6 +3991,27 @@ function SudokuGame() {
       waitingText: !isHost ? '等待房主開始...' : null
     });
   });
+
+  // 名單自我修復（比照數橋）：來賓的 JOIN 若在房主就緒前送達被漏接，每 2.5 秒重送，直到名單上有自己為止
+  useEffect(function () {
+    var t = setInterval(function () {
+      if (engineRef.current !== 'peerjs' || isHostRef.current) return;
+      if (!connRef.current || !connRef.current.open) return;
+      if ((playersListRef.current || []).some(function (p) {
+        return p.id === myId;
+      })) return;
+      try {
+        connRef.current.send({
+          type: 'JOIN',
+          pName: myNameRef.current || "玩家",
+          uid: myId
+        });
+      } catch (e) {}
+    }, 2500);
+    return function () {
+      return clearInterval(t);
+    };
+  }, []);
   platBarCfgRef.current = {
     accent: '#ffcc00',
     onAction: function onAction(name, payload) {
@@ -5954,6 +6005,23 @@ function SudokuGame() {
     offset: "100%",
     stopColor: "#1e1b4b",
     stopOpacity: "0.75"
+  })), /*#__PURE__*/React.createElement("radialGradient", {
+    id: "frostGrad",
+    cx: "50%",
+    cy: "45%",
+    r: "65%"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0%",
+    stopColor: "#e0f2fe",
+    stopOpacity: "0.97"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "55%",
+    stopColor: "#7dd3fc",
+    stopOpacity: "0.95"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "100%",
+    stopColor: "#0284c7",
+    stopOpacity: "0.92"
   }))), /*#__PURE__*/React.createElement("g", {
     transform: "translate(".concat(PADDING, ", ").concat(PADDING, ")")
   }, activeCells.map(function (cell) {
@@ -6268,20 +6336,32 @@ function SudokuGame() {
     var by = boxRow * cSizeDef.boxH * CELL_SIZE;
     var bw = cSizeDef.boxW * CELL_SIZE;
     var bh = cSizeDef.boxH * CELL_SIZE;
-    return /*#__PURE__*/React.createElement("text", {
+    return /*#__PURE__*/React.createElement("g", {
       key: "fog-".concat(boxId),
+      style: {
+        animation: 'fogFade 10s ease-in-out forwards',
+        pointerEvents: 'none'
+      }
+    }, /*#__PURE__*/React.createElement("rect", {
+      x: bx,
+      y: by,
+      width: bw,
+      height: bh,
+      fill: "url(#frostGrad)",
+      stroke: "#38bdf8",
+      strokeWidth: "2.5"
+    }), /*#__PURE__*/React.createElement("text", {
       x: bx + bw / 2,
       y: by + bh / 2,
       textAnchor: "middle",
       dominantBaseline: "middle",
-      fontSize: "".concat(Math.min(bw, bh) * 1.1, "px"),
+      fontSize: "".concat(Math.min(bw, bh) * 0.62, "px"),
       className: "pointer-events-none",
       style: {
-        animation: 'fogFade 10s ease-in-out forwards',
         userSelect: 'none',
         pointerEvents: 'none'
       }
-    }, "\uD83E\uDEDF");
+    }, "\u2744\uFE0F"));
   }))))), (isWon || isBrawlMode && winner) && !hideVictoryModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ".concat(isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn')
   }, /*#__PURE__*/React.createElement("div", {
