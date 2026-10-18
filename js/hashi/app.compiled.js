@@ -369,6 +369,17 @@ function HashiGame() {
       colorSeq = _useState62[0],
       setColorSeq = _useState62[1];
 
+  var _useState63 = useState(null),
+      _useState64 = _slicedToArray(_useState63, 2),
+      editTarget = _useState64[0],
+      setEditTarget = _useState64[1]; // 個人設定 modal（改名/改色，比照數獨進度條）：點自己（或房主點任何人）的選手晶片開啟
+
+
+  var _useState65 = useState(''),
+      _useState66 = _slicedToArray(_useState65, 2),
+      editName = _useState66[0],
+      setEditName = _useState66[1];
+
   // 💾 記住暱稱與房號（同一裝置下次免重打；房主代碼固定不變）
 
 
@@ -414,52 +425,52 @@ function HashiGame() {
     } catch (e) {}
   };
 
-  var _useState63 = useState(""),
-      _useState64 = _slicedToArray(_useState63, 2),
-      roomId = _useState64[0],
-      setRoomId = _useState64[1];
-
-  var _useState65 = useState(false),
-      _useState66 = _slicedToArray(_useState65, 2),
-      isHost = _useState66[0],
-      setIsHost = _useState66[1];
-
-  var _useState67 = useState(function () {
-    return loadLastRoom();
-  }),
+  var _useState67 = useState(""),
       _useState68 = _slicedToArray(_useState67, 2),
-      tempRoomId = _useState68[0],
-      setTempRoomId = _useState68[1];
+      roomId = _useState68[0],
+      setRoomId = _useState68[1];
 
-  var _useState69 = useState(""),
+  var _useState69 = useState(false),
       _useState70 = _slicedToArray(_useState69, 2),
-      tempPlayerName = _useState70[0],
-      setTempPlayerName = _useState70[1];
+      isHost = _useState70[0],
+      setIsHost = _useState70[1];
 
   var _useState71 = useState(function () {
+    return loadLastRoom();
+  }),
+      _useState72 = _slicedToArray(_useState71, 2),
+      tempRoomId = _useState72[0],
+      setTempRoomId = _useState72[1];
+
+  var _useState73 = useState(""),
+      _useState74 = _slicedToArray(_useState73, 2),
+      tempPlayerName = _useState74[0],
+      setTempPlayerName = _useState74[1];
+
+  var _useState75 = useState(function () {
     return ANIMAL_NAMES[Math.random() * ANIMAL_NAMES.length | 0];
   }),
-      _useState72 = _slicedToArray(_useState71, 1),
-      namePlaceholderAnimal = _useState72[0];
+      _useState76 = _slicedToArray(_useState75, 1),
+      namePlaceholderAnimal = _useState76[0];
 
   var nameInputRef = useRef(null);
 
-  var _useState73 = useState('choose'),
-      _useState74 = _slicedToArray(_useState73, 2),
-      joinStep = _useState74[0],
-      setJoinStep = _useState74[1]; // 'choose' | 'hostSetup' | 'guestSetup' | 'connecting' | 'nick'
-
-
-  var _useState75 = useState([]),
-      _useState76 = _slicedToArray(_useState75, 2),
-      takenNames = _useState76[0],
-      setTakenNames = _useState76[1]; // 來賓：房主回傳的已用名單快照
-
-
-  var _useState77 = useState(""),
+  var _useState77 = useState('choose'),
       _useState78 = _slicedToArray(_useState77, 2),
-      nickError = _useState78[0],
-      setNickError = _useState78[1]; // nick 步輸入框下方 inline 錯誤
+      joinStep = _useState78[0],
+      setJoinStep = _useState78[1]; // 'choose' | 'hostSetup' | 'guestSetup' | 'connecting' | 'nick'
+
+
+  var _useState79 = useState([]),
+      _useState80 = _slicedToArray(_useState79, 2),
+      takenNames = _useState80[0],
+      setTakenNames = _useState80[1]; // 來賓：房主回傳的已用名單快照
+
+
+  var _useState81 = useState(""),
+      _useState82 = _slicedToArray(_useState81, 2),
+      nickError = _useState82[0],
+      setNickError = _useState82[1]; // nick 步輸入框下方 inline 錯誤
 
 
   var joinRoleRef = useRef(null); // 'host' | 'guest'
@@ -471,45 +482,45 @@ function HashiGame() {
   var hostRoomRetryRef = useRef(false); // 房主固定代碼衝突時只自動重試一次
   // 🎰 暱稱拉霸機
 
-  var _useState79 = useState(false),
-      _useState80 = _slicedToArray(_useState79, 2),
-      showSlotMachine = _useState80[0],
-      setShowSlotMachine = _useState80[1];
-
-  var _useState81 = useState('host'),
-      _useState82 = _slicedToArray(_useState81, 2),
-      slotMode = _useState82[0],
-      setSlotMode = _useState82[1];
-
-  var _useState83 = useState(ANIMAL_NAMES),
+  var _useState83 = useState(false),
       _useState84 = _slicedToArray(_useState83, 2),
-      slotPool = _useState84[0],
-      setSlotPool = _useState84[1];
+      showSlotMachine = _useState84[0],
+      setShowSlotMachine = _useState84[1];
 
-  var _useState85 = useState(""),
+  var _useState85 = useState('host'),
       _useState86 = _slicedToArray(_useState85, 2),
-      slotName = _useState86[0],
-      setSlotName = _useState86[1];
+      slotMode = _useState86[0],
+      setSlotMode = _useState86[1];
 
-  var _useState87 = useState(false),
+  var _useState87 = useState(ANIMAL_NAMES),
       _useState88 = _slicedToArray(_useState87, 2),
-      slotSpinning = _useState88[0],
-      setSlotSpinning = _useState88[1];
+      slotPool = _useState88[0],
+      setSlotPool = _useState88[1];
 
   var _useState89 = useState(""),
       _useState90 = _slicedToArray(_useState89, 2),
-      slotFinalName = _useState90[0],
-      setSlotFinalName = _useState90[1];
+      slotName = _useState90[0],
+      setSlotName = _useState90[1];
 
   var _useState91 = useState(false),
       _useState92 = _slicedToArray(_useState91, 2),
-      slotWaiting = _useState92[0],
-      setSlotWaiting = _useState92[1];
+      slotSpinning = _useState92[0],
+      setSlotSpinning = _useState92[1];
 
-  var _useState93 = useState(0),
+  var _useState93 = useState(""),
       _useState94 = _slicedToArray(_useState93, 2),
-      slotRound = _useState94[0],
-      setSlotRound = _useState94[1];
+      slotFinalName = _useState94[0],
+      setSlotFinalName = _useState94[1];
+
+  var _useState95 = useState(false),
+      _useState96 = _slicedToArray(_useState95, 2),
+      slotWaiting = _useState96[0],
+      setSlotWaiting = _useState96[1];
+
+  var _useState97 = useState(0),
+      _useState98 = _slicedToArray(_useState97, 2),
+      slotRound = _useState98[0],
+      setSlotRound = _useState98[1];
 
   var slotPoolRef = useRef(ANIMAL_NAMES);
   var slotFinalNameRef = useRef("");
@@ -519,62 +530,62 @@ function HashiGame() {
   var guestNamesResolvedRef = useRef(false);
   var guestNamesTimeoutRef = useRef(null);
 
-  var _useState95 = useState([]),
-      _useState96 = _slicedToArray(_useState95, 2),
-      playersList = _useState96[0],
-      setPlayersList = _useState96[1];
-
-  var _useState97 = useState(false),
-      _useState98 = _slicedToArray(_useState97, 2),
-      isConnecting = _useState98[0],
-      setIsConnecting = _useState98[1];
-
-  var _useState99 = useState(true),
+  var _useState99 = useState([]),
       _useState100 = _slicedToArray(_useState99, 2),
-      showOtherCursors = _useState100[0],
-      setShowOtherCursors = _useState100[1];
+      playersList = _useState100[0],
+      setPlayersList = _useState100[1];
 
-  var _useState101 = useState({}),
+  var _useState101 = useState(false),
       _useState102 = _slicedToArray(_useState101, 2),
-      cursors = _useState102[0],
-      setCursors = _useState102[1];
+      isConnecting = _useState102[0],
+      setIsConnecting = _useState102[1];
 
-  var _useState103 = useState([]),
+  var _useState103 = useState(true),
       _useState104 = _slicedToArray(_useState103, 2),
-      ripples = _useState104[0],
-      setRipples = _useState104[1];
+      showOtherCursors = _useState104[0],
+      setShowOtherCursors = _useState104[1];
+
+  var _useState105 = useState({}),
+      _useState106 = _slicedToArray(_useState105, 2),
+      cursors = _useState106[0],
+      setCursors = _useState106[1];
+
+  var _useState107 = useState([]),
+      _useState108 = _slicedToArray(_useState107, 2),
+      ripples = _useState108[0],
+      setRipples = _useState108[1];
 
   // 💬 聊天室
 
 
-  var _useState105 = useState([]),
-      _useState106 = _slicedToArray(_useState105, 2),
-      chatMsgs = _useState106[0],
-      setChatMsgs = _useState106[1]; // {id, uid, name, color, text, ts, mine}
-
-
-  var _useState107 = useState(false),
-      _useState108 = _slicedToArray(_useState107, 2),
-      chatOpen = _useState108[0],
-      setChatOpen = _useState108[1];
-
-  var _useState109 = useState(''),
+  var _useState109 = useState([]),
       _useState110 = _slicedToArray(_useState109, 2),
-      chatInput = _useState110[0],
-      setChatInput = _useState110[1];
+      chatMsgs = _useState110[0],
+      setChatMsgs = _useState110[1]; // {id, uid, name, color, text, ts, mine}
 
-  var _useState111 = useState(0),
+
+  var _useState111 = useState(false),
       _useState112 = _slicedToArray(_useState111, 2),
-      unreadChat = _useState112[0],
-      setUnreadChat = _useState112[1];
+      chatOpen = _useState112[0],
+      setChatOpen = _useState112[1];
+
+  var _useState113 = useState(''),
+      _useState114 = _slicedToArray(_useState113, 2),
+      chatInput = _useState114[0],
+      setChatInput = _useState114[1];
+
+  var _useState115 = useState(0),
+      _useState116 = _slicedToArray(_useState115, 2),
+      unreadChat = _useState116[0],
+      setUnreadChat = _useState116[1];
 
   var chatOpenRef = useRef(false);
   var chatListRef = useRef(null);
 
-  var _useState113 = useState(false),
-      _useState114 = _slicedToArray(_useState113, 2),
-      chatMin = _useState114[0],
-      setChatMin = _useState114[1]; // 💬 聊天室收合
+  var _useState117 = useState(false),
+      _useState118 = _slicedToArray(_useState117, 2),
+      chatMin = _useState118[0],
+      setChatMin = _useState118[1]; // 💬 聊天室收合
 
   // 💬 聊天室邏輯
 
@@ -615,25 +626,25 @@ function HashiGame() {
 
   // 📹 圓形視訊（PeerJS MediaConnection，走 WebRTC 不經伺服器）
 
-  var _useState115 = useState(false),
-      _useState116 = _slicedToArray(_useState115, 2),
-      videoOn = _useState116[0],
-      setVideoOn = _useState116[1];
-
-  var _useState117 = useState(false),
-      _useState118 = _slicedToArray(_useState117, 2),
-      micMuted = _useState118[0],
-      setMicMuted = _useState118[1];
-
-  var _useState119 = useState(null),
+  var _useState119 = useState(false),
       _useState120 = _slicedToArray(_useState119, 2),
-      localStream = _useState120[0],
-      setLocalStream = _useState120[1];
+      videoOn = _useState120[0],
+      setVideoOn = _useState120[1];
 
-  var _useState121 = useState({}),
+  var _useState121 = useState(false),
       _useState122 = _slicedToArray(_useState121, 2),
-      remoteVideos = _useState122[0],
-      setRemoteVideos = _useState122[1]; // uid -> MediaStream
+      micMuted = _useState122[0],
+      setMicMuted = _useState122[1];
+
+  var _useState123 = useState(null),
+      _useState124 = _slicedToArray(_useState123, 2),
+      localStream = _useState124[0],
+      setLocalStream = _useState124[1];
+
+  var _useState125 = useState({}),
+      _useState126 = _slicedToArray(_useState125, 2),
+      remoteVideos = _useState126[0],
+      setRemoteVideos = _useState126[1]; // uid -> MediaStream
 
 
   var localStreamRef = useRef(null);
@@ -644,21 +655,21 @@ function HashiGame() {
   }, [videoOn]);
   // 🔊 喇叭預設關閉；有人開麥發言時提示是否開音效
 
-  var _useState123 = useState(false),
-      _useState124 = _slicedToArray(_useState123, 2),
-      speakerOn = _useState124[0],
-      setSpeakerOn = _useState124[1];
-
-  var _useState125 = useState({}),
-      _useState126 = _slicedToArray(_useState125, 2),
-      remoteMic = _useState126[0],
-      setRemoteMic = _useState126[1]; // uid -> muted(bool)
-
-
-  var _useState127 = useState(null),
+  var _useState127 = useState(false),
       _useState128 = _slicedToArray(_useState127, 2),
-      speakPrompt = _useState128[0],
-      setSpeakPrompt = _useState128[1]; // {uid, name}
+      speakerOn = _useState128[0],
+      setSpeakerOn = _useState128[1];
+
+  var _useState129 = useState({}),
+      _useState130 = _slicedToArray(_useState129, 2),
+      remoteMic = _useState130[0],
+      setRemoteMic = _useState130[1]; // uid -> muted(bool)
+
+
+  var _useState131 = useState(null),
+      _useState132 = _slicedToArray(_useState131, 2),
+      speakPrompt = _useState132[0],
+      setSpeakPrompt = _useState132[1]; // {uid, name}
 
 
   var speakerOnRef = useRef(false);
@@ -858,56 +869,56 @@ function HashiGame() {
 
   // 首次教學導覽
 
-  var _useState129 = useState(false),
-      _useState130 = _slicedToArray(_useState129, 2),
-      showTutorial = _useState130[0],
-      setShowTutorial = _useState130[1];
+  var _useState133 = useState(false),
+      _useState134 = _slicedToArray(_useState133, 2),
+      showTutorial = _useState134[0],
+      setShowTutorial = _useState134[1];
 
-  var _useState131 = useState(0),
-      _useState132 = _slicedToArray(_useState131, 2),
-      tutorialStep = _useState132[0],
-      setTutorialStep = _useState132[1];
+  var _useState135 = useState(0),
+      _useState136 = _slicedToArray(_useState135, 2),
+      tutorialStep = _useState136[0],
+      setTutorialStep = _useState136[1];
 
   // 靜音偏好（與全域音效引擎同步）
 
 
-  var _useState133 = useState(function () {
+  var _useState137 = useState(function () {
     try {
       return localStorage.getItem('hashi_muted') === '1';
     } catch (e) {
       return false;
     }
   }),
-      _useState134 = _slicedToArray(_useState133, 2),
-      muted = _useState134[0],
-      setMuted = _useState134[1];
+      _useState138 = _slicedToArray(_useState137, 2),
+      muted = _useState138[0],
+      setMuted = _useState138[1];
 
   // 🏁 競速模式
 
 
-  var _useState135 = useState('coop'),
-      _useState136 = _slicedToArray(_useState135, 2),
-      mpMode = _useState136[0],
-      setMpMode = _useState136[1]; // 'coop' | 'race'
-
-
-  var _useState137 = useState('idle'),
-      _useState138 = _slicedToArray(_useState137, 2),
-      raceState = _useState138[0],
-      setRaceState = _useState138[1]; // idle | lobby | countdown | racing | finished
-
-
-  var _useState139 = useState({}),
+  var _useState139 = useState('coop'),
       _useState140 = _slicedToArray(_useState139, 2),
-      raceProgress = _useState140[0],
-      setRaceProgress = _useState140[1];
+      mpMode = _useState140[0],
+      setMpMode = _useState140[1]; // 'coop' | 'race'
+
+
+  var _useState141 = useState('idle'),
+      _useState142 = _slicedToArray(_useState141, 2),
+      raceState = _useState142[0],
+      setRaceState = _useState142[1]; // idle | lobby | countdown | racing | finished
+
+
+  var _useState143 = useState({}),
+      _useState144 = _slicedToArray(_useState143, 2),
+      raceProgress = _useState144[0],
+      setRaceProgress = _useState144[1];
   // ⚔️ 大亂鬥擴充：盤面快照（上帝視角）+ 道具 + 特效
 
 
-  var _useState141 = useState({}),
-      _useState142 = _slicedToArray(_useState141, 2),
-      brawlBoards = _useState142[0],
-      setBrawlBoards = _useState142[1];
+  var _useState145 = useState({}),
+      _useState146 = _slicedToArray(_useState145, 2),
+      brawlBoards = _useState146[0],
+      setBrawlBoards = _useState146[1];
 
   var brawlBoardsRef = useRef({});
   useEffect(function () {
@@ -915,20 +926,20 @@ function HashiGame() {
   }, [brawlBoards]);
   // 🎮 統一多人框架：等待室 + 大亂鬥設定 + 本局選手名單
 
-  var _useState143 = useState(false),
-      _useState144 = _slicedToArray(_useState143, 2),
-      roomOpen = _useState144[0],
-      setRoomOpen = _useState144[1];
+  var _useState147 = useState(false),
+      _useState148 = _slicedToArray(_useState147, 2),
+      roomOpen = _useState148[0],
+      setRoomOpen = _useState148[1];
   // 開始按鈕門檻（與數獨同款，競速模式）：全員（含房主）準備好，或等待室已開滿 PLAT_START_WAIT_MS（預設 1 分鐘，防掛機卡房），房主才能開始。合作模式無準備機制，不套門檻
 
 
   var waitingSinceRef = useRef(null);
   var canStartRef = useRef(false);
 
-  var _useState145 = useState(0),
-      _useState146 = _slicedToArray(_useState145, 2),
-      waitTick = _useState146[0],
-      setWaitTick = _useState146[1];
+  var _useState149 = useState(0),
+      _useState150 = _slicedToArray(_useState149, 2),
+      waitTick = _useState150[0],
+      setWaitTick = _useState150[1];
 
   useEffect(function () {
     if (!roomOpen) waitingSinceRef.current = null;
@@ -945,125 +956,125 @@ function HashiGame() {
     };
   }, [roomOpen, isHost]);
 
-  var _useState147 = useState(false),
-      _useState148 = _slicedToArray(_useState147, 2),
-      showRoomSettings = _useState148[0],
-      setShowRoomSettings = _useState148[1];
-
-  var _useState149 = useState({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true }),
-      _useState150 = _slicedToArray(_useState149, 2),
-      brawlSettings = _useState150[0],
-      setBrawlSettings = _useState150[1];
-
-  var _useState151 = useState([]),
+  var _useState151 = useState(false),
       _useState152 = _slicedToArray(_useState151, 2),
-      raceRacers = _useState152[0],
-      setRaceRacers = _useState152[1];
+      showRoomSettings = _useState152[0],
+      setShowRoomSettings = _useState152[1];
 
-  var _useState153 = useState(null),
+  var _useState153 = useState({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true }),
       _useState154 = _slicedToArray(_useState153, 2),
-      godViewUid = _useState154[0],
-      setGodViewUid = _useState154[1];
+      brawlSettings = _useState154[0],
+      setBrawlSettings = _useState154[1];
 
   var _useState155 = useState([]),
       _useState156 = _slicedToArray(_useState155, 2),
-      myItems = _useState156[0],
-      setMyItems = _useState156[1];
+      raceRacers = _useState156[0],
+      setRaceRacers = _useState156[1];
 
-  var _useState157 = useState({}),
+  var _useState157 = useState(null),
       _useState158 = _slicedToArray(_useState157, 2),
-      fxFog = _useState158[0],
-      setFxFog = _useState158[1];
+      godViewUid = _useState158[0],
+      setGodViewUid = _useState158[1];
 
-  var _useState159 = useState({}),
+  var _useState159 = useState([]),
       _useState160 = _slicedToArray(_useState159, 2),
-      fxPhantom = _useState160[0],
-      setFxPhantom = _useState160[1];
+      myItems = _useState160[0],
+      setMyItems = _useState160[1];
 
-  var _useState161 = useState(0),
+  var _useState161 = useState({}),
       _useState162 = _slicedToArray(_useState161, 2),
-      fxInvertUntil = _useState162[0],
-      setFxInvertUntil = _useState162[1];
+      fxFog = _useState162[0],
+      setFxFog = _useState162[1];
 
-  var _useState163 = useState(Date.now()),
+  var _useState163 = useState({}),
       _useState164 = _slicedToArray(_useState163, 2),
-      fxNow = _useState164[0],
-      setFxNow = _useState164[1];
+      fxPhantom = _useState164[0],
+      setFxPhantom = _useState164[1];
 
-  var _useState165 = useState(null),
+  var _useState165 = useState(0),
       _useState166 = _slicedToArray(_useState165, 2),
-      raceResult = _useState166[0],
-      setRaceResult = _useState166[1];
+      fxInvertUntil = _useState166[0],
+      setFxInvertUntil = _useState166[1];
 
-  var _useState167 = useState(false),
+  var _useState167 = useState(Date.now()),
       _useState168 = _slicedToArray(_useState167, 2),
-      raceWaiting = _useState168[0],
-      setRaceWaiting = _useState168[1];
+      fxNow = _useState168[0],
+      setFxNow = _useState168[1];
 
   var _useState169 = useState(null),
       _useState170 = _slicedToArray(_useState169, 2),
-      raceCountdown = _useState170[0],
-      setRaceCountdown = _useState170[1];
+      raceResult = _useState170[0],
+      setRaceResult = _useState170[1];
+
+  var _useState171 = useState(false),
+      _useState172 = _slicedToArray(_useState171, 2),
+      raceWaiting = _useState172[0],
+      setRaceWaiting = _useState172[1];
+
+  var _useState173 = useState(null),
+      _useState174 = _slicedToArray(_useState173, 2),
+      raceCountdown = _useState174[0],
+      setRaceCountdown = _useState174[1];
 
   // ⭐ 星級評分
 
 
-  var _useState171 = useState(0),
-      _useState172 = _slicedToArray(_useState171, 2),
-      stars = _useState172[0],
-      setStars = _useState172[1];
+  var _useState175 = useState(0),
+      _useState176 = _slicedToArray(_useState175, 2),
+      stars = _useState176[0],
+      setStars = _useState176[1];
 
-  var _useState173 = useState(false),
-      _useState174 = _slicedToArray(_useState173, 2),
-      isNewBest = _useState174[0],
-      setIsNewBest = _useState174[1];
+  var _useState177 = useState(false),
+      _useState178 = _slicedToArray(_useState177, 2),
+      isNewBest = _useState178[0],
+      setIsNewBest = _useState178[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState175 = useState([]),
-      _useState176 = _slicedToArray(_useState175, 2),
-      bursts = _useState176[0],
-      setBursts = _useState176[1];
+  var _useState179 = useState([]),
+      _useState180 = _slicedToArray(_useState179, 2),
+      bursts = _useState180[0],
+      setBursts = _useState180[1];
 
-  var _useState177 = useState([]),
-      _useState178 = _slicedToArray(_useState177, 2),
-      confetti = _useState178[0],
-      setConfetti = _useState178[1];
+  var _useState181 = useState([]),
+      _useState182 = _slicedToArray(_useState181, 2),
+      confetti = _useState182[0],
+      setConfetti = _useState182[1];
 
   // 每日一題
 
 
-  var _useState179 = useState(false),
-      _useState180 = _slicedToArray(_useState179, 2),
-      isDailyMode = _useState180[0],
-      setIsDailyMode = _useState180[1];
-
-  var _useState181 = useState(""),
-      _useState182 = _slicedToArray(_useState181, 2),
-      dailyDateStr = _useState182[0],
-      setDailyDateStr = _useState182[1];
-
-  var _useState183 = useState(0),
+  var _useState183 = useState(false),
       _useState184 = _slicedToArray(_useState183, 2),
-      dailyStreak = _useState184[0],
-      setDailyStreak = _useState184[1];
+      isDailyMode = _useState184[0],
+      setIsDailyMode = _useState184[1];
 
-  var _useState185 = useState(null),
+  var _useState185 = useState(""),
       _useState186 = _slicedToArray(_useState185, 2),
-      dailyDone = _useState186[0],
-      setDailyDone = _useState186[1];
+      dailyDateStr = _useState186[0],
+      setDailyDateStr = _useState186[1];
+
+  var _useState187 = useState(0),
+      _useState188 = _slicedToArray(_useState187, 2),
+      dailyStreak = _useState188[0],
+      setDailyStreak = _useState188[1];
+
+  var _useState189 = useState(null),
+      _useState190 = _slicedToArray(_useState189, 2),
+      dailyDone = _useState190[0],
+      setDailyDone = _useState190[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState187 = useState(function () {
+  var _useState191 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState188 = _slicedToArray(_useState187, 2),
-      dailyMenuDate = _useState188[0],
-      setDailyMenuDate = _useState188[1];
+      _useState192 = _slicedToArray(_useState191, 2),
+      dailyMenuDate = _useState192[0],
+      setDailyMenuDate = _useState192[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1093,22 +1104,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState189 = useState(false),
-      _useState190 = _slicedToArray(_useState189, 2),
-      zoomOpen = _useState190[0],
-      setZoomOpen = _useState190[1];
+  var _useState193 = useState(false),
+      _useState194 = _slicedToArray(_useState193, 2),
+      zoomOpen = _useState194[0],
+      setZoomOpen = _useState194[1];
 
-  var _useState191 = useState(false),
-      _useState192 = _slicedToArray(_useState191, 2),
-      drawSubOpen = _useState192[0],
-      setDrawSubOpen = _useState192[1];
+  var _useState195 = useState(false),
+      _useState196 = _slicedToArray(_useState195, 2),
+      drawSubOpen = _useState196[0],
+      setDrawSubOpen = _useState196[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState193 = useState(0),
-      _useState194 = _slicedToArray(_useState193, 2),
-      dockTick = _useState194[0],
-      setDockTick = _useState194[1];
+  var _useState197 = useState(0),
+      _useState198 = _slicedToArray(_useState197, 2),
+      dockTick = _useState198[0],
+      setDockTick = _useState198[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -2726,10 +2737,10 @@ function HashiGame() {
   // PlatRoom（殼共用等待室）
   var roomMountRef = useRef(null);
 
-  var _useState195 = useState(null),
-      _useState196 = _slicedToArray(_useState195, 2),
-      roomSlot = _useState196[0],
-      setRoomSlot = _useState196[1];
+  var _useState199 = useState(null),
+      _useState200 = _slicedToArray(_useState199, 2),
+      roomSlot = _useState200[0],
+      setRoomSlot = _useState200[1];
 
   var roomCfgRef = useRef(null);
   var roomCfgStable = useRef(null);
@@ -2751,7 +2762,13 @@ function HashiGame() {
     });
   };
   roomCfgRef.current = { onAction: function onAction(n, key) {
-      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'player-toggle') toggleSpectatorById(key);else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
+      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'player-click') {
+        var pl = playersListRef.current.find(function (x) {
+          return String(x.id) === String(key);
+        });if (pl && (pl.id === myId || isHostRef.current)) {
+          setEditName(pl.name);setEditTarget(pl.id);
+        }
+      } else if (n === 'player-toggle') toggleSpectatorById(key);else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
         if (mpMode === 'race') {
           if (canStartRef.current) startRace();else showToast('⏳ 等全員準備好，或等待 1 分鐘後才能開始');
         } else startCoop();
@@ -2795,7 +2812,7 @@ function HashiGame() {
             return c.uid === pl.id && c.open;
           }) ? false : null,
           badge: pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
-          toggle: pl.id === myId || isHostRef.current ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: false };
+          toggle: pl.id === myId || isHostRef.current ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: pl.id === myId || isHostRef.current };
       }),
       myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
       readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
@@ -3360,10 +3377,10 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState197 = useState(false),
-      _useState198 = _slicedToArray(_useState197, 2),
-      platTournLock = _useState198[0],
-      setPlatTournLock = _useState198[1];
+  var _useState201 = useState(false),
+      _useState202 = _slicedToArray(_useState201, 2),
+      platTournLock = _useState202[0],
+      setPlatTournLock = _useState202[1];
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
 
 
@@ -3619,6 +3636,17 @@ function HashiGame() {
               setPlayersList(function (prev) {
                 var nList = prev.map(function (pl) {
                   if (pl.id === m.targetId) return _extends({}, pl, { color: m.color });
+                  return pl;
+                });
+                connsRef.current.forEach(function (conn) {
+                  return conn.send({ type: 'PLAYERS_UPDATE', players: nList });
+                });
+                return nList;
+              });
+            } else if (m.type === 'REQ_NAME_CHANGE') {
+              setPlayersList(function (prev) {
+                var nList = prev.map(function (pl) {
+                  if (pl.id === m.targetId) return _extends({}, pl, { name: m.name });
                   return pl;
                 });
                 connsRef.current.forEach(function (conn) {
@@ -4284,6 +4312,26 @@ function HashiGame() {
         connRef.current.send({ type: 'REQ_COLOR_CHANGE', targetId: playerId, color: newColor });
       }
     }
+  };
+
+  // 改名（比照數獨 handlePlayerNameChange）：房主直接改名單並廣播；來賓送 REQ_NAME_CHANGE 請房主改
+  var handlePlayerNameChange = function handlePlayerNameChange(playerId, newName) {
+    if (engineRef.current === 'none') {
+      setPlayersList(function (prev) {
+        return prev.map(function (p) {
+          return p.id === playerId ? _extends({}, p, { name: newName }) : p;
+        });
+      });
+    } else if (engineRef.current === 'peerjs') {
+      if (isHostRef.current) {
+        var nList = playersListRef.current.map(function (p) {
+          return p.id === playerId ? _extends({}, p, { name: newName }) : p;
+        });setPlayersList(nList);connsRef.current.forEach(function (c) {
+          if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
+        });
+      } else if (connRef.current) connRef.current.send({ type: 'REQ_NAME_CHANGE', targetId: playerId, name: newName });
+    }
+    showToast("✅ 暱稱修改成功！");
   };
 
   useEffect(function () {
@@ -5754,7 +5802,7 @@ function HashiGame() {
           )
         )
       ),
-      isMultiplayer && React.createElement(
+      isMultiplayer && !(inRace && raceState !== 'lobby') && React.createElement(
         'div',
         { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 flex flex-wrap gap-2 items-center relative z-[70] shadow-inner shrink-0' },
         React.createElement(
@@ -5926,75 +5974,174 @@ function HashiGame() {
       ),
       inRace && raceState !== 'lobby' && React.createElement(
         'div',
-        { className: 'px-4 py-2 bg-[#f6fdf6] border-b-4 border-slate-800 shrink-0 relative z-40' },
+        { className: 'bg-[#f6fdf6] border-b-4 border-slate-800 shrink-0 relative z-40' },
         React.createElement(
           'div',
-          { className: 'flex flex-col gap-1.5' },
+          { className: 'px-2 md:px-4 py-1.5 flex flex-nowrap gap-2 items-center shadow-inner overflow-x-auto hide-scrollbar w-full' },
           React.createElement(
-            'p',
-            { className: 'text-xs font-black text-slate-500' },
-            '\uD83C\uDFC1 \u5927\u4E82\u9B25\u9032\u5EA6'
+            'span',
+            { className: 'font-black text-slate-800 text-xs shrink-0 whitespace-nowrap' },
+            '\uD83D\uDC65 \u73A9\u5BB6\uFF1A'
           ),
-          Object.keys(raceProgress).map(function (uid) {
-            var info = raceProgress[uid];
-            var pct = Math.round(info.progress * 100);
+          playersList.map(function (p, idx) {
+            var isMe = p.id === myId;
+            var isRainbow = p.color === 'rainbow';
+            var rinfo = raceProgress[p.id];
+            var pct = rinfo ? Math.round(rinfo.progress * 100) : 0;
             return React.createElement(
               'div',
-              { key: uid, className: 'flex items-center gap-2' },
+              { key: idx, className: "shrink-0 flex flex-col gap-0.5 border-2 border-slate-800 rounded px-1.5 py-0.5 relative cursor-pointer hover:bg-slate-100 transition-colors " + (p.isSpectator ? 'opacity-60 bg-slate-100' : 'bg-white'),
+                onClick: function onClick() {
+                  if (isMe || isHostRef.current) {
+                    setEditName(p.name);setEditTarget(p.id);
+                  } else {
+                    showToast("⚠️ 只有房主可以更改其他玩家的設定！");
+                  }
+                },
+                title: isMe ? "點擊修改設定" : isHostRef.current ? "房主可修改他人設定" : "無法修改他人設定" },
+              React.createElement('div', { className: 'absolute left-0 top-0 bottom-0 w-1 rounded-l-[1px]', style: { background: isRainbow ? 'linear-gradient(180deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } }),
               React.createElement(
-                'span',
-                { className: 'text-xs font-black text-slate-800 w-24 truncate' },
-                info.name,
-                uid === myId ? '(你)' : ''
+                'div',
+                { className: 'flex items-center gap-1 text-[10px] md:text-xs font-bold text-slate-800 pl-1.5 whitespace-nowrap' },
+                p.name,
+                ' ',
+                p.isHost && '👑',
+                ' ',
+                p.isSpectator && ' 👁️',
+                ' ',
+                isMe && '(你)',
+                React.createElement(
+                  'span',
+                  { className: 'text-emerald-600 font-mono ml-1' },
+                  pct,
+                  '%'
+                )
               ),
               React.createElement(
                 'div',
-                { className: 'flex-1 h-4 bg-slate-200 border-2 border-slate-800 rounded-full overflow-hidden' },
-                React.createElement('div', { className: 'h-full bg-emerald-400 transition-all duration-500', style: { width: pct + '%' } })
-              ),
-              React.createElement(
-                'span',
-                { className: 'text-xs font-black text-slate-800 w-12 text-right' },
-                pct,
-                '%'
+                { className: 'w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300' },
+                React.createElement('div', { className: 'h-full transition-all duration-300', style: { width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } })
               )
             );
-          }),
-          (raceState === 'racing' || raceState === 'finished') && React.createElement(
-            'div',
-            { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
-            raceState === 'finished' && React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
-                }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
-              '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2'
-            ),
-            fxInvertUntil > fxNow && React.createElement(
-              'span',
-              { className: 'px-2 py-1 bg-red-100 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs' },
-              '\uD83D\uDD00 \u985B\u5012\u4E2D ',
-              Math.ceil((fxInvertUntil - fxNow) / 1000),
-              's'
-            ),
-            Object.keys(fxFog).some(function (id) {
-              return fxFog[id] > fxNow;
-            }) && React.createElement(
-              'span',
-              { className: 'px-2 py-1 bg-slate-200 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs' },
-              '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
-            ),
-            Object.keys(fxPhantom).some(function (id) {
-              return fxPhantom[id] > fxNow;
-            }) && React.createElement(
-              'span',
-              { className: 'px-2 py-1 bg-purple-100 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs' },
-              '\u2753 \u5E7B\u5F71\u4E2D'
-            )
+          })
+        ),
+        (raceState === 'racing' || raceState === 'finished') && React.createElement(
+          'div',
+          { className: 'px-4 pb-1.5 flex items-center gap-1.5 flex-wrap' },
+          raceState === 'finished' && React.createElement(
+            'button',
+            { onClick: function onClick() {
+                var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
+              }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
+            '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2'
+          ),
+          fxInvertUntil > fxNow && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-red-100 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs' },
+            '\uD83D\uDD00 \u985B\u5012\u4E2D ',
+            Math.ceil((fxInvertUntil - fxNow) / 1000),
+            's'
+          ),
+          Object.keys(fxFog).some(function (id) {
+            return fxFog[id] > fxNow;
+          }) && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-slate-200 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs' },
+            '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
+          ),
+          Object.keys(fxPhantom).some(function (id) {
+            return fxPhantom[id] > fxNow;
+          }) && React.createElement(
+            'span',
+            { className: 'px-2 py-1 bg-purple-100 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs' },
+            '\u2753 \u5E7B\u5F71\u4E2D'
           )
         )
       ),
       renderGodModal(),
+      editTarget && React.createElement(
+        'div',
+        { className: 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto animate-fadeIn', onClick: function onClick(e) {
+            e.stopPropagation();setEditTarget(null);setColorSeq([]);
+          } },
+        React.createElement(
+          'div',
+          { className: 'bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4', onClick: function onClick(e) {
+              return e.stopPropagation();
+            } },
+          React.createElement(
+            'div',
+            { className: 'flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2' },
+            React.createElement(
+              'h3',
+              { className: 'text-sm font-black text-slate-800' },
+              '\u2699\uFE0F \u500B\u4EBA\u8A2D\u5B9A'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  setEditTarget(null);setColorSeq([]);
+                }, className: 'text-slate-400 hover:text-slate-800 font-black text-lg leading-none' },
+              '\u2715'
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'mb-4' },
+            React.createElement(
+              'label',
+              { className: 'block text-[10px] md:text-xs font-bold text-slate-600 mb-1' },
+              '\u4FEE\u6539\u66B1\u7A31\uFF1A'
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex gap-2' },
+              React.createElement('input', { type: 'text', value: editName, onChange: function onChange(e) {
+                  return setEditName(e.target.value);
+                }, placeholder: '\u8F38\u5165\u65B0\u66B1\u7A31', className: 'w-full border-2 border-slate-800 rounded px-2 py-1 text-xs font-bold outline-none focus:ring-1 ring-emerald-400' }),
+              React.createElement(
+                'button',
+                { onClick: function onClick(e) {
+                    e.stopPropagation();
+                    var newName = editName.trim();
+                    if (!newName) return showToast("⚠️ 暱稱不能為空");
+                    if (playersList.some(function (p) {
+                      return p.name === newName && p.id !== editTarget;
+                    })) return showToast("⚠️ 此暱稱已被其他人使用");
+                    handlePlayerNameChange(editTarget, newName);
+                    setEditTarget(null);
+                    setColorSeq([]);
+                  }, className: 'bg-blue-500 text-white font-bold text-[10px] md:text-xs px-3 rounded border-2 border-slate-800 hover:bg-blue-600 active:translate-y-[1px] whitespace-nowrap' },
+                '\u5132\u5B58'
+              )
+            )
+          ),
+          React.createElement(
+            'label',
+            { className: 'block text-[10px] md:text-xs font-bold text-slate-600 mb-1' },
+            '\u4FEE\u6539\u4EE3\u8868\u8272\uFF1A'
+          ),
+          React.createElement(
+            'div',
+            { className: 'grid grid-cols-5 gap-2' },
+            COLORS.map(function (color) {
+              return React.createElement('button', { key: color, onClick: function onClick(e) {
+                  e.stopPropagation();var colorIdx = COLORS.indexOf(color);var newSeq = [].concat(_toConsumableArray(colorSeq), [colorIdx]);var targetSeq = [0, 4, 15, 19];var isValid = true;for (var i = 0; i < newSeq.length; i++) {
+                    if (newSeq[i] !== targetSeq[i]) {
+                      isValid = false;break;
+                    }
+                  }if (isValid) {
+                    setColorSeq(newSeq);if (newSeq.length === 4) {
+                      handlePlayerColorChange(editTarget, 'rainbow');setEditTarget(null);showToast("🌈 解鎖隱藏彩色漸變！");setColorSeq([]);
+                    } else handlePlayerColorChange(editTarget, color);
+                  } else {
+                    setColorSeq([]);handlePlayerColorChange(editTarget, color);setEditTarget(null);
+                  }
+                }, className: 'w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[3px_3px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none mx-auto', style: { backgroundColor: color }, title: color });
+            })
+          )
+        )
+      ),
       !isHeaderCollapsed && React.createElement(
         'div',
         { className: 'h-8 shrink-0 flex items-center justify-center bg-slate-800 text-white border-b-4 border-slate-800 relative z-30 font-bold tracking-wide' },

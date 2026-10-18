@@ -750,8 +750,15 @@ function SudokuGame() {
     var isDoneEntry = function isDoneEntry(p) {
       return p.isSpectator || winnersIds.includes(p.id) || p.name && winnerNames.includes(p.name);
     };
+    // 房主自己也是選手，必須一併了結才能結算（五戰第三局來賓先贏、房主被跳結算的根因：
+    // contenders 只算非房主，來賓一完賽 every() 就成立，房主還在玩就被拉去看成績、賽程斷掉）。
+    // 數橋 maybeFinalize 本來就有把自己的完賽算進 finCount，數獨這裡對齊。
+    var hostEntry = playersListRef.current.find(function (p) {
+      return p.isHost;
+    });
+    var hostDone = !hostEntry || isDoneEntry(hostEntry);
     var winnersLimit = stateRef.current.isBrawlMode ? stateRef.current.brawlSettings.winnersCount || 1 : 1;
-    var allDone = newWinners.length >= winnersLimit || contenders.length > 0 && contenders.every(isDoneEntry);
+    var allDone = newWinners.length >= winnersLimit || hostDone && contenders.length > 0 && contenders.every(isDoneEntry);
     var winnerObj = stateRef.current.isBrawlMode ? newWinners[0] || winInfo : winInfo;
     stateRef.current.brawlWinners = newWinners;
     if (allDone) {
