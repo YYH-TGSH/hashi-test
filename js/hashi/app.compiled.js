@@ -1171,6 +1171,7 @@ function HashiGame() {
   var raceSeqRef = useRef(0);
   var raceResultsRef = useRef({});
   var myFinishTimeRef = useRef(null);
+  var finishResentRef = useRef(0); // RACE_FINISH 補送次數（完賽回報補送用）
   var lastProgressSentRef = useRef(0);
   var lastProgressValRef = useRef(-1);
   var myItemsRef = useRef([]);
@@ -3280,6 +3281,25 @@ function HashiGame() {
     };
   }, []);
 
+  // 完賽回報補送（與數獨 GHOST_I_WON 補送同款邏輯）：RACE_FINISH 原本只送一次，
+  // 途中連線替換/掉包就永遠遺失、房主卡在等結果。完賽後仍在 racing 期間每 3 秒補送（上限 6 次），房主端以 uid 去重。
+  useEffect(function () {
+    var t = setInterval(function () {
+      if (engineRef.current !== 'peerjs' || isHostRef.current) return;
+      if (myFinishTimeRef.current == null) return;
+      if (raceStateRef.current !== 'racing') return;
+      if (finishResentRef.current >= 6) return;
+      if (!connRef.current || !connRef.current.open) return;
+      finishResentRef.current++;
+      try {
+        connRef.current.send({ type: 'RACE_FINISH', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: myFinishTimeRef.current });
+      } catch (e) {}
+    }, 3000);
+    return function () {
+      return clearInterval(t);
+    };
+  }, []);
+
   // 進度列以玩家名單為準：名單上沒有的 uid（舊連線殘留/重進前的殭屍列）直接修剪掉
   useEffect(function () {
     var ids = new Set(playersList.map(function (pl) {
@@ -4094,6 +4114,7 @@ function HashiGame() {
   var onRaceSelfFinish = function onRaceSelfFinish(timeMs) {
     sendBrawlMsg({ type: 'BRAWL_STATE', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, progress: 1, bridges: stateRef.current.bridges });
     myFinishTimeRef.current = timeMs;
+    finishResentRef.current = 0;
     var msg = { type: 'RACE_FINISH', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: timeMs };
     if (isHostRef.current) {
       connsRef.current.forEach(function (c) {

@@ -99,7 +99,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.4.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.4.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_VERSION = PLAT_VERSION;
 
   var PLAT_COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
@@ -1448,7 +1448,7 @@
     this._cbs = {}; this._closed = false; this.uid = undefined; this._dq = [];
     this.connectionId = realConn.connectionId || ('vc-' + realConn.peer);
   }
-  Object.defineProperty(VirtualConn.prototype, 'open', { get: function () { return !this._closed && !!this._real.open; } });
+  Object.defineProperty(VirtualConn.prototype, 'open', { get: function () { return !this._closed && !(this._vp && this._vp._destroyed) && !!this._real.open; } });
   VirtualConn.prototype.on = function (ev, cb) {
     (this._cbs[ev] = this._cbs[ev] || []).push(cb);
     if (ev === 'open' && this.open) { var s = this; setTimeout(function () { if (!s._closed) cb(); }, 0); }
@@ -1461,7 +1461,7 @@
     if (l && l.length) this._fire('data', d);
     else { this._dq.push(d); if (this._dq.length > 100) this._dq.shift(); }
   };
-  VirtualConn.prototype.send = function (d) { if (this._closed) return; tournSniff(Net.myPid, d); try { this._real.send(d); } catch (e) {} };
+  VirtualConn.prototype.send = function (d) { if (this._closed || (this._vp && this._vp._destroyed)) return; tournSniff(Net.myPid, d); try { this._real.send(d); } catch (e) {} };
   VirtualConn.prototype.close = function () { this._closed = true; }; // 共用連線：不關實體連線
   VirtualConn.prototype._fire = function (ev, arg) {
     var l = this._cbs[ev] || [];
@@ -1490,8 +1490,10 @@
   };
   VirtualPeer.prototype.wrapperFor = function (realConn, peerLabel) {
     var key = realConn.peer;
-    if (!this._wrappers[key]) this._wrappers[key] = new VirtualConn(realConn, this, peerLabel || realConn.peer);
-    return this._wrappers[key];
+    var w = this._wrappers[key];
+    if (!w) { w = this._wrappers[key] = new VirtualConn(realConn, this, peerLabel || realConn.peer); }
+    else if (w._real !== realConn) { w._real = realConn; w._closed = false; } // 同 pid 重連換了新實體連線：重新綁定，否則遊戲層 send 會一直送進已死的舊連線（收得到、送不出）
+    return w;
   };
   VirtualPeer.prototype._deliverAll = function () {
     if (this._destroyed) return;

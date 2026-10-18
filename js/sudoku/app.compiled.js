@@ -232,6 +232,8 @@ function SudokuGame() {
     winner = _useState30[0],
     setWinner = _useState30[1];
   var isWinnerDeclaredRef = useRef(false);
+  var lastWinInfoRef = useRef(null); // 最近一次完賽資訊（GHOST_I_WON 補送用）
+  var winResentRef = useRef(0);
   var _useState31 = useState(false),
     _useState32 = _slicedToArray(_useState31, 2),
     showSetupModal = _useState32[0],
@@ -736,13 +738,20 @@ function SudokuGame() {
     var winnersIds = newWinners.map(function (w) {
       return w.id || w.uid;
     });
-    var playingPlayers = playersListRef.current.filter(function (p) {
-      return !p.isSpectator && !p.isHost;
+    var winnerNames = newWinners.map(function (w) {
+      return w.name;
     });
+    // 結算條件硬化：非房主玩家「已完賽（id 或名字對上）或觀戰中」都算了結。
+    // 舊式只認「未觀戰選手全數在 winners」：名單旗標/uid 一旦分歧（觀戰旗標殘留、重連換 id），
+    // allDone 永遠不成立，房主會永遠卡在「等待第 N 名完成」。
+    var contenders = playersListRef.current.filter(function (p) {
+      return !p.isHost;
+    });
+    var isDoneEntry = function isDoneEntry(p) {
+      return p.isSpectator || winnersIds.includes(p.id) || p.name && winnerNames.includes(p.name);
+    };
     var winnersLimit = stateRef.current.isBrawlMode ? stateRef.current.brawlSettings.winnersCount || 1 : 1;
-    var allDone = newWinners.length >= winnersLimit || playingPlayers.length > 0 && playingPlayers.every(function (p) {
-      return winnersIds.includes(p.id);
-    });
+    var allDone = newWinners.length >= winnersLimit || contenders.length > 0 && contenders.every(isDoneEntry);
     var winnerObj = stateRef.current.isBrawlMode ? newWinners[0] || winInfo : winInfo;
     stateRef.current.brawlWinners = newWinners;
     if (allDone) {
@@ -1023,6 +1032,9 @@ function SudokuGame() {
   useEffect(function () {
     if (!isHost || engineRef.current !== 'peerjs') return;
     var interval = setInterval(function () {
+      // 每 tick 重新驗證仍在連線模式：exit() 後 isHost/matchPhase 可能不變、effect 不會 cleanup，
+      // 不擋下會變成殭屍廣播——切換到另一款遊戲後持續把舊名單蓋過去（五戰數獨→數橋來賓閃爍根因）
+      if (!isHostRef.current || engineRef.current !== 'peerjs') return;
       var list = playersListRef.current;
       var phase = stateRef.current.matchPhase;
 
@@ -1395,6 +1407,8 @@ function SudokuGame() {
             time: formatTime(Math.floor((finishTime - (matchStartTime || startTime)) / 1000)),
             isBrawl: isBrawl
           };
+          lastWinInfoRef.current = winInfo;
+          winResentRef.current = 0;
 
           // 客戶端先本地同步一份獲勝名單，增加即時感 (v3.10.4)
           if (isBrawl) setBrawlWinners(function (prev) {
@@ -4029,6 +4043,31 @@ function SudokuGame() {
         });
       } catch (e) {}
     }, 2500);
+    return function () {
+      return clearInterval(t);
+    };
+  }, []);
+
+  // 完賽回報補送（與數橋 RACE_FINISH 補送同款邏輯）：大亂鬥來賓的 GHOST_I_WON 原本只送一次，
+  // 途中連線替換/掉包就永遠遺失、房主卡在等結果。房主宣布完賽前每 3 秒補送（上限 6 次），房主端以 winInfo.id 去重。
+  useEffect(function () {
+    var t = setInterval(function () {
+      if (engineRef.current !== 'peerjs' || isHostRef.current) return;
+      if (!isWinnerDeclaredRef.current || !lastWinInfoRef.current) return;
+      if (!stateRef.current.isBrawlMode || stateRef.current.matchPhase === 'finished') return;
+      if (winResentRef.current >= 6) return;
+      if (!connRef.current || !connRef.current.open) return;
+      winResentRef.current++;
+      try {
+        connRef.current.send({
+          type: 'GHOST_I_WON',
+          senderUid: myId,
+          id: Math.random().toString(36).substring(2, 10),
+          time: Date.now(),
+          winInfo: lastWinInfoRef.current
+        });
+      } catch (e) {}
+    }, 3000);
     return function () {
       return clearInterval(t);
     };
