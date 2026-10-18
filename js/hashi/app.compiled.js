@@ -162,13 +162,41 @@ function HashiGame() {
 
   var playerIdRef = useRef(function () {
     try {
-      var u = localStorage.getItem('plat_uid_hashi');if (!u) {
-        u = Math.random().toString(36).substring(2, 12);localStorage.setItem('plat_uid_hashi', u);
-      }return u;
+      var K = 'plat_uid_hashi';
+      var tab = sessionStorage.getItem(K + '_tab');
+      if (!tab) {
+        tab = Math.random().toString(36).substring(2, 8);try {
+          sessionStorage.setItem(K + '_tab', tab);
+        } catch (e) {}
+      }
+      var claim = null;try {
+        claim = JSON.parse(localStorage.getItem(K + '_claim') || 'null');
+      } catch (e) {}
+      if (claim && claim.tab !== tab && Date.now() - claim.ts < 8000) {
+        // 同瀏覽器另一個分頁正在用正規 uid（雙分頁/同機雙開測試）：本分頁改用分頁專屬 uid，避免兩邊同 uid 撞成同一個人
+        var alt = sessionStorage.getItem(K + '_alt');
+        if (!alt) {
+          alt = Math.random().toString(36).substring(2, 12);try {
+            sessionStorage.setItem(K + '_alt', alt);
+          } catch (e) {}
+        }
+        return alt;
+      }
+      var beat = function beat() {
+        try {
+          localStorage.setItem(K + '_claim', JSON.stringify({ tab: tab, ts: Date.now() }));
+        } catch (e) {}
+      };
+      beat();setInterval(beat, 3000);
+      var u = localStorage.getItem(K);
+      if (!u) {
+        u = Math.random().toString(36).substring(2, 12);localStorage.setItem(K, u);
+      }
+      return u;
     } catch (e) {
       return Math.random().toString(36).substring(2, 12);
     }
-  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）
+  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
   var myColorRef = useRef(COLORS[0]);
@@ -1338,17 +1366,7 @@ function HashiGame() {
   useEffect(function () {
     raceProgressRef.current = raceProgress;
   }, [raceProgress]);
-  // 房主：選手全員準備好 → 自動開始（比照數獨；不等的話房主可強制開始）
-  useEffect(function () {
-    if (!isHostRef.current || !roomOpen) return;
-    if (mpModeRef.current !== 'race' || raceStateRef.current !== 'lobby') return;
-    var racers = playersList.filter(function (p) {
-      return !p.isSpectator;
-    });
-    if (racers.length >= 2 && racers.every(function (p) {
-      return p.isReady;
-    })) startRace();
-  }, [playersList, roomOpen]);
+  // （2026-10-18 使用者指示：準備只是打勾，不自動開賽——一律等房主按「開始」才開賽）
 
   // ✨ 島嶼完成粒子：偵測「未完成 → 完成」
   useEffect(function () {
@@ -2738,7 +2756,7 @@ function HashiGame() {
       myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
       readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
       mySpectator: null,
-      start: isHostRef.current ? mpMode === 'race' ? { label: roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始', kind: 'danger', disabled: roomRacers.length < 2, note: roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了！' : '全員準備好會自動開始，也可以強制開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
+      start: isHostRef.current ? mpMode === 'race' ? { label: '🏁 開始大亂鬥', kind: 'primary', disabled: roomRacers.length < 2, note: roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了，等房主按開始！' : '準備只是打勾，要等房主按開始才會開賽' } : { label: '🤝 開始合作', kind: 'primary' } : null,
       waitingText: !isHostRef.current ? '等待房主開始...' : null
     });
   });
@@ -6478,7 +6496,7 @@ function HashiGame() {
               React.createElement(
                 'p',
                 { className: 'text-xs text-slate-500 font-bold text-center' },
-                roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了！' : '全員準備好會自動開始，也可以強制開始'
+                roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了，等房主按開始！' : '準備只是打勾，要等房主按開始才會開賽'
               )
             ) : React.createElement(
               'button',

@@ -63,16 +63,49 @@ function SudokuGame() {
   var _SIZES$find, _DIFFICULTIES$find;
   var playerIdRef = useRef(function () {
     try {
-      var u = localStorage.getItem('plat_uid_sudoku');
+      var K = 'plat_uid_sudoku';
+      var tab = sessionStorage.getItem(K + '_tab');
+      if (!tab) {
+        tab = Math.random().toString(36).substring(2, 8);
+        try {
+          sessionStorage.setItem(K + '_tab', tab);
+        } catch (e) {}
+      }
+      var claim = null;
+      try {
+        claim = JSON.parse(localStorage.getItem(K + '_claim') || 'null');
+      } catch (e) {}
+      if (claim && claim.tab !== tab && Date.now() - claim.ts < 8000) {
+        // 同瀏覽器另一個分頁正在用正規 uid（雙分頁/同機雙開測試）：本分頁改用分頁專屬 uid，避免兩邊同 uid 撞成同一個人
+        var alt = sessionStorage.getItem(K + '_alt');
+        if (!alt) {
+          alt = Math.random().toString(36).substring(2, 12);
+          try {
+            sessionStorage.setItem(K + '_alt', alt);
+          } catch (e) {}
+        }
+        return alt;
+      }
+      var beat = function beat() {
+        try {
+          localStorage.setItem(K + '_claim', JSON.stringify({
+            tab: tab,
+            ts: Date.now()
+          }));
+        } catch (e) {}
+      };
+      beat();
+      setInterval(beat, 3000);
+      var u = localStorage.getItem(K);
       if (!u) {
         u = Math.random().toString(36).substring(2, 12);
-        localStorage.setItem('plat_uid_sudoku', u);
+        localStorage.setItem(K, u);
       }
       return u;
     } catch (e) {
       return Math.random().toString(36).substring(2, 12);
     }
-  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）
+  }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
   var myColorRef = useRef(COLORS[Math.floor(Math.random() * COLORS.length)]);
@@ -865,24 +898,9 @@ function SudokuGame() {
     setIsDraggingZoom(false);
     setIsDraggingMode(false);
   };
-  useEffect(function () {
-    if (!isHostRef.current && isMultiplayer) return;
-    if (matchPhase === 'waiting' && playersList.length > 0) {
-      var racers = playersList.filter(function (p) {
-        return !p.isSpectator;
-      });
-      var allReady = racers.length > 0 && racers.every(function (p) {
-        return p.isReady;
-      });
-      if (allReady) {
-        var target = Date.now() + 5000;
-        syncState({
-          matchPhase: 'countdown',
-          countdownTarget: target
-        }, true);
-      }
-    }
-  }, [playersList, matchPhase, isMultiplayer]);
+
+  // （2026-10-18 使用者指示：準備只是打勾，不自動開賽——一律等房主按「開始比賽」才倒數）
+
   useEffect(function () {
     setGhostHints({});
     completedRegionsRef.current.clear();
@@ -3985,8 +4003,8 @@ function SudokuGame() {
       readyOff: '✋ 準備好了',
       mySpectator: null,
       start: isHost ? {
-        label: '⚡ 強制開始',
-        kind: 'danger'
+        label: '🏁 開始比賽',
+        kind: 'primary'
       } : null,
       waitingText: !isHost ? '等待房主開始...' : null
     });
@@ -5474,8 +5492,8 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleForceStart,
     className: "w-full py-4 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all",
-    title: "\u7121\u8996\u6E96\u5099\u72C0\u614B\u76F4\u63A5\u958B\u59CB"
-  }, "\u26A1 \u5F37\u5236\u958B\u59CB"))), platDock && /*#__PURE__*/React.createElement("div", {
+    title: "\u623F\u4E3B\u4E0B\u4EE4\u958B\u59CB"
+  }, "\uD83C\uDFC1 \u958B\u59CB\u6BD4\u8CFD"))), platDock && /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mt-3"
   }, renderDockCapsule(false))))), countdownValue !== null && !isGenerating && !(typeof window !== 'undefined' && window.PlatCountdown) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 backdrop-blur-md pointer-events-auto"
