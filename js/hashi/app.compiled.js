@@ -5185,7 +5185,7 @@ function HashiGame() {
               React.createElement(
                 'button',
                 { onClick: function onClick() {
-                    if (window.PlatDock && window.PlatDock.isActive()) window.PlatDock.goLobby();else if (window.PLAT_show) window.PLAT_show('lobby');
+                    if (window.PLAT_show) window.PLAT_show('home');
                   }, className: 'flex-1 py-2.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
                 '\uD83C\uDFE0 \u56DE\u5927\u5EF3'
               ),

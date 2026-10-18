@@ -110,6 +110,7 @@ function SudokuGame() {
   var myNameRef = useRef("");
   var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
   var tournRosterRef = useRef(null); // 五戰名單帶入：本局預期選手（殼 sess.tourn.roster），等待室先種灰色未到席位
+  var platTournLockRef = useRef(false); // 五戰鎖定（ref 版，完賽結算判定用）
   var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
   var lastPingRef = useRef(0);
   var myColorRef = useRef(COLORS[Math.floor(Math.random() * COLORS.length)]);
@@ -761,6 +762,15 @@ function SudokuGame() {
     var hostDone = !hostEntry || isDoneEntry(hostEntry);
     var winnersLimit = stateRef.current.isBrawlMode ? stateRef.current.brawlSettings.winnersCount || 1 : 1;
     var allDone = newWinners.length >= winnersLimit || hostDone && contenders.length > 0 && contenders.every(isDoneEntry);
+    if (platTournLockRef.current) {
+      // 五戰本局：必須等所有選手（含房主）都真的完賽才結算——名額到齊、觀戰旗標都不能提前觸發結算（使用者回報第五局被提前結算）
+      var racers = playersListRef.current.filter(function (p) {
+        return !p.pending;
+      });
+      allDone = racers.length > 0 && racers.every(function (p) {
+        return winnersIds.includes(p.id) || p.name && winnerNames.includes(p.name);
+      });
+    }
     var winnerObj = stateRef.current.isBrawlMode ? newWinners[0] || winInfo : winInfo;
     stateRef.current.brawlWinners = newWinners;
     if (allDone) {
@@ -4561,6 +4571,7 @@ function SudokuGame() {
     window.__PLAT_HOOKS_sudoku = {
       enter: function enter(sess) {
         setPlatTournLock(!!sess.tourn);
+        platTournLockRef.current = !!sess.tourn;
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         if (sess.tourn && sess.isHost) {
           // 賽程預設：套用賽程的版型/難度，結束名次設為全員（不提前結束）
@@ -4600,6 +4611,7 @@ function SudokuGame() {
       },
       exit: function exit() {
         setPlatTournLock(false);
+        platTournLockRef.current = false;
         tournRosterRef.current = null;
         handleGoHome();
       },
@@ -5505,7 +5517,7 @@ function SudokuGame() {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        if (window.PlatDock && window.PlatDock.isActive()) window.PlatDock.goLobby();else if (window.PLAT_show) window.PLAT_show('lobby');
+        if (window.PLAT_show) window.PLAT_show('home');
       },
       className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
