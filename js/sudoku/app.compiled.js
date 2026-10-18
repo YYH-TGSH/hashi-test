@@ -3934,9 +3934,18 @@ function SudokuGame() {
     setRoomSlot = _useState174[1];
   var roomCfgRef = useRef(null);
   var roomCfgStable = useRef(null);
+  // 開始按鈕門檻（與數橋同款）：全員（含房主）準備好，或等待室已開滿 PLAT_START_WAIT_MS（預設 1 分鐘，防掛機卡房），房主才能開始
+  var waitingSinceRef = useRef(null);
+  var canStartRef = useRef(false);
+  var _useState175 = useState(0),
+    _useState176 = _slicedToArray(_useState175, 2),
+    waitTick = _useState176[0],
+    setWaitTick = _useState176[1];
   roomCfgRef.current = {
     onAction: function onAction(n, key) {
-      if (n === 'ready') handleReady();else if (n === 'start') handleForceStart();else if (n === 'leave') handleGoHome();else if (n === 'refresh') {
+      if (n === 'ready') handleReady();else if (n === 'start') {
+        if (canStartRef.current) handleForceStart();else showToast('⏳ 等全員準備好，或等待 1 分鐘後才能開始');
+      } else if (n === 'leave') handleGoHome();else if (n === 'refresh') {
         var list = playersListRef.current;
         connsRef.current.forEach(function (conn) {
           if (conn.open) conn.send({
@@ -3963,6 +3972,20 @@ function SudokuGame() {
   };
   var sudokuRoomVisible = matchPhase === 'waiting' && engine !== 'local';
   useEffect(function () {
+    if (!sudokuRoomVisible) waitingSinceRef.current = null;
+  }, [sudokuRoomVisible]);
+  useEffect(function () {
+    if (!sudokuRoomVisible || !isHost) return;
+    var t = setInterval(function () {
+      return setWaitTick(function (x) {
+        return x + 1;
+      });
+    }, 1000);
+    return function () {
+      return clearInterval(t);
+    };
+  }, [sudokuRoomVisible, isHost]);
+  useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatRoom) return;
     var el = roomMountRef.current;
     if (el) {
@@ -3985,6 +4008,17 @@ function SudokuGame() {
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatRoom || !window.PlatRoom.isAttached()) return;
     if (!sudokuRoomVisible) return;
+    if (waitingSinceRef.current == null) waitingSinceRef.current = Date.now();
+    var waitMsGate = typeof window !== 'undefined' && window.PLAT_START_WAIT_MS || 60000;
+    var contendersGate = playersList.filter(function (p) {
+      return !p.isSpectator;
+    });
+    var allReadyGate = contendersGate.length > 0 && contendersGate.every(function (p) {
+      return p.isReady;
+    });
+    var waitedGate = Date.now() - waitingSinceRef.current >= waitMsGate;
+    var canStartGate = allReadyGate || waitedGate;
+    canStartRef.current = canStartGate;
     var me = playersList.find(function (pl) {
       return pl.id === myId;
     }) || {};
@@ -4021,7 +4055,9 @@ function SudokuGame() {
       mySpectator: null,
       start: isHost ? {
         label: '🏁 開始比賽',
-        kind: 'primary'
+        kind: 'primary',
+        disabled: !canStartGate,
+        note: !canStartGate ? '等待全員準備（或等待 1 分鐘後開放開始）' : allReadyGate ? '全員準備好了！' : '已等待 1 分鐘，房主可直接開始'
       } : null,
       waitingText: !isHost ? '等待房主開始...' : null
     });
@@ -4385,10 +4421,10 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState175 = useState(false),
-    _useState176 = _slicedToArray(_useState175, 2),
-    platTournLock = _useState176[0],
-    setPlatTournLock = _useState176[1];
+  var _useState177 = useState(false),
+    _useState178 = _slicedToArray(_useState177, 2),
+    platTournLock = _useState178[0],
+    setPlatTournLock = _useState178[1];
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（免重打暱稱/房號） =====
   useEffect(function () {
     if (!window.__PLAT_PLATFORM) return;
@@ -4520,6 +4556,10 @@ function SudokuGame() {
     }
     connsRef.current = [];
     connRef.current = null;
+    // 身份重置（關鍵）：isHost 必須在每次 setup 依角色重設。exit 時 switchToOffline 會把 isHost 設 true（單機＝房主），
+    // 若來賓重入時不重置，state/ref 會一直是 true——來賓會看到房主的「開始比賽」鈕、還會誤跑房主邏輯（五戰第三局來賓出現開始鈕的根因；數橋在各分支都有重設，數獨漏了）
+    setIsHost(!!isCreating);
+    isHostRef.current = !!isCreating;
     var savedProg = loadLocalProgress(rId, myId);
     setConnectionStatus(isCreating ? "正在啟動通訊模組..." : "\u6B63\u5728\u5C0B\u627E\u623F\u9593 ".concat(rId, "..."));
     if (isCreating) {
