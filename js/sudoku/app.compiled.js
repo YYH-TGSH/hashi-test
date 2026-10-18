@@ -278,6 +278,7 @@ function SudokuGame() {
     _useState52 = _slicedToArray(_useState51, 2),
     hideVictoryModal = _useState52[0],
     setHideVictoryModal = _useState52[1];
+  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 matchPhase：同 phase 內關了不再彈，phase 變了——如結算——再彈）
   var _useState53 = useState(""),
     _useState54 = _slicedToArray(_useState53, 2),
     toastMsg = _useState54[0],
@@ -844,6 +845,108 @@ function SudokuGame() {
     if (typeof window === 'undefined' || !window.PlatCountdown) return;
     if (countdownValue !== null && !isGenerating) window.PlatCountdown.show(countdownValue);else window.PlatCountdown.hide();
   }, [countdownValue, isGenerating]);
+
+  // 共用結算畫面（PlatResults，與數橋同框架）：大亂鬥結算改餵殼 spec，本地 modal 只作無殼時 fallback
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatResults) return;
+    var showLocal = isBrawlMode && (isWon || winner);
+    if (!showLocal) {
+      window.PlatResults.hide();
+      resultsDismissRef.current = null;
+      return;
+    }
+    if (resultsDismissRef.current === matchPhase) {
+      window.PlatResults.hide();
+      return;
+    }
+    var finishedPhase = matchPhase === 'finished';
+    var entries = brawlWinners.map(function (w) {
+      return {
+        key: String(w.id),
+        name: w.name,
+        color: w.color,
+        isMe: w.id === myId,
+        right: '⏱ ' + w.time
+      };
+    });
+    if (finishedPhase) {
+      var winIds = {};
+      brawlWinners.forEach(function (w) {
+        winIds[w.id] = true;
+      });
+      var rest = playersList.filter(function (p) {
+        return !p.isSpectator && !winIds[p.id];
+      }).map(function (p) {
+        return {
+          p: p,
+          prog: ghostProgress[p.id] || 0
+        };
+      }).sort(function (a, b) {
+        return b.prog - a.prog;
+      }).map(function (x) {
+        return {
+          key: String(x.p.id),
+          name: x.p.name,
+          color: x.p.color,
+          isMe: x.p.id === myId,
+          isHost: !!x.p.isHost,
+          right: '未完成 · ' + Math.round(x.prog) + '%'
+        };
+      });
+      entries.push.apply(entries, rest);
+    }
+    var iWon = brawlWinners.length > 0 && brawlWinners[0].id === myId;
+    var iFinished = brawlWinners.some(function (w) {
+      return w.id === myId;
+    });
+    var canControl = isHostRef.current || brawlSettings.allowOthersToPlayAgain !== false;
+    var watchAction = function watchAction() {
+      resultsDismissRef.current = matchPhase;
+      window.PlatResults.hide();
+      setHideVictoryModal(true);
+      setFinishViewMode('god');
+      toggleSpectator(myId, true, true);
+      showToast("👁️ 已轉變為上帝模式，您可以繼續觀看其他玩家比賽");
+    };
+    window.PlatResults.show({
+      accent: '#ffcc00',
+      title: '大亂鬥結果',
+      entries: entries,
+      verdict: finishedPhase ? iWon ? '🎉 你贏了！' : iFinished ? '完賽了，名次如上！' : '比賽結束，結果如上' : null,
+      waitingText: !finishedPhase ? '比賽尚未結束，等待其他玩家完成…' : null,
+      note: finishedPhase && !canControl ? '⏳ 等待房主決定下一局...' : null,
+      buttons: finishedPhase ? canControl ? [{
+        id: 'watch',
+        label: '👁️ 看盤面'
+      }, {
+        id: 'rematch',
+        label: '🔁 再來一局',
+        kind: 'primary'
+      }, {
+        id: 'lobby',
+        label: '🏁 回等待室'
+      }, {
+        id: 'home',
+        label: '離開'
+      }] : [] : [{
+        id: 'watch',
+        label: '👁️ 轉變為上帝模式（觀戰）',
+        kind: 'primary'
+      }],
+      onAction: function onAction(id) {
+        if (id === 'watch') watchAction();else if (id === 'rematch') {
+          window.PlatResults.hide();
+          handlePlayAgain();
+        } else if (id === 'lobby') {
+          window.PlatResults.hide();
+          handleBackToLobby();
+        } else if (id === 'home') {
+          window.PlatResults.hide();
+          handleGoHome();
+        }
+      }
+    });
+  });
 
   // --- 漂浮選單拖動邏輯 (通用) ---
   useEffect(function () {
@@ -6549,7 +6652,7 @@ function SudokuGame() {
         pointerEvents: 'none'
       }
     }, "\u2744\uFE0F"));
-  }))))), (isWon || isBrawlMode && winner) && !hideVictoryModal && /*#__PURE__*/React.createElement("div", {
+  }))))), (isWon || isBrawlMode && winner) && !hideVictoryModal && !(isBrawlMode && typeof window !== 'undefined' && window.PlatResults) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ".concat(isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn')
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] md:min-w-[320px] relative ".concat(isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter')

@@ -99,7 +99,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.6.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.7.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線穿透設定（單一來源，所有 RealPeer 建構點共用）：PeerJS 預設只有 STUN，
   // 遇到對稱 NAT/電信 CGNAT/擋 UDP 的網路（如雙方不同家、手機網路）資料連線打不通——同區網沒事、跨網路連不上就是這個。
@@ -624,7 +624,7 @@
     a[what] = round; if (game) a.enteredGame = game;
   }
   function doLaunch(game, mode, tournSess) {
-    if (window.PlatCountdown) window.PlatCountdown.hide();
+    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
     Net.inMatch = game; Net.matchMode = mode || 'coop';
     if (tournSess && Net.tourn) { Net.tourn.phase = tournSess.playoff ? 'playoff' : 'playing'; Net.tourn.round = tournSess.round; Net.tourn.curGame = game; Net.tourn.settled = false; }
     renderLobby();
@@ -639,7 +639,7 @@
   function doReturnToLobby() {
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     if (g) exitGameHook(g);
-    if (window.PlatCountdown) window.PlatCountdown.hide();
+    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
     if (Net.tourn) { if (Net.isHost) tournSelfAck('lobby', Net.tourn.round); else platToHost({ kind: 'tourn-ack', what: 'lobby', round: Net.tourn.round, uid: Net.myUid }); }
     renderLobby();
     window.PLAT_show('lobby');
@@ -1266,6 +1266,71 @@
       _visible: function () { return !!(el && el.style.display === 'flex'); }
     };
   })();
+
+  // ---------- 共用結算畫面 PlatResults（數獨/數橋大亂鬥共用同一框架；遊戲只餵 spec：條目/判定/按鈕） ----------
+  var PR2 = { spec: null, json: '' };
+  function pr2El() {
+    var el = document.getElementById('plat-results');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'plat-results';
+      el.style.cssText = 'position:fixed;inset:0;z-index:850;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);padding:16px';
+      document.body.appendChild(el);
+      el.addEventListener('click', function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('[data-pres]') : null;
+        if (b && !b.disabled && PR2.spec && PR2.spec.onAction) { try { PR2.spec.onAction(b.getAttribute('data-pres')); } catch (err) {} }
+      });
+    }
+    return el;
+  }
+  function pr2Render() {
+    var el = pr2El(); var s = PR2.spec;
+    if (!s) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    var ac = s.accent || '#ffcc00';
+    var medals = ['🥇', '🥈', '🥉'];
+    var h = '<div class="bg-white rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] text-center animate-popUpCenter" style="min-width:300px;max-width:28rem;width:100%;max-height:92vh;overflow-y:auto">';
+    h += '<div style="font-size:2.6rem;line-height:1.1">🏆</div>';
+    h += '<h2 class="text-2xl md:text-3xl font-black text-slate-800 mb-4">' + pbEsc(s.title || '大亂鬥結果') + '</h2>';
+    (s.entries || []).forEach(function (e, i) {
+      var medal = medals[i] || ((i + 1) + '.');
+      var rowStyle = i === 0 ? 'background:' + ac + '2e;border-color:#1e293b' : 'background:#f8fafc;border-color:#cbd5e1';
+      var stripe = e.color === 'rainbow' ? 'background:linear-gradient(180deg, red, orange, yellow, green, blue, indigo, violet)' : 'background:' + (e.color || '#94a3b8');
+      h += '<div class="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl text-left" style="border-width:3px;border-style:solid;' + rowStyle + '">'
+        + '<span class="shrink-0 text-center" style="font-size:1.4rem;width:2rem">' + medal + '</span>'
+        + '<span class="shrink-0 rounded-full" style="width:4px;align-self:stretch;' + stripe + '"></span>'
+        + '<span class="font-black text-slate-800 flex-1 truncate">' + pbEsc(e.name || '玩家') + (e.isMe ? '(你)' : '') + (e.isHost ? ' 👑' : '') + '</span>'
+        + '<span class="font-mono font-black text-slate-700 shrink-0" style="font-size:.85rem">' + pbEsc(e.right || '') + '</span></div>';
+    });
+    if (s.waitingText) h += '<p class="font-black text-slate-500 animate-pulse my-2">⏳ ' + pbEsc(s.waitingText) + '</p>';
+    if (s.verdict) h += '<p class="text-emerald-600 font-black text-lg my-2">' + pbEsc(s.verdict) + '</p>';
+    if (s.stars != null) {
+      h += '<div class="flex justify-center gap-2 my-3">';
+      for (var si = 0; si < 3; si++) h += '<span style="font-size:2.2rem;line-height:1' + (si < s.stars ? '' : ';opacity:.2;filter:grayscale(1)') + '">⭐</span>';
+      h += '</div>';
+    }
+    if (s.buttons && s.buttons.length) {
+      h += '<div class="flex justify-center gap-2 mt-4 flex-wrap">';
+      s.buttons.forEach(function (b) {
+        var st = b.kind === 'primary' ? 'background:' + ac + ';color:#0f172a' : (b.kind === 'danger' ? 'background:#f87171;color:#0f172a' : 'background:#ffffff;color:#1e293b');
+        h += '<button data-pres="' + pbEsc(b.id) + '"' + (b.disabled ? ' disabled' : '') + ' class="px-4 py-3 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] transition-all disabled:opacity-40" style="' + st + '">' + pbEsc(b.label) + '</button>';
+      });
+      h += '</div>';
+    }
+    if (s.note) h += '<p class="text-xs font-bold text-slate-400 mt-3">' + pbEsc(s.note) + '</p>';
+    h += '</div>';
+    el.innerHTML = h;
+    el.style.display = 'flex';
+  }
+  window.PlatResults = {
+    show: function (spec) {
+      var j = '';
+      try { j = JSON.stringify(spec, function (k, v) { return k === 'onAction' ? undefined : v; }); } catch (e) {}
+      if (j && j === PR2.json && PR2.spec) { PR2.spec.onAction = spec.onAction; return; }
+      PR2.json = j; PR2.spec = spec; pr2Render();
+    },
+    hide: function () { if (!PR2.spec && !PR2.json) return; PR2.spec = null; PR2.json = ''; pr2Render(); },
+    _visible: function () { return !!PR2.spec; }
+  };
 
   window.PlatRoom = {
     attach: function (el, cfg) {

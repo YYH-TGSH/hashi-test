@@ -1011,6 +1011,8 @@ function HashiGame() {
       raceWaiting = _useState172[0],
       setRaceWaiting = _useState172[1];
 
+  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
+
   var _useState173 = useState(null),
       _useState174 = _slicedToArray(_useState173, 2),
       raceCountdown = _useState174[0],
@@ -2826,6 +2828,70 @@ function HashiGame() {
     if (typeof window === 'undefined' || !window.PlatCountdown) return;
     if (raceCountdown !== null) window.PlatCountdown.show(raceCountdown === 0 ? 'GO!' : raceCountdown);else window.PlatCountdown.hide();
   }, [raceCountdown]);
+
+  // 共用結算畫面（PlatResults，與數獨同框架）：大亂鬥結算改餵殼 spec，本地 modal/等待 pill 只作無殼時 fallback
+  useEffect(function () {
+    if (typeof window === 'undefined' || !window.PlatResults) return;
+    var fin = inRace && raceState === 'finished' && raceResult;
+    var wait = inRace && raceWaiting && raceState === 'racing';
+    if (!fin && !wait) {
+      window.PlatResults.hide();resultsDismissRef.current = null;return;
+    }
+    if (resultsDismissRef.current === raceState) {
+      window.PlatResults.hide();return;
+    }
+    var watchAction = function watchAction() {
+      resultsDismissRef.current = raceState;
+      window.PlatResults.hide();
+      var opps = Object.keys(brawlBoards);
+      if (opps.length) setGodViewUid(opps[0]);
+    };
+    if (fin) {
+      var iFinished = raceResult.entries.some(function (e) {
+        return e.uid === myId && e.finished;
+      });
+      window.PlatResults.show({
+        accent: '#4ade80', title: '大亂鬥結果',
+        entries: raceResult.entries.map(function (e) {
+          return { key: String(e.uid), name: e.name, color: e.color, isMe: e.uid === myId, right: e.finished ? '⏱ ' + formatTime(Math.floor(e.timeMs / 1000)) : '未完成 · ' + Math.round((e.progress || 0) * 100) + '%' };
+        }),
+        verdict: raceResult.winnerUid === myId ? '🎉 你贏了！' : iFinished ? '完賽了，名次如上！' : '比賽結束，結果如上',
+        stars: iFinished ? stars : null,
+        note: !isHostRef.current ? '再來一局／回等待室都會帶全員一起' : null,
+        buttons: [{ id: 'watch', label: '👁️ 看盤面' }, { id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }, { id: 'home', label: '離開' }],
+        onAction: function onAction(id) {
+          if (id === 'watch') watchAction();else if (id === 'rematch') {
+            window.PlatResults.hide();playAgain();
+          } else if (id === 'lobby') {
+            window.PlatResults.hide();requestLobby();
+          } else if (id === 'home') {
+            window.PlatResults.hide();handleGoHome();
+          }
+        }
+      });
+    } else {
+      var fins = [];
+      if (myFinishTimeRef.current != null) fins.push({ uid: myId, name: myNameRef.current || '你', color: myColorRef.current, timeMs: myFinishTimeRef.current });
+      Object.keys(raceResultsRef.current).forEach(function (uid) {
+        var r = raceResultsRef.current[uid];
+        if (!r.dnf) fins.push({ uid: uid, name: r.name, color: r.color, timeMs: r.timeMs });
+      });
+      fins.sort(function (a, b) {
+        return a.timeMs - b.timeMs;
+      });
+      window.PlatResults.show({
+        accent: '#4ade80', title: '大亂鬥結果',
+        entries: fins.map(function (f) {
+          return { key: String(f.uid), name: f.name, color: f.color, isMe: f.uid === myId, right: '⏱ ' + formatTime(Math.floor(f.timeMs / 1000)) };
+        }),
+        waitingText: '等待其他玩家完成…',
+        buttons: [{ id: 'watch', label: '👁️ 觀戰對手', kind: 'primary' }],
+        onAction: function onAction(id) {
+          if (id === 'watch') watchAction();
+        }
+      });
+    }
+  });
 
   var handleUndo = function handleUndo() {
     if (history.length === 0 || isWon || engineRef.current !== 'none') return;
@@ -6932,7 +6998,7 @@ function HashiGame() {
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
-        inRace && raceWaiting && raceState === 'racing' && React.createElement(
+        inRace && raceWaiting && raceState === 'racing' && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(
           'div',
           { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[58] bg-slate-800 text-white px-5 py-2 rounded-full font-black border-[3px] border-white shadow-lg animate-pulse whitespace-nowrap' },
           '\u23F3 \u7B49\u5F85\u5C0D\u624B\u5B8C\u6210... ',
@@ -6944,7 +7010,7 @@ function HashiGame() {
             '\uD83D\uDC41\uFE0F \u89C0\u6230\u5C0D\u624B'
           )
         ),
-        inRace && raceState === 'finished' && raceResult && React.createElement(
+        inRace && raceState === 'finished' && raceResult && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
           React.createElement(
