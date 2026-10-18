@@ -199,6 +199,9 @@ function HashiGame() {
   }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
+  var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
+  var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
+  var lastPingRef = useRef(0);
   var myColorRef = useRef(COLORS[0]);
 
   var initialDataRef = useRef(null);
@@ -2749,7 +2752,9 @@ function HashiGame() {
     window.PlatRoom.update({
       title: '🎮 遊戲大廳', code: roomId, showRefresh: false,
       players: playersList.map(function (pl) {
-        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, online: null,
+        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, online: pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
+            return c.uid === pl.id && c.open;
+          }) ? false : null,
           badge: pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
           toggle: pl.id === myId || isHostRef.current ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: false };
       }),
@@ -3354,6 +3359,58 @@ function HashiGame() {
     };
   }, []);
 
+  // 在線心跳（與數獨同款）：來賓每 10 秒 ping 房主；房主記錄每人最後出現時間，25 秒標離線、等待中 60 秒無回應移除。
+  // 底層連線的 close 訊號在 App 被直接關掉時可能拖很久，心跳負責即時性；房主把 isOffline 寫進名單條目，廣播自動帶給全場。
+  useEffect(function () {
+    var iv = setInterval(function () {
+      if (engineRef.current !== 'peerjs') return;
+      var now = Date.now();
+      if (!isHostRef.current) {
+        if (now - (lastPingRef.current || 0) >= 10000 && connRef.current && connRef.current.open) {
+          lastPingRef.current = now;
+          try {
+            connRef.current.send({ type: 'PING', uid: myId });
+          } catch (e) {}
+        }
+        return;
+      }
+      var list = playersListRef.current || [];
+      var waiting = raceStateRef.current === 'lobby' || mpModeRef.current === 'coop' && !(stateRef.current && stateRef.current.coopStarted);
+      var changed = false;var removed = null;
+      var next = [];
+      list.forEach(function (p) {
+        if (p.id === myId) {
+          next.push(p);return;
+        }
+        if (!lastSeenRef.current[p.id]) {
+          lastSeenRef.current[p.id] = now;next.push(p);return;
+        }
+        var silent = now - lastSeenRef.current[p.id];
+        if (waiting && silent > 60000) {
+          removed = p;changed = true;return;
+        }
+        var off = silent > 25000;
+        if (!!p.isOffline !== off) {
+          changed = true;next.push(_extends({}, p, { isOffline: off }));
+        } else next.push(p);
+      });
+      if (changed) {
+        setPlayersList(next);
+        connsRef.current.forEach(function (c) {
+          if (c.open) {
+            try {
+              c.send({ type: 'PLAYERS_UPDATE', players: next });
+            } catch (e) {}
+          }
+        });
+        if (removed) showToast('\uD83D\uDCF4 ' + (removed.name || '玩家') + ' \u5DF2\u96E2\u7DDA');
+      }
+    }, 5000);
+    return function () {
+      return clearInterval(iv);
+    };
+  }, []);
+
   var setupPeerJS = function setupPeerJS(rId, isCreating) {
     // 冪等重設：重複 setup（接管/重入）先清掉舊 peer 與 conn refs，避免訊息送進死連線或重複綁定
     if (peerRef.current) {
@@ -3393,6 +3450,12 @@ function HashiGame() {
         p.on('connection', function (c) {
           connsRef.current.push(c);
           c.on('data', function (m) {
+            if (c.uid || m.uid || m.targetId) lastSeenRef.current[c.uid || m.uid || m.targetId] = Date.now();
+            if (m.type === 'PING') {
+              try {
+                c.send({ type: 'PONG' });
+              } catch (e) {}return;
+            }
             if (m.type === 'JOIN') {
               c.uid = m.uid; // 將玩家身分標籤綁定到這個連線上
               // 撞名檢查：同 uid 重連允許；不同 uid 同名（大小寫不敏感）拒絕
@@ -3656,6 +3719,10 @@ function HashiGame() {
           }, 5000);
         });
         c.on('data', function (m) {
+          hostSeenRef.current = Date.now();
+          if (m.type === 'PONG') {
+            return;
+          }
           if (m.type === 'INIT') {
             if (m.players) setPlayersList(m.players);
             if (m.data) syncState(m.data, false);

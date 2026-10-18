@@ -99,7 +99,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.3.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.4.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_VERSION = PLAT_VERSION;
 
   var PLAT_COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
@@ -111,10 +111,17 @@
   function normName(s) { return (s || '').trim().toLowerCase(); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+  function myUid() { // 殼層持久身份：斷線重連/接管後仍是同一個人（賽程積分綁這個，不綁連線 pid）
+    var u = storeGet('plat_uid');
+    if (!u) { u = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9); storeSet('plat_uid', u); }
+    return u;
+  }
   var Net = {
-    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '',
+    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '',
     me: { name: '', color: PLAT_COLORS[2] },
     roster: [], conns: {}, gamePeer: null, inMatch: null,
+    lastSeen: {}, hostSeen: 0, _lastPing: 0, _hostWarned: false,
+    presence: { pingMs: 10000, offlineMs: 25000, removeMs: 60000 }, // 在線心跳：10s ping、25s 標離線、60s 移除（比賽中只標離線不移除）
     videoOn: false, localStream: null, micMuted: true, speakerOn: false,
     remoteStreams: {}, remoteMic: {}, calls: {}, speakPrompted: {}, speakPid: null,
     chatOpen: false, chatMin: false, unread: 0, ending: false, joinRetry: false, tourn: null
@@ -143,6 +150,7 @@
   }
 
   // ---------- 訊息傳送 ----------
+  Net.myUid = myUid();
   function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; try { conn.send(m); } catch (e) {} }
   function platBroadcast(obj, exceptPid) {
     for (var pid in Net.conns) { if (pid !== exceptPid) platSend(Net.conns[pid], obj); }
@@ -221,7 +229,8 @@
       dot.style.background = (p.color === 'rainbow') ? RAINBOW_BG : (p.color || '#ccc');
       li.appendChild(dot);
       var nm = document.createElement('span');
-      nm.textContent = (p.name || '玩家') + (p.pid === Net.myPid ? '（你）' : '') + (p.host ? ' 👑' : '');
+      nm.textContent = (p.name || '玩家') + (p.pid === Net.myPid ? '（你）' : '') + (p.host ? ' 👑' : '') + (p.offline ? '（離線）' : '');
+      if (p.offline) li.style.opacity = '0.55';
       li.appendChild(nm);
       ul.appendChild(li);
     });
@@ -312,12 +321,38 @@
       Net.roster = Net.roster.filter(function (p) { if (p.pid === pid) { gone = p; return false; } return true; });
       if (gone) {
         sysChat('👋 ' + (gone.name || '玩家') + ' 離開了房間');
-        if (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) { Net.tourn.disc[pid] = true; tournCheckDone(); }
+        if (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) { var de = tournEntrantByPid(pid); if (de) { Net.tourn.disc[de.uid] = true; tournCheckDone(); } }
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         renderLobby();
       }
     }
   }
+  // 在線心跳：來賓每 pingMs 向房主 ping（房主回 pong 兼證明房主存活）；房主以 lastSeen 判定離線/移除。
+  // 傳輸層的 close 訊號在 App 被直接關掉時可能拖很久，心跳是即時性的後盾。參數在 Net.presence（測試可調）。
+  setInterval(function () {
+    if (!Net.active) return;
+    var now = Date.now(), cfg = Net.presence;
+    if (!Net.isHost) {
+      if (now - (Net._lastPing || 0) >= cfg.pingMs) { Net._lastPing = now; platToHost({ kind: 'ping' }); }
+      if (Net.hostSeen && now - Net.hostSeen > cfg.offlineMs && !Net._hostWarned) { Net._hostWarned = true; lobbyMsg('⚠️ 與房主連線中斷，嘗試重連中…'); }
+      return;
+    }
+    var changed = false;
+    Net.roster.slice().forEach(function (p) {
+      if (p.host || p.pid === Net.myPid) return;
+      var seen = Net.lastSeen[p.pid] || p._joinedAt || now;
+      var silent = now - seen;
+      if (silent > cfg.removeMs && !Net.inMatch) {
+        Net.roster = Net.roster.filter(function (x) { return x.pid !== p.pid; });
+        delete Net.lastSeen[p.pid];
+        sysChat('📴 ' + (p.name || '玩家') + ' 已離線（無回應）');
+        changed = true;
+      } else if (silent > cfg.offlineMs && !p.offline) {
+        p.offline = true; changed = true;
+      }
+    });
+    if (changed) { platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }); renderLobby(); }
+  }, 5000);
   function onPlatData(c, d) {
     var pid = c.peer;
     switch (d.kind) {
@@ -326,19 +361,30 @@
         var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(d.name); });
         if (clash) { platSend(c, { kind: 'reject', reason: 'name_taken' }); return; }
         if (!Net.roster.some(function (p) { return p.pid === pid; })) {
-          Net.roster.push({ pid: pid, name: d.name || '玩家', color: d.color, host: false });
+          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: d.name || '玩家', color: d.color, host: false, _joinedAt: Date.now() });
         }
+        Net.lastSeen[pid] = Date.now();
+        tournRebind();
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }, pid);
         sysChat('👋 ' + (d.name || '玩家') + ' 加入了房間');
-        if (Net.tourn) platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() });
+        if (Net.tourn) { platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() }); var tsm = tournStateMsg(); if (tsm) platSend(c, tsm); }
         if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined });
         renderLobby();
         if (Net.videoOn) callPeer(pid);
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
         break;
       }
-      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; showRoom(); renderLobby(); break;
+      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); showRoom(); renderLobby(); break;
+      case 'ping': {
+        if (!Net.isHost) return;
+        Net.lastSeen[pid] = Date.now();
+        platSend(c, { kind: 'pong' });
+        var pp = Net.roster.find(function (x) { return x.pid === pid; });
+        if (pp && pp.offline) { pp.offline = false; platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }); renderLobby(); }
+        break;
+      }
+      case 'pong': Net.hostSeen = Date.now(); Net._hostWarned = false; break;
       case 'reject': lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
       case 'leave': {
         if (!Net.isHost) return;
@@ -375,13 +421,14 @@
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
           var ta = Net.tourn, all2 = (ta.acks = ta.acks || {});
-          var rec = all2[pid] || (all2[pid] = {});
+          var ackKey = d.uid || pid;
+          var rec = all2[ackKey] || (all2[ackKey] = {});
           rec[d.what] = d.round; if (d.game) rec.enteredGame = d.game;
           renderTourn();
         }
         break;
       }
-      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; tst.settled = true; } renderTourn(); break; }
+      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
       case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
       case 'tourn-abort': tournClear(); renderLobby(); break;
     }
@@ -412,7 +459,7 @@
         renderLobby(); updateDock();
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         migrateGame(true);
-        if (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) setTimeout(tournEndByHostLoss, 1200);
+        if (Net.tourn) setTimeout(tournAdopt, 1200);
       });
       peer.on('connection', function (c) {
         Net.conns[c.peer] = c; wireConn(c);
@@ -441,7 +488,7 @@
         Net.conns[Net.hostPid] = c; wireConn(c);
         Net.migrating = false;
         Net.restored = true; // 接管重連：遊戲由 migrateGame 重設，launch 重播不可再 enter 一次（雙重 setup 會弄亂 refs）
-        platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color });
+        platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color, uid: Net.myUid, ver: PLAT_VERSION });
         sysChat('📡 已重連到新房主');
         renderLobby(); updateDock();
         migrateGame(false);
@@ -489,7 +536,7 @@
     Net.peer = p;
     p.on('open', function (id) {
       Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true;
-      Net.roster = [{ pid: id, name: Net.me.name, color: Net.me.color, host: true }];
+      Net.roster = [{ pid: id, uid: Net.myUid, ver: PLAT_VERSION, name: Net.me.name, color: Net.me.color, host: true }];
       lobbyMsg(''); renderLobby(); updateDock();
       sysChat('🏠 房間已建立，房號 ' + code + '（把房號告訴朋友）');
     });
@@ -527,7 +574,7 @@
       Net.conns[Net.hostPid] = c; wireConn(c);
       c.on('open', function () {
         Net.active = true; Net.isHost = false;
-        platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color });
+        platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color, uid: Net.myUid, ver: PLAT_VERSION });
         lobbyMsg('已連上房間，等待房主確認…');
         updateDock();
       });
@@ -562,7 +609,7 @@
   function tournSelfAck(what, round, game) {
     var t = Net.tourn; if (!t) return;
     var all = (t.acks = t.acks || {});
-    var a = all[Net.myPid] || (all[Net.myPid] = {});
+    var a = all[Net.myUid] || (all[Net.myUid] = {});
     a[what] = round; if (game) a.enteredGame = game;
   }
   function doLaunch(game, mode, tournSess) {
@@ -574,7 +621,7 @@
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
       try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop', tourn: tournSess || null }); } catch (e) {}
-      if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game }); }
+      if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game, uid: Net.myUid }); }
     });
   }
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
@@ -582,7 +629,7 @@
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
     if (g) exitGameHook(g);
     if (window.PlatCountdown) window.PlatCountdown.hide();
-    if (Net.tourn) { if (Net.isHost) tournSelfAck('lobby', Net.tourn.round); else platToHost({ kind: 'tourn-ack', what: 'lobby', round: Net.tourn.round }); }
+    if (Net.tourn) { if (Net.isHost) tournSelfAck('lobby', Net.tourn.round); else platToHost({ kind: 'tourn-ack', what: 'lobby', round: Net.tourn.round, uid: Net.myUid }); }
     renderLobby();
     window.PLAT_show('lobby');
   }
@@ -601,13 +648,21 @@
   var TOURN_PTS = [10, 7, 5, 3, 2];
   function tournPts(rank) { return rank <= 5 ? TOURN_PTS[rank - 1] : 1; }
   function tournGameName(g) { return g === 'sudoku' ? '🔢 數獨' : '🌉 數橋'; }
-  function tournPidByName(name) {
+  function tournUidByName(name) {
     var t = Net.tourn; if (!t || !name) return null;
     var n = normName(name);
-    for (var i = 0; i < t.entrants.length; i++) if (normName(t.entrants[i].name) === n) return t.entrants[i].pid;
+    for (var i = 0; i < t.entrants.length; i++) if (normName(t.entrants[i].name) === n) return t.entrants[i].uid;
     return null;
   }
-  function tournEntrant(pid) { var t = Net.tourn; if (!t) return null; for (var i = 0; i < t.entrants.length; i++) if (t.entrants[i].pid === pid) return t.entrants[i]; return null; }
+  function tournEntrant(key) { var t = Net.tourn; if (!t) return null; for (var i = 0; i < t.entrants.length; i++) if (t.entrants[i].uid === key) return t.entrants[i]; return null; }
+  function tournEntrantByPid(pid) { var t = Net.tourn; if (!t) return null; for (var i = 0; i < t.entrants.length; i++) if (t.entrants[i].pid === pid) return t.entrants[i]; return null; }
+  function tournRebind() { // 參賽者 pid 隨重連/接管變動：以 uid 把 entrant 的傳輸 pid 對回當下名單
+    var t = Net.tourn; if (!t) return;
+    t.entrants.forEach(function (e) {
+      if (!e.uid) return;
+      for (var i = 0; i < Net.roster.length; i++) { var rp = Net.roster[i]; if (rp.uid === e.uid) { e.pid = rp.pid; e.name = rp.name || e.name; e.color = rp.color || e.color; break; } }
+    });
+  }
   function tournSess() {
     var t = Net.tourn; if (!t) return null;
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
@@ -626,7 +681,7 @@
   }
   function tournNewState(cfg, phase) {
     var totals = {}, wins = {};
-    cfg.entrants.forEach(function (e) { totals[e.pid] = 0; wins[e.pid] = 0; });
+    cfg.entrants.forEach(function (e) { totals[e.uid] = 0; wins[e.uid] = 0; });
     return { phase: phase, round: 1, totalRounds: cfg.totalRounds, order: cfg.order, rounds: cfg.rounds,
       sudoku: cfg.sudoku, hashi: cfg.hashi, roundSecs: cfg.roundSecs, entrants: cfg.entrants,
       totals: totals, wins: wins, history: [], curGame: null, settled: false, startedAt: 0, endsAt: 0,
@@ -638,8 +693,10 @@
       sudoku: { sizeId: Number($('t-s-size').value), diffId: $('t-s-diff').value },
       hashi: { sizeId: Number($('t-h-size').value) },
       roundSecs: Number($('t-secs').value), totalRounds: 5, rounds: null,
-      entrants: Net.roster.map(function (p) { return { pid: p.pid, name: p.name, color: p.color }; }) };
+      entrants: Net.roster.map(function (p) { return { pid: p.pid, uid: p.uid || p.pid, name: p.name, color: p.color }; }) };
     cfg.rounds = tournBuildRounds(cfg.order);
+    var badVer = Net.roster.filter(function (p) { return p.ver && p.ver !== PLAT_VERSION; });
+    if (badVer.length) sysChat('⚠️ ' + badVer.map(function (p) { return (p.name || '玩家') + '（' + p.ver + '）'; }).join('、') + ' 的版本和房主（' + PLAT_VERSION + '）不同，可能連線異常');
     Net.tourn = tournNewState(cfg, 'playing');
     platBroadcast({ kind: 'tourn-setup', cfg: tournPublicCfg() });
     sysChat('🏆 混合大亂鬥賽程開始！共 5 局');
@@ -668,24 +725,25 @@
     if (t.timer) clearTimeout(t.timer);
     t.timer = setTimeout(function () { if (Net.tourn === t && !t.settled) tournSettle(); }, Math.max(0, t.endsAt - Date.now()) + 250);
   }
-  function tournMarkFinished(pid) {
-    var t = Net.tourn; if (!t || !pid || t.settled) return;
-    if (t.finishOrder.indexOf(pid) < 0) { t.finishOrder.push(pid); t.progress[pid] = 100; }
+  function tournMarkFinished(key) {
+    var t = Net.tourn; if (!t || !key || t.settled) return;
+    if (t.finishOrder.indexOf(key) < 0) { t.finishOrder.push(key); t.progress[key] = 100; }
+    tournSnapshot(true);
     tournCheckDone();
   }
   function tournCheckDone() {
     var t = Net.tourn; if (!t || t.settled) return;
-    var done = t.entrants.every(function (e) { return t.finishOrder.indexOf(e.pid) >= 0 || t.disc[e.pid]; });
+    var done = t.entrants.every(function (e) { return t.finishOrder.indexOf(e.uid) >= 0 || t.disc[e.uid]; });
     if (done) tournSettle();
   }
   function tournDecideChampion() {
     var t = Net.tourn;
-    var sorted = t.entrants.slice().sort(function (a, b) { return (t.totals[b.pid] || 0) - (t.totals[a.pid] || 0); });
-    var top = t.totals[sorted[0].pid] || 0;
-    var tied = sorted.filter(function (e) { return (t.totals[e.pid] || 0) === top; }).map(function (e) { return e.pid; });
+    var sorted = t.entrants.slice().sort(function (a, b) { return (t.totals[b.uid] || 0) - (t.totals[a.uid] || 0); });
+    var top = t.totals[sorted[0].uid] || 0;
+    var tied = sorted.filter(function (e) { return (t.totals[e.uid] || 0) === top; }).map(function (e) { return e.uid; });
     if (tied.length === 1) return { champion: tied[0], note: '' };
-    var bestWins = -1; tied.forEach(function (pid) { bestWins = Math.max(bestWins, t.wins[pid] || 0); });
-    var winTied = tied.filter(function (pid) { return (t.wins[pid] || 0) === bestWins; });
+    var bestWins = -1; tied.forEach(function (k) { bestWins = Math.max(bestWins, t.wins[k] || 0); });
+    var winTied = tied.filter(function (k) { return (t.wins[k] || 0) === bestWins; });
     if (winTied.length === 1) return { champion: winTied[0], note: '同分比冠軍局數（' + bestWins + ' 次第 1 名）決勝' };
     return { champion: null, tied: winTied };
   }
@@ -694,19 +752,19 @@
     t.settled = true;
     if (t.timer) { clearTimeout(t.timer); t.timer = null; }
     if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
-    var rest = t.entrants.filter(function (e) { return t.finishOrder.indexOf(e.pid) < 0; });
-    rest.sort(function (a, b) { return (t.progress[b.pid] || 0) - (t.progress[a.pid] || 0); });
-    var ordered = t.finishOrder.concat(rest.map(function (e) { return e.pid; }));
-    var placements = ordered.map(function (pid, i) {
-      var en = tournEntrant(pid);
-      return { pid: pid, name: en ? en.name : '玩家', rank: i + 1, pts: tournPts(i + 1), progress: Math.floor(t.progress[pid] || 0), finished: t.finishOrder.indexOf(pid) >= 0 };
+    var rest = t.entrants.filter(function (e) { return t.finishOrder.indexOf(e.uid) < 0; });
+    rest.sort(function (a, b) { return (t.progress[b.uid] || 0) - (t.progress[a.uid] || 0); });
+    var ordered = t.finishOrder.concat(rest.map(function (e) { return e.uid; }));
+    var placements = ordered.map(function (key, i) {
+      var en = tournEntrant(key);
+      return { uid: key, pid: en ? en.pid : null, name: en ? en.name : '玩家', rank: i + 1, pts: tournPts(i + 1), progress: Math.floor(t.progress[key] || 0), finished: t.finishOrder.indexOf(key) >= 0 };
     });
-    placements.forEach(function (pl) { t.totals[pl.pid] = (t.totals[pl.pid] || 0) + pl.pts; if (pl.rank === 1) t.wins[pl.pid] = (t.wins[pl.pid] || 0) + 1; });
+    placements.forEach(function (pl) { t.totals[pl.uid] = (t.totals[pl.uid] || 0) + pl.pts; if (pl.rank === 1) t.wins[pl.uid] = (t.wins[pl.uid] || 0) + 1; });
     t.history.push({ round: t.round, game: t.curGame, placements: placements });
     if (t.phase === 'playoff') {
-      var champPid = null;
-      for (var i = 0; i < placements.length; i++) { if (t.tiedPids && t.tiedPids.indexOf(placements[i].pid) >= 0) { champPid = placements[i].pid; break; } }
-      tournFinish(champPid || placements[0].pid, '同分加賽決勝');
+      var champKey = null;
+      for (var i = 0; i < placements.length; i++) { if (t.tiedPids && t.tiedPids.indexOf(placements[i].uid) >= 0) { champKey = placements[i].uid; break; } }
+      tournFinish(champKey || placements[0].uid, '同分加賽決勝');
       return;
     }
     if (t.round >= t.totalRounds) {
@@ -719,15 +777,26 @@
     tournReturnAll();
     renderTourn();
   }
-  function tournFinish(champPid, note) {
+  function tournFinish(champKey, note) {
     var t = Net.tourn; if (!t) return;
     t.phase = 'ended';
-    var en = tournEntrant(champPid);
-    t.champion = { pid: champPid, name: en ? en.name : '玩家' };
+    var en = tournEntrant(champKey);
+    t.champion = { uid: champKey, pid: en ? en.pid : null, name: en ? en.name : '玩家' };
     t.endNote = note || '';
     platBroadcast({ kind: 'tourn-end', champion: t.champion, totals: t.totals, wins: t.wins, history: t.history, note: t.endNote });
     tournReturnAll();
     renderTourn();
+  }
+  function tournStateMsg() { // 完整賽程狀態（接管備份/重連同步用）
+    var t = Net.tourn; if (!t) return null;
+    return { kind: 'tourn-score', phase: t.phase, round: t.round, game: t.curGame, progress: t.progress, finishOrder: t.finishOrder, totals: t.totals, wins: t.wins, history: t.history };
+  }
+  function tournSnapshot(force) { // 局中定期把進度/完賽序同步給全員，接管時新房主才有資料結算本局
+    var t = Net.tourn; if (!t || !Net.isHost) return;
+    var now = Date.now();
+    if (!force && t._snapAt && now - t._snapAt < 2500) return;
+    t._snapAt = now;
+    var m = tournStateMsg(); if (m) platBroadcast(m);
   }
   function tournReturnAll() {
     if (Net.isHost) platBroadcast({ kind: 'return' });
@@ -744,29 +813,35 @@
     if (t.armTimer) clearTimeout(t.armTimer);
     Net.tourn = null;
   }
-  function tournEndByHostLoss() {
+  function tournAdopt() { // 房主接管後續打：新房主用全員備份的狀態接著主持（局中斷→本局依備份進度結算；局間→直接接手面板）
     var t = Net.tourn; if (!t || !Net.isHost) return;
     if (t.timer) { clearTimeout(t.timer); t.timer = null; }
     if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
-    t.settled = true;
-    var res = tournDecideChampion();
-    var champ = res.champion || (res.tied && res.tied[0]) || (t.entrants[0] && t.entrants[0].pid);
-    tournFinish(champ, '房主斷線，依當下積分提前結算');
+    tournRebind();
+    if (t.phase === 'playing' || t.phase === 'playoff') {
+      t.settled = false;
+      sysChat('👑 新房主接管賽程：本局依目前進度結算，賽程繼續進行');
+      tournSettle();
+    } else {
+      sysChat('👑 新房主接管賽程：由新房主接著主持');
+      var m2 = tournStateMsg(); if (m2) platBroadcast(m2);
+      renderTourn();
+    }
   }
   // 嗅探遊戲訊息（只在房主端計分）：fromPid 是傳輸層 pid，身份以訊息內 uid/name 為準（轉發不影響）
   function tournSniff(fromPid, d) {
     var t = Net.tourn;
     if (!t || !Net.isHost || t.settled || !d || typeof d !== 'object' || d.__plat) return;
     if (t.phase !== 'playing' && t.phase !== 'playoff') return;
-    if (d.type === 'JOIN' && d.uid && d.pName) t.uidMap[d.uid] = tournPidByName(d.pName) || fromPid;
-    if (d.type === 'PLAYERS_UPDATE' && d.players) d.players.forEach(function (p) { if (p.id && p.name) { var pp = tournPidByName(p.name); if (pp) t.uidMap[p.id] = pp; } });
-    if (d.uid && d.name) { var pn = tournPidByName(d.name); if (pn) t.uidMap[d.uid] = pn; }
+    if (d.type === 'JOIN' && d.uid && d.pName) t.uidMap[d.uid] = tournUidByName(d.pName) || (tournEntrantByPid(fromPid) || {}).uid || null;
+    if (d.type === 'PLAYERS_UPDATE' && d.players) d.players.forEach(function (p) { if (p.id && p.name) { var pp = tournUidByName(p.name); if (pp) t.uidMap[p.id] = pp; } });
+    if (d.uid && d.name) { var pn = tournUidByName(d.name); if (pn) t.uidMap[d.uid] = pn; }
     var pidOf = function (uid) { return (uid && t.uidMap[uid]) || null; };
     if (t.curGame === 'hashi') {
       if (d.type === 'RACE_START' && !t.startedAt) {
         t.startedAt = d.startAt || Date.now();
         if (t.roundSecs > 0) { t.endsAt = t.startedAt + t.roundSecs * 1000; tournArmTimer(); }
-      } else if (d.type === 'RACE_PROGRESS') { var p1 = pidOf(d.uid); if (p1) t.progress[p1] = d.progress || 0; }
+      } else if (d.type === 'RACE_PROGRESS') { var p1 = pidOf(d.uid); if (p1) { t.progress[p1] = d.progress || 0; tournSnapshot(false); } }
       else if (d.type === 'RACE_FINISH' || d.type === 'RACE_DNF') tournMarkFinished(pidOf(d.uid));
     } else if (t.curGame === 'sudoku') {
       if (d.type === 'SYNC' && d.data) {
@@ -786,6 +861,7 @@
         if (p2 && t.totalBlanks > 0) {
           var cnt = 0; for (var k in m) if (m[k] !== null && m[k] !== undefined) cnt++;
           t.progress[p2] = Math.floor(cnt * 100 / t.totalBlanks);
+          tournSnapshot(false);
         }
       }
     }
@@ -819,42 +895,45 @@
     else if (t.phase === 'playoff-pending') html += '<div class="font-black text-rose-600 text-sm mb-2">⚖️ 總分同分、冠軍局數也同分 — 加賽一局數橋決勝！</div>';
     else if (t.phase === 'ended' && t.champion) html += '<div class="font-black text-amber-600 text-lg mb-1 text-center">🏆 總冠軍：' + esc(t.champion.name) + '</div>' + (t.endNote ? '<div class="text-center text-xs text-slate-500 font-bold mb-1">' + esc(t.endNote) + '</div>' : '');
     if (Net.isHost && (t.phase === 'playing' || t.phase === 'playoff')) {
+      html += '<button id="t-forceend" class="w-full mb-2 py-2 bg-rose-500 border-[3px] border-slate-800 rounded-xl font-black text-white active:translate-y-[2px] transition-all">⏹️ 結束本局（以目前進度結算）</button>';
       html += '<div class=\"mb-2 flex flex-col gap-1\">' + t.entrants.map(function (e) {
-        var a = (t.acks || {})[e.pid] || {};
+        var a = (t.acks || {})[e.uid] || {};
         var okIn = a.entered === t.round;
         return '<div class=\"flex items-center justify-between text-xs font-bold ' + (okIn ? 'text-emerald-600' : 'text-amber-600') + '\"><span>' + (okIn ? '🎮' : '⏳') + ' ' + esc(e.name) + (okIn ? ' 已進場' : ' 進場中…') + '</span>' + (!okIn && e.pid !== Net.myPid ? '<button data-t-resend=\"' + e.pid + '\" class=\"px-2 py-0.5 bg-white border-2 border-slate-800 rounded-lg text-slate-700\">重送邀請</button>' : '') + '</div>';
       }).join('') + '</div>';
     }
     if (Net.isHost && t.phase === 'standings') {
       html += '<div class=\"mb-1 flex flex-col gap-1\">' + t.entrants.map(function (e) {
-        var a = (t.acks || {})[e.pid] || {};
+        var a = (t.acks || {})[e.uid] || {};
         var okBack = a.lobby === t.round;
         return '<div class=\"flex items-center justify-between text-xs font-bold ' + (okBack ? 'text-emerald-600' : 'text-amber-600') + '\"><span>' + (okBack ? '🏠' : '⏳') + ' ' + esc(e.name) + (okBack ? ' 已回大廳' : ' 還在遊戲裡…') + '</span>' + (!okBack && e.pid !== Net.myPid ? '<button data-t-rtn=\"' + e.pid + '\" class=\"px-2 py-0.5 bg-white border-2 border-slate-800 rounded-lg text-slate-700\">叫他回大廳</button>' : '') + '</div>';
       }).join('') + '</div>';
     }
-    var rows = t.entrants.slice().sort(function (a, b) { return (t.totals[b.pid] || 0) - (t.totals[a.pid] || 0); });
+    var rows = t.entrants.slice().sort(function (a, b) { return (t.totals[b.uid] || 0) - (t.totals[a.uid] || 0); });
     html += '<table class="w-full text-sm font-bold text-slate-600"><tbody>';
     rows.forEach(function (e, ri) {
       var cells = '';
       for (var r = 0; r < t.history.length; r++) {
         var pl = null;
-        t.history[r].placements.forEach(function (x) { if (x.pid === e.pid) pl = x; });
+        t.history[r].placements.forEach(function (x) { if (x.uid ? x.uid === e.uid : x.pid === e.pid) pl = x; });
         cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
       }
-      html += '<tr><td class="py-1">' + (ri + 1) + '. <span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + ((e.color === 'rainbow') ? RAINBOW_BG : (e.color || '#ccc')) + ';vertical-align:middle"></span> ' + esc(e.name) + (e.pid === Net.myPid ? '（你）' : '') + (t.wins[e.pid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.pid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.pid] || 0) + ' 分</td></tr>';
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + ((e.color === 'rainbow') ? RAINBOW_BG : (e.color || '#ccc')) + ';vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
     });
     html += '</tbody></table>';
     var last = t.history[t.history.length - 1];
     if (last && (t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended')) {
       html += '<div class="mt-2 text-xs font-bold text-slate-500">' + (last.round > t.totalRounds ? '加賽' : '第 ' + last.round + ' 局') + '名次：' + last.placements.map(function (pl) { return pl.rank + '. ' + esc(pl.name) + '（' + pl.pts + ' 分' + (pl.finished ? '' : '・未完成 ' + pl.progress + '%') + '）'; }).join('　') + '</div>';
     }
-    if (Net.isHost && t.phase === 'standings') html += '<button id="t-next" class="w-full mt-3 py-2.5 bg-[#f59e0b] border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">▶ 開始第 ' + (t.round + 1) + ' 局：' + tournGameName(t.rounds[t.round]) + '</button>';
-    if (Net.isHost && t.phase === 'playoff-pending') html += '<button id="t-playoff" class="w-full mt-3 py-2.5 bg-rose-400 border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">▶ 加賽一局：數橋大亂鬥</button>';
+    var missingBack = t.entrants.filter(function (e) { var a = (t.acks || {})[e.uid] || {}; return a.lobby !== t.round; }).length;
+    if (Net.isHost && t.phase === 'standings') html += '<button id="t-next" class="w-full mt-3 py-2.5 ' + (missingBack ? 'bg-rose-400' : 'bg-[#f59e0b]') + ' border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">' + (missingBack ? '🚀 強制開始第 ' + (t.round + 1) + ' 局（還有 ' + missingBack + ' 人未回來）' : '▶ 開始第 ' + (t.round + 1) + ' 局：' + tournGameName(t.rounds[t.round])) + '</button>';
+    if (Net.isHost && t.phase === 'playoff-pending') html += '<button id="t-playoff" class="w-full mt-3 py-2.5 bg-rose-400 border-[3px] border-slate-800 rounded-xl font-black text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">' + (missingBack ? '🚀 強制加賽（還有 ' + missingBack + ' 人未回來）' : '▶ 加賽一局：數橋大亂鬥') + '</button>';
     if (Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<button id="t-abort" class="w-full mt-2 py-2 bg-white border-[3px] border-slate-300 rounded-xl font-black text-slate-500 active:translate-y-[2px] transition-all">✖ 中止賽程</button>';
     if (Net.isHost && t.phase === 'ended') html += '<button id="t-abort" class="w-full mt-3 py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 active:translate-y-[2px] transition-all">結束賽程（回房間）</button>';
     if (!Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<div class="text-center text-slate-400 font-bold text-xs mt-2">⏳ 等待房主開始下一局…</div>';
     html += '</div></div>';
     panel.innerHTML = html;
+    var feb = $('t-forceend'); if (feb) feb.onclick = function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); };
     var nb = $('t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
     var pb = $('t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
     var ab = $('t-abort'); if (ab) ab.onclick = function () { tournAbort(); };

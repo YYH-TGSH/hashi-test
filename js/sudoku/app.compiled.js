@@ -108,6 +108,9 @@ function SudokuGame() {
   }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
   var myNameRef = useRef("");
+  var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
+  var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
+  var lastPingRef = useRef(0);
   var myColorRef = useRef(COLORS[Math.floor(Math.random() * COLORS.length)]);
   var emptyLevelData = {
     sizeDef: SIZES[1],
@@ -3983,9 +3986,9 @@ function SudokuGame() {
           color: pl.color,
           isMe: pl.id === myId,
           isHost: !!pl.isHost,
-          online: !!(pl.isHost || connsRef.current.some(function (c) {
+          online: pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
             return c.uid === pl.id && c.open;
-          })),
+          }) ? false : null,
           badge: pl.isReady ? {
             text: '✔ 已準備',
             kind: 'ready'
@@ -4401,6 +4404,73 @@ function SudokuGame() {
       }
     };
   }, []);
+
+  // 在線心跳（與數橋同款）：來賓每 10 秒 ping 房主；房主記錄每人最後出現時間，25 秒標離線、等待中 60 秒無回應移除。
+  // 底層連線的 close 訊號在 App 被直接關掉時可能拖很久，心跳負責即時性；房主把 isOffline 寫進名單條目，廣播自動帶給全場。
+  useEffect(function () {
+    var iv = setInterval(function () {
+      if (engineRef.current !== 'peerjs') return;
+      var now = Date.now();
+      if (!isHostRef.current) {
+        if (now - (lastPingRef.current || 0) >= 10000 && connRef.current && connRef.current.open) {
+          lastPingRef.current = now;
+          try {
+            connRef.current.send({
+              type: 'PING',
+              uid: myId
+            });
+          } catch (e) {}
+        }
+        return;
+      }
+      var list = playersListRef.current || [];
+      var waiting = stateRef.current.matchPhase === 'waiting';
+      var changed = false;
+      var removed = null;
+      var next = [];
+      list.forEach(function (p) {
+        if (p.id === myId) {
+          next.push(p);
+          return;
+        }
+        if (!lastSeenRef.current[p.id]) {
+          lastSeenRef.current[p.id] = now;
+          next.push(p);
+          return;
+        }
+        var silent = now - lastSeenRef.current[p.id];
+        if (waiting && silent > 60000) {
+          removed = p;
+          changed = true;
+          return;
+        }
+        var off = silent > 25000;
+        if (!!p.isOffline !== off) {
+          changed = true;
+          next.push(_objectSpread(_objectSpread({}, p), {}, {
+            isOffline: off
+          }));
+        } else next.push(p);
+      });
+      if (changed) {
+        setPlayersList(next);
+        connsRef.current.forEach(function (conn) {
+          if (conn.open) {
+            try {
+              conn.send({
+                type: 'PLAYERS_UPDATE',
+                players: next
+              });
+            } catch (e) {}
+          }
+        });
+        if (removed) showToast("\uD83D\uDCF4 ".concat(removed.name || '玩家', " \u5DF2\u96E2\u7DDA"));
+      }
+    }, 5000);
+    return function () {
+      return clearInterval(iv);
+    };
+  }, []);
   var setupPeerJS = function setupPeerJS(rId, pName, isCreating) {
     // 冪等重設：重複 setup（接管/重入/launch 重播）先清掉舊 peer 與 conn refs，避免 SYNC 送進死連線或重複綁定
     if (peerRef.current) {
@@ -4461,6 +4531,15 @@ function SudokuGame() {
         p.on('connection', function (c) {
           connsRef.current.push(c);
           c.on('data', function (m) {
+            if (c.uid || m.uid || m.targetId) lastSeenRef.current[c.uid || m.uid || m.targetId] = Date.now();
+            if (m.type === 'PING') {
+              try {
+                c.send({
+                  type: 'PONG'
+                });
+              } catch (e) {}
+              return;
+            }
             if (m.type === 'JOIN') {
               var storedSid = null;
               try {
@@ -4736,6 +4815,10 @@ function SudokuGame() {
           });
         });
         c.on('data', function (m) {
+          hostSeenRef.current = Date.now();
+          if (m.type === 'PONG') {
+            return;
+          }
           if (m.type === 'INIT') {
             setConnectionStatus("同步完成，進入遊戲！");
             setRoomId(rId);
