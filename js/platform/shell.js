@@ -92,7 +92,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.9.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.9.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -234,6 +234,7 @@
   function showRoom() { showStep('room'); }
   function renderLobby() {
     document.body.classList.toggle('plat-room-on', !!Net.active);
+    if (typeof renderForceBtn === 'function') renderForceBtn();
     // 未連線時若使用者正在暱稱步，不可把畫面踢回入口步（拉霸選色等 render 呼叫會踩到）
     if (!Net.active) { var nk = $('lob-step-nick'); if (!nk || nk.style.display !== 'block') showIdle(); return; }
     showRoom();
@@ -804,10 +805,18 @@
   }
   // ===== v1.8.1 等待室分頁：分頁列長在等待室（PlatRoom）頂部，房內切換，不經過多人連線選單頁 =====
   var roomTabsSig = '';
+  var _tournNodeCache = {};
+  function tournNode(id) {
+    var n = _tournNodeCache[id];
+    if (n && n.id === id) return n;
+    n = document.getElementById(id);
+    if (n) _tournNodeCache[id] = n;
+    return n || null;
+  }
   function rescueTournNodes() {
     var home = document.getElementById('lob-panel-tourn'); if (!home) return;
     ['lob-tourn-setup', 'lob-tourn-note', 'lob-tourn'].forEach(function (id) {
-      var n = document.getElementById(id);
+      var n = tournNode(id);
       if (n && n.parentNode !== home) home.appendChild(n);
     });
   }
@@ -820,7 +829,7 @@
       tournRg.style.display = showTourn ? 'block' : 'none';
       if (showTourn) {
         ['lob-tourn-setup', 'lob-tourn-note', 'lob-tourn'].forEach(function (id) {
-          var n = document.getElementById(id);
+          var n = tournNode(id);
           if (n && n.parentNode !== tournRg) tournRg.appendChild(n);
         });
       } else rescueTournNodes();
@@ -994,12 +1003,31 @@
       }
     }
   }
+  // 錦標賽局中「結束本局」浮動鈕：面板裡的同名鈕在比賽中位於回不去的大廳頁、房主摸不到；這顆固定鈕（僅房主、進行中）才是局中可達的入口
+  function forceBtnEl() {
+    var el = document.getElementById('plat-forceend');
+    if (!el) {
+      el = document.createElement('button');
+      el.id = 'plat-forceend';
+      el.textContent = '⏹️ 結束本局';
+      el.style.cssText = 'position:fixed;top:calc(62px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);z-index:295;display:none;background:#f43f5e;color:#fff;border:3px solid #1e293b;border-radius:9999px;padding:7px 18px;font-weight:900;font-size:14px;box-shadow:3px 3px 0 rgba(30,41,59,1);cursor:pointer;';
+      el.addEventListener('click', function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); });
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function renderForceBtn() {
+    var t = Net.tourn;
+    var show = !!(Net.isHost && t && (t.phase === 'playing' || t.phase === 'playoff') && !t.settled);
+    forceBtnEl().style.display = show ? 'block' : 'none';
+  }
   function renderTourn() {
-    var setup = $('lob-tourn-setup'), panel = $('lob-tourn');
+    renderForceBtn();
+    var setup = tournNode('lob-tourn-setup'), panel = tournNode('lob-tourn');
     if (!setup || !panel) return;
     var t = Net.tourn;
     setup.style.display = (Net.isHost && !t && Net.roomTab === 'tourn') ? 'block' : 'none'; // v1.8.2：等待室五戰分頁裡就顯示（舊條件 !Net.inMatch 在房內永遠成立不了 → 五戰分頁全白）
-    var tnote = $('lob-tourn-note'); if (tnote) tnote.style.display = (!Net.isHost && Net.active && !t && Net.roomTab === 'tourn') ? 'block' : 'none';
+    var tnote = tournNode('lob-tourn-note'); if (tnote) tnote.style.display = (!Net.isHost && Net.active && !t && Net.roomTab === 'tourn') ? 'block' : 'none';
     if (!t) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
     if (t.phase === 'standings' || t.phase === 'playoff-pending' || t.phase === 'ended') {
       var tkey = t.phase + ':' + t.round + ':' + t.history.length;
@@ -1063,10 +1091,10 @@
     if (!Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<div class="text-center text-slate-400 font-bold text-xs mt-2">⏳ 等待房主開始下一局…</div>';
     html += '</div></div>';
     panel.innerHTML = html;
-    var feb = $('t-forceend'); if (feb) feb.onclick = function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); };
-    var nb = $('t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
-    var pb = $('t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
-    var ab = $('t-abort'); if (ab) ab.onclick = function () { tournAbort(); };
+    var feb = panel.querySelector('#t-forceend'); if (feb) feb.onclick = function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); };
+    var nb = panel.querySelector('#t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
+    var pb = panel.querySelector('#t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
+    var ab = panel.querySelector('#t-abort'); if (ab) ab.onclick = function () { tournAbort(); };
     panel.querySelectorAll('[data-t-resend]').forEach(function (b) { b.onclick = function () { var pid2 = b.getAttribute('data-t-resend'); var c2 = Net.conns[pid2]; var tt2 = Net.tourn; if (c2 && tt2) { platSend(c2, { kind: 'launch', game: tt2.curGame, mode: 'brawl', tourn: tournSess() }); var en = tt2.entrants.find(function (x) { return x.pid === pid2; }); sysChat('📨 已重送進場邀請給 ' + (en ? en.name : '玩家')); } }; });
     panel.querySelectorAll('[data-t-rtn]').forEach(function (b) { b.onclick = function () { var pid3 = b.getAttribute('data-t-rtn'); var c3 = Net.conns[pid3]; if (c3) { platSend(c3, { kind: 'return' }); sysChat('📨 已請他回大廳'); } }; });
     // 小局結算頒獎台：history 新增一筆且處於結算相態時播一次（房主/來賓/接管皆經 renderTourn 觸發）
