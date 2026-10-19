@@ -4123,6 +4123,7 @@ function SudokuGame() {
   }, [sudokuRoomVisible, isHost]);
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatRoom) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return; // 等待室主人是另一款遊戲時不搶 PlatRoom
     var el = roomMountRef.current;
     if (el) {
       if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
@@ -4144,6 +4145,7 @@ function SudokuGame() {
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatRoom || !window.PlatRoom.isAttached()) return;
     if (!sudokuRoomVisible) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return;
     if (waitingSinceRef.current == null) waitingSinceRef.current = Date.now();
     var waitMsGate = typeof window !== 'undefined' && window.PLAT_START_WAIT_MS || 60000;
     var contendersGate = playersList.filter(function (p) {
@@ -4615,6 +4617,13 @@ function SudokuGame() {
         tournRosterRef.current = null;
         handleGoHome();
       },
+      getSettings: function getSettings() {
+        return {
+          sizeId: stateRef.current.sizeId,
+          diffId: stateRef.current.diffId
+        };
+      },
+      // 錦標賽開賽時殼讀這裡的題目設定
       migrate: function migrate(amHost, sess) {
         // 房主接管：以目前對局狀態原地重建連線（房主 open handler 有 isMigrating 續局邏輯）
         setEngine('peerjs');

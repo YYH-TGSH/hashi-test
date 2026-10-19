@@ -2781,6 +2781,7 @@ function HashiGame() {
     } };
   useEffect(function () {
     if (typeof window.PlatRoom === 'undefined') return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return; // 等待室主人是另一款遊戲時不搶 PlatRoom
     var el = roomMountRef.current;
     if (el) {
       if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
@@ -2799,6 +2800,7 @@ function HashiGame() {
   useEffect(function () {
     if (typeof window.PlatRoom === 'undefined' || !window.PlatRoom.isAttached()) return;
     if (!roomOpen) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return;
     if (waitingSinceRef.current == null) waitingSinceRef.current = Date.now();
     var waitMsGate = typeof window !== 'undefined' && window.PLAT_START_WAIT_MS || 60000;
     var contendersGate = playersList.filter(function (p) {
@@ -3486,6 +3488,9 @@ function HashiGame() {
       exit: function exit() {
         setPlatTournLock(false);tournRosterRef.current = null;handleGoHome();
       },
+      getSettings: function getSettings() {
+        return { sizeId: brawlSettingsRef.current && brawlSettingsRef.current.sizeId || 2 };
+      }, // 錦標賽開賽時殼讀這裡的關卡設定
       migrate: function migrate(amHost, sess) {
         setEngine('peerjs');engineRef.current = 'peerjs';
         if (amHost) {

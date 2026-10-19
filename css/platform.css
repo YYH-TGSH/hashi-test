@@ -155,3 +155,11 @@ body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto
 @keyframes podDrop { 0% { transform: translateY(-52px); opacity: 0; } 60% { transform: translateY(4px); opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
 @keyframes podRoll { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(30px) rotate(660deg); opacity: 0; } }
 @keyframes podPlus { 0% { opacity: 0; transform: translateY(6px); } 25% { opacity: 1; } 100% { opacity: .9; transform: translateY(-3px); } }
+
+/* 多人模式底色：進房後改平台深藍，不用數獨的黃、也不用數橋的綠（使用者指示） */
+body.plat-room-on[data-view="lobby"],
+body.plat-room-on[data-view="sudoku"],
+body.plat-room-on[data-view="hashi"] {
+  background-color: #2b3a55 !important;
+  background-image: none !important;
+}
