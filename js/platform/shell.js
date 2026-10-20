@@ -70,13 +70,14 @@
     // v1.8.1：房間進行中要求看「大廳」＝回等待室（多人連線選單頁不再出現）；doLaunch 在下方才定義，這裡只在執行期引用
     if (name === 'lobby' && typeof Net !== 'undefined' && Net.active) {
       if (Net.inMatch) { window.PLAT_show(Net.inMatch); return; }
-      doLaunch(Net.armed.game, Net.armed.mode); return;
+      if (typeof renderLobby === 'function') renderLobby(); // 待機房間頁：不載入遊戲，等房主選好開始
     }
     currentView = name;
     ['home', 'sudoku', 'hashi', 'lobby'].forEach(function (v) {
       document.getElementById('view-' + v).classList.toggle('active', v === name);
     });
     document.body.setAttribute('data-view', name);
+    if (typeof updateDock === 'function') updateDock();
     if (name === 'sudoku' || name === 'hashi') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
@@ -92,7 +93,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.9.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.9.3'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -224,6 +225,10 @@
     lobbyTab = t;
     document.querySelectorAll('[data-lobtab]').forEach(function (b) { if (b.classList) b.classList.toggle('lob-tab-on', b.getAttribute('data-lobtab') === t); });
     applyLobbyTab();
+    if (typeof Net !== 'undefined' && Net.active && !Net.inMatch) {
+      if (t === 'tourn') { Net.roomTab = 'tourn'; if (Net.isHost) platBroadcast({ kind: 'tab', tab: 'tourn' }); renderTourn(); }
+      else if (Net.isHost) { Net.armed.game = t; Net.roomTab = t; platBroadcast({ kind: 'arm', game: t }); }
+    }
   }
   function applyLobbyTab() {
     var inM = Net.inMatch;
@@ -429,7 +434,8 @@
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost) { Net.armed.game = d.game; renderRoomTabs(); } break;
+      case 'arm': if (!Net.isHost) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); if (!Net.inMatch) setLobbyTab(d.game); } break;
+      case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (!Net.inMatch) setLobbyTab(d.tab); } break;
       case 'launch': {
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
@@ -635,13 +641,15 @@
     var a = all[Net.myUid] || (all[Net.myUid] = {});
     a[what] = round; if (game) a.enteredGame = game;
   }
-  // v1.8.1：房間啟用後直接進等待室（不再停在「多人連線選單」頁）
+  // 使用者指示（2026-10-20）：進房先不載入任何遊戲，選好按開始才載入。
+  // 只有房主接管還原（restored）的房間才自動回到遊戲，其餘停在房間頁等房主選遊戲。
   function maybeAutoEnterRoom() {
     if (!Net.active || Net.inMatch || Net.tourn) return;
+    if (!Net.restored) return;
     doLaunch(Net.armed.game, Net.armed.mode);
   }
   function doLaunch(game, mode, tournSess) {
-    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide(); podHide();
+    if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide(); if (!(typeof POD !== 'undefined' && POD.shownAt && Date.now() - POD.shownAt < 6000)) podHide(); // 剛播的頒獎台不擋：來賓先收 tourn-score 播台、隨後才被 return 帶回，立刻 podHide 會讓玩家永遠看不到小局結算
     Net.inMatch = game; Net.matchMode = mode || 'coop';
     if (tournSess) { Net.armed.game = game; Net.roomTab = game; } else { Net.armed = { game: game, mode: mode || 'coop' }; Net.roomTab = game; } // 賽程局開局也要切到該局遊戲的分頁：全員落進該局等待室（名單/準備/開始），不要停在錦標賽面板（局間回來由 doReturnToLobby 再切回 tourn）
     Net.armedByGame[game] = mode || 'coop';
@@ -872,7 +880,7 @@
   }
   window.__PLAT_ROOMTAB = function (kind, val) {
     if (!Net.active) return;
-    if (kind === 'tab' && val === 'tourn') { Net.roomTab = 'tourn'; renderTourn(); renderRoomTabs(); return; }
+    if (kind === 'tab' && val === 'tourn') { Net.roomTab = 'tourn'; if (Net.isHost) platBroadcast({ kind: 'tab', tab: 'tourn' }); renderTourn(); renderRoomTabs(); return; }
     if (!Net.isHost) return;
     var t = Net.tourn;
     if (kind === 'tab') {
@@ -1107,7 +1115,7 @@
   // ---------- 視訊（v2.18 禮儀：麥克風預設關、喇叭預設關、發言提示） ----------
   function updateDock() {
     var dock = $('plat-dock'); if (!dock) return;
-    dock.style.display = Net.active ? 'flex' : 'none';
+    dock.style.display = (Net.active && document.body.getAttribute('data-view') === 'lobby') ? 'flex' : 'none'; // strip 只留在大廳：回主頁也要收掉（遊戲畫面由 CSS 隱藏、遊戲自繪膠囊）
     document.body.classList.toggle('dock-on', !!Net.active);
     window.__PLAT_SESSION_ACTIVE = !!Net.active;
     if (window.PlatDock) window.PlatDock._emit();
@@ -1287,7 +1295,7 @@
       if (PB.unsub) { PB.unsub(); PB.unsub = null; }
     },
     isAttached: function () { return !!PB.el; },
-    _debug: function () { return { attached: !!PB.el, inDoc: !!(PB.el && PB.el.isConnected), hasState: !!PB.state, htmlLen: PB.el ? PB.el.innerHTML.length : -1, zoomOpen: PB.zoomOpen, drawOpen: PB.drawOpen }; }
+    _debug: function () { return { attached: !!PB.el, inDoc: !!(PB.el && PB.el.isConnected), hasState: !!PB.state, mode0: PB.state && PB.state.modes && PB.state.modes[0] ? PB.state.modes[0].label : null, htmlLen: PB.el ? PB.el.innerHTML.length : -1, zoomOpen: PB.zoomOpen, drawOpen: PB.drawOpen }; }
   };
   // ---------- 共用等待室 PlatRoom（兩款遊戲的多人等待室由殼渲染同一張卡） ----------
   // 遊戲負責：留掛載點、attach(cfg)、update(state)、把自己的「對局設定」JSX 用
@@ -1518,6 +1526,7 @@
   }
   function podShow(entry, t) {
     if (!entry || !entry.placements || !entry.placements.length) return;
+    POD.shownAt = Date.now();
     var el = podEl();
     var pls = entry.placements.slice().sort(function (a, b) { return a.rank - b.rank; });
     var totals = t.totals || {}, wins = t.wins || {};

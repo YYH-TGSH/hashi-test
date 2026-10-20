@@ -4264,6 +4264,7 @@ function SudokuGame() {
     }
   };
   useEffect(function () {
+    if (typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return; // 底部列主人是另一款遊戲時不搶（錦標賽輪替時防翻跳）
     var el = platBarRef.current;
     if (el && typeof window.PlatBar !== 'undefined') {
       window.PlatBar.attach(el, platBarCfgStable.current);
@@ -4274,6 +4275,7 @@ function SudokuGame() {
   }, [screen]);
   useEffect(function () {
     if (typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
+    if (typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return;
     var st = {
       mode: interactionMode,
       modes: [{

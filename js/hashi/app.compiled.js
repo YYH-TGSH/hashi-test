@@ -2716,6 +2716,7 @@ function HashiGame() {
       if (platBarCfgRef.current) platBarCfgRef.current.onAction(n, p);
     } };
   useEffect(function () {
+    if (typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return; // 底部列主人是另一款遊戲時不搶（錦標賽輪替時防翻跳）
     var el = platBarRef.current;
     if (el && typeof window.PlatBar !== 'undefined') {
       window.PlatBar.attach(el, platBarCfgStable.current);
@@ -2726,6 +2727,7 @@ function HashiGame() {
   }, [screen]);
   useEffect(function () {
     if (typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
+    if (typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return;
     var st = {
       mode: interactionMode,
       modes: engine === 'peerjs' ? [{ icon: '🖋️', label: '畫筆' }, { icon: '✏️', label: '草稿' }, { icon: '🖌️', label: '繪圖' }] : [{ icon: '🖋️', label: '畫筆' }, { icon: '✏️', label: '草稿' }],
