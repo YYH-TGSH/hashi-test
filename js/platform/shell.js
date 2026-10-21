@@ -97,7 +97,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.9.5'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.9.6'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -293,6 +293,12 @@
   }
   function routeData(c, d) {
     if (d && typeof d === 'object' && d.__plat) { onPlatData(c, d); return; }
+    if (d && typeof d === 'object' && d.__pg) {
+      // 遊戲訊息帶寄件遊戲戳記：不是目前對局遊戲的（背景另一款的自修 JOIN/心跳等）直接丟棄，
+      // 否則會污染前景遊戲的 JOIN 處理（幻影玩家、名單互搶、RESUME 濫發重啟倒數）。
+      if (Net.inMatch && d.__pg !== Net.inMatch) return;
+      d = d.__pd;
+    }
     tournSniff(c.peer, d);
     var vp = Net.gamePeer;
     if (vp && !vp._destroyed) { try { vp.wrapperFor(c)._deliverData(d); } catch (e) {} }
@@ -401,7 +407,7 @@
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); } break;
+      case 'arm': if (!Net.isHost) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); } break;
       case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); } break;
       case 'launch': {
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
@@ -495,8 +501,10 @@
     var g = Net.inMatch; if (!g) return;
     var hk = window['__PLAT_HOOKS_' + g]; if (!hk) return;
     var sess = { code: Net.code, name: Net.me.name, isHost: amHost, mode: Net.matchMode || 'coop' };
+    window.__PLAT_CREATING_GAME = g;
     if (hk.migrate) { try { hk.migrate(amHost, sess); } catch (e) {} }
     else if (hk.enter) { try { hk.enter(sess); } catch (e) {} }
+    window.__PLAT_CREATING_GAME = null;
   }
   function teardownPeer() {
     Net.ending = true;
@@ -631,7 +639,9 @@
     window.PLAT_show(game);
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
+      window.__PLAT_CREATING_GAME = game; // enter 內建立的 VirtualPeer 蓋上本遊戲戳記（背景遊戲訊息靠它在 routeData 被丟棄）
       try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop', tourn: tournSess || null }); } catch (e) {}
+      window.__PLAT_CREATING_GAME = null;
       if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game, uid: Net.myUid }); }
     });
   }
@@ -855,6 +865,7 @@
       Net.armed.game = val; Net.roomTab = val;
       platBroadcast({ kind: 'arm', game: val });
       renderRoomTabs();
+      prRenderRegions(); // 帶路標籤由 prRenderRegions 依 armed 重繪：不等遊戲端下一次 update（數橋等待室沒有每秒 update，標籤會永遠不變）
     }
   };
   function tournSettle() {
@@ -1776,7 +1787,7 @@
     if (l && l.length) this._fire('data', d);
     else { this._dq.push(d); if (this._dq.length > 100) this._dq.shift(); }
   };
-  VirtualConn.prototype.send = function (d) { if (this._closed || (this._vp && this._vp._destroyed)) return; tournSniff(Net.myPid, d); try { this._real.send(d); } catch (e) {} };
+  VirtualConn.prototype.send = function (d) { if (this._closed || (this._vp && this._vp._destroyed)) return; tournSniff(Net.myPid, d); var out = d; if (this._vp && this._vp.__game && d && typeof d === 'object') out = { __pg: this._vp.__game, __pd: d }; try { this._real.send(out); } catch (e) {} };
   VirtualConn.prototype.close = function () { this._closed = true; }; // 共用連線：不關實體連線
   VirtualConn.prototype._fire = function (ev, arg) {
     var l = this._cbs[ev] || [];
@@ -1784,6 +1795,7 @@
   };
   function VirtualPeer(id) {
     this.id = id || Net.myPid;
+    this.__game = window.__PLAT_CREATING_GAME || Net.inMatch || null; // 這個 peer 屬於哪款遊戲（寄件戳記用）
     this._cbs = {}; this._wrappers = {}; this._delivered = {};
     this._destroyed = false; this.disconnected = false; this.connections = {};
     Net.gamePeer = this;
@@ -1815,7 +1827,7 @@
     for (var pid in Net.conns) this._deliver(Net.conns[pid]);
     if (Net._dq) for (var pid2 in Net._dq) {
       var rc = Net.conns[pid2], qq = Net._dq[pid2];
-      if (rc && qq && qq.length) { var w = this.wrapperFor(rc); Net._dq[pid2] = []; qq.forEach(function (m) { w._deliverData(m); }); }
+      if (rc && qq && qq.length) { var w = this.wrapperFor(rc); Net._dq[pid2] = []; var vp2 = this; qq.forEach(function (m) { if (m && typeof m === 'object' && m.__pg) { if (vp2.__game && m.__pg !== vp2.__game) return; m = m.__pd; } w._deliverData(m); }); }
     }
   };
   VirtualPeer.prototype._deliver = function (realConn) {
