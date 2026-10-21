@@ -555,10 +555,6 @@ function SudokuGame() {
     _useState136 = _slicedToArray(_useState135, 2),
     tempPlayerName = _useState136[0],
     setTempPlayerName = _useState136[1];
-  var _useState137 = useState('entry'),
-    _useState138 = _slicedToArray(_useState137, 2),
-    setupStep = _useState138[0],
-    setSetupStep = _useState138[1]; // entry | create | join（比照數橋三段式）
   // ===== 每日一題（比照數橋） =====
   var dailyTodayStr = function dailyTodayStr() {
     var d = new Date();
@@ -569,29 +565,29 @@ function SudokuGame() {
     d.setDate(d.getDate() + delta);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
-  var _useState139 = useState(function () {
+  var _useState137 = useState(function () {
       return dailyTodayStr();
     }),
+    _useState138 = _slicedToArray(_useState137, 2),
+    dailyPickDate = _useState138[0],
+    setDailyPickDate = _useState138[1];
+  var _useState139 = useState(null),
     _useState140 = _slicedToArray(_useState139, 2),
-    dailyPickDate = _useState140[0],
-    setDailyPickDate = _useState140[1];
-  var _useState141 = useState(null),
-    _useState142 = _slicedToArray(_useState141, 2),
-    dailyDate = _useState142[0],
-    setDailyDate = _useState142[1]; // 進行中的每日題日期（null=非每日模式）
+    dailyDate = _useState140[0],
+    setDailyDate = _useState140[1]; // 進行中的每日題日期（null=非每日模式）
   var dailyRef = useRef(null);
   var dailyRecordedRef = useRef(false);
-  var _useState143 = useState(function () {
+  var _useState141 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
       } catch (e) {
         return {};
       }
     }),
-    _useState144 = _slicedToArray(_useState143, 2),
-    dailyRecords = _useState144[0],
-    setDailyRecords = _useState144[1];
-  var _useState145 = useState(function () {
+    _useState142 = _slicedToArray(_useState141, 2),
+    dailyRecords = _useState142[0],
+    setDailyRecords = _useState142[1];
+  var _useState143 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
       } catch (e) {
@@ -601,51 +597,14 @@ function SudokuGame() {
         };
       }
     }),
+    _useState144 = _slicedToArray(_useState143, 2),
+    dailyStreak = _useState144[0],
+    setDailyStreak = _useState144[1];
+  var _useState145 = useState(false),
     _useState146 = _slicedToArray(_useState145, 2),
-    dailyStreak = _useState146[0],
-    setDailyStreak = _useState146[1];
-  var _useState147 = useState(false),
-    _useState148 = _slicedToArray(_useState147, 2),
-    showTutorial = _useState148[0],
-    setShowTutorial = _useState148[1];
-  // 暱稱拉霸機（比照數橋/平台大廳）
-  var _useState149 = useState(''),
-    _useState150 = _slicedToArray(_useState149, 2),
-    slotDisplay = _useState150[0],
-    setSlotDisplay = _useState150[1];
-  var _useState151 = useState(false),
-    _useState152 = _slicedToArray(_useState151, 2),
-    slotSpinning = _useState152[0],
-    setSlotSpinning = _useState152[1];
-  var slotTimerRef = useRef(null);
-  var spinSlotName = function spinSlotName() {
-    if (slotSpinning || isConnecting) return;
-    setSlotSpinning(true);
-    var ticks = 0;
-    var total = 24 + Math.floor(Math.random() * 8);
-    var step = function step() {
-      ticks++;
-      var name = SUDOKU_SLOT_NAMES[Math.floor(Math.random() * SUDOKU_SLOT_NAMES.length)];
-      setSlotDisplay(name);
-      if (ticks >= total) {
-        setTempPlayerName(name);
-        setSlotSpinning(false);
-        slotTimerRef.current = null;
-        return;
-      }
-      slotTimerRef.current = setTimeout(step, 45 + Math.pow(ticks / total, 2) * 170);
-    };
-    step();
-  };
-  var _useState153 = useState(false),
-    _useState154 = _slicedToArray(_useState153, 2),
-    stableMode = _useState154[0],
-    setStableMode = _useState154[1];
-  var _useState155 = useState(0),
-    _useState156 = _slicedToArray(_useState155, 2),
-    titleClicks = _useState156[0],
-    setTitleClicks = _useState156[1];
-  var _useState157 = useState([{
+    showTutorial = _useState146[0],
+    setShowTutorial = _useState146[1];
+  var _useState147 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -653,37 +612,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
+    _useState148 = _slicedToArray(_useState147, 2),
+    playersList = _useState148[0],
+    setPlayersList = _useState148[1];
+  var _useState149 = useState(false),
+    _useState150 = _slicedToArray(_useState149, 2),
+    isConnecting = _useState150[0],
+    setIsConnecting = _useState150[1];
+  var _useState151 = useState(""),
+    _useState152 = _slicedToArray(_useState151, 2),
+    connectionStatus = _useState152[0],
+    setConnectionStatus = _useState152[1];
+  var _useState153 = useState(false),
+    _useState154 = _slicedToArray(_useState153, 2),
+    showCancelButton = _useState154[0],
+    setShowCancelButton = _useState154[1];
+  var _useState155 = useState(true),
+    _useState156 = _slicedToArray(_useState155, 2),
+    showOtherCursors = _useState156[0],
+    setShowOtherCursors = _useState156[1];
+  var _useState157 = useState(true),
     _useState158 = _slicedToArray(_useState157, 2),
-    playersList = _useState158[0],
-    setPlayersList = _useState158[1];
-  var _useState159 = useState(false),
+    showGhostProgress = _useState158[0],
+    setShowGhostProgress = _useState158[1];
+  var _useState159 = useState({}),
     _useState160 = _slicedToArray(_useState159, 2),
-    isConnecting = _useState160[0],
-    setIsConnecting = _useState160[1];
-  var _useState161 = useState(""),
+    cursors = _useState160[0],
+    setCursors = _useState160[1];
+  var _useState161 = useState([]),
     _useState162 = _slicedToArray(_useState161, 2),
-    connectionStatus = _useState162[0],
-    setConnectionStatus = _useState162[1];
-  var _useState163 = useState(false),
-    _useState164 = _slicedToArray(_useState163, 2),
-    showCancelButton = _useState164[0],
-    setShowCancelButton = _useState164[1];
-  var _useState165 = useState(true),
-    _useState166 = _slicedToArray(_useState165, 2),
-    showOtherCursors = _useState166[0],
-    setShowOtherCursors = _useState166[1];
-  var _useState167 = useState(true),
-    _useState168 = _slicedToArray(_useState167, 2),
-    showGhostProgress = _useState168[0],
-    setShowGhostProgress = _useState168[1];
-  var _useState169 = useState({}),
-    _useState170 = _slicedToArray(_useState169, 2),
-    cursors = _useState170[0],
-    setCursors = _useState170[1];
-  var _useState171 = useState([]),
-    _useState172 = _slicedToArray(_useState171, 2),
-    ripples = _useState172[0],
-    setRipples = _useState172[1];
+    ripples = _useState162[0],
+    setRipples = _useState162[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -2378,80 +2337,6 @@ function SudokuGame() {
       });
     }
   };
-  var initiateHostGame = function initiateHostGame() {
-    if (!tempPlayerName.trim()) return showToast("⚠️ 請輸入暱稱");
-    myNameRef.current = tempPlayerName;
-    setEngine('peerjs');
-    engineRef.current = 'peerjs';
-    syncState({
-      levelData: emptyLevelData,
-      cells: [],
-      localCells: [],
-      matchPhase: 'waiting',
-      matchEndTime: null,
-      isBrawlMode: false
-    }, false);
-    var rID = Math.floor(1000 + Math.random() * 9000).toString();
-    setIsConnecting(true);
-    setupPeerJS(rID, tempPlayerName, true);
-  };
-  var joinExistingGame = function joinExistingGame() {
-    if (!tempPlayerName.trim()) return showToast("⚠️ 請輸入暱稱");
-    if (tempRoomId.length < 4) return showToast("⚠️ 請輸入正確的 4 碼邀請碼");
-    myNameRef.current = tempPlayerName;
-    setEngine('peerjs');
-    engineRef.current = 'peerjs';
-    setIsConnecting(true);
-    setupPeerJS(tempRoomId, tempPlayerName, false);
-  };
-  var handleReady = /*#__PURE__*/function () {
-    var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-      var nList, me;
-      return _regeneratorRuntime().wrap(function _callee$(_context) {
-        while (1) switch (_context.prev = _context.next) {
-          case 0:
-            if (engineRef.current === 'peerjs') {
-              if (isHostRef.current) {
-                nList = playersListRef.current.map(function (p) {
-                  return p.id === myId ? _objectSpread(_objectSpread({}, p), {}, {
-                    isReady: !p.isReady
-                  }) : p;
-                });
-                setPlayersList(nList);
-                connsRef.current.forEach(function (c) {
-                  if (c.open) c.send({
-                    type: 'PLAYERS_UPDATE',
-                    players: nList
-                  });
-                });
-              } else if (connRef.current && connRef.current.open) {
-                me = playersListRef.current.find(function (p) {
-                  return p.id === myId;
-                });
-                if (me) connRef.current.send({
-                  type: me.isReady ? 'REQ_UNREADY' : 'REQ_READY',
-                  targetId: myId
-                });
-              }
-            } else {
-              setPlayersList(function (prev) {
-                return prev.map(function (p) {
-                  return p.id === myId ? _objectSpread(_objectSpread({}, p), {}, {
-                    isReady: !p.isReady
-                  }) : p;
-                });
-              });
-            }
-          case 1:
-          case "end":
-            return _context.stop();
-        }
-      }, _callee);
-    }));
-    return function handleReady() {
-      return _ref4.apply(this, arguments);
-    };
-  }();
   var toggleSpectator = function toggleSpectator(targetId) {
     var isTemp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
     var forceState = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
@@ -2800,23 +2685,23 @@ function SudokuGame() {
     });
   };
   var autoFillHiddenSingles = /*#__PURE__*/function () {
-    var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(_char3) {
+    var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(_char3) {
       var changed, stateChanged, currentCells, isValid, fill, _loop6, y, _loop7, x, _loop8, b;
-      return _regeneratorRuntime().wrap(function _callee3$(_context6) {
-        while (1) switch (_context6.prev = _context6.next) {
+      return _regeneratorRuntime().wrap(function _callee2$(_context5) {
+        while (1) switch (_context5.prev = _context5.next) {
           case 0:
             if (stateRef.current.brawlSettings.allowQuickFill) {
-              _context6.next = 3;
+              _context5.next = 3;
               break;
             }
             showToast("⚠️ 已關閉快速填答功能");
-            return _context6.abrupt("return");
+            return _context5.abrupt("return");
           case 3:
             if (!isAutoFillingRef.current) {
-              _context6.next = 5;
+              _context5.next = 5;
               break;
             }
-            return _context6.abrupt("return");
+            return _context5.abrupt("return");
           case 5:
             isAutoFillingRef.current = true;
             syncState({
@@ -2845,16 +2730,16 @@ function SudokuGame() {
               return true;
             };
             fill = /*#__PURE__*/function () {
-              var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(cellId) {
+              var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee(cellId) {
                 var idx, targetCell, i, c, me, msg;
-                return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-                  while (1) switch (_context2.prev = _context2.next) {
+                return _regeneratorRuntime().wrap(function _callee$(_context) {
+                  while (1) switch (_context.prev = _context.next) {
                     case 0:
                       idx = currentCells.findIndex(function (c) {
                         return c.id === cellId;
                       });
                       if (!(idx !== -1)) {
-                        _context2.next = 11;
+                        _context.next = 11;
                         break;
                       }
                       currentCells = _toConsumableArray(currentCells);
@@ -2905,26 +2790,26 @@ function SudokuGame() {
                           cells: currentCells
                         });
                       }
-                      _context2.next = 11;
+                      _context.next = 11;
                       return new Promise(function (r) {
                         return setTimeout(r, 100);
                       });
                     case 11:
                     case "end":
-                      return _context2.stop();
+                      return _context.stop();
                   }
-                }, _callee2);
+                }, _callee);
               }));
               return function fill(_x2) {
-                return _ref6.apply(this, arguments);
+                return _ref5.apply(this, arguments);
               };
             }();
           case 12:
             changed = false;
             _loop6 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop6(y) {
               var rowCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop6$(_context3) {
-                while (1) switch (_context3.prev = _context3.next) {
+              return _regeneratorRuntime().wrap(function _loop6$(_context2) {
+                while (1) switch (_context2.prev = _context2.next) {
                   case 0:
                     rowCells = currentCells.filter(function (c) {
                       return c.y === y;
@@ -2932,12 +2817,67 @@ function SudokuGame() {
                     if (!rowCells.some(function (c) {
                       return c.value === _char3;
                     })) {
+                      _context2.next = 3;
+                      break;
+                    }
+                    return _context2.abrupt("return", 1);
+                  case 3:
+                    validEmpties = rowCells.filter(function (c) {
+                      return isValid(c, currentCells);
+                    });
+                    if (!(validEmpties.length === 1)) {
+                      _context2.next = 7;
+                      break;
+                    }
+                    _context2.next = 7;
+                    return fill(validEmpties[0].id);
+                  case 7:
+                  case "end":
+                    return _context2.stop();
+                }
+              }, _loop6);
+            });
+            y = 0;
+          case 15:
+            if (!(y < cSizeDef.size)) {
+              _context5.next = 22;
+              break;
+            }
+            return _context5.delegateYield(_loop6(y), "t0", 17);
+          case 17:
+            if (!_context5.t0) {
+              _context5.next = 19;
+              break;
+            }
+            return _context5.abrupt("continue", 19);
+          case 19:
+            y++;
+            _context5.next = 15;
+            break;
+          case 22:
+            if (!changed) {
+              _context5.next = 24;
+              break;
+            }
+            return _context5.abrupt("continue", 44);
+          case 24:
+            _loop7 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop7(x) {
+              var colCells, validEmpties;
+              return _regeneratorRuntime().wrap(function _loop7$(_context3) {
+                while (1) switch (_context3.prev = _context3.next) {
+                  case 0:
+                    colCells = currentCells.filter(function (c) {
+                      return c.x === x;
+                    });
+                    if (!colCells.some(function (c) {
+                      return c.value === _char3;
+                    })) {
                       _context3.next = 3;
                       break;
                     }
                     return _context3.abrupt("return", 1);
                   case 3:
-                    validEmpties = rowCells.filter(function (c) {
+                    validEmpties = colCells.filter(function (c) {
                       return isValid(c, currentCells);
                     });
                     if (!(validEmpties.length === 1)) {
@@ -2950,41 +2890,41 @@ function SudokuGame() {
                   case "end":
                     return _context3.stop();
                 }
-              }, _loop6);
+              }, _loop7);
             });
-            y = 0;
-          case 15:
-            if (!(y < cSizeDef.size)) {
-              _context6.next = 22;
+            x = 0;
+          case 26:
+            if (!(x < cSizeDef.size)) {
+              _context5.next = 33;
               break;
             }
-            return _context6.delegateYield(_loop6(y), "t0", 17);
-          case 17:
-            if (!_context6.t0) {
-              _context6.next = 19;
+            return _context5.delegateYield(_loop7(x), "t1", 28);
+          case 28:
+            if (!_context5.t1) {
+              _context5.next = 30;
               break;
             }
-            return _context6.abrupt("continue", 19);
-          case 19:
-            y++;
-            _context6.next = 15;
+            return _context5.abrupt("continue", 30);
+          case 30:
+            x++;
+            _context5.next = 26;
             break;
-          case 22:
+          case 33:
             if (!changed) {
-              _context6.next = 24;
+              _context5.next = 35;
               break;
             }
-            return _context6.abrupt("continue", 44);
-          case 24:
-            _loop7 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop7(x) {
-              var colCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop7$(_context4) {
+            return _context5.abrupt("continue", 44);
+          case 35:
+            _loop8 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop8(b) {
+              var boxCells, validEmpties;
+              return _regeneratorRuntime().wrap(function _loop8$(_context4) {
                 while (1) switch (_context4.prev = _context4.next) {
                   case 0:
-                    colCells = currentCells.filter(function (c) {
-                      return c.x === x;
+                    boxCells = currentCells.filter(function (c) {
+                      return c.boxId === b;
                     });
-                    if (!colCells.some(function (c) {
+                    if (!boxCells.some(function (c) {
                       return c.value === _char3;
                     })) {
                       _context4.next = 3;
@@ -2992,7 +2932,7 @@ function SudokuGame() {
                     }
                     return _context4.abrupt("return", 1);
                   case 3:
-                    validEmpties = colCells.filter(function (c) {
+                    validEmpties = boxCells.filter(function (c) {
                       return isValid(c, currentCells);
                     });
                     if (!(validEmpties.length === 1)) {
@@ -3005,83 +2945,28 @@ function SudokuGame() {
                   case "end":
                     return _context4.stop();
                 }
-              }, _loop7);
-            });
-            x = 0;
-          case 26:
-            if (!(x < cSizeDef.size)) {
-              _context6.next = 33;
-              break;
-            }
-            return _context6.delegateYield(_loop7(x), "t1", 28);
-          case 28:
-            if (!_context6.t1) {
-              _context6.next = 30;
-              break;
-            }
-            return _context6.abrupt("continue", 30);
-          case 30:
-            x++;
-            _context6.next = 26;
-            break;
-          case 33:
-            if (!changed) {
-              _context6.next = 35;
-              break;
-            }
-            return _context6.abrupt("continue", 44);
-          case 35:
-            _loop8 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop8(b) {
-              var boxCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop8$(_context5) {
-                while (1) switch (_context5.prev = _context5.next) {
-                  case 0:
-                    boxCells = currentCells.filter(function (c) {
-                      return c.boxId === b;
-                    });
-                    if (!boxCells.some(function (c) {
-                      return c.value === _char3;
-                    })) {
-                      _context5.next = 3;
-                      break;
-                    }
-                    return _context5.abrupt("return", 1);
-                  case 3:
-                    validEmpties = boxCells.filter(function (c) {
-                      return isValid(c, currentCells);
-                    });
-                    if (!(validEmpties.length === 1)) {
-                      _context5.next = 7;
-                      break;
-                    }
-                    _context5.next = 7;
-                    return fill(validEmpties[0].id);
-                  case 7:
-                  case "end":
-                    return _context5.stop();
-                }
               }, _loop8);
             });
             b = 0;
           case 37:
             if (!(b < cSizeDef.size)) {
-              _context6.next = 44;
+              _context5.next = 44;
               break;
             }
-            return _context6.delegateYield(_loop8(b), "t2", 39);
+            return _context5.delegateYield(_loop8(b), "t2", 39);
           case 39:
-            if (!_context6.t2) {
-              _context6.next = 41;
+            if (!_context5.t2) {
+              _context5.next = 41;
               break;
             }
-            return _context6.abrupt("continue", 41);
+            return _context5.abrupt("continue", 41);
           case 41:
             b++;
-            _context6.next = 37;
+            _context5.next = 37;
             break;
           case 44:
             if (changed) {
-              _context6.next = 12;
+              _context5.next = 12;
               break;
             }
           case 45:
@@ -3104,32 +2989,32 @@ function SudokuGame() {
             }, !isBrawlMode);
           case 48:
           case "end":
-            return _context6.stop();
+            return _context5.stop();
         }
-      }, _callee3);
+      }, _callee2);
     }));
     return function autoFillHiddenSingles(_x) {
-      return _ref5.apply(this, arguments);
+      return _ref4.apply(this, arguments);
     };
   }();
   var autoFillDrafts = /*#__PURE__*/function () {
-    var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(_char4) {
+    var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(_char4) {
       var stateChanged, currentCells, isValid, _loop9, y;
-      return _regeneratorRuntime().wrap(function _callee4$(_context9) {
-        while (1) switch (_context9.prev = _context9.next) {
+      return _regeneratorRuntime().wrap(function _callee3$(_context8) {
+        while (1) switch (_context8.prev = _context8.next) {
           case 0:
             if (stateRef.current.brawlSettings.allowQuickFill) {
-              _context9.next = 3;
+              _context8.next = 3;
               break;
             }
             showToast("⚠️ 已關閉快速填答功能");
-            return _context9.abrupt("return");
+            return _context8.abrupt("return");
           case 3:
             if (!isAutoFillingRef.current) {
-              _context9.next = 5;
+              _context8.next = 5;
               break;
             }
-            return _context9.abrupt("return");
+            return _context8.abrupt("return");
           case 5:
             isAutoFillingRef.current = true;
             syncState({
@@ -3158,15 +3043,15 @@ function SudokuGame() {
             };
             _loop9 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop9(y) {
               var rowChanged, newRowCells, _loop10, x;
-              return _regeneratorRuntime().wrap(function _loop9$(_context8) {
-                while (1) switch (_context8.prev = _context8.next) {
+              return _regeneratorRuntime().wrap(function _loop9$(_context7) {
+                while (1) switch (_context7.prev = _context7.next) {
                   case 0:
                     rowChanged = false;
                     newRowCells = _toConsumableArray(currentCells);
                     _loop10 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop10(x) {
                       var cellIdx, cell;
-                      return _regeneratorRuntime().wrap(function _loop10$(_context7) {
-                        while (1) switch (_context7.prev = _context7.next) {
+                      return _regeneratorRuntime().wrap(function _loop10$(_context6) {
+                        while (1) switch (_context6.prev = _context6.next) {
                           case 0:
                             cellIdx = newRowCells.findIndex(function (c) {
                               return c.x === x && c.y === y;
@@ -3183,24 +3068,24 @@ function SudokuGame() {
                             }
                           case 3:
                           case "end":
-                            return _context7.stop();
+                            return _context6.stop();
                         }
                       }, _loop10);
                     });
                     x = 0;
                   case 4:
                     if (!(x < cSizeDef.size)) {
-                      _context8.next = 9;
+                      _context7.next = 9;
                       break;
                     }
-                    return _context8.delegateYield(_loop10(x), "t0", 6);
+                    return _context7.delegateYield(_loop10(x), "t0", 6);
                   case 6:
                     x++;
-                    _context8.next = 4;
+                    _context7.next = 4;
                     break;
                   case 9:
                     if (!rowChanged) {
-                      _context8.next = 14;
+                      _context7.next = 14;
                       break;
                     }
                     currentCells = newRowCells;
@@ -3209,26 +3094,26 @@ function SudokuGame() {
                     }, false);else syncState({
                       cells: currentCells
                     });
-                    _context8.next = 14;
+                    _context7.next = 14;
                     return new Promise(function (r) {
                       return setTimeout(r, 40);
                     });
                   case 14:
                   case "end":
-                    return _context8.stop();
+                    return _context7.stop();
                 }
               }, _loop9);
             });
             y = 0;
           case 12:
             if (!(y < cSizeDef.size)) {
-              _context9.next = 17;
+              _context8.next = 17;
               break;
             }
-            return _context9.delegateYield(_loop9(y), "t0", 14);
+            return _context8.delegateYield(_loop9(y), "t0", 14);
           case 14:
             y++;
-            _context9.next = 12;
+            _context8.next = 12;
             break;
           case 17:
             if (stateChanged) {
@@ -3246,32 +3131,32 @@ function SudokuGame() {
             }, !isBrawlMode);
           case 20:
           case "end":
-            return _context9.stop();
+            return _context8.stop();
         }
-      }, _callee4);
+      }, _callee3);
     }));
     return function autoFillDrafts(_x3) {
-      return _ref7.apply(this, arguments);
+      return _ref6.apply(this, arguments);
     };
   }();
   var runAutoFillCycle = /*#__PURE__*/function () {
-    var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(startChar) {
+    var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(startChar) {
       var changed, stateChanged, currentCells, totalFilled, chars, startIndex, isValid, isCharCompleted, fill, passChanged, _loop11, _ret, i;
-      return _regeneratorRuntime().wrap(function _callee6$(_context15) {
-        while (1) switch (_context15.prev = _context15.next) {
+      return _regeneratorRuntime().wrap(function _callee5$(_context14) {
+        while (1) switch (_context14.prev = _context14.next) {
           case 0:
             if (stateRef.current.brawlSettings.allowTraversal) {
-              _context15.next = 3;
+              _context14.next = 3;
               break;
             }
             showToast("⚠️ 已關閉循環功能");
-            return _context15.abrupt("return");
+            return _context14.abrupt("return");
           case 3:
             if (!isAutoFillingRef.current) {
-              _context15.next = 5;
+              _context14.next = 5;
               break;
             }
-            return _context15.abrupt("return");
+            return _context14.abrupt("return");
           case 5:
             isAutoFillingRef.current = true;
             syncState({
@@ -3307,16 +3192,16 @@ function SudokuGame() {
               }).length === cSizeDef.size;
             };
             fill = /*#__PURE__*/function () {
-              var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(cellId, fillChar) {
+              var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(cellId, fillChar) {
                 var idx, targetCell, i, c, me, msg;
-                return _regeneratorRuntime().wrap(function _callee5$(_context10) {
-                  while (1) switch (_context10.prev = _context10.next) {
+                return _regeneratorRuntime().wrap(function _callee4$(_context9) {
+                  while (1) switch (_context9.prev = _context9.next) {
                     case 0:
                       idx = currentCells.findIndex(function (c) {
                         return c.id === cellId;
                       });
                       if (!(idx !== -1)) {
-                        _context10.next = 12;
+                        _context9.next = 12;
                         break;
                       }
                       currentCells = _toConsumableArray(currentCells);
@@ -3372,47 +3257,47 @@ function SudokuGame() {
                           selectedChar: fillChar
                         });
                       }
-                      _context10.next = 12;
+                      _context9.next = 12;
                       return new Promise(function (r) {
                         return setTimeout(r, 100);
                       });
                     case 12:
                     case "end":
-                      return _context10.stop();
+                      return _context9.stop();
                   }
-                }, _callee5);
+                }, _callee4);
               }));
               return function fill(_x5, _x6) {
-                return _ref9.apply(this, arguments);
+                return _ref8.apply(this, arguments);
               };
             }();
           case 16:
             passChanged = false;
             _loop11 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop11() {
               var charIdx, _char5, _loop12, y, _loop13, x, _loop14, b;
-              return _regeneratorRuntime().wrap(function _loop11$(_context14) {
-                while (1) switch (_context14.prev = _context14.next) {
+              return _regeneratorRuntime().wrap(function _loop11$(_context13) {
+                while (1) switch (_context13.prev = _context13.next) {
                   case 0:
                     charIdx = (startIndex + i) % chars.length;
                     _char5 = chars[charIdx];
                     if (!currentCells.every(function (c) {
                       return c.value !== null;
                     })) {
-                      _context14.next = 4;
+                      _context13.next = 4;
                       break;
                     }
-                    return _context14.abrupt("return", 0);
+                    return _context13.abrupt("return", 0);
                   case 4:
                     if (!isCharCompleted(_char5, currentCells)) {
-                      _context14.next = 6;
+                      _context13.next = 6;
                       break;
                     }
-                    return _context14.abrupt("return", 1);
+                    return _context13.abrupt("return", 1);
                   case 6:
                     syncState({
                       selectedChar: _char5
                     }, !isBrawlMode);
-                    _context14.next = 9;
+                    _context13.next = 9;
                     return new Promise(function (r) {
                       return setTimeout(r, 50);
                     });
@@ -3420,8 +3305,8 @@ function SudokuGame() {
                     changed = false;
                     _loop12 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop12(y) {
                       var rowCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop12$(_context11) {
-                        while (1) switch (_context11.prev = _context11.next) {
+                      return _regeneratorRuntime().wrap(function _loop12$(_context10) {
+                        while (1) switch (_context10.prev = _context10.next) {
                           case 0:
                             rowCells = currentCells.filter(function (c) {
                               return c.y === y;
@@ -3429,12 +3314,68 @@ function SudokuGame() {
                             if (!rowCells.some(function (c) {
                               return c.value === _char5;
                             })) {
+                              _context10.next = 3;
+                              break;
+                            }
+                            return _context10.abrupt("return", 1);
+                          case 3:
+                            validEmpties = rowCells.filter(function (c) {
+                              return isValid(c, currentCells, _char5);
+                            });
+                            if (!(validEmpties.length === 1)) {
+                              _context10.next = 7;
+                              break;
+                            }
+                            _context10.next = 7;
+                            return fill(validEmpties[0].id, _char5);
+                          case 7:
+                          case "end":
+                            return _context10.stop();
+                        }
+                      }, _loop12);
+                    });
+                    y = 0;
+                  case 12:
+                    if (!(y < cSizeDef.size)) {
+                      _context13.next = 19;
+                      break;
+                    }
+                    return _context13.delegateYield(_loop12(y), "t0", 14);
+                  case 14:
+                    if (!_context13.t0) {
+                      _context13.next = 16;
+                      break;
+                    }
+                    return _context13.abrupt("continue", 16);
+                  case 16:
+                    y++;
+                    _context13.next = 12;
+                    break;
+                  case 19:
+                    if (!changed) {
+                      _context13.next = 22;
+                      break;
+                    }
+                    passChanged = true;
+                    return _context13.abrupt("continue", 44);
+                  case 22:
+                    _loop13 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop13(x) {
+                      var colCells, validEmpties;
+                      return _regeneratorRuntime().wrap(function _loop13$(_context11) {
+                        while (1) switch (_context11.prev = _context11.next) {
+                          case 0:
+                            colCells = currentCells.filter(function (c) {
+                              return c.x === x;
+                            });
+                            if (!colCells.some(function (c) {
+                              return c.value === _char5;
+                            })) {
                               _context11.next = 3;
                               break;
                             }
                             return _context11.abrupt("return", 1);
                           case 3:
-                            validEmpties = rowCells.filter(function (c) {
+                            validEmpties = colCells.filter(function (c) {
                               return isValid(c, currentCells, _char5);
                             });
                             if (!(validEmpties.length === 1)) {
@@ -3447,42 +3388,42 @@ function SudokuGame() {
                           case "end":
                             return _context11.stop();
                         }
-                      }, _loop12);
+                      }, _loop13);
                     });
-                    y = 0;
-                  case 12:
-                    if (!(y < cSizeDef.size)) {
-                      _context14.next = 19;
+                    x = 0;
+                  case 24:
+                    if (!(x < cSizeDef.size)) {
+                      _context13.next = 31;
                       break;
                     }
-                    return _context14.delegateYield(_loop12(y), "t0", 14);
-                  case 14:
-                    if (!_context14.t0) {
-                      _context14.next = 16;
+                    return _context13.delegateYield(_loop13(x), "t1", 26);
+                  case 26:
+                    if (!_context13.t1) {
+                      _context13.next = 28;
                       break;
                     }
-                    return _context14.abrupt("continue", 16);
-                  case 16:
-                    y++;
-                    _context14.next = 12;
+                    return _context13.abrupt("continue", 28);
+                  case 28:
+                    x++;
+                    _context13.next = 24;
                     break;
-                  case 19:
+                  case 31:
                     if (!changed) {
-                      _context14.next = 22;
+                      _context13.next = 34;
                       break;
                     }
                     passChanged = true;
-                    return _context14.abrupt("continue", 44);
-                  case 22:
-                    _loop13 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop13(x) {
-                      var colCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop13$(_context12) {
+                    return _context13.abrupt("continue", 44);
+                  case 34:
+                    _loop14 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop14(b) {
+                      var boxCells, validEmpties;
+                      return _regeneratorRuntime().wrap(function _loop14$(_context12) {
                         while (1) switch (_context12.prev = _context12.next) {
                           case 0:
-                            colCells = currentCells.filter(function (c) {
-                              return c.x === x;
+                            boxCells = currentCells.filter(function (c) {
+                              return c.boxId === b;
                             });
-                            if (!colCells.some(function (c) {
+                            if (!boxCells.some(function (c) {
                               return c.value === _char5;
                             })) {
                               _context12.next = 3;
@@ -3490,7 +3431,7 @@ function SudokuGame() {
                             }
                             return _context12.abrupt("return", 1);
                           case 3:
-                            validEmpties = colCells.filter(function (c) {
+                            validEmpties = boxCells.filter(function (c) {
                               return isValid(c, currentCells, _char5);
                             });
                             if (!(validEmpties.length === 1)) {
@@ -3503,123 +3444,67 @@ function SudokuGame() {
                           case "end":
                             return _context12.stop();
                         }
-                      }, _loop13);
-                    });
-                    x = 0;
-                  case 24:
-                    if (!(x < cSizeDef.size)) {
-                      _context14.next = 31;
-                      break;
-                    }
-                    return _context14.delegateYield(_loop13(x), "t1", 26);
-                  case 26:
-                    if (!_context14.t1) {
-                      _context14.next = 28;
-                      break;
-                    }
-                    return _context14.abrupt("continue", 28);
-                  case 28:
-                    x++;
-                    _context14.next = 24;
-                    break;
-                  case 31:
-                    if (!changed) {
-                      _context14.next = 34;
-                      break;
-                    }
-                    passChanged = true;
-                    return _context14.abrupt("continue", 44);
-                  case 34:
-                    _loop14 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop14(b) {
-                      var boxCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop14$(_context13) {
-                        while (1) switch (_context13.prev = _context13.next) {
-                          case 0:
-                            boxCells = currentCells.filter(function (c) {
-                              return c.boxId === b;
-                            });
-                            if (!boxCells.some(function (c) {
-                              return c.value === _char5;
-                            })) {
-                              _context13.next = 3;
-                              break;
-                            }
-                            return _context13.abrupt("return", 1);
-                          case 3:
-                            validEmpties = boxCells.filter(function (c) {
-                              return isValid(c, currentCells, _char5);
-                            });
-                            if (!(validEmpties.length === 1)) {
-                              _context13.next = 7;
-                              break;
-                            }
-                            _context13.next = 7;
-                            return fill(validEmpties[0].id, _char5);
-                          case 7:
-                          case "end":
-                            return _context13.stop();
-                        }
                       }, _loop14);
                     });
                     b = 0;
                   case 36:
                     if (!(b < cSizeDef.size)) {
-                      _context14.next = 43;
+                      _context13.next = 43;
                       break;
                     }
-                    return _context14.delegateYield(_loop14(b), "t2", 38);
+                    return _context13.delegateYield(_loop14(b), "t2", 38);
                   case 38:
-                    if (!_context14.t2) {
-                      _context14.next = 40;
+                    if (!_context13.t2) {
+                      _context13.next = 40;
                       break;
                     }
-                    return _context14.abrupt("continue", 40);
+                    return _context13.abrupt("continue", 40);
                   case 40:
                     b++;
-                    _context14.next = 36;
+                    _context13.next = 36;
                     break;
                   case 43:
                     if (changed) passChanged = true;
                   case 44:
                     if (changed) {
-                      _context14.next = 9;
+                      _context13.next = 9;
                       break;
                     }
                   case 45:
                   case "end":
-                    return _context14.stop();
+                    return _context13.stop();
                 }
               }, _loop11);
             });
             i = 0;
           case 19:
             if (!(i < chars.length)) {
-              _context15.next = 29;
+              _context14.next = 29;
               break;
             }
-            return _context15.delegateYield(_loop11(), "t0", 21);
+            return _context14.delegateYield(_loop11(), "t0", 21);
           case 21:
-            _ret = _context15.t0;
+            _ret = _context14.t0;
             if (!(_ret === 0)) {
-              _context15.next = 24;
+              _context14.next = 24;
               break;
             }
-            return _context15.abrupt("break", 29);
+            return _context14.abrupt("break", 29);
           case 24:
             if (!(_ret === 1)) {
-              _context15.next = 26;
+              _context14.next = 26;
               break;
             }
-            return _context15.abrupt("continue", 26);
+            return _context14.abrupt("continue", 26);
           case 26:
             i++;
-            _context15.next = 19;
+            _context14.next = 19;
             break;
           case 29:
             if (passChanged && !currentCells.every(function (c) {
               return c.value !== null;
             })) {
-              _context15.next = 16;
+              _context14.next = 16;
               break;
             }
           case 30:
@@ -3651,12 +3536,12 @@ function SudokuGame() {
             }, !isBrawlMode);
           case 33:
           case "end":
-            return _context15.stop();
+            return _context14.stop();
         }
-      }, _callee6);
+      }, _callee5);
     }));
     return function runAutoFillCycle(_x4) {
-      return _ref8.apply(this, arguments);
+      return _ref7.apply(this, arguments);
     };
   }();
   var clickTracker = useRef({
@@ -4076,148 +3961,6 @@ function SudokuGame() {
   // === 共用底部列 PlatBar（平台模式由殼渲染單一元件；獨立版走舊列） ===
   var platBarRef = useRef(null);
   var platBarCfgRef = useRef(null);
-  // PlatRoom（殼共用等待室）：掛載點 + 設定槽 + cfg 轉發
-  var roomMountRef = useRef(null);
-  var _useState173 = useState(null),
-    _useState174 = _slicedToArray(_useState173, 2),
-    roomSlot = _useState174[0],
-    setRoomSlot = _useState174[1];
-  var roomCfgRef = useRef(null);
-  var roomCfgStable = useRef(null);
-  // 開始按鈕門檻（與數橋同款）：全員（含房主）準備好，或等待室已開滿 PLAT_START_WAIT_MS（預設 1 分鐘，防掛機卡房），房主才能開始
-  var waitingSinceRef = useRef(null);
-  var canStartRef = useRef(false);
-  var _useState175 = useState(0),
-    _useState176 = _slicedToArray(_useState175, 2),
-    waitTick = _useState176[0],
-    setWaitTick = _useState176[1];
-  roomCfgRef.current = {
-    onAction: function onAction(n, key) {
-      if (n === 'ready') handleReady();else if (n === 'start') {
-        if (canStartRef.current) handleForceStart();else showToast('⏳ 等全員準備好，或等待 1 分鐘後才能開始');
-      } else if (n === 'leave') handleGoHome();else if (n === 'refresh') {
-        var list = playersListRef.current;
-        connsRef.current.forEach(function (conn) {
-          if (conn.open) conn.send({
-            type: 'PLAYERS_UPDATE',
-            players: list
-          });
-        });
-        showToast("🔄 已向所有玩家重新廣播名單");
-      } else if (n === 'player-click') {
-        var pl = playersListRef.current.find(function (x) {
-          return String(x.id) === String(key);
-        });
-        if (pl && (pl.id === myId || isHostRef.current)) {
-          setEditName(pl.name);
-          setColorPickerTarget(pl.id);
-        }
-      } else if (n === 'player-toggle') {
-        var _pl = playersListRef.current.find(function (x) {
-          return String(x.id) === String(key);
-        });
-        if (_pl && (_pl.id === myId || isHostRef.current)) toggleSpectator(_pl.id);
-      }
-    }
-  };
-  var sudokuRoomVisible = matchPhase === 'waiting' && engine !== 'local';
-  useEffect(function () {
-    if (!sudokuRoomVisible) waitingSinceRef.current = null;
-  }, [sudokuRoomVisible]);
-  useEffect(function () {
-    if (!sudokuRoomVisible || !isHost) return;
-    var t = setInterval(function () {
-      return setWaitTick(function (x) {
-        return x + 1;
-      });
-    }, 1000);
-    return function () {
-      return clearInterval(t);
-    };
-  }, [sudokuRoomVisible, isHost]);
-  useEffect(function () {
-    if (typeof window === 'undefined' || !window.PlatRoom) return;
-    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return; // 等待室主人是另一款遊戲時不搶 PlatRoom
-    var el = roomMountRef.current;
-    if (el) {
-      if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
-      if (!window.PlatRoom.isAttached()) {
-        if (!roomCfgStable.current) roomCfgStable.current = {
-          accent: '#ffcc00',
-          onAction: function onAction(n, k) {
-            if (roomCfgRef.current) roomCfgRef.current.onAction(n, k);
-          }
-        };
-        window.PlatRoom.attach(el, roomCfgStable.current);
-        setRoomSlot(window.PlatRoom.getSlot());
-      }
-    } else if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) {
-      window.PlatRoom.detach();
-      setRoomSlot(null);
-    }
-  });
-  useEffect(function () {
-    if (typeof window === 'undefined' || !window.PlatRoom || !window.PlatRoom.isAttached()) return;
-    if (!sudokuRoomVisible) return;
-    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'sudoku') return;
-    if (waitingSinceRef.current == null) waitingSinceRef.current = Date.now();
-    var waitMsGate = typeof window !== 'undefined' && window.PLAT_START_WAIT_MS || 60000;
-    var contendersGate = playersList.filter(function (p) {
-      return !p.isSpectator;
-    });
-    var allReadyGate = contendersGate.length > 0 && contendersGate.every(function (p) {
-      return p.isReady;
-    });
-    var waitedGate = Date.now() - waitingSinceRef.current >= waitMsGate;
-    var canStartGate = allReadyGate || waitedGate;
-    canStartRef.current = canStartGate;
-    var me = playersList.find(function (pl) {
-      return pl.id === myId;
-    }) || {};
-    window.PlatRoom.update({
-      title: '🎮 遊戲大廳',
-      code: roomId,
-      showRefresh: !!isHostRef.current,
-      players: playersList.map(function (pl) {
-        var canEdit = !pl.pending && (pl.id === myId || isHostRef.current);
-        return {
-          key: String(pl.id),
-          name: pl.name,
-          color: pl.color,
-          isMe: pl.id === myId,
-          isHost: !!pl.isHost,
-          pending: !!pl.pending,
-          online: pl.pending ? false : pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
-            return c.uid === pl.id && c.open;
-          }) ? false : null,
-          badge: pl.pending ? {
-            text: '未到',
-            kind: 'pending'
-          } : pl.isReady ? {
-            text: '✔ 已準備',
-            kind: 'ready'
-          } : null,
-          toggle: canEdit ? {
-            on: !pl.isSpectator,
-            labelOn: '🎮 參賽',
-            labelOff: '👁️ 上帝'
-          } : null,
-          clickable: canEdit
-        };
-      }),
-      myReady: !!me.isReady,
-      readyOn: '✅ 已準備',
-      readyOff: '✋ 準備好了',
-      mySpectator: null,
-      start: isHost ? {
-        label: '🏁 開始比賽',
-        kind: 'primary',
-        disabled: !canStartGate,
-        note: !canStartGate ? '等待全員準備（或等待 1 分鐘後開放開始）' : allReadyGate ? '全員準備好了！' : '已等待 1 分鐘，房主可直接開始'
-      } : null,
-      waitingText: !isHost ? '等待房主開始...' : null
-    });
-  });
 
   // 名單自我修復（比照數橋）：來賓的 JOIN 若在房主就緒前送達被漏接，每 2.5 秒重送，直到名單上有自己為止
   useEffect(function () {
@@ -4461,32 +4204,32 @@ function SudokuGame() {
     }
   };
   var handleQuickPaste = /*#__PURE__*/function () {
-    var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+    var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
       var text;
-      return _regeneratorRuntime().wrap(function _callee7$(_context16) {
-        while (1) switch (_context16.prev = _context16.next) {
+      return _regeneratorRuntime().wrap(function _callee6$(_context15) {
+        while (1) switch (_context15.prev = _context15.next) {
           case 0:
-            _context16.prev = 0;
-            _context16.next = 3;
+            _context15.prev = 0;
+            _context15.next = 3;
             return navigator.clipboard.readText();
           case 3:
-            text = _context16.sent;
+            text = _context15.sent;
             setSaveCode(text);
             showToast("📋 已貼上剪貼簿內容");
-            _context16.next = 11;
+            _context15.next = 11;
             break;
           case 8:
-            _context16.prev = 8;
-            _context16.t0 = _context16["catch"](0);
+            _context15.prev = 8;
+            _context15.t0 = _context15["catch"](0);
             showToast("❌ 無法讀取剪貼簿，請手動貼上");
           case 11:
           case "end":
-            return _context16.stop();
+            return _context15.stop();
         }
-      }, _callee7, null, [[0, 8]]);
+      }, _callee6, null, [[0, 8]]);
     }));
     return function handleQuickPaste() {
-      return _ref10.apply(this, arguments);
+      return _ref9.apply(this, arguments);
     };
   }();
   var generateAndSync = function generateAndSync(sId, dId, nextMode) {
@@ -4579,10 +4322,16 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState177 = useState(false),
-    _useState178 = _slicedToArray(_useState177, 2),
-    platTournLock = _useState178[0],
-    setPlatTournLock = _useState178[1];
+  var _useState163 = useState(false),
+    _useState164 = _slicedToArray(_useState163, 2),
+    platTournLock = _useState164[0],
+    setPlatTournLock = _useState164[1];
+  var _useState165 = useState(false),
+    _useState166 = _slicedToArray(_useState165, 2),
+    platHub = _useState166[0],
+    setPlatHub = _useState166[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+  var platHubRef = useRef(false);
+  var hubStartTimerRef = useRef(null);
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（免重打暱稱/房號） =====
   useEffect(function () {
     if (!window.__PLAT_PLATFORM) return;
@@ -4591,7 +4340,22 @@ function SudokuGame() {
         setPlatTournLock(!!sess.tourn);
         platTournLockRef.current = !!sess.tourn;
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
-        if (sess.tourn && sess.isHost) {
+        setPlatHub(!!sess.hub);
+        platHubRef.current = !!sess.hub;
+        if (sess.settings) {
+          // 房間框架帶入的設定（全員同一份，開賽前在殼房間頁設好）：一次種下尺寸/難度/大亂鬥設定
+          var st = sess.settings;
+          setSizeId(st.sizeId);
+          setDiffId(st.diffId);
+          setBrawlSettings(function (prev) {
+            return _objectSpread(_objectSpread({}, prev), st.brawl || {});
+          });
+          stateRef.current = _objectSpread(_objectSpread({}, stateRef.current), {}, {
+            sizeId: st.sizeId,
+            diffId: st.diffId,
+            brawlSettings: _objectSpread(_objectSpread({}, stateRef.current.brawlSettings), st.brawl || {})
+          });
+        } else if (sess.tourn && sess.isHost) {
           // 賽程預設：套用賽程的版型/難度，結束名次設為全員（不提前結束）
           setSizeId(sess.tourn.sizeId);
           setDiffId(sess.tourn.diffId);
@@ -4626,20 +4390,40 @@ function SudokuGame() {
         } else {
           setupPeerJS(sess.code, sess.name, false);
         }
+        // 房間框架流程：準備/人數在殼房間頁已經把關，房主端等人到齊就直接開局（不再經遊戲自己的等待室）
+        if (sess.hub && sess.isHost) {
+          if (hubStartTimerRef.current) clearInterval(hubStartTimerRef.current);
+          var tries = 0;
+          hubStartTimerRef.current = setInterval(function () {
+            tries++;
+            var N = window.__PLAT_NET;
+            var expected = N ? N.roster.length : 0;
+            var present = (playersListRef.current || []).filter(function (p) {
+              return !p.pending;
+            }).length;
+            if (expected >= 2 && present >= expected) {
+              clearInterval(hubStartTimerRef.current);
+              hubStartTimerRef.current = null;
+              handleForceStart();
+            } else if (tries > 90) {
+              clearInterval(hubStartTimerRef.current);
+              hubStartTimerRef.current = null;
+            }
+          }, 500);
+        }
       },
       exit: function exit() {
         setPlatTournLock(false);
         platTournLockRef.current = false;
         tournRosterRef.current = null;
+        setPlatHub(false);
+        platHubRef.current = false;
+        if (hubStartTimerRef.current) {
+          clearInterval(hubStartTimerRef.current);
+          hubStartTimerRef.current = null;
+        }
         handleGoHome();
       },
-      getSettings: function getSettings() {
-        return {
-          sizeId: stateRef.current.sizeId,
-          diffId: stateRef.current.diffId
-        };
-      },
-      // 錦標賽開賽時殼讀這裡的題目設定
       migrate: function migrate(amHost, sess) {
         // 房主接管：以目前對局狀態原地重建連線（房主 open handler 有 isMigrating 續局邏輯）
         setEngine('peerjs');
@@ -5494,11 +5278,7 @@ function SudokuGame() {
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        if (window.__PLAT_PLATFORM) {
-          window.PLAT_show('lobby');
-          return;
-        }
-        setScreen('join');
+        if (window.PLAT_show) window.PLAT_show('lobby');
       },
       className: "w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
     }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA"), /*#__PURE__*/React.createElement("button", {
@@ -5549,173 +5329,6 @@ function SudokuGame() {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), tutorialOverlay);
   }
-  if (screen === 'join') {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "h-screen w-screen flex flex-col items-center justify-center p-4 relative animate-fadeIn"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "bg-[#fffaf0] border-4 border-slate-800 p-8 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-2xl w-full z-10 transform rotate-1"
-    }, /*#__PURE__*/React.createElement("h2", {
-      onClick: function onClick() {
-        var nc = titleClicks + 1;
-        if (nc >= 3) {
-          setStableMode(!stableMode);
-          setTitleClicks(0);
-        } else setTitleClicks(nc);
-      },
-      className: "text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#ffcc00] pb-1 cursor-pointer select-none"
-    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA\u9078\u55AE"), setupStep === 'entry' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 md:grid-cols-2 gap-4"
-    }, /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setSetupStep('create');
-      },
-      className: "bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "font-black text-2xl mb-1"
-    }, "\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593"), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold opacity-90 leading-relaxed"
-    }, "\u4F60\u662F\u623F\u4E3B\uFF01\u4EE3\u78BC\u56FA\u5B9A\u4E0D\u8B8A\uFF0C\u670B\u53CB\u7528\u540C\u4E00\u7D44\u4EE3\u78BC\u52A0\u5165")), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setSetupStep('join');
-      },
-      className: "bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "font-black text-2xl mb-1"
-    }, "\uD83D\uDEAA \u52A0\u5165\u623F\u9593"), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold opacity-80 leading-relaxed"
-    }, "\u8F38\u5165\u670B\u53CB\u7D66\u4F60\u7684 4 \u4F4D\u6578\u4EE3\u78BC"))), /*#__PURE__*/React.createElement("p", {
-      className: "mt-5 text-sm font-bold text-slate-400 text-center"
-    }, "\u8DDF\u670B\u53CB\u7D04\u597D\uFF0C\u4E00\u500B\u4EBA\u5EFA\u7ACB\u623F\u9593\u3001\u5176\u4ED6\u4EBA\u8F38\u5165\u623F\u865F\u52A0\u5165")), setupStep !== 'entry' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setSetupStep('entry');
-      },
-      disabled: isConnecting,
-      className: "mb-4 font-bold text-slate-400 hover:text-slate-800 hover:underline disabled:opacity-50"
-    }, "\u2190 \u8FD4\u56DE"), /*#__PURE__*/React.createElement("div", {
-      className: "mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
-    }, /*#__PURE__*/React.createElement("label", {
-      className: "block text-slate-800 font-black text-sm mb-2"
-    }, "\u8A2D\u5B9A\u986F\u793A\u66B1\u7A31"), /*#__PURE__*/React.createElement("div", {
-      className: "bg-[#fffbeb] border-[3px] border-dashed border-slate-800 rounded-xl mb-2 min-h-[62px] flex items-center justify-center px-2"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-3xl font-black text-slate-800 text-center"
-    }, slotDisplay || tempPlayerName || '🎰 拉霸機')), /*#__PURE__*/React.createElement("button", {
-      onClick: spinSlotName,
-      disabled: isConnecting || slotSpinning,
-      className: "w-full py-2.5 mb-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
-    }, slotSpinning ? '🎰 轉動中…' : '🎲 拉霸機選名字'), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      placeholder: "\u6216\u81EA\u5DF1\u8F38\u5165\u66B1\u7A31",
-      value: tempPlayerName,
-      onChange: function onChange(e) {
-        setTempPlayerName(e.target.value);
-        setSlotDisplay('');
-      },
-      disabled: isConnecting,
-      className: "w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-yellow-50 outline-none focus:ring-2 ring-[#ffcc00] disabled:opacity-50"
-    })), setupStep === 'create' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-      className: "font-black text-lg mb-2 flex items-center gap-2 text-slate-800"
-    }, "\uD83D\uDC51 \u5EFA\u7ACB\u5C0D\u5C40\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs text-slate-600 mb-4 font-bold leading-relaxed"
-    }, /*#__PURE__*/React.createElement("p", null, "\u64D4\u4EFB\u5C0D\u5C40\u4E3B\u6A5F\uFF0C\u7CFB\u7D71\u6703\u81EA\u52D5\u5206\u6D3E\u9080\u8ACB\u78BC\u3002", /*#__PURE__*/React.createElement("br", null), "\u5EFA\u7ACB\u5F8C\u53EF\u96A8\u6642\u65BC\u4E0A\u65B9\u9078\u55AE\u5207\u63DB\u300C\u5408\u4F5C/\u5927\u4E82\u9B25\u300D\u6A21\u5F0F\u3002")), stableMode && /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-black text-emerald-600 mb-2 animate-pulse"
-    }, "\u2713 \u96F2\u7AEF\u6A21\u5F0F\u6E96\u5099\u5C31\u7DD2"), /*#__PURE__*/React.createElement("button", {
-      onClick: initiateHostGame,
-      disabled: isConnecting,
-      className: "w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase"
-    }, isConnecting ? "生成中..." : "發起對戰")), setupStep === 'join' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-      className: "font-black text-lg mb-2 flex items-center gap-2 text-slate-800"
-    }, "\uD83D\uDC64 \u53C3\u8207\u73FE\u6709\u5C0D\u5C40"), /*#__PURE__*/React.createElement("p", {
-      className: "text-xs text-slate-600 mb-2 font-bold leading-relaxed"
-    }, "\u8ACB\u8F38\u5165\u4E3B\u6A5F\u5206\u6D3E\u7684 4 \u78BC\u9080\u8ACB\u78BC\uFF1A"), /*#__PURE__*/React.createElement("input", {
-      type: "text",
-      maxLength: "5",
-      placeholder: "\u9080\u8ACB\u78BC",
-      value: tempRoomId,
-      onChange: function onChange(e) {
-        return setTempRoomId(e.target.value.toUpperCase());
-      },
-      disabled: isConnecting,
-      className: "w-full border-4 border-slate-800 rounded-xl p-3 font-black text-center text-2xl mb-4 tracking-widest outline-none bg-emerald-50 uppercase shadow-[4px_4px_0px_rgba(30,41,59,1)] disabled:opacity-50"
-    }), /*#__PURE__*/React.createElement("button", {
-      onClick: joinExistingGame,
-      disabled: isConnecting,
-      className: "w-full py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase"
-    }, isConnecting ? "加入中..." : "參與連線"))), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        setSetupStep('entry');
-        setScreen('home');
-      },
-      disabled: isConnecting,
-      className: "mt-8 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50"
-    }, "\u53D6\u6D88\u8FD4\u56DE\u4E3B\u9078\u55AE")), toastMsg && /*#__PURE__*/React.createElement("div", {
-      className: "fixed top-10 left-1/2 transform -translate-x-1/2 bg-white text-slate-800 px-6 py-3 rounded-xl border-[3px] border-slate-800 font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] animate-slideUpFade flex items-center justify-center gap-2 whitespace-pre-line text-center"
-    }, toastMsg));
-  }
-  var sudokuRoomSettings = /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-6 shadow-[4px_4px_0px_#1e293b] flex flex-col gap-3 text-left"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black border-b-2 border-slate-100 pb-2 mb-1 flex items-center justify-between"
-  }, /*#__PURE__*/React.createElement("span", null, "\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A"), isHostRef.current && /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setShowBrawlSettings(true);
-    },
-    className: "bg-slate-700 text-white px-3 py-1 rounded border-2 border-slate-800 font-black text-sm shadow-[2px_2px_0px_#1e293b] hover:translate-y-[1px] hover:shadow-none transition-all"
-  }, "\u904A\u6232\u8A2D\u5B9A")), isHostRef.current ? /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2 items-center mb-1"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-slate-500 w-12 text-sm"
-  }, "\u6A21\u5F0F"), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      if (isBrawlMode) generateAndSync(sizeId, diffId, 'coop');
-    },
-    className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (!isBrawlMode ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-slate-100')
-  }, "\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F"), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      if (!isBrawlMode) generateAndSync(sizeId, diffId, 'brawl');
-    },
-    className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (isBrawlMode ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-white')
-  }, "\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F")) : /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between items-center mb-1"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-bold text-slate-500 text-sm"
-  }, "\u7576\u524D\u6A21\u5F0F"), /*#__PURE__*/React.createElement("span", {
-    className: "font-black text-slate-800"
-  }, isBrawlMode ? '⚔️ 亂鬥模式' : '🤝 合作模式')), isHostRef.current ? /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 font-bold text-slate-600 text-sm mt-2"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: sizeId,
-    onChange: function onChange(e) {
-      var newS = Number(e.target.value);
-      setSizeId(newS);
-      generateAndSync(newS, diffId, isBrawlMode ? 'brawl' : 'coop');
-    },
-    className: "flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none"
-  }, SIZES.map(function (s) {
-    return /*#__PURE__*/React.createElement("option", {
-      key: s.id,
-      value: s.id
-    }, s.name);
-  })), /*#__PURE__*/React.createElement("select", {
-    value: diffId,
-    onChange: function onChange(e) {
-      var newD = e.target.value;
-      setDiffId(newD);
-      generateAndSync(sizeId, newD, isBrawlMode ? 'brawl' : 'coop');
-    },
-    className: "flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none"
-  }, DIFFICULTIES.map(function (d) {
-    return /*#__PURE__*/React.createElement("option", {
-      key: d.id,
-      value: d.id
-    }, d.name);
-  }))) : /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between font-bold text-slate-600 text-sm mt-1"
-  }, /*#__PURE__*/React.createElement("span", null, "\u7248\u578B\uFF1A", (SIZES.find(function (s) {
-    return s.id === sizeId;
-  }) || {}).name), /*#__PURE__*/React.createElement("span", null, "\u96E3\u5EA6\uFF1A", (DIFFICULTIES.find(function (d) {
-    return d.id === diffId;
-  }) || {}).name)));
   return /*#__PURE__*/React.createElement("div", {
     className: "h-screen w-screen p-1 md:p-2 flex flex-col items-center font-sans relative",
     style: {
@@ -5769,101 +5382,15 @@ function SudokuGame() {
       setMatchPhase('playing');
     },
     className: "w-full py-5 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-2xl font-black shadow-[6px_6px_0px_rgba(30,41,59,1)] text-2xl hover:translate-y-[2px] hover:shadow-none transition-all active:scale-[0.98]"
-  }, "\uD83D\uDE80 \u958B\u59CB\u6311\u6230"))) : typeof window !== 'undefined' && window.PlatRoom ? /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-xl my-auto"
+  }, "\uD83D\uDE80 \u958B\u59CB\u6311\u6230"))) : platHub ? /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fffaf0] rounded-2xl p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center max-w-xl w-full my-auto"
   }, /*#__PURE__*/React.createElement("div", {
-    ref: roomMountRef
-  }), roomSlot && ReactDOM.createPortal(platTournLock ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "mb-2 text-center font-black text-amber-600 text-sm"
-  }, "\uD83C\uDFC6 \u8CFD\u7A0B\u6A21\u5F0F\uFF1A\u672C\u5C40\u8A2D\u5B9A\u7531\u8CFD\u7A0B\u6C7A\u5B9A\uFF0C\u4E0B\u65B9\u8A2D\u5B9A\u5DF2\u9396\u5B9A"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      pointerEvents: 'none',
-      opacity: 0.5
-    }
-  }, sudokuRoomSettings)) : sudokuRoomSettings, roomSlot)) : /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffaf0] rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center min-w-[320px] max-w-xl w-full my-auto animate-bounceIn"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-3xl font-black text-slate-800 mb-2 tracking-widest"
-  }, "\uD83C\uDFAE \u904A\u6232\u5927\u5EF3"), /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "mb-4 text-slate-600 font-bold flex items-center justify-center gap-4"
-  }, /*#__PURE__*/React.createElement("span", null, "\u623F\u9593\u4EE3\u78BC: ", /*#__PURE__*/React.createElement("span", {
-    className: "bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded shadow-sm select-all"
-  }, roomId)), isHostRef.current && /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      var list = playersListRef.current;
-      connsRef.current.forEach(function (conn) {
-        if (conn.open) conn.send({
-          type: 'PLAYERS_UPDATE',
-          players: list
-        });
-      });
-      showToast("🔄 已向所有玩家重新廣播名單");
-    },
-    className: "text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-1 rounded border border-slate-400 font-bold shadow-sm transition-colors"
-  }, "\uD83D\uDD04 \u91CD\u6574\u540D\u55AE")), sudokuRoomSettings, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col gap-2 mb-6 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar"
-  }, playersList.map(function (p) {
-    var canEdit = p.id === myId || isHostRef.current;
-    var isPOnline = p.isHost || connsRef.current.some(function (c) {
-      return c.uid === p.id && c.open;
-    });
-    return /*#__PURE__*/React.createElement("div", {
-      key: p.id,
-      className: "flex justify-between items-center bg-white p-3 rounded-xl border-2 border-slate-800 shadow-sm shrink-0 " + (canEdit ? 'cursor-pointer hover:bg-slate-100 transition-colors' : ''),
-      onClick: function onClick() {
-        if (canEdit) {
-          setEditName(p.name);
-          setColorPickerTarget(p.id);
-        }
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "font-bold text-slate-700 text-base flex items-center gap-2 truncate"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "relative shrink-0"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner",
-      style: {
-        background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color
-      }
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-white " + (isPOnline ? 'bg-green-500' : 'bg-slate-300')
-    })), /*#__PURE__*/React.createElement("span", {
-      className: "truncate"
-    }, p.name, " ", p.id === myId && '(你)', " ", p.isHost && '👑')), /*#__PURE__*/React.createElement("span", {
-      className: "font-black text-[10px] shrink-0 ml-2 flex gap-1"
-    }, canEdit && isBrawlMode && /*#__PURE__*/React.createElement("div", {
-      onClick: function onClick(e) {
-        e.stopPropagation();
-        toggleSpectator(p.id);
-      },
-      className: "flex items-center gap-1 cursor-pointer select-none"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "font-black transition-colors duration-200 " + (!p.isSpectator ? "text-slate-700" : "text-slate-400")
-    }, !p.isSpectator ? "🎮 參賽" : "👁️ 上帝"), /*#__PURE__*/React.createElement("div", {
-      className: "w-10 h-5 rounded-full border-2 border-slate-800 transition-colors duration-200 relative shadow-inner " + (!p.isSpectator ? "bg-emerald-400" : "bg-slate-300")
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-3.5 h-3.5 bg-white rounded-full border-2 border-slate-800 absolute top-[1px] transition-transform duration-200 " + (!p.isSpectator ? "left-[18px]" : "left-[1px]")
-    }))), p.isReady && /*#__PURE__*/React.createElement("span", {
-      className: "text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded border-2 border-emerald-600"
-    }, "\u2714 \u5DF2\u6E96\u5099")));
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-3"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: handleReady,
-    className: "flex-1 py-4 border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + ((playersList.find(function (p) {
-      return p.id === myId;
-    }) || {}).isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-800')
-  }, (playersList.find(function (p) {
-    return p.id === myId;
-  }) || {}).isReady ? '✅ 已準備' : '✋ 準備好了'), isHost && /*#__PURE__*/React.createElement("div", {
-    className: "flex-[0.5] flex gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: handleForceStart,
-    className: "w-full py-4 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all",
-    title: "\u623F\u4E3B\u4E0B\u4EE4\u958B\u59CB"
-  }, "\uD83C\uDFC1 \u958B\u59CB\u6BD4\u8CFD"))), platDock && /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-center mt-3"
-  }, renderDockCapsule(false))))), countdownValue !== null && !isGenerating && !(typeof window !== 'undefined' && window.PlatCountdown) && /*#__PURE__*/React.createElement("div", {
+    className: "text-5xl mb-3"
+  }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
+    className: "font-black text-2xl text-slate-800 animate-pulse"
+  }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-slate-400 text-sm mt-2"
+  }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB")) : null), countdownValue !== null && !isGenerating && !(typeof window !== 'undefined' && window.PlatCountdown) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 backdrop-blur-md pointer-events-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[12rem] font-black text-red-500 drop-shadow-[0_0_30px_rgba(255,0,0,0.8)] animate-pulse",
@@ -6623,10 +6150,10 @@ function SudokuGame() {
   }, isBrawlMode && showGhostProgress && activeCells.map(function (cell) {
     var ghostInfo = ghostHints[cell.id];
     if (!ghostInfo || cell.isGiven || cell.isSystemRevealed) return null;
-    return Object.entries(ghostInfo).map(function (_ref11, idx) {
-      var _ref12 = _slicedToArray(_ref11, 2),
-        uid = _ref12[0],
-        hint = _ref12[1];
+    return Object.entries(ghostInfo).map(function (_ref10, idx) {
+      var _ref11 = _slicedToArray(_ref10, 2),
+        uid = _ref11[0],
+        hint = _ref11[1];
       if (uid === myId) return null; // 不顯示自己的
 
       // 只有一位填答者時，且是上帝模式，畫出「大方塊」覆蓋格子背景
@@ -6717,10 +6244,10 @@ function SudokuGame() {
     });
   }), /*#__PURE__*/React.createElement("g", {
     transform: "translate(".concat(PADDING, ", ").concat(PADDING, ")")
-  }, isBrawlMode && Object.entries(foggedBoxes).map(function (_ref13) {
-    var _ref14 = _slicedToArray(_ref13, 2),
-      boxIdStr = _ref14[0],
-      expiry = _ref14[1];
+  }, isBrawlMode && Object.entries(foggedBoxes).map(function (_ref12) {
+    var _ref13 = _slicedToArray(_ref12, 2),
+      boxIdStr = _ref13[0],
+      expiry = _ref13[1];
     var boxId = parseInt(boxIdStr);
     var boxRow = Math.floor(boxId / (cSizeDef.size / cSizeDef.boxH));
     var boxCol = boxId % (cSizeDef.size / cSizeDef.boxW);

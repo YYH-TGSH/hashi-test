@@ -930,153 +930,123 @@ function HashiGame() {
       _useState148 = _slicedToArray(_useState147, 2),
       roomOpen = _useState148[0],
       setRoomOpen = _useState148[1];
-  // 開始按鈕門檻（與數獨同款，競速模式）：全員（含房主）準備好，或等待室已開滿 PLAT_START_WAIT_MS（預設 1 分鐘，防掛機卡房），房主才能開始。合作模式無準備機制，不套門檻
 
-
-  var waitingSinceRef = useRef(null);
-  var canStartRef = useRef(false);
-
-  var _useState149 = useState(0),
+  var _useState149 = useState({ sizeId: 2, itemsEnabled: true, godNumbers: true }),
       _useState150 = _slicedToArray(_useState149, 2),
-      waitTick = _useState150[0],
-      setWaitTick = _useState150[1];
+      brawlSettings = _useState150[0],
+      setBrawlSettings = _useState150[1];
 
-  useEffect(function () {
-    if (!roomOpen) waitingSinceRef.current = null;
-  }, [roomOpen]);
-  useEffect(function () {
-    if (!roomOpen || !isHost) return;
-    var t = setInterval(function () {
-      return setWaitTick(function (x) {
-        return x + 1;
-      });
-    }, 1000);
-    return function () {
-      return clearInterval(t);
-    };
-  }, [roomOpen, isHost]);
-
-  var _useState151 = useState(false),
+  var _useState151 = useState([]),
       _useState152 = _slicedToArray(_useState151, 2),
-      showRoomSettings = _useState152[0],
-      setShowRoomSettings = _useState152[1];
+      raceRacers = _useState152[0],
+      setRaceRacers = _useState152[1];
 
-  var _useState153 = useState({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true }),
+  var _useState153 = useState(null),
       _useState154 = _slicedToArray(_useState153, 2),
-      brawlSettings = _useState154[0],
-      setBrawlSettings = _useState154[1];
+      godViewUid = _useState154[0],
+      setGodViewUid = _useState154[1];
 
   var _useState155 = useState([]),
       _useState156 = _slicedToArray(_useState155, 2),
-      raceRacers = _useState156[0],
-      setRaceRacers = _useState156[1];
+      myItems = _useState156[0],
+      setMyItems = _useState156[1];
 
-  var _useState157 = useState(null),
+  var _useState157 = useState({}),
       _useState158 = _slicedToArray(_useState157, 2),
-      godViewUid = _useState158[0],
-      setGodViewUid = _useState158[1];
+      fxFog = _useState158[0],
+      setFxFog = _useState158[1];
 
-  var _useState159 = useState([]),
+  var _useState159 = useState({}),
       _useState160 = _slicedToArray(_useState159, 2),
-      myItems = _useState160[0],
-      setMyItems = _useState160[1];
+      fxPhantom = _useState160[0],
+      setFxPhantom = _useState160[1];
 
-  var _useState161 = useState({}),
+  var _useState161 = useState(0),
       _useState162 = _slicedToArray(_useState161, 2),
-      fxFog = _useState162[0],
-      setFxFog = _useState162[1];
+      fxInvertUntil = _useState162[0],
+      setFxInvertUntil = _useState162[1];
 
-  var _useState163 = useState({}),
+  var _useState163 = useState(Date.now()),
       _useState164 = _slicedToArray(_useState163, 2),
-      fxPhantom = _useState164[0],
-      setFxPhantom = _useState164[1];
+      fxNow = _useState164[0],
+      setFxNow = _useState164[1];
 
-  var _useState165 = useState(0),
+  var _useState165 = useState(null),
       _useState166 = _slicedToArray(_useState165, 2),
-      fxInvertUntil = _useState166[0],
-      setFxInvertUntil = _useState166[1];
+      raceResult = _useState166[0],
+      setRaceResult = _useState166[1];
 
-  var _useState167 = useState(Date.now()),
+  var _useState167 = useState(false),
       _useState168 = _slicedToArray(_useState167, 2),
-      fxNow = _useState168[0],
-      setFxNow = _useState168[1];
-
-  var _useState169 = useState(null),
-      _useState170 = _slicedToArray(_useState169, 2),
-      raceResult = _useState170[0],
-      setRaceResult = _useState170[1];
-
-  var _useState171 = useState(false),
-      _useState172 = _slicedToArray(_useState171, 2),
-      raceWaiting = _useState172[0],
-      setRaceWaiting = _useState172[1];
+      raceWaiting = _useState168[0],
+      setRaceWaiting = _useState168[1];
 
   var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
 
-  var _useState173 = useState(null),
-      _useState174 = _slicedToArray(_useState173, 2),
-      raceCountdown = _useState174[0],
-      setRaceCountdown = _useState174[1];
+  var _useState169 = useState(null),
+      _useState170 = _slicedToArray(_useState169, 2),
+      raceCountdown = _useState170[0],
+      setRaceCountdown = _useState170[1];
 
   // ⭐ 星級評分
 
 
-  var _useState175 = useState(0),
-      _useState176 = _slicedToArray(_useState175, 2),
-      stars = _useState176[0],
-      setStars = _useState176[1];
+  var _useState171 = useState(0),
+      _useState172 = _slicedToArray(_useState171, 2),
+      stars = _useState172[0],
+      setStars = _useState172[1];
 
-  var _useState177 = useState(false),
-      _useState178 = _slicedToArray(_useState177, 2),
-      isNewBest = _useState178[0],
-      setIsNewBest = _useState178[1];
+  var _useState173 = useState(false),
+      _useState174 = _slicedToArray(_useState173, 2),
+      isNewBest = _useState174[0],
+      setIsNewBest = _useState174[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState179 = useState([]),
-      _useState180 = _slicedToArray(_useState179, 2),
-      bursts = _useState180[0],
-      setBursts = _useState180[1];
+  var _useState175 = useState([]),
+      _useState176 = _slicedToArray(_useState175, 2),
+      bursts = _useState176[0],
+      setBursts = _useState176[1];
 
-  var _useState181 = useState([]),
-      _useState182 = _slicedToArray(_useState181, 2),
-      confetti = _useState182[0],
-      setConfetti = _useState182[1];
+  var _useState177 = useState([]),
+      _useState178 = _slicedToArray(_useState177, 2),
+      confetti = _useState178[0],
+      setConfetti = _useState178[1];
 
   // 每日一題
 
 
-  var _useState183 = useState(false),
+  var _useState179 = useState(false),
+      _useState180 = _slicedToArray(_useState179, 2),
+      isDailyMode = _useState180[0],
+      setIsDailyMode = _useState180[1];
+
+  var _useState181 = useState(""),
+      _useState182 = _slicedToArray(_useState181, 2),
+      dailyDateStr = _useState182[0],
+      setDailyDateStr = _useState182[1];
+
+  var _useState183 = useState(0),
       _useState184 = _slicedToArray(_useState183, 2),
-      isDailyMode = _useState184[0],
-      setIsDailyMode = _useState184[1];
+      dailyStreak = _useState184[0],
+      setDailyStreak = _useState184[1];
 
-  var _useState185 = useState(""),
+  var _useState185 = useState(null),
       _useState186 = _slicedToArray(_useState185, 2),
-      dailyDateStr = _useState186[0],
-      setDailyDateStr = _useState186[1];
-
-  var _useState187 = useState(0),
-      _useState188 = _slicedToArray(_useState187, 2),
-      dailyStreak = _useState188[0],
-      setDailyStreak = _useState188[1];
-
-  var _useState189 = useState(null),
-      _useState190 = _slicedToArray(_useState189, 2),
-      dailyDone = _useState190[0],
-      setDailyDone = _useState190[1];
+      dailyDone = _useState186[0],
+      setDailyDone = _useState186[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState191 = useState(function () {
+  var _useState187 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState192 = _slicedToArray(_useState191, 2),
-      dailyMenuDate = _useState192[0],
-      setDailyMenuDate = _useState192[1];
+      _useState188 = _slicedToArray(_useState187, 2),
+      dailyMenuDate = _useState188[0],
+      setDailyMenuDate = _useState188[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1109,22 +1079,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState193 = useState(false),
-      _useState194 = _slicedToArray(_useState193, 2),
-      zoomOpen = _useState194[0],
-      setZoomOpen = _useState194[1];
+  var _useState189 = useState(false),
+      _useState190 = _slicedToArray(_useState189, 2),
+      zoomOpen = _useState190[0],
+      setZoomOpen = _useState190[1];
 
-  var _useState195 = useState(false),
-      _useState196 = _slicedToArray(_useState195, 2),
-      drawSubOpen = _useState196[0],
-      setDrawSubOpen = _useState196[1];
+  var _useState191 = useState(false),
+      _useState192 = _slicedToArray(_useState191, 2),
+      drawSubOpen = _useState192[0],
+      setDrawSubOpen = _useState192[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState197 = useState(0),
-      _useState198 = _slicedToArray(_useState197, 2),
-      dockTick = _useState198[0],
-      setDockTick = _useState198[1];
+  var _useState193 = useState(0),
+      _useState194 = _slicedToArray(_useState193, 2),
+      dockTick = _useState194[0],
+      setDockTick = _useState194[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -1218,7 +1188,7 @@ function HashiGame() {
   var myItemsRef = useRef([]);
   var raceProgressRef = useRef({});
   var hostMilestonesRef = useRef({});
-  var brawlSettingsRef = useRef({ sizeId: 2, winnersCount: 3, itemsEnabled: true, godNumbers: true });
+  var brawlSettingsRef = useRef({ sizeId: 2, itemsEnabled: true, godNumbers: true });
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
@@ -2743,96 +2713,6 @@ function HashiGame() {
     window.PlatBar.update(st);
   });
 
-  // PlatRoom（殼共用等待室）
-  var roomMountRef = useRef(null);
-
-  var _useState199 = useState(null),
-      _useState200 = _slicedToArray(_useState199, 2),
-      roomSlot = _useState200[0],
-      setRoomSlot = _useState200[1];
-
-  var roomCfgRef = useRef(null);
-  var roomCfgStable = useRef(null);
-  var toggleSpectatorById = function toggleSpectatorById(pid) {
-    var pl = playersListRef.current.find(function (pp) {
-      return String(pp.id) === String(pid);
-    });
-    if (!pl) return;
-    if (pl.id === myId) {
-      setMySpectator(!pl.isSpectator);return;
-    }
-    if (!isHostRef.current) return;
-    var nList = playersListRef.current.map(function (pp) {
-      return pp.id === pl.id ? _extends({}, pp, { isSpectator: !pp.isSpectator, isReady: false }) : pp;
-    });
-    setPlayersList(nList);
-    connsRef.current.forEach(function (c) {
-      if (c.open) c.send({ type: 'PLAYERS_UPDATE', players: nList });
-    });
-  };
-  roomCfgRef.current = { onAction: function onAction(n, key) {
-      if (n === 'ready') setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));else if (n === 'player-click') {
-        var pl = playersListRef.current.find(function (x) {
-          return String(x.id) === String(key);
-        });if (pl && (pl.id === myId || isHostRef.current)) {
-          setEditName(pl.name);setEditTarget(pl.id);
-        }
-      } else if (n === 'player-toggle') toggleSpectatorById(key);else if (n === 'spectator') setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));else if (n === 'start') {
-        if (mpMode === 'race') {
-          if (canStartRef.current) startRace();else showToast('⏳ 等全員準備好，或等待 1 分鐘後才能開始');
-        } else startCoop();
-      } else if (n === 'leave') handleGoHome();
-    } };
-  useEffect(function () {
-    if (typeof window.PlatRoom === 'undefined') return;
-    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return; // 等待室主人是另一款遊戲時不搶 PlatRoom
-    var el = roomMountRef.current;
-    if (el) {
-      if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) window.PlatRoom.detach();
-      if (!window.PlatRoom.isAttached()) {
-        if (!roomCfgStable.current) roomCfgStable.current = { accent: '#4ade80', onAction: function onAction(n, k) {
-            if (roomCfgRef.current) roomCfgRef.current.onAction(n, k);
-          } };
-        window.PlatRoom.attach(el, roomCfgStable.current);
-        setRoomSlot(window.PlatRoom.getSlot());
-      }
-    } else if (window.PlatRoom.isAttached() && !window.PlatRoom._elConnected()) {
-      window.PlatRoom.detach();
-      setRoomSlot(null);
-    }
-  });
-  useEffect(function () {
-    if (typeof window.PlatRoom === 'undefined' || !window.PlatRoom.isAttached()) return;
-    if (!roomOpen) return;
-    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'hashi') return;
-    if (waitingSinceRef.current == null) waitingSinceRef.current = Date.now();
-    var waitMsGate = typeof window !== 'undefined' && window.PLAT_START_WAIT_MS || 60000;
-    var contendersGate = playersList.filter(function (p) {
-      return !p.isSpectator;
-    });
-    var allReadyGate = contendersGate.length > 0 && contendersGate.every(function (p) {
-      return p.isReady;
-    });
-    var waitedGate = Date.now() - waitingSinceRef.current >= waitMsGate;
-    var canStartGate = allReadyGate || waitedGate;
-    canStartRef.current = canStartGate;
-    window.PlatRoom.update({
-      title: '🎮 遊戲大廳', code: roomId, showRefresh: false,
-      players: playersList.map(function (pl) {
-        return { key: String(pl.id), name: pl.name, color: pl.color, isMe: pl.id === myId, isHost: !!pl.isHost, pending: !!pl.pending, online: pl.pending ? false : pl.id === myId ? true : typeof pl.isOffline === 'boolean' ? !pl.isOffline : isHostRef.current && engineRef.current === 'peerjs' && !connsRef.current.some(function (c) {
-            return c.uid === pl.id && c.open;
-          }) ? false : null,
-          badge: pl.pending ? { text: '未到', kind: 'pending' } : pl.isSpectator ? { text: '👁️ 觀戰', kind: 'spec' } : mpMode === 'race' ? pl.isReady ? { text: '✅ 準備好了', kind: 'ready' } : { text: '未準備', kind: 'wait' } : null,
-          toggle: !pl.pending && (pl.id === myId || isHostRef.current) ? { on: !pl.isSpectator, labelOn: '🎮 參賽', labelOff: '👁️ 上帝' } : null, clickable: !pl.pending && (pl.id === myId || isHostRef.current) };
-      }),
-      myReady: mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) ? !!(myPlayerEntry && myPlayerEntry.isReady) : null,
-      readyOn: '✋ 已準備（點擊取消）', readyOff: '✋ 準備好了',
-      mySpectator: null,
-      start: isHostRef.current ? mpMode === 'race' ? { label: '🏁 開始大亂鬥', kind: 'primary', disabled: roomRealRacers.length < 2 || !canStartGate, note: roomRealRacers.length < 2 ? '等待選手加入（至少 2 位）...' : !canStartGate ? '等待全員準備（或等待 1 分鐘後開放開始）' : roomAllReady ? '全員準備好了，等房主按開始！' : '已等待 1 分鐘，房主可直接開始' } : { label: '🤝 開始合作', kind: 'primary' } : null,
-      waitingText: !isHostRef.current ? '等待房主開始...' : null
-    });
-  });
-
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatCountdown) return;
     if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'hashi') return; // 平台：背景遊戲不許碰殼的共用 overlay（會把前景那款的倒數/結算弄閃）
@@ -3196,7 +3076,7 @@ function HashiGame() {
   };
 
   var backToChoose = function backToChoose() {
-    fullJoinCleanup();setScreen('join');
+    fullJoinCleanup();setScreen('home');
   };
 
   var confirmSlotName = function confirmSlotName() {
@@ -3223,7 +3103,7 @@ function HashiGame() {
     setIsConnecting(false);
     guestJoinedRef.current = false;
     joinActiveRef.current = true;
-    setScreen('join');
+    setScreen('home');
     setJoinStep('nick');
     if (guestAutoNameRef.current) {
       // 拉霸機自動名：用房主回傳的最新名單再轉一次
@@ -3311,26 +3191,7 @@ function HashiGame() {
     }
   };
 
-  // 來賓：連線 → handshake 拿已用名單 → nick 步
-  var guestConnectRoom = function guestConnectRoom() {
-    var rId = tempRoomId.trim().toUpperCase();
-    if (!rId) return showToast("⚠️ 請輸入朋友給你的 4 位數代碼");
-    saveLastRoom(rId);
-    setIsConnecting(true);
-    setJoinStep('connecting');
-    setNickError("");
-    setTempPlayerName(loadSavedNickname());
-    setTakenNames([]);
-    joinRoleRef.current = 'guest';
-    joinActiveRef.current = true;
-    guestAutoNameRef.current = false;
-    guestJoinedRef.current = false;
-    guestNamesResolvedRef.current = false;
-    setEngine('peerjs');engineRef.current = 'peerjs';
-    setupPeerJS(rId, false);
-  };
-
-  // 來賓送出 JOIN（暱稱已在 nick 步確認過）
+  // 來賓送出 JOIN（暱稱已在平台房間頁確認過，platAuto 自動呼叫）
   var guestSendJoin = function guestSendJoin(pName, auto) {
     var name = (pName || "").trim();
     if (!name) return;
@@ -3350,46 +3211,6 @@ function HashiGame() {
       setIsConnecting(false);
       showToast("⚠️ 連線已中斷，請重試");
       backToChoose();
-    }
-  };
-
-  // nick 步：拉霸機（排除已用名單）
-  var openSlotForNick = function openSlotForNick() {
-    setNickError("");
-    try {
-      window.HASHI_SOUND.play('click');
-    } catch (e) {}
-    var pool = void 0;
-    if (joinRoleRef.current === 'host') {
-      pool = excludeTakenNames(ANIMAL_NAMES, playersListRef.current.filter(function (pl) {
-        return pl.id !== myId && pl.name;
-      }).map(function (pl) {
-        return pl.name;
-      }));
-    } else {
-      pool = excludeTakenNames(ANIMAL_NAMES, takenNames);
-    }
-    openSlotMachine(joinRoleRef.current === 'host' ? 'host' : 'guest', pool);
-  };
-
-  // nick 步：按「進入房間」
-  var confirmNickAndEnter = function confirmNickAndEnter() {
-    var name = tempPlayerName.trim();
-    setNickError("");
-    if (!name) {
-      openSlotForNick();return;
-    } // 空白 → 拉霸機
-    autoNameRef.current = false;
-    if (joinRoleRef.current === 'host') {
-      hostConfirmName(name);
-    } else {
-      var clash = takenNames.some(function (t) {
-        return normName(t) === normName(name);
-      }); // 本地即時檢查
-      if (clash) {
-        setNickError("已經有人用這個名字了，換一個吧！");return;
-      }
-      guestSendJoin(name, false);
     }
   };
 
@@ -3455,11 +3276,19 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState201 = useState(false),
-      _useState202 = _slicedToArray(_useState201, 2),
-      platTournLock = _useState202[0],
-      setPlatTournLock = _useState202[1];
+  var _useState195 = useState(false),
+      _useState196 = _slicedToArray(_useState195, 2),
+      platTournLock = _useState196[0],
+      setPlatTournLock = _useState196[1];
 
+  var _useState197 = useState(false),
+      _useState198 = _slicedToArray(_useState197, 2),
+      platHub = _useState198[0],
+      setPlatHub = _useState198[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+
+
+  var platHubRef = useRef(false);
+  var hubStartTimerRef = useRef(null);
   var tournRosterRef = useRef(null); // 五戰名單帶入：本局預期選手（殼 sess.tourn.roster），等待室先種灰色未到席位（與數獨同款）
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
   useEffect(function () {
@@ -3468,12 +3297,21 @@ function HashiGame() {
       enter: function enter(sess) {
         setPlatTournLock(!!sess.tourn);
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
-        if (sess.tourn && sess.isHost) {
-          // 賽程預設：套用賽程的關卡，結束名次設為全員（不提前結束）
-          applyBrawlSettings(_extends({}, brawlSettingsRef.current, { sizeId: sess.tourn.sizeId, winnersCount: Math.max(1, sess.tourn.entrants || 1) }), true);
+        setPlatHub(!!sess.hub);platHubRef.current = !!sess.hub;
+        if (sess.settings) {
+          // 房間框架帶入的設定（全員同一份）：大亂鬥設定＋關卡一次種下（數橋沒有「去第幾名」這種設定）
+          var st = sess.settings;
+          applyBrawlSettings(_extends({}, brawlSettingsRef.current, st.brawl || {}, { sizeId: st.sizeId }), false);
+          var lv = LEVELS.find(function (l) {
+            return l.id === st.sizeId;
+          });
+          if (lv) setCurrentLevelId(lv.id); // 合作關卡：房主開房載入時照這個關卡走
+        } else if (sess.tourn && sess.isHost) {
+          // 賽程預設：套用賽程的關卡
+          applyBrawlSettings(_extends({}, brawlSettingsRef.current, { sizeId: sess.tourn.sizeId }), true);
         }
         platAutoRef.current = { name: sess.name };
-        var mode = sess.mode === 'brawl' ? 'race' : 'coop';
+        var mode = sess.mode === 'brawl' || sess.mode === 'race' ? 'race' : 'coop';
         setMpMode(mode);mpModeRef.current = mode;
         setTempPlayerName(sess.name);
         try {
@@ -3491,13 +3329,31 @@ function HashiGame() {
           setTakenNames([]);
           setupPeerJS(sess.code, false);
         }
+        // 房間框架流程：準備/人數在殼房間頁已經把關，房主端等人到齊就直接開局
+        if (sess.hub && sess.isHost) {
+          if (hubStartTimerRef.current) clearInterval(hubStartTimerRef.current);
+          var tries = 0;
+          hubStartTimerRef.current = setInterval(function () {
+            tries++;
+            var N = window.__PLAT_NET;
+            var expected = N ? N.roster.length : 0;
+            var present = (playersListRef.current || []).filter(function (p) {
+              return !p.pending;
+            }).length;
+            if (expected >= 2 && present >= expected) {
+              clearInterval(hubStartTimerRef.current);hubStartTimerRef.current = null;
+              if (mpModeRef.current === 'race') startRace();else startCoop();
+            } else if (tries > 90) {
+              clearInterval(hubStartTimerRef.current);hubStartTimerRef.current = null;
+            }
+          }, 500);
+        }
       },
       exit: function exit() {
-        setPlatTournLock(false);tournRosterRef.current = null;handleGoHome();
+        setPlatTournLock(false);tournRosterRef.current = null;setPlatHub(false);platHubRef.current = false;if (hubStartTimerRef.current) {
+          clearInterval(hubStartTimerRef.current);hubStartTimerRef.current = null;
+        }handleGoHome();
       },
-      getSettings: function getSettings() {
-        return { sizeId: brawlSettingsRef.current && brawlSettingsRef.current.sizeId || 2 };
-      }, // 錦標賽開賽時殼讀這裡的關卡設定
       migrate: function migrate(amHost, sess) {
         setEngine('peerjs');engineRef.current = 'peerjs';
         if (amHost) {
@@ -4333,7 +4189,7 @@ function HashiGame() {
     maybeFinalize();
   };
 
-  // 結束名次制：完賽人數達標（或全員完賽）→ 結算；未完成者以進度排名（比照數獨）
+  // 數橋的結算：全員完賽或 DNF 才結算（沒有數獨那種「去第幾名」設定）；未完成者以進度排名
   var maybeFinalize = function maybeFinalize() {
     if (raceStateRef.current === 'finished') return true;
     var racers = racersRef.current || [];
@@ -4341,8 +4197,7 @@ function HashiGame() {
     var finCount = (myFinishTimeRef.current != null && racers.indexOf(myId) >= 0 ? 1 : 0) + Object.keys(raceResultsRef.current).filter(function (uid) {
       return racers.indexOf(uid) >= 0;
     }).length;
-    var target = Math.min(brawlSettingsRef.current.winnersCount || 3, racers.length);
-    if (finCount >= target || finCount >= racers.length) {
+    if (finCount >= racers.length) {
       finalizeRace();return true;
     }
     return false;
@@ -5137,9 +4992,7 @@ function HashiGame() {
             React.createElement(
               'button',
               { onClick: function onClick() {
-                  if (PLAT_MODE) {
-                    window.PLAT_show('lobby');return;
-                  }setJoinStep('choose');setTempPlayerName("");setNickError("");setScreen('join');
+                  if (PLAT_MODE) window.PLAT_show('lobby');
                 }, className: 'w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1' },
               '\uD83C\uDF10 \u591A\u4EBA\u5408\u4F5C'
             ),
@@ -5216,420 +5069,12 @@ function HashiGame() {
     );
   }
 
-  if (screen === 'join') {
-    return React.createElement(
-      'div',
-      { className: 'h-screen w-screen flex flex-col items-center justify-center p-4 relative animate-fadeIn' },
-      React.createElement(
-        'div',
-        { className: 'bg-[#f3fbf3] border-4 border-slate-800 p-8 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-2xl w-full z-10 transform rotate-1' },
-        React.createElement(
-          'h2',
-          { className: 'text-2xl font-black text-slate-800 mb-6 inline-block border-b-4 border-[#4ade80] pb-1 select-none' },
-          '\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA\u9078\u55AE'
-        ),
-        joinStep === 'choose' && React.createElement(
-          'div',
-          { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
-          React.createElement(
-            'button',
-            { onClick: function onClick() {
-                window.HASHI_SOUND.play('click');setJoinStep('hostSetup');
-              }, disabled: isConnecting, className: 'bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 text-left' },
-            React.createElement(
-              'div',
-              { className: 'font-black text-2xl mb-1' },
-              '\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593'
-            ),
-            React.createElement(
-              'div',
-              { className: 'text-xs font-bold opacity-90 leading-relaxed' },
-              '\u4F60\u662F\u623F\u4E3B\uFF01\u4EE3\u78BC\u56FA\u5B9A\u4E0D\u8B8A\uFF0C\u670B\u53CB\u7528\u540C\u4E00\u7D44\u4EE3\u78BC\u52A0\u5165'
-            )
-          ),
-          React.createElement(
-            'button',
-            { onClick: function onClick() {
-                window.HASHI_SOUND.play('click');setJoinStep('guestSetup');
-              }, disabled: isConnecting, className: 'bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 text-left' },
-            React.createElement(
-              'div',
-              { className: 'font-black text-2xl mb-1' },
-              '\uD83D\uDEAA \u52A0\u5165\u623F\u9593'
-            ),
-            React.createElement(
-              'div',
-              { className: 'text-xs font-bold opacity-80 leading-relaxed' },
-              '\u8F38\u5165\u670B\u53CB\u7D66\u4F60\u7684 4 \u4F4D\u6578\u4EE3\u78BC'
-            )
-          )
-        ),
-        joinStep === 'hostSetup' && React.createElement(
-          'div',
-          null,
-          React.createElement(
-            'div',
-            { className: 'mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
-            React.createElement(
-              'label',
-              { className: 'block text-slate-800 font-black text-sm mb-2' },
-              '\u9078\u64C7\u904A\u6232\u6A21\u5F0F'
-            ),
-            React.createElement(
-              'div',
-              { className: 'grid grid-cols-2 gap-3' },
-              React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    setMpMode('coop');mpModeRef.current = 'coop';window.HASHI_SOUND.play('click');
-                  }, disabled: isConnecting, className: "py-3 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + (mpMode === 'coop' ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-400') },
-                '\uD83E\uDD1D \u5408\u4F5C'
-              ),
-              React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    setMpMode('race');mpModeRef.current = 'race';window.HASHI_SOUND.play('click');
-                  }, disabled: isConnecting, className: "py-3 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all " + (mpMode === 'race' ? 'bg-red-400 text-slate-900' : 'bg-white text-slate-400') },
-                '\uD83C\uDFC1 \u5927\u4E82\u9B25'
-              )
-            ),
-            React.createElement(
-              'p',
-              { className: 'text-xs text-slate-500 font-bold mt-2' },
-              mpMode === 'race' ? '🏁 兩人挑戰同一題目，比誰先解完！（來賓以房主選擇為準）' : '🤝 和朋友在同一張地圖上合作解題。'
-            )
-          ),
-          React.createElement(
-            'button',
-            { onClick: hostCreateRoom, disabled: isConnecting, className: 'w-full py-4 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed' },
-            '\uD83C\uDFE0 \u5EFA\u7ACB\u623F\u9593'
-          ),
-          React.createElement(
-            'button',
-            { onClick: function onClick() {
-                return setJoinStep('choose');
-              }, disabled: isConnecting, className: 'mt-4 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
-            '\u2190 \u8FD4\u56DE'
-          )
-        ),
-        joinStep === 'guestSetup' && React.createElement(
-          'div',
-          null,
-          React.createElement(
-            'div',
-            { className: 'mb-6 bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
-            React.createElement(
-              'label',
-              { className: 'block text-slate-800 font-black text-sm mb-2' },
-              '\u8F38\u5165\u670B\u53CB\u7684 4 \u4F4D\u6578\u4EE3\u78BC'
-            ),
-            React.createElement('input', { type: 'text', maxLength: '5', placeholder: '4 \u4F4D\u6578\u4EE3\u78BC', value: tempRoomId, onChange: function onChange(e) {
-                return setTempRoomId(e.target.value.toUpperCase());
-              }, disabled: isConnecting, className: 'w-full border-4 border-slate-800 rounded-xl p-3 font-black text-center text-2xl tracking-widest outline-none bg-white uppercase shadow-[4px_4px_0px_rgba(30,41,59,1)] disabled:opacity-50' })
-          ),
-          React.createElement(
-            'button',
-            { onClick: guestConnectRoom, disabled: isConnecting, className: 'w-full py-4 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed' },
-            '\uD83D\uDEAA \u52A0\u5165\u623F\u9593'
-          ),
-          React.createElement(
-            'button',
-            { onClick: function onClick() {
-                return setJoinStep('choose');
-              }, disabled: isConnecting, className: 'mt-4 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
-            '\u2190 \u8FD4\u56DE'
-          )
-        ),
-        joinStep === 'connecting' && React.createElement(
-          'div',
-          { className: 'bg-white p-8 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-center' },
-          React.createElement(
-            'p',
-            { className: 'text-slate-800 font-black text-xl animate-pulse' },
-            joinRoleRef.current === 'host' ? "🏠 建立房間中…" : "🔌 連線中…"
-          ),
-          React.createElement(
-            'p',
-            { className: 'text-slate-500 font-bold text-sm mt-2' },
-            '\u8ACB\u7A0D\u5019\u4E00\u4E0B\u4E0B'
-          )
-        ),
-        joinStep === 'nick' && React.createElement(
-          'div',
-          { className: 'bg-white p-4 rounded-lg border-2 border-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
-          joinRoleRef.current === 'host' ? React.createElement(
-            'div',
-            { className: 'mb-4 bg-blue-50 border-2 border-dashed border-blue-400 rounded-lg p-3 text-center' },
-            React.createElement(
-              'p',
-              { className: 'font-black text-slate-800 text-lg' },
-              '\uD83C\uDFE0 \u623F\u9593 ',
-              React.createElement(
-                'span',
-                { className: 'text-2xl tracking-[0.3em]' },
-                roomId
-              ),
-              ' \u5DF2\u5EFA\u7ACB\uFF01'
-            ),
-            React.createElement(
-              'p',
-              { className: 'text-xs text-slate-600 font-bold mt-1' },
-              '\u628A\u9019\u7D44\u4EE3\u78BC\u50B3\u7D66\u670B\u53CB\u5427'
-            )
-          ) : React.createElement(
-            'div',
-            { className: 'mb-4 bg-emerald-50 border-2 border-dashed border-emerald-400 rounded-lg p-3 text-center' },
-            React.createElement(
-              'p',
-              { className: 'font-black text-slate-800 text-lg' },
-              '\uD83D\uDEAA \u5DF2\u9023\u4E0A\u623F\u9593 ',
-              React.createElement(
-                'span',
-                { className: 'text-2xl tracking-[0.3em]' },
-                roomId
-              )
-            ),
-            React.createElement(
-              'p',
-              { className: 'text-xs text-slate-600 font-bold mt-1' },
-              '\u53D6\u500B\u540D\u5B57\u5C31\u53EF\u4EE5\u9032\u53BB\u4E86'
-            )
-          ),
-          React.createElement(
-            'label',
-            { className: 'block text-slate-800 font-black text-sm mb-2' },
-            '\u53D6\u500B\u540D\u5B57 ',
-            React.createElement(
-              'span',
-              { className: 'text-slate-400 font-bold' },
-              '\uFF08\u53EF\u7559\u767D\uFF0C\u62C9\u9738\u6A5F\u5E6B\u4F60\u62BD\uFF01\uFF09'
-            )
-          ),
-          React.createElement('input', { ref: nameInputRef, type: 'text', maxLength: 12, placeholder: "例如：" + namePlaceholderAnimal + "（留白隨機抽一個！）", value: tempPlayerName, onChange: function onChange(e) {
-              setTempPlayerName(e.target.value);setNickError("");
-            }, disabled: isConnecting, className: 'w-full border-2 border-slate-800 rounded-md p-3 font-bold bg-green-50 outline-none focus:ring-2 ring-[#4ade80] disabled:opacity-50' }),
-          nickError && React.createElement(
-            'p',
-            { className: 'text-red-600 font-black text-sm mt-2 animate-fadeIn' },
-            '\u26A0\uFE0F ',
-            nickError
-          ),
-          React.createElement(
-            'div',
-            { className: 'flex gap-2 mt-4' },
-            React.createElement(
-              'button',
-              { onClick: backToChoose, disabled: isConnecting, className: 'px-4 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
-              '\u2190 \u8FD4\u56DE'
-            ),
-            React.createElement(
-              'button',
-              { onClick: openSlotForNick, disabled: isConnecting, className: 'flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
-              '\uD83C\uDFB0 \u96A8\u6A5F\u62BD\u4E00\u500B'
-            ),
-            React.createElement(
-              'button',
-              { onClick: confirmNickAndEnter, disabled: isConnecting, className: 'flex-1 py-3 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
-              isConnecting ? "進入中…" : "進入房間"
-            )
-          )
-        ),
-        joinStep === 'choose' && React.createElement(
-          'button',
-          { onClick: function onClick() {
-              window.HASHI_SOUND.play('click');setTutorialStep(Math.max(0, TUTORIAL_STEPS.findIndex(function (s) {
-                return s.demo === 'connect';
-              })));setShowTutorial(true);
-            }, className: 'mt-4 w-full text-slate-500 font-bold text-sm hover:text-slate-800 hover:underline text-center transition-colors' },
-          '\uD83D\uDD0C \u4E0D\u77E5\u9053\u600E\u9EBC\u8DDF\u670B\u53CB\u9023\u7DDA\uFF1F\u770B\u52D5\u756B\u6559\u5B78'
-        ),
-        (joinStep === 'choose' || joinStep === 'hostSetup' || joinStep === 'guestSetup') && React.createElement(
-          'button',
-          { onClick: function onClick() {
-              return setScreen('home');
-            }, disabled: isConnecting, className: 'mt-8 w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors disabled:opacity-50' },
-          '\u53D6\u6D88\u8FD4\u56DE\u4E3B\u9078\u55AE'
-        )
-      ),
-      showSlotMachine && React.createElement(
-        'div',
-        { className: 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4' },
-        React.createElement(
-          'div',
-          { className: 'bg-[#f6fdf6] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-sm animate-popUpCenter text-center' },
-          React.createElement(
-            'h2',
-            { className: 'text-2xl font-black text-slate-800 mb-1' },
-            '\uD83C\uDFB0 \u66B1\u7A31\u62C9\u9738\u6A5F'
-          ),
-          React.createElement(
-            'p',
-            { className: 'text-xs font-bold text-slate-500 mb-4' },
-            '\u6C92\u586B\u540D\u5B57\uFF1F\u90A3\u5C31\u4EA4\u7D66\u547D\u904B\u5427\uFF01'
-          ),
-          React.createElement(
-            'div',
-            { className: 'bg-slate-800 rounded-xl border-4 border-[#4ade80] px-4 mb-4 min-h-[96px] flex items-center justify-center' },
-            slotWaiting ? React.createElement(
-              'p',
-              { className: 'text-white font-black animate-pulse text-lg' },
-              '\u6B63\u5728\u78BA\u8A8D\u53EF\u7528\u540D\u5B57\u2026'
-            ) : React.createElement(
-              'p',
-              { key: 'slot-' + slotRound + '-' + (slotFinalName || 'spinning'), className: "font-black text-white " + (slotFinalName && !slotSpinning ? "text-3xl animate-popUpCenter" : "text-2xl text-yellow-200") },
-              slotName || "…"
-            )
-          ),
-          !slotWaiting && React.createElement(
-            'div',
-            { className: 'flex gap-3 mb-3' },
-            React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  try {
-                    window.HASHI_SOUND.play('click');
-                  } catch (e) {}spinSlot(slotPoolRef.current);
-                }, disabled: slotSpinning, className: 'flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
-              '\uD83D\uDD04 \u518D\u8F49\u4E00\u6B21'
-            ),
-            React.createElement(
-              'button',
-              { onClick: confirmSlotName, disabled: slotSpinning || !slotFinalName, className: 'flex-1 py-3 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50' },
-              '\u2705 \u5C31\u7528\u9019\u500B\u9032\u5165'
-            )
-          ),
-          React.createElement(
-            'button',
-            { onClick: closeSlotModal, className: 'w-full text-slate-400 font-bold hover:text-slate-800 hover:underline text-center transition-colors text-sm' },
-            '\u53D6\u6D88'
-          )
-        )
-      ),
-      toastMsg && React.createElement(
-        'div',
-        { className: 'fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-[0_4px_10px_rgba(0,0,0,0.3)] z-[100] border-[3px] border-white animate-slideUpFade' },
-        toastMsg
-      ),
-      tutorialOverlay
-    );
-  }
-
   var sortedBridges = [].concat(_toConsumableArray(bridges)).sort(function (a, b) {
     var aActive = a.count + (a.draftCount || 0) > 0 ? 1 : 0;
     var bActive = b.count + (b.draftCount || 0) > 0 ? 1 : 0;
     return aActive - bActive;
   });
 
-  var hashiRoomSettings = React.createElement(
-    'div',
-    { className: 'bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-6 shadow-[4px_4px_0px_#1e293b] flex flex-col gap-3 text-left' },
-    React.createElement(
-      'h3',
-      { className: 'font-black border-b-2 border-slate-100 pb-2 mb-1 flex items-center justify-between' },
-      React.createElement(
-        'span',
-        null,
-        '\u2699\uFE0F \u5C0D\u5C40\u8A2D\u5B9A'
-      ),
-      isHostRef.current && React.createElement(
-        'button',
-        { onClick: function onClick() {
-            return setShowRoomSettings(true);
-          }, className: 'bg-slate-700 text-white px-3 py-1 rounded border-2 border-slate-800 font-black text-sm shadow-[2px_2px_0px_#1e293b] hover:translate-y-[1px] hover:shadow-none transition-all' },
-        '\u904A\u6232\u8A2D\u5B9A'
-      )
-    ),
-    isHostRef.current ? React.createElement(
-      'div',
-      { className: 'flex flex-wrap gap-2 items-center mb-1' },
-      React.createElement(
-        'span',
-        { className: 'font-bold text-slate-500 w-12 text-sm' },
-        '\u6A21\u5F0F'
-      ),
-      React.createElement(
-        'button',
-        { onClick: function onClick() {
-            return setMpModeHost('coop');
-          }, className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode !== 'race' ? 'bg-[#ffcc00] text-slate-900 shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-slate-100') },
-        '\uD83E\uDD1D \u5408\u4F5C\u6A21\u5F0F'
-      ),
-      React.createElement(
-        'button',
-        { onClick: function onClick() {
-            return setMpModeHost('race');
-          }, className: "flex-1 min-w-[70px] px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm transition-all " + (mpMode === 'race' ? 'bg-purple-600 text-white shadow-[2px_2px_0px_#1e293b]' : 'bg-slate-50 text-slate-400 hover:bg-white') },
-        '\u2694\uFE0F \u5927\u4E82\u9B25\u6A21\u5F0F'
-      )
-    ) : React.createElement(
-      'div',
-      { className: 'flex justify-between items-center mb-1' },
-      React.createElement(
-        'span',
-        { className: 'font-bold text-slate-500 text-sm' },
-        '\u7576\u524D\u6A21\u5F0F'
-      ),
-      React.createElement(
-        'span',
-        { className: 'font-black text-slate-800' },
-        mpMode === 'race' ? '⚔️ 亂鬥模式' : '🤝 合作模式'
-      )
-    ),
-    isHostRef.current ? React.createElement(
-      'div',
-      { className: 'flex gap-2 font-bold text-slate-600 text-sm mt-2' },
-      React.createElement(
-        'select',
-        { value: mpMode === 'race' ? brawlSettings.sizeId : currentLevelId, onChange: function onChange(e) {
-            var lv = LEVELS.find(function (l) {
-              return String(l.id) === String(e.target.value);
-            });if (!lv) return;if (mpMode === 'race') applyBrawlSettings(_extends({}, brawlSettings, { sizeId: lv.id }), true);else applyCoopLevel(lv);
-          }, className: 'flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none' },
-        LEVELS.filter(function (l) {
-          return l.id !== 'custom';
-        }).map(function (l) {
-          return React.createElement(
-            'option',
-            { key: l.id, value: l.id },
-            l.name
-          );
-        })
-      ),
-      mpMode === 'race' && React.createElement(
-        'select',
-        { value: brawlSettings.winnersCount, onChange: function onChange(e) {
-            return applyBrawlSettings(_extends({}, brawlSettings, { winnersCount: Number(e.target.value) }), true);
-          }, className: 'flex-1 bg-white border-2 border-slate-800 rounded p-1 shadow-[2px_2px_0px_#1e293b] outline-none' },
-        [1, 2, 3, 4, 5].map(function (n) {
-          return React.createElement(
-            'option',
-            { key: n, value: n },
-            '\u524D ',
-            n,
-            ' \u540D\u7D50\u675F'
-          );
-        })
-      )
-    ) : React.createElement(
-      'div',
-      { className: 'flex justify-between font-bold text-slate-600 text-sm mt-1' },
-      React.createElement(
-        'span',
-        null,
-        '\u95DC\u5361\uFF1A',
-        (LEVELS.find(function (l) {
-          return l.id === (mpMode === 'race' ? brawlSettings.sizeId : currentLevelId);
-        }) || {}).name
-      ),
-      mpMode === 'race' && React.createElement(
-        'span',
-        null,
-        '\u7D50\u675F\u540D\u6B21\uFF1A\u524D ',
-        brawlSettings.winnersCount,
-        ' \u540D'
-      )
-    )
-  );
   return React.createElement(
     'div',
     { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
@@ -6746,235 +6191,29 @@ function HashiGame() {
             renderDockCapsule(false)
           )
         ),
-        roomOpen && (typeof window !== 'undefined' && window.PlatRoom ? React.createElement(
+        roomOpen && platHub ? React.createElement(
           'div',
-          { className: 'absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4' },
+          { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'max-w-xl mx-auto mt-2' },
-            React.createElement('div', { ref: roomMountRef }),
-            roomSlot && ReactDOM.createPortal(platTournLock ? React.createElement(
-              'div',
-              null,
-              React.createElement(
-                'div',
-                { className: 'mb-2 text-center font-black text-amber-600 text-sm' },
-                '\uD83C\uDFC6 \u8CFD\u7A0B\u6A21\u5F0F\uFF1A\u672C\u5C40\u8A2D\u5B9A\u7531\u8CFD\u7A0B\u6C7A\u5B9A\uFF0C\u4E0B\u65B9\u8A2D\u5B9A\u5DF2\u9396\u5B9A'
-              ),
-              React.createElement(
-                'div',
-                { style: { pointerEvents: 'none', opacity: 0.5 } },
-                hashiRoomSettings
-              )
-            ) : hashiRoomSettings, roomSlot)
-          )
-        ) : React.createElement(
-          'div',
-          { className: 'absolute inset-0 z-[60] overflow-y-auto bg-[#f6fdf6] p-4' },
-          React.createElement(
-            'div',
-            { className: 'max-w-md mx-auto bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-5 mt-2 animate-popUpCenter' },
+            { className: 'bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-8 text-center max-w-sm w-full' },
             React.createElement(
               'div',
-              { className: 'flex items-center justify-between mb-3' },
-              React.createElement(
-                'h2',
-                { className: 'text-2xl font-black text-[#2d2a26]' },
-                '\uD83C\uDFAE \u904A\u6232\u5927\u5EF3'
-              ),
-              React.createElement(
-                'span',
-                { className: 'font-black text-sm text-slate-500' },
-                '\u623F\u9593\u4EE3\u78BC ',
-                React.createElement(
-                  'span',
-                  { className: 'bg-slate-800 text-white font-mono px-2 py-0.5 rounded-md tracking-widest' },
-                  roomId
-                )
-              )
+              { className: 'text-5xl mb-3' },
+              '\u23F3'
             ),
             React.createElement(
               'div',
-              { className: 'font-black text-slate-700 text-sm mb-1.5' },
-              '\u73A9\u5BB6\u540D\u55AE'
+              { className: 'font-black text-2xl text-[#2d2a26] animate-pulse' },
+              '\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026'
             ),
             React.createElement(
               'div',
-              { className: 'mb-4 flex flex-col gap-2' },
-              playersList.map(function (p) {
-                return React.createElement(
-                  'div',
-                  { key: p.id, className: 'flex items-center gap-2 bg-green-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800' },
-                  React.createElement('span', { className: 'w-4 h-4 rounded-full border-2 border-slate-800 inline-block shrink-0', style: { backgroundColor: p.color === 'rainbow' ? '#fbbf24' : p.color } }),
-                  React.createElement(
-                    'span',
-                    { className: 'truncate' },
-                    p.name,
-                    p.isHost ? ' 👑' : '',
-                    p.id === myId ? '（你）' : ''
-                  ),
-                  React.createElement(
-                    'span',
-                    { className: 'ml-auto flex gap-1 shrink-0' },
-                    p.isSpectator ? React.createElement(
-                      'span',
-                      { className: 'text-[10px] bg-sky-100 border border-sky-400 text-sky-700 px-1.5 py-0.5 rounded-md' },
-                      '\uD83D\uDC41\uFE0F \u89C0\u6230'
-                    ) : mpMode === 'race' ? p.isReady ? React.createElement(
-                      'span',
-                      { className: 'text-[10px] bg-emerald-100 border border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-md' },
-                      '\u2705 \u6E96\u5099\u597D\u4E86'
-                    ) : React.createElement(
-                      'span',
-                      { className: 'text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md' },
-                      '\u672A\u6E96\u5099'
-                    ) : null
-                  )
-                );
-              })
-            ),
-            React.createElement(
-              'div',
-              { className: 'flex gap-2 mb-4' },
-              mpMode === 'race' && !(myPlayerEntry && myPlayerEntry.isSpectator) && React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    return setMyReady(!(myPlayerEntry && myPlayerEntry.isReady));
-                  }, className: "flex-1 py-2.5 rounded-xl border-[3px] border-slate-800 font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myPlayerEntry && myPlayerEntry.isReady ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500') },
-                '\u270B ',
-                myPlayerEntry && myPlayerEntry.isReady ? '已準備（點擊取消）' : '準備好了'
-              ),
-              mpMode === 'race' && React.createElement(
-                'button',
-                { onClick: function onClick() {
-                    return setMySpectator(!(myPlayerEntry && myPlayerEntry.isSpectator));
-                  }, className: "px-3 py-2.5 rounded-xl border-[3px] border-slate-800 font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myPlayerEntry && myPlayerEntry.isSpectator ? 'bg-sky-300 text-slate-900' : 'bg-white text-slate-500') },
-                '\uD83D\uDC41\uFE0F \u89C0\u6230'
-              )
-            ),
-            hashiRoomSettings,
-            isHostRef.current ? mpMode === 'race' ? React.createElement(
-              'div',
-              null,
-              React.createElement(
-                'button',
-                { onClick: startRace, disabled: roomRealRacers.length < 2, className: 'w-full py-3 bg-red-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2' },
-                roomAllReady ? '🏁 開始大亂鬥' : '⚡ 強制開始'
-              ),
-              React.createElement(
-                'p',
-                { className: 'text-xs text-slate-500 font-bold text-center' },
-                roomRacers.length < 2 ? '等待選手加入（至少 2 位）...' : roomAllReady ? '全員準備好了，等房主按開始！' : '準備只是打勾，要等房主按開始才會開賽'
-              )
-            ) : React.createElement(
-              'button',
-              { onClick: startCoop, className: 'w-full py-3 bg-[#4ade80] text-slate-900 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-2' },
-              '\uD83E\uDD1D \u958B\u59CB\u5408\u4F5C'
-            ) : React.createElement(
-              'p',
-              { className: 'font-black text-slate-700 animate-pulse text-center' },
-              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...'
-            ),
-            platDock && React.createElement(
-              'div',
-              { className: 'flex justify-center mt-4' },
-              renderDockCapsule(false)
-            ),
-            React.createElement(
-              'button',
-              { onClick: handleGoHome, className: 'w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline' },
-              '\u96E2\u958B\u623F\u9593'
+              { className: 'font-bold text-slate-400 text-sm mt-2' },
+              '\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB'
             )
           )
-        )),
-        showRoomSettings && React.createElement(
-          'div',
-          { className: 'absolute inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4', onClick: function onClick() {
-              return setShowRoomSettings(false);
-            } },
-          React.createElement(
-            'div',
-            { className: 'bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] w-full max-w-sm animate-popUpCenter', onClick: function onClick(e) {
-                return e.stopPropagation();
-              } },
-            React.createElement(
-              'h3',
-              { className: 'text-xl font-black text-[#2d2a26] border-b-4 border-purple-500 inline-block pb-1 mb-4' },
-              '\u2699\uFE0F \u5927\u4E82\u9B25\u8A2D\u5B9A'
-            ),
-            React.createElement(
-              'div',
-              { className: 'flex flex-col gap-4' },
-              React.createElement(
-                'div',
-                null,
-                React.createElement(
-                  'div',
-                  { className: 'font-bold text-slate-800 mb-1.5' },
-                  '\u984C\u76EE\u5C3A\u5BF8'
-                ),
-                React.createElement(
-                  'div',
-                  { className: 'flex flex-wrap gap-1.5' },
-                  LEVELS.filter(function (l) {
-                    return l.id !== 'custom';
-                  }).map(function (l) {
-                    return React.createElement(
-                      'button',
-                      { key: l.id, onClick: function onClick() {
-                          return applyBrawlSettings(_extends({}, brawlSettings, { sizeId: l.id }), true);
-                        }, className: "px-2.5 py-1.5 rounded-lg border-2 border-slate-800 font-black text-xs " + (brawlSettings.sizeId === l.id ? 'bg-purple-600 text-white' : 'bg-white text-slate-500') },
-                      l.name
-                    );
-                  })
-                )
-              ),
-              React.createElement(
-                'label',
-                { className: 'flex items-center justify-between font-bold text-slate-800' },
-                React.createElement(
-                  'span',
-                  null,
-                  '\u7D50\u675F\u540D\u6B21\uFF08\u7B2C\u5E7E\u540D\u5B8C\u8CFD\u5C31\u7D50\u7B97\uFF09'
-                ),
-                React.createElement('input', { type: 'number', min: '1', max: '5', value: brawlSettings.winnersCount, onChange: function onChange(e) {
-                    return applyBrawlSettings(_extends({}, brawlSettings, { winnersCount: Math.max(1, Math.min(5, Number(e.target.value) || 1)) }), true);
-                  }, className: 'w-16 border-2 border-slate-800 rounded p-1 text-center font-black' })
-              ),
-              React.createElement(
-                'label',
-                { className: 'flex items-center justify-between font-bold text-slate-800 cursor-pointer' },
-                React.createElement(
-                  'span',
-                  null,
-                  '\u91CC\u7A0B\u7891\u9053\u5177\u767C\u653E'
-                ),
-                React.createElement('input', { type: 'checkbox', checked: brawlSettings.itemsEnabled, onChange: function onChange(e) {
-                    return applyBrawlSettings(_extends({}, brawlSettings, { itemsEnabled: e.target.checked }), true);
-                  }, className: 'w-5 h-5 accent-purple-500' })
-              ),
-              React.createElement(
-                'label',
-                { className: 'flex items-center justify-between font-bold text-slate-800 cursor-pointer' },
-                React.createElement(
-                  'span',
-                  null,
-                  '\u4E0A\u5E1D\u8996\u89D2\u986F\u793A\u6578\u5B57\uFF08\u89C0\u6230/\u5B8C\u8CFD\u6AA2\u8996\uFF09'
-                ),
-                React.createElement('input', { type: 'checkbox', checked: brawlSettings.godNumbers, onChange: function onChange(e) {
-                    return applyBrawlSettings(_extends({}, brawlSettings, { godNumbers: e.target.checked }), true);
-                  }, className: 'w-5 h-5 accent-purple-500' })
-              )
-            ),
-            React.createElement(
-              'button',
-              { onClick: function onClick() {
-                  return setShowRoomSettings(false);
-                }, className: 'w-full mt-5 py-2.5 bg-slate-800 text-white rounded-xl font-black' },
-              '\u5B8C\u6210'
-            )
-          )
-        ),
+        ) : null,
         raceState === 'spectating' && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
