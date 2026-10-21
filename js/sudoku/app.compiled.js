@@ -854,12 +854,14 @@ function SudokuGame() {
   }, [matchPhase, countdownTarget]);
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatCountdown) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'sudoku') return; // 平台：背景遊戲不許碰殼的共用 overlay（會把前景那款的倒數/結算弄閃）
     if (countdownValue !== null && !isGenerating) window.PlatCountdown.show(countdownValue);else window.PlatCountdown.hide();
   }, [countdownValue, isGenerating]);
 
   // 共用結算畫面（PlatResults，與數橋同框架）：大亂鬥結算改餵殼 spec，本地 modal 只作無殼時 fallback
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatResults) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'sudoku') return; // 平台：背景遊戲不許碰殼的共用 overlay（會把前景那款的倒數/結算弄閃）
     var showLocal = isBrawlMode && (isWon || winner);
     if (!showLocal) {
       window.PlatResults.hide();
@@ -926,7 +928,19 @@ function SudokuGame() {
       verdict: finishedPhase ? iWon ? '🎉 你贏了！' : iFinished ? '完賽了，名次如上！' : '比賽結束，結果如上' : null,
       waitingText: !finishedPhase ? '比賽尚未結束，等待其他玩家完成…' : null,
       note: finishedPhase && !canControl ? '⏳ 等待房主決定下一局...' : null,
-      buttons: finishedPhase ? canControl ? [{
+      buttons: finishedPhase ? canControl ? typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.tourn ? [
+      // 錦標賽：下一局照賽程走，不給再來一局
+      {
+        id: 'watch',
+        label: '👁️ 看盤面'
+      }, {
+        id: 'lobby',
+        label: '🏁 回等待室',
+        kind: 'primary'
+      }, {
+        id: 'home',
+        label: '離開'
+      }] : [{
         id: 'watch',
         label: '👁️ 看盤面'
       }, {
@@ -6325,7 +6339,13 @@ function SudokuGame() {
   }).length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-center text-slate-400 font-bold py-4"
   }, "\u76EE\u524D\u5834\u4E0A\u6C92\u6709\u6BD4\u8CFD\u73A9\u5BB6")))) : /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-center items-center min-w-max min-h-max m-auto pb-32 pr-20"
+    className: "flex justify-center items-center min-w-max min-h-max m-auto pb-32 pr-20",
+    style: countdownValue !== null ? {
+      filter: 'blur(18px)',
+      pointerEvents: 'none'
+    } : {
+      transition: 'filter 0.3s'
+    }
   }, /*#__PURE__*/React.createElement("svg", {
     ref: svgRef,
     onPointerMove: handlePointerMove,

@@ -2835,12 +2835,14 @@ function HashiGame() {
 
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatCountdown) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'hashi') return; // 平台：背景遊戲不許碰殼的共用 overlay（會把前景那款的倒數/結算弄閃）
     if (raceCountdown !== null) window.PlatCountdown.show(raceCountdown === 0 ? 'GO!' : raceCountdown);else window.PlatCountdown.hide();
   }, [raceCountdown]);
 
   // 共用結算畫面（PlatResults，與數獨同框架）：大亂鬥結算改餵殼 spec，本地 modal/等待 pill 只作無殼時 fallback
   useEffect(function () {
     if (typeof window === 'undefined' || !window.PlatResults) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'hashi') return; // 平台：背景遊戲不許碰殼的共用 overlay（會把前景那款的倒數/結算弄閃）
     var fin = inRace && raceState === 'finished' && raceResult;
     var wait = inRace && raceWaiting && raceState === 'racing';
     if (!fin && !wait) {
@@ -2866,8 +2868,9 @@ function HashiGame() {
         }),
         verdict: raceResult.winnerUid === myId ? '🎉 你贏了！' : iFinished ? '完賽了，名次如上！' : '比賽結束，結果如上',
         stars: iFinished ? stars : null,
-        note: !isHostRef.current ? '再來一局／回等待室都會帶全員一起' : null,
-        buttons: [{ id: 'watch', label: '👁️ 看盤面' }, { id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }, { id: 'home', label: '離開' }],
+        note: typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.tourn ? null : !isHostRef.current ? '再來一局／回等待室都會帶全員一起' : null,
+        buttons: typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.tourn ? [// 錦標賽：下一局照賽程走，不給再來一局
+        { id: 'watch', label: '👁️ 看盤面' }, { id: 'lobby', label: '🏁 回等待室', kind: 'primary' }, { id: 'home', label: '離開' }] : [{ id: 'watch', label: '👁️ 看盤面' }, { id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }, { id: 'home', label: '離開' }],
         onAction: function onAction(id) {
           if (id === 'watch') watchAction();else if (id === 'rematch') {
             window.PlatResults.hide();playAgain();
@@ -6301,7 +6304,7 @@ function HashiGame() {
           { ref: zoomContainerRef, className: 'p-2 md:p-6 flex-1 overflow-auto custom-scrollbar relative z-0' },
           React.createElement(
             'div',
-            { key: boardFadeKey, className: 'flex justify-center items-center min-w-max min-h-max m-auto pb-2 pr-2 animate-boardFade' },
+            { key: boardFadeKey, className: 'flex justify-center items-center min-w-max min-h-max m-auto pb-2 pr-2 animate-boardFade', style: raceState === 'countdown' ? { filter: 'blur(18px)', pointerEvents: 'none' } : { transition: 'filter 0.3s' } },
             React.createElement(
               'svg',
               {
