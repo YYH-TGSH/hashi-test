@@ -2513,19 +2513,20 @@ function HashiGame() {
   var crossedBridgeIds = useMemo(function () {
     var crossed = new Set();
     var islMap = {};
+    var bList = bridges || [];
     var islands = randomLevelData && randomLevelData.islands ? randomLevelData.islands : [];
     islands.forEach(function (i) {
       islMap[i.id] = i;
     });
 
-    var activeV = bridges.filter(function (b) {
+    var activeV = bList.filter(function (b) {
       return b.count + (b.draftCount || 0) > 0 && b.type === 'v';
     });
-    var activeH = bridges.filter(function (b) {
+    var activeH = bList.filter(function (b) {
       return b.count + (b.draftCount || 0) > 0 && b.type === 'h';
     });
 
-    bridges.forEach(function (target) {
+    bList.forEach(function (target) {
       if (target.count + (target.draftCount || 0) > 0) return;
 
       var tFrom = islMap[target.from];
@@ -2565,15 +2566,16 @@ function HashiGame() {
 
   var highlightedIslandIds = useMemo(function () {
     var ids = new Set();
+    var bList = bridges || [];
     if (hoveredIslandId) {
       ids.add(hoveredIslandId);
-      bridges.forEach(function (b) {
+      bList.forEach(function (b) {
         if (b.from === hoveredIslandId) ids.add(b.to);
         if (b.to === hoveredIslandId) ids.add(b.from);
       });
     }
     if (hoveredBridgeId) {
-      var hb = bridges.find(function (b) {
+      var hb = bList.find(function (b) {
         return b.id === hoveredBridgeId;
       });
       if (hb) {
@@ -2586,7 +2588,7 @@ function HashiGame() {
 
   var activeHints = useMemo(function () {
     if (!hoveredIslandId || interactionMode >= 2) return [];
-    return bridges.filter(function (b) {
+    return (bridges || []).filter(function (b) {
       return b.from === hoveredIslandId || b.to === hoveredIslandId;
     });
   }, [hoveredIslandId, interactionMode, bridges]);
@@ -4237,7 +4239,7 @@ function HashiGame() {
       return;
     }
     setRandomLevelData(payload.randomLevelData);
-    setBridges(payload.bridges);
+    setBridges(payload.bridges || HASHI_PUZZLE.generateEmptyBridges(payload.randomLevelData)); // RACE_RESUME 的 data 不含 bridges（在 m.bridges 兄弟欄位），缺值時先給空盤，後續 handler 會再覆蓋快照；不可 set undefined，render 的 useMemo 會炸
     setCurrentLevelId(payload.levelId || 2);
     setShowSolution(false);
     setStrokes([]);
