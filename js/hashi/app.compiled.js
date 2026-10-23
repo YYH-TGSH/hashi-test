@@ -3357,7 +3357,7 @@ function HashiGame() {
         // 開新局先清掉上一局的結算暫存：raceState 若停在 finished＋舊 raceResult，結算 effect 會在新局一進去就重播舊結果（錦標賽結束後再開大亂鬥實機踩到）
         setRaceState('idle');raceStateRef.current = 'idle';
         setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
-        raceResultsRef.current = {};myFinishTimeRef.current = null;
+        raceResultsRef.current = {};myFinishTimeRef.current = null;finishResentRef.current = 0;
         resultsDismissRef.current = null;setResultsDismissedUi(false);setLeaveArm(false);
         setBrawlBoards({});setGodViewUid(null);
         setIsWon(false);setEndTime(null);resetWinMeta();

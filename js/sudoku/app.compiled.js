@@ -4416,6 +4416,8 @@ function SudokuGame() {
         setIsWon(false);
         setEndTime(null);
         isWinnerDeclaredRef.current = false;
+        lastWinInfoRef.current = null;
+        winResentRef.current = 0; // 補送 effect 的彈藥也要清：舊 GHOST_I_WON 帶進新局會被殼記成新局完賽（錦標賽記錯分）
         setBrawlWinners([]);
         setHideVictoryModal(false);
         resultsDismissRef.current = null;
