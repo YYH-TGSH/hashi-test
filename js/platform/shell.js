@@ -84,7 +84,7 @@
     });
     document.body.setAttribute('data-view', name);
     if (window.__PLAT_UPDATE_DOCK) window.__PLAT_UPDATE_DOCK(); // updateDock 在另一個 IIFE：舊版直接寫函數名永遠是 undefined、dock 在回主頁時不會收
-    if (name === 'home' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 主頁的回到房間鈕跟著 plat_room 記憶保鮮
+    if (name === 'lobby' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 進多人連線才探測房間存續（主畫面不放重連鈕）
     if (name === 'sudoku' || name === 'hashi') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.12.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.12.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -248,16 +248,68 @@
     rejoinBusy(false);
   }
   function hubVisible() { var rm = $('lob-step-room'); return !!(rm && rm.style.display === 'block' && Net.active && !Net.inMatch); }
+  // 回到房間鈕（只在大廳，不放主畫面）：跟舊數獨同款——先灰色探測房間還在不在，
+  // 找到 → 亮藍色可點；找不到 → 灰色「房間已失效」。探測結果快取 20 秒，避免反覆打擾房主端。
+  var REJOIN_ON = 'w-full mt-4 py-3 bg-sky-400 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer';
+  var REJOIN_OFF = 'w-full mt-4 py-3 bg-slate-200 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-400 cursor-not-allowed';
+  var rejoinProbe = { code: null, state: 'idle', at: 0 }; // state: idle|probing|alive|dead
+  var rejoinBusyOn = false;
   function refreshRejoin() {
     var rc = storeGet('plat_room');
-    var rjBtn = $('lob-rejoin');
-    if (rjBtn) { rjBtn.style.display = rc ? '' : 'none'; if (rc) { var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; } }
-    var hrBtn = $('home-rejoin'); // 主頁也要有回到房間（多人重連是平台層功能，不放遊戲裡面）
-    if (hrBtn) { hrBtn.style.display = rc ? '' : 'none'; if (rc) { var hcEl = $('home-rejoin-code'); if (hcEl) hcEl.textContent = rc; } }
+    var b = $('lob-rejoin'); if (!b) return;
+    if (!rc || Net.active) { b.style.display = 'none'; return; }
+    b.style.display = '';
+    var fresh = rejoinProbe.code === rc && rejoinProbe.state !== 'idle' && (Date.now() - rejoinProbe.at < 20000);
+    if (!fresh && rejoinProbe.state !== 'probing' && !Net.peer) probeRoom(rc);
+    else renderRejoinBtn();
   }
   window.__PLAT_REFRESH_REJOIN = refreshRejoin;
+  function renderRejoinBtn() {
+    var b = $('lob-rejoin'); if (!b || rejoinBusyOn) return;
+    var rc = storeGet('plat_room');
+    if (!rc || Net.active) { b.style.display = 'none'; return; }
+    b.style.display = '';
+    if (rejoinProbe.code === rc && rejoinProbe.state === 'alive') {
+      b.disabled = false; b.className = REJOIN_ON;
+      b.innerHTML = '↩ 回到房間 <span id="lob-rejoin-code">' + rc + '</span>';
+    } else if (rejoinProbe.code === rc && rejoinProbe.state === 'dead') {
+      if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) {
+        b.disabled = false; b.className = REJOIN_ON; // 房主本人：房號是自己的，給他同房號重開（不然會被鎖在自己房間外）
+        b.innerHTML = '🏠 用同房號重開房間 <span id="lob-rejoin-code">' + rc + '</span>';
+      } else {
+        b.disabled = true; b.className = REJOIN_OFF;
+        b.innerHTML = '🚫 房間已失效 (<span id="lob-rejoin-code">' + rc + '</span>)';
+      }
+    } else {
+      b.disabled = true; b.className = REJOIN_OFF + ' animate-pulse';
+      b.innerHTML = '🔍 正在尋找房間 <span id="lob-rejoin-code">' + rc + '</span>…';
+    }
+  }
+  function probeRoom(code) {
+    rejoinProbe = { code: code, state: 'probing', at: Date.now() };
+    renderRejoinBtn();
+    var done = false, pp = null;
+    var finish = function (alive) {
+      if (done) return; done = true;
+      clearTimeout(timer);
+      try { if (pp) pp.destroy(); } catch (e) {}
+      if (rejoinProbe.code === code && rejoinProbe.state === 'probing') { rejoinProbe.state = alive ? 'alive' : 'dead'; rejoinProbe.at = Date.now(); }
+      renderRejoinBtn();
+    };
+    var timer = setTimeout(function () { finish(false); }, 5000);
+    try {
+      pp = new RealPeer();
+      pp.on('open', function () {
+        var c = pp.connect('yyh-tgsh-' + code + '-host');
+        c.on('open', function () { finish(true); });
+        c.on('error', function () { finish(false); });
+      });
+      pp.on('error', function () { finish(false); });
+    } catch (e) { finish(false); }
+  }
   function rejoinBusy(on) { // 回到房間鈕的按下回饋：連線中改字＋脈動＋禁用，避免使用者以為沒點到
-    ['lob-rejoin', 'home-rejoin'].forEach(function (id) {
+    rejoinBusyOn = !!on;
+    ['lob-rejoin'].forEach(function (id) {
       var b = $(id); if (!b) return;
       if (on) {
         if (!b._origHtml) b._origHtml = b.innerHTML;
@@ -285,7 +337,8 @@
     var savedColor = storeGet('plat_color'); if (savedColor) Net.me.color = savedColor;
     lobbyMsg('⏳ 正在連線…');
     rejoinBusy(true);
-    if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) createRoom();
+    if (rejoinProbe.code === rc && rejoinProbe.state === 'alive') { $('lob-code').value = rc; joinRoom(); } // 房間還在（含已被接管）→ 以來賓身分回座
+    else if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) createRoom(); // 房間不在了＋自己是原房主 → 同房號重開
     else { $('lob-code').value = rc; joinRoom(); }
   }
   function showIdle() { showStep('entry'); }
@@ -338,6 +391,8 @@
       var t = (Date.now() - start) / dur;
       var c = PLAT_COLORS[Math.floor(Math.random() * PLAT_COLORS.length)];
       if (dot) dot.style.background = c;
+      var wrap = $('lob-colors'); // 下方色圈的圈選跟著一起跳（同一個顏色 index）
+      if (wrap) { var ci = PLAT_COLORS.indexOf(c); for (var wi = 0; wi < wrap.children.length; wi++) { if (wrap.children[wi].classList) wrap.children[wi].classList.toggle('sel', wi === ci); } }
       if (t >= 1) {
         Net.me.color = c; storeSet('plat_color', c);
         if (storeGet('plat_rainbow') === '1' && Net.me.color === 'rainbow') Net.me.color = c;
@@ -2275,8 +2330,6 @@
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
     var rjBtn = $('lob-rejoin');
     if (rjBtn) { refreshRejoin(); rjBtn.onclick = doRejoin; }
-    var hrBtn2 = $('home-rejoin');
-    if (hrBtn2) hrBtn2.onclick = doRejoin;
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
     $('slot-spin').onclick = function () { spinSlot(); };
     var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };
