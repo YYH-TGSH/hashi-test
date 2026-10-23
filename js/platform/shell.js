@@ -84,6 +84,7 @@
     });
     document.body.setAttribute('data-view', name);
     if (window.__PLAT_UPDATE_DOCK) window.__PLAT_UPDATE_DOCK(); // updateDock 在另一個 IIFE：舊版直接寫函數名永遠是 undefined、dock 在回主頁時不會收
+    if (name === 'home' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 主頁的回到房間鈕跟著 plat_room 記憶保鮮
     if (name === 'sudoku' || name === 'hashi') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
@@ -99,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.12.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.12.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -134,8 +135,33 @@
 
   var SLOT_NAMES = ['柴犬', '柯基', '虎斑貓', '橘貓', '倉鼠', '兔兔', '刺蝟', '龍貓', '水豚', '樹懶', '狐獴', '羊駝', '企鵝', '海獺', '貓頭鷹', '松鼠', '無尾熊', '台灣黑熊', '石虎', '穿山甲', '梅花鹿', '台灣藍鵲', '帝雉', '獼猴', '山羌', '綠蠵龜', '櫻花鉤吻鮭', '飛魚', '螢火蟲', '獨角仙'];
   var slotName = '', slotTimer = null;
+  // 拉霸音效（WebAudio 小嗶聲；無音效環境/被擋就靜默）
+  var platAC = null;
+  function platTone(freq, dur, delay, type, vol) {
+    try {
+      if (!platAC) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; platAC = new AC(); }
+      if (platAC.state === 'suspended') platAC.resume();
+      var t0 = platAC.currentTime + (delay || 0);
+      var o = platAC.createOscillator(), g = platAC.createGain();
+      o.type = type || 'square'; o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(vol || 0.04, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(platAC.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  function spinSound(totalMs) { // 滾動 tick 先密後疏（配合減速），落地叮噹兩聲
+    var n = Math.max(6, Math.round(totalMs / 95));
+    for (var i = 0; i < n; i++) {
+      var p = i / n;
+      platTone(620 + (i % 2) * 200, 0.03, (totalMs * (1 - Math.pow(1 - p, 2))) / 1000, 'square', 0.028);
+    }
+    platTone(880, 0.12, totalMs / 1000, 'sine', 0.06);
+    platTone(1318, 0.2, totalMs / 1000 + 0.08, 'sine', 0.05);
+  }
   function spinSlot(cb) {
     if (slotTimer) return;
+    spinSound(1150);
     var el = $('slot-display'); var t0 = Date.now();
     el.classList.add('slot-spinning');
     (function tick() {
@@ -218,13 +244,49 @@
     $('lob-step-nick').style.display = (s === 'nick') ? 'block' : 'none';
     var rm = $('lob-step-room'); if (rm) rm.style.display = (s === 'room') ? 'block' : 'none';
     if (s === 'entry') refreshRejoin();
+    if (s === 'nick') Net.colorPicked = false; // 每次回到暱稱步，代表色視為尚未決定：按確認進房時會自動拉霸
+    rejoinBusy(false);
   }
   function hubVisible() { var rm = $('lob-step-room'); return !!(rm && rm.style.display === 'block' && Net.active && !Net.inMatch); }
   function refreshRejoin() {
-    var rjBtn = $('lob-rejoin'); if (!rjBtn) return;
     var rc = storeGet('plat_room');
-    rjBtn.style.display = rc ? '' : 'none';
-    if (rc) { var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; }
+    var rjBtn = $('lob-rejoin');
+    if (rjBtn) { rjBtn.style.display = rc ? '' : 'none'; if (rc) { var rcEl = $('lob-rejoin-code'); if (rcEl) rcEl.textContent = rc; } }
+    var hrBtn = $('home-rejoin'); // 主頁也要有回到房間（多人重連是平台層功能，不放遊戲裡面）
+    if (hrBtn) { hrBtn.style.display = rc ? '' : 'none'; if (rc) { var hcEl = $('home-rejoin-code'); if (hcEl) hcEl.textContent = rc; } }
+  }
+  window.__PLAT_REFRESH_REJOIN = refreshRejoin;
+  function rejoinBusy(on) { // 回到房間鈕的按下回饋：連線中改字＋脈動＋禁用，避免使用者以為沒點到
+    ['lob-rejoin', 'home-rejoin'].forEach(function (id) {
+      var b = $(id); if (!b) return;
+      if (on) {
+        if (!b._origHtml) b._origHtml = b.innerHTML;
+        b.disabled = true; b.classList.add('animate-pulse'); b.innerHTML = '⏳ 正在連線…';
+      } else if (b._origHtml) {
+        b.disabled = false; b.classList.remove('animate-pulse'); b.innerHTML = b._origHtml; b._origHtml = null;
+        refreshRejoin();
+      }
+    });
+    if (on) { clearTimeout(rejoinBusy._t); rejoinBusy._t = setTimeout(function () { rejoinBusy(false); }, 20000); }
+    else clearTimeout(rejoinBusy._t);
+  }
+  function doRejoin() {
+    var rc = storeGet('plat_room'); if (!rc) return;
+    if (Net.active) { window.PLAT_show('lobby'); return; } // 已在房間裡：直接回房間頁，不要重複入房
+    window.PLAT_show('lobby');
+    var savedName = storeGet('plat_name');
+    if (!savedName) { // 尚無身份（第一次）才退回暱稱步，房號已預填
+      Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick');
+      $('lob-code').value = rc;
+      return;
+    }
+    // 一鍵重連：暱稱/顏色/房號/角色都照舊，直接連線，不經暱稱步
+    Net.me.name = savedName;
+    var savedColor = storeGet('plat_color'); if (savedColor) Net.me.color = savedColor;
+    lobbyMsg('⏳ 正在連線…');
+    rejoinBusy(true);
+    if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) createRoom();
+    else { $('lob-code').value = rc; joinRoom(); }
   }
   function showIdle() { showStep('entry'); }
   function renderLobby() {
@@ -265,9 +327,10 @@
     }
   }
   var colorSpinning = false;
-  function spinColor() {
+  function spinColor(cb) {
     if (colorSpinning) return;
     colorSpinning = true;
+    spinSound(1150);
     var btn = $('lob-color-spin'); if (btn) btn.disabled = true;
     var dot = $('lob-color-dot');
     var start = Date.now(), dur = 1150, timer = null;
@@ -279,8 +342,10 @@
         Net.me.color = c; storeSet('plat_color', c);
         if (storeGet('plat_rainbow') === '1' && Net.me.color === 'rainbow') Net.me.color = c;
         colorSpinning = false;
+        Net.colorPicked = true; // 這次進房流程已決定代表色，確認時不要再自動轉一次
         if (btn) btn.disabled = false;
         renderColors(); if (Net.active) renderLobby();
+        if (cb) cb();
         return;
       }
       timer = setTimeout(tick, 50 + 160 * t * t);
@@ -335,7 +400,11 @@
       if (isSpec) badge = { kind: 'spec', text: '👁️ 觀戰' };
       else if (p.host) badge = { kind: 'ready', text: '👑 房主' };
       else if (brawl) badge = H.ready[key] ? { kind: 'ready', text: '✅ 已準備' } : { kind: '', text: '未準備' };
-      return { key: key, name: p.name, color: p.color, isMe: key === Net.myUid, isHost: !!p.host, online: p.offline ? false : true, badge: badge };
+      var editing = H._idEdit === key;
+      return { key: key, name: p.name, color: p.color, isMe: key === Net.myUid, isHost: !!p.host, online: p.offline ? false : true, badge: badge,
+        editable: !!(Net.isHost || key === Net.myUid), editing: editing,
+        editName: editing ? (H._idName != null ? H._idName : p.name) : '', editColor: editing ? (H._idColor || p.color) : '',
+        editRainbow: !!(editing && key === Net.myUid && storeGet('plat_rainbow') === '1') };
     });
     var start = null, waitingText = null;
     if (Net.isHost) {
@@ -434,7 +503,6 @@
     }
     PlatRoom.update(hubSpec());
     hubRenderSettings();
-    hubRenderIdentity();
     syncTournForm();
   }
   // ---------- 房間頁改暱稱/代表色（v1.12.0）：房主可改任何人、玩家可改自己；房主端驗證後寫回名單並廣播，被改的人由 roster 同步回 Net.me ----------
@@ -471,43 +539,11 @@
     if (Net.isHost) { var err = hubApplyIdentity(entry, name, color); if (err) lobbyMsg(err); }
     else if (uid === Net.myUid) {
       name = (name || '').trim().slice(0, 12);
-      if (!name) { lobbyMsg('⚠️ 暱稱不能空白'); hubRenderIdentity(); return; }
-      if (Net.roster.some(function (p) { return (p.uid || p.pid) !== uid && normName(p.name) === normName(name); })) { lobbyMsg('⚠️ 這個暱稱已經有人用了'); hubRenderIdentity(); return; }
+      if (!name) { lobbyMsg('⚠️ 暱稱不能空白'); hubRender(); return; }
+      if (Net.roster.some(function (p) { return (p.uid || p.pid) !== uid && normName(p.name) === normName(name); })) { lobbyMsg('⚠️ 這個暱稱已經有人用了'); hubRender(); return; }
       platToHost({ kind: 'identity', name: name, color: color });
     }
-    hubRenderIdentity();
-  }
-  function hubRenderIdentity() {
-    var box = $('hub-identity'); if (!box) return;
-    if (!hubVisible()) { if (box.innerHTML) box.innerHTML = ''; return; }
-    var H = ensureHub();
-    var key = Net.roster.map(function (p) { return (p.uid || p.pid) + ':' + p.name + ':' + p.color; }).join('|') + '#' + (Net.isHost ? 'H' : 'G') + '#' + (H._idEdit || '') + '#' + (H._idColor || '');
-    if (H._idKey === key && box.innerHTML) return;
-    H._idKey = key;
-    var html = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 text-left shadow-[4px_4px_0px_#1e293b]">';
-    html += '<h3 class="font-black border-b-2 border-slate-100 pb-2 mb-2">🪪 暱稱 / 代表色</h3>';
-    Net.roster.forEach(function (p) {
-      var k2 = p.uid || p.pid, isMe = k2 === Net.myUid, canEdit = Net.isHost || isMe;
-      var dot = p.color === 'rainbow' ? 'background:linear-gradient(45deg,red,orange,yellow,green,blue,indigo,violet)' : ('background:' + p.color);
-      html += '<div class="py-1.5 border-b border-slate-100">';
-      html += '<div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full border-2 border-slate-800 inline-block shrink-0" style="' + dot + '"></span><span class="font-black text-slate-800 truncate">' + esc(p.name) + (p.host ? ' 👑' : '') + (isMe ? '（你）' : '') + '</span>';
-      if (canEdit && H._idEdit !== k2) html += '<button data-id-edit="' + k2 + '" class="ml-auto shrink-0 text-xs font-black bg-slate-100 border-2 border-slate-800 rounded-lg px-2 py-1">✏️ 修改</button>';
-      html += '</div>';
-      if (canEdit && H._idEdit === k2) {
-        html += '<div class="mt-2 flex flex-col gap-2">';
-        html += '<input id="hub-id-name" type="text" maxlength="12" value="' + esc(H._idName != null ? H._idName : p.name) + '" class="w-full border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800 outline-none">';
-        html += '<div class="flex flex-wrap gap-1.5">';
-        PLAT_COLORS.forEach(function (c) { html += '<button data-id-color="' + c + '" class="w-7 h-7 rounded-full border-2 ' + (H._idColor === c ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:' + c + '"></button>'; });
-        if (isMe && storeGet('plat_rainbow') === '1') html += '<button data-id-color="rainbow" class="w-7 h-7 rounded-full border-2 ' + (H._idColor === 'rainbow' ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:linear-gradient(45deg,red,orange,yellow,green,blue,indigo,violet)"></button>';
-        html += '</div>';
-        html += '<div class="flex gap-2"><button data-id-save="' + k2 + '" class="flex-1 py-1.5 bg-emerald-400 border-2 border-slate-800 rounded-lg font-black text-slate-900">✓ 儲存</button><button data-id-cancel="1" class="flex-1 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-500">取消</button></div>';
-        html += '</div>';
-      }
-      html += '</div>';
-    });
-    html += '<div class="text-xs text-slate-400 font-bold mt-1">' + (Net.isHost ? '房主可以修改任何人的暱稱與代表色' : '你可以修改自己的暱稱與代表色') + '</div>';
-    html += '</div>';
-    box.innerHTML = html;
+    hubRender();
   }
   function hubWire() {
     var H = ensureHub(); if (H._wired) return; H._wired = true;
@@ -541,12 +577,12 @@
       var t = e.target; if (!t || !t.closest) return;
       var H3 = ensureHub();
       var eb = t.closest('[data-id-edit]');
-      if (eb) { var uid3 = eb.getAttribute('data-id-edit'); var en3 = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === uid3) en3 = p; }); if (en3 && (Net.isHost || uid3 === Net.myUid)) { H3._idEdit = uid3; H3._idColor = en3.color; H3._idName = en3.name; H3._idKey = ''; hubRenderIdentity(); } return; }
+      if (eb) { var uid3 = eb.getAttribute('data-id-edit'); var en3 = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === uid3) en3 = p; }); if (en3 && (Net.isHost || uid3 === Net.myUid)) { H3._idEdit = uid3; H3._idColor = en3.color; H3._idName = en3.name; H3._idKey = ''; hubRender(); } return; }
       var cb3 = t.closest('[data-id-color]');
-      if (cb3) { var inp3 = $('hub-id-name'); if (inp3) H3._idName = inp3.value; H3._idColor = cb3.getAttribute('data-id-color'); H3._idKey = ''; hubRenderIdentity(); return; }
+      if (cb3) { var inp3 = $('hub-id-name'); if (inp3) H3._idName = inp3.value; H3._idColor = cb3.getAttribute('data-id-color'); H3._idKey = ''; hubRender(); return; }
       var sb3 = t.closest('[data-id-save]');
       if (sb3) { hubIdSave(sb3.getAttribute('data-id-save')); return; }
-      if (t.closest('[data-id-cancel]')) { H3._idEdit = null; H3._idName = null; H3._idKey = ''; hubRenderIdentity(); }
+      if (t.closest('[data-id-cancel]')) { H3._idEdit = null; H3._idName = null; H3._idKey = ''; hubRender(); }
     });
     setInterval(function () { if (hubVisible()) hubRender(); }, 1000); // 開始閘門的 60 秒倒數 + 名單保鮮
   }
@@ -575,6 +611,7 @@
   }
   function showHubRoom() {
     if (!Net.active) return;
+    rejoinBusy(false);
     var H = ensureHub();
     if (!H.enteredAt) H.enteredAt = Date.now();
     hubWire();
@@ -849,6 +886,7 @@
   }
   function endSession(msg) {
     Net.migrating = false;
+    rejoinBusy(false);
     if (Net.hub) { Net.hub.enteredAt = 0; Net.hub.ready = {}; Net.hub.spec = {}; }
     Net.lastLaunch = null;
     if (!Net.active && !Net.peer) { showIdle(); return; }
@@ -1644,11 +1682,16 @@
       var h = '';
       (st.players || []).forEach(function (pl) {
         var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : (pl.color || '#ccc');
-        h += '<div class="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer' + (pl.pending ? ';opacity:.55' : '') + '"' : (pl.pending ? ' style="opacity:.55"' : '')) + '>';
+        h += '<div class="bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.pending ? ' style="opacity:.55"' : '') + '>';
+        h += '<div class="flex items-center gap-2"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer"' : '') + '>';
         h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner" style="background:' + bg + (pl.pending ? ';filter:grayscale(1)' : '') + '"></span>';
         if (pl.online !== undefined && pl.online !== null) h += '<span class="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-white ' + (pl.online ? 'bg-green-500' : 'bg-slate-300') + '"></span>';
         h += '</span>';
-        h += '<span class="truncate">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + (pl.pending ? '<span class="text-slate-400">（未到）</span>' : '') + '</span>';
+        if (pl.editable && !pl.editing) {
+          h += '<button data-id-edit="' + pbEsc(pl.key) + '" class="truncate bg-transparent border-none cursor-pointer font-black text-slate-800 text-left p-0" title="點名字改暱稱/代表色">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + ' <span class="text-slate-400" style="font-size:11px">✏️</span></button>';
+        } else {
+          h += '<span class="truncate">' + pbEsc(pl.name || '玩家') + (pl.isMe ? '（你）' : '') + (pl.isHost ? ' 👑' : '') + (pl.pending ? '<span class="text-slate-400">（未到）</span>' : '') + '</span>';
+        }
         h += '<span class="ml-auto flex gap-1 shrink-0 items-center">';
         if (pl.toggle) {
           var tg = pl.toggle;
@@ -1662,6 +1705,17 @@
           h += '<span class="text-[10px] border px-1.5 py-0.5 rounded-md ' + bk + '">' + pbEsc(pl.badge.text) + '</span>';
         }
         h += '</span></div>';
+        if (pl.editing) {
+          h += '<div class="mt-2 flex flex-col gap-2">';
+          h += '<input id="hub-id-name" type="text" maxlength="12" value="' + esc(pl.editName || '') + '" class="w-full border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800 outline-none bg-white">';
+          h += '<div class="flex flex-wrap gap-1.5">';
+          PLAT_COLORS.forEach(function (c) { h += '<button data-id-color="' + c + '" class="w-7 h-7 rounded-full border-2 ' + (pl.editColor === c ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:' + c + '"></button>'; });
+          if (pl.editRainbow) h += '<button data-id-color="rainbow" class="w-7 h-7 rounded-full border-2 ' + (pl.editColor === 'rainbow' ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:linear-gradient(45deg,red,orange,yellow,green,blue,indigo,violet)"></button>';
+          h += '</div>';
+          h += '<div class="flex gap-2"><button data-id-save="' + pbEsc(pl.key) + '" class="flex-1 py-1.5 bg-emerald-400 border-2 border-slate-800 rounded-lg font-black text-slate-900">✓ 儲存</button><button data-id-cancel="1" class="flex-1 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-500">取消</button></div>';
+          h += '</div>';
+        }
+        h += '</div>';
       });
       ro.innerHTML = h;
     }
@@ -2220,24 +2274,9 @@
     $('lob-go-create').onclick = function () { Net.lobMode = 'create'; $('lob-joinrow').style.display = 'none'; lobbyMsg(''); showStep('nick'); };
     $('lob-go-join').onclick = function () { Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick'); };
     var rjBtn = $('lob-rejoin');
-    if (rjBtn) {
-      refreshRejoin();
-      rjBtn.onclick = function () {
-        var rc = storeGet('plat_room'); if (!rc) return;
-        var savedName = storeGet('plat_name');
-        if (!savedName) { // 尚無身份（第一次）才退回暱稱步，房號已預填
-          Net.lobMode = 'join'; $('lob-joinrow').style.display = 'block'; lobbyMsg(''); showStep('nick');
-          $('lob-code').value = rc;
-          return;
-        }
-        // 一鍵重連：暱稱/顏色/房號/角色都照舊，直接連線，不經暱稱步
-        Net.me.name = savedName;
-        var savedColor = storeGet('plat_color'); if (savedColor) Net.me.color = savedColor;
-        lobbyMsg('');
-        if (storeGet('plat_room_role') === 'host' && rc === storeGet('plat_code')) createRoom();
-        else { $('lob-code').value = rc; joinRoom(); }
-      };
-    }
+    if (rjBtn) { refreshRejoin(); rjBtn.onclick = doRejoin; }
+    var hrBtn2 = $('home-rejoin');
+    if (hrBtn2) hrBtn2.onclick = doRejoin;
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
     $('slot-spin').onclick = function () { spinSlot(); };
     var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };
@@ -2251,12 +2290,18 @@
         return;
       }
       Net.me.name = name; storeSet('plat_name', name);
+      var joinCode = null;
       if (Net.lobMode === 'join') {
-        var c = ($('lob-code').value || '').trim();
-        if (c.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
-        storeSet('plat_last_code', c);
-        joinRoom();
-      } else createRoom();
+        joinCode = ($('lob-code').value || '').trim();
+        if (joinCode.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
+      }
+      if (!Net.colorPicked && !colorSpinning) { // 代表色跟暱稱一樣：進房前沒決定就自動拉霸（自己按過拉霸選色就用那個）
+        lobbyMsg('🎰 代表色也幫你拉霸決定…');
+        spinColor(function () { $('lob-confirm').click(); });
+        return;
+      }
+      if (Net.lobMode === 'join') { storeSet('plat_last_code', joinCode); joinRoom(); }
+      else createRoom();
     };
     var tStartBtn = $('t-start'); if (tStartBtn) tStartBtn.onclick = tournCreate;
     $('dock-chat').onclick = function () { Net.chatOpen ? closeChat() : openChat(); };

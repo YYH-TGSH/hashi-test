@@ -67,6 +67,7 @@
             <button onclick="PLAT_show('sudoku')" class="w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">🔢 數獨 Sudoku</button>
             <button onclick="PLAT_show('hashi')" class="w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌉 數橋 Hashi</button>
             <button onclick="PLAT_show('lobby')" class="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">👥 多人連線（先進大廳）</button>
+            <button id="home-rejoin" style="display:none" class="w-full py-4 bg-sky-300 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">↩ 回到房間 <span id="home-rejoin-code"></span></button>
           </div>
         </div>
       </div>
@@ -108,6 +109,7 @@
             <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
           </div>
           <label class="font-black text-slate-700 text-sm">代表色（拉霸決定）</label>
+          <div class="text-xs font-bold text-slate-400 mt-0.5">按確認進房時，沒拉過會跟暱稱一樣自動拉霸決定</div>
           <div class="flex items-center gap-2 mt-1 mb-2">
             <span id="lob-color-dot" class="w-9 h-9 rounded-full border-[3px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] inline-block shrink-0"></span>
             <button id="lob-color-spin" class="flex-1 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸選色</button>
@@ -120,7 +122,6 @@
 
         <div id="lob-step-room" style="display:none">
           <div id="hub-room"></div>
-          <div id="hub-identity"></div>
         </div>
 
         <div id="lob-panel-tourn" style="display:none">

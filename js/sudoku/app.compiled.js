@@ -119,98 +119,53 @@ function SudokuGame() {
     diffDef: DIFFICULTIES[1],
     cells: []
   };
-
-  // 首頁房間存續狀態 (v3.8.29)
-  var _useState3 = useState(null),
-    _useState4 = _slicedToArray(_useState3, 2),
-    lastSessionAlive = _useState4[0],
-    setLastSessionAlive = _useState4[1]; // null: 檢查中, true: 可恢復, false: 失效
-
-  useEffect(function () {
-    if (screen === 'home' && !window.__PLAT_PLATFORM) {
-      var last = null;
-      try {
-        last = JSON.parse(localStorage.getItem('sudoku_last_session') || 'null');
-      } catch (e) {
-        last = null;
-      }
-      if (last && Date.now() - last.time < 3600000 * 24) {
-        setLastSessionAlive(null);
-        var p = new Peer();
-        var timer = setTimeout(function () {
-          p.destroy();
-          setLastSessionAlive(false);
-        }, 5000);
-        p.on('open', function () {
-          var c = p.connect('yyh-tgsh-' + last.rid + '-host');
-          c.on('open', function () {
-            setLastSessionAlive(true);
-            clearTimeout(timer);
-            p.destroy();
-          });
-          c.on('error', function () {
-            setLastSessionAlive(false);
-            clearTimeout(timer);
-            p.destroy();
-          });
-        });
-        p.on('error', function () {
-          setLastSessionAlive(false);
-          clearTimeout(timer);
-          p.destroy();
-        });
-      } else {
-        setLastSessionAlive(false);
-      }
-    }
-  }, [screen]);
   var initialDataRef = useRef(emptyLevelData);
-  var _useState5 = useState('home'),
-    _useState6 = _slicedToArray(_useState5, 2),
-    screen = _useState6[0],
-    setScreen = _useState6[1];
+  var _useState3 = useState('home'),
+    _useState4 = _slicedToArray(_useState3, 2),
+    screen = _useState4[0],
+    setScreen = _useState4[1];
   var screenRef = useRef('home');
   useEffect(function () {
     screenRef.current = screen;
   }, [screen]);
-  var _useState7 = useState('none'),
+  var _useState5 = useState('none'),
+    _useState6 = _slicedToArray(_useState5, 2),
+    engine = _useState6[0],
+    setEngine = _useState6[1];
+  var _useState7 = useState(9),
     _useState8 = _slicedToArray(_useState7, 2),
-    engine = _useState8[0],
-    setEngine = _useState8[1];
-  var _useState9 = useState(9),
+    sizeId = _useState8[0],
+    setSizeId = _useState8[1];
+  var _useState9 = useState('medium'),
     _useState10 = _slicedToArray(_useState9, 2),
-    sizeId = _useState10[0],
-    setSizeId = _useState10[1];
-  var _useState11 = useState('medium'),
+    diffId = _useState10[0],
+    setDiffId = _useState10[1];
+  var _useState11 = useState(initialDataRef.current),
     _useState12 = _slicedToArray(_useState11, 2),
-    diffId = _useState12[0],
-    setDiffId = _useState12[1];
-  var _useState13 = useState(initialDataRef.current),
+    levelData = _useState12[0],
+    setLevelData = _useState12[1];
+  var _useState13 = useState(initialDataRef.current.cells),
     _useState14 = _slicedToArray(_useState13, 2),
-    levelData = _useState14[0],
-    setLevelData = _useState14[1];
-  var _useState15 = useState(initialDataRef.current.cells),
+    cells = _useState14[0],
+    setCells = _useState14[1];
+  var _useState15 = useState([]),
     _useState16 = _slicedToArray(_useState15, 2),
-    cells = _useState16[0],
-    setCells = _useState16[1];
-  var _useState17 = useState([]),
-    _useState18 = _slicedToArray(_useState17, 2),
-    localCells = _useState18[0],
-    setLocalCells = _useState18[1];
+    localCells = _useState16[0],
+    setLocalCells = _useState16[1];
   var solutionGridRef = useRef(null);
-  var _useState19 = useState({}),
+  var _useState17 = useState({}),
+    _useState18 = _slicedToArray(_useState17, 2),
+    ghostHints = _useState18[0],
+    setGhostHints = _useState18[1];
+  var _useState19 = useState(false),
     _useState20 = _slicedToArray(_useState19, 2),
-    ghostHints = _useState20[0],
-    setGhostHints = _useState20[1];
-  var _useState21 = useState(false),
+    isBrawlMode = _useState20[0],
+    setIsBrawlMode = _useState20[1];
+  var _useState21 = useState([]),
     _useState22 = _slicedToArray(_useState21, 2),
-    isBrawlMode = _useState22[0],
-    setIsBrawlMode = _useState22[1];
-  var _useState23 = useState([]),
-    _useState24 = _slicedToArray(_useState23, 2),
-    brawlWinners = _useState24[0],
-    setBrawlWinners = _useState24[1];
-  var _useState25 = useState({
+    brawlWinners = _useState22[0],
+    setBrawlWinners = _useState22[1];
+  var _useState23 = useState({
       winnersCount: 3,
       allowQuickFill: false,
       allowTraversal: false,
@@ -222,137 +177,137 @@ function SudokuGame() {
       allowWeapons: true,
       weaponStartTime: 60
     }),
+    _useState24 = _slicedToArray(_useState23, 2),
+    brawlSettings = _useState24[0],
+    setBrawlSettings = _useState24[1];
+  var _useState25 = useState(false),
     _useState26 = _slicedToArray(_useState25, 2),
-    brawlSettings = _useState26[0],
-    setBrawlSettings = _useState26[1];
-  var _useState27 = useState(false),
+    showBrawlSettings = _useState26[0],
+    setShowBrawlSettings = _useState26[1];
+  var _useState27 = useState(null),
     _useState28 = _slicedToArray(_useState27, 2),
-    showBrawlSettings = _useState28[0],
-    setShowBrawlSettings = _useState28[1];
-  var _useState29 = useState(null),
-    _useState30 = _slicedToArray(_useState29, 2),
-    winner = _useState30[0],
-    setWinner = _useState30[1];
+    winner = _useState28[0],
+    setWinner = _useState28[1];
   var isWinnerDeclaredRef = useRef(false);
   var lastWinInfoRef = useRef(null); // 最近一次完賽資訊（GHOST_I_WON 補送用）
   var winResentRef = useRef(0);
-  var _useState31 = useState(false),
+  var _useState29 = useState(false),
+    _useState30 = _slicedToArray(_useState29, 2),
+    showSetupModal = _useState30[0],
+    setShowSetupModal = _useState30[1];
+  var _useState31 = useState(9),
     _useState32 = _slicedToArray(_useState31, 2),
-    showSetupModal = _useState32[0],
-    setShowSetupModal = _useState32[1];
-  var _useState33 = useState(9),
+    tempSizeId = _useState32[0],
+    setTempSizeId = _useState32[1];
+  var _useState33 = useState('medium'),
     _useState34 = _slicedToArray(_useState33, 2),
-    tempSizeId = _useState34[0],
-    setTempSizeId = _useState34[1];
-  var _useState35 = useState('medium'),
+    tempDiffId = _useState34[0],
+    setTempDiffId = _useState34[1];
+  var _useState35 = useState('playing'),
     _useState36 = _slicedToArray(_useState35, 2),
-    tempDiffId = _useState36[0],
-    setTempDiffId = _useState36[1];
-  var _useState37 = useState('playing'),
+    matchPhase = _useState36[0],
+    setMatchPhase = _useState36[1];
+  var _useState37 = useState(null),
     _useState38 = _slicedToArray(_useState37, 2),
-    matchPhase = _useState38[0],
-    setMatchPhase = _useState38[1];
+    countdownTarget = _useState38[0],
+    setCountdownTarget = _useState38[1];
   var _useState39 = useState(null),
     _useState40 = _slicedToArray(_useState39, 2),
-    countdownTarget = _useState40[0],
-    setCountdownTarget = _useState40[1];
-  var _useState41 = useState(null),
+    countdownValue = _useState40[0],
+    setCountdownValue = _useState40[1];
+  var _useState41 = useState(false),
     _useState42 = _slicedToArray(_useState41, 2),
-    countdownValue = _useState42[0],
-    setCountdownValue = _useState42[1];
-  var _useState43 = useState(false),
+    isSpectator = _useState42[0],
+    setIsSpectator = _useState42[1];
+  var _useState43 = useState([]),
     _useState44 = _slicedToArray(_useState43, 2),
-    isSpectator = _useState44[0],
-    setIsSpectator = _useState44[1];
+    strokes = _useState44[0],
+    setStrokes = _useState44[1];
   var _useState45 = useState([]),
     _useState46 = _slicedToArray(_useState45, 2),
-    strokes = _useState46[0],
-    setStrokes = _useState46[1];
-  var _useState47 = useState([]),
+    history = _useState46[0],
+    setHistory = _useState46[1];
+  var _useState47 = useState(false),
     _useState48 = _slicedToArray(_useState47, 2),
-    history = _useState48[0],
-    setHistory = _useState48[1];
+    isWon = _useState48[0],
+    setIsWon = _useState48[1];
   var _useState49 = useState(false),
     _useState50 = _slicedToArray(_useState49, 2),
-    isWon = _useState50[0],
-    setIsWon = _useState50[1];
+    hideVictoryModal = _useState50[0],
+    setHideVictoryModal = _useState50[1];
+  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 matchPhase：同 phase 內關了不再彈，phase 變了——如結算——再彈）
   var _useState51 = useState(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    hideVictoryModal = _useState52[0],
-    setHideVictoryModal = _useState52[1];
-  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 matchPhase：同 phase 內關了不再彈，phase 變了——如結算——再彈）
+    resultsDismissedUi = _useState52[0],
+    setResultsDismissedUi = _useState52[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
   var _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    resultsDismissedUi = _useState54[0],
-    setResultsDismissedUi = _useState54[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+    leaveArm = _useState54[0],
+    setLeaveArm = _useState54[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
+  var leaveArmTimerRef = useRef(null);
   var _useState55 = useState(false),
     _useState56 = _slicedToArray(_useState55, 2),
-    leaveArm = _useState56[0],
-    setLeaveArm = _useState56[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
-  var leaveArmTimerRef = useRef(null);
-  var _useState57 = useState(false),
+    showExitMenu = _useState56[0],
+    setShowExitMenu = _useState56[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
+  var _useState57 = useState(""),
     _useState58 = _slicedToArray(_useState57, 2),
-    showExitMenu = _useState58[0],
-    setShowExitMenu = _useState58[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
-  var _useState59 = useState(""),
+    toastMsg = _useState58[0],
+    setToastMsg = _useState58[1];
+  var _useState59 = useState(Date.now()),
     _useState60 = _slicedToArray(_useState59, 2),
-    toastMsg = _useState60[0],
-    setToastMsg = _useState60[1];
-  var _useState61 = useState(Date.now()),
+    startTime = _useState60[0],
+    setStartTime = _useState60[1];
+  var _useState61 = useState(null),
     _useState62 = _slicedToArray(_useState61, 2),
-    startTime = _useState62[0],
-    setStartTime = _useState62[1];
+    endTime = _useState62[0],
+    setEndTime = _useState62[1];
   var _useState63 = useState(null),
     _useState64 = _slicedToArray(_useState63, 2),
-    endTime = _useState64[0],
-    setEndTime = _useState64[1];
-  var _useState65 = useState(null),
+    matchStartTime = _useState64[0],
+    setMatchStartTime = _useState64[1];
+  var _useState65 = useState(1),
     _useState66 = _slicedToArray(_useState65, 2),
-    matchStartTime = _useState66[0],
-    setMatchStartTime = _useState66[1];
-  var _useState67 = useState(1),
+    zoomLevel = _useState66[0],
+    setZoomLevel = _useState66[1];
+  var _useState67 = useState(true),
     _useState68 = _slicedToArray(_useState67, 2),
-    zoomLevel = _useState68[0],
-    setZoomLevel = _useState68[1];
-  var _useState69 = useState(true),
+    isHeaderCollapsed = _useState68[0],
+    setIsHeaderCollapsed = _useState68[1];
+  var _useState69 = useState(false),
     _useState70 = _slicedToArray(_useState69, 2),
-    isHeaderCollapsed = _useState70[0],
-    setIsHeaderCollapsed = _useState70[1];
-  var _useState71 = useState(false),
+    showSaveModal = _useState70[0],
+    setShowSaveModal = _useState70[1];
+  var _useState71 = useState(""),
     _useState72 = _slicedToArray(_useState71, 2),
-    showSaveModal = _useState72[0],
-    setShowSaveModal = _useState72[1];
-  var _useState73 = useState(""),
+    saveCode = _useState72[0],
+    setSaveCode = _useState72[1];
+  var _useState73 = useState(0),
     _useState74 = _slicedToArray(_useState73, 2),
-    saveCode = _useState74[0],
-    setSaveCode = _useState74[1];
-  var _useState75 = useState(0),
+    interactionMode = _useState74[0],
+    setInteractionMode = _useState74[1];
+  var _useState75 = useState('pen'),
     _useState76 = _slicedToArray(_useState75, 2),
-    interactionMode = _useState76[0],
-    setInteractionMode = _useState76[1];
-  var _useState77 = useState('pen'),
+    drawSubMode = _useState76[0],
+    setDrawSubMode = _useState76[1];
+  var _useState77 = useState(null),
     _useState78 = _slicedToArray(_useState77, 2),
-    drawSubMode = _useState78[0],
-    setDrawSubMode = _useState78[1];
-  var _useState79 = useState(null),
-    _useState80 = _slicedToArray(_useState79, 2),
-    selectedChar = _useState80[0],
-    setSelectedChar = _useState80[1];
+    selectedChar = _useState78[0],
+    setSelectedChar = _useState78[1];
   // 輸入方式：'num' 數字先行（先點數字再點格子）｜'cell' 格子先行（先點格子再點數字）— 玩家可切換、記住選擇
-  var _useState81 = useState(function () {
+  var _useState79 = useState(function () {
       try {
         return localStorage.getItem('sudoku_input_mode') === 'cell' ? 'cell' : 'num';
       } catch (e) {
         return 'num';
       }
     }),
+    _useState80 = _slicedToArray(_useState79, 2),
+    inputMode = _useState80[0],
+    setInputMode = _useState80[1];
+  var _useState81 = useState(null),
     _useState82 = _slicedToArray(_useState81, 2),
-    inputMode = _useState82[0],
-    setInputMode = _useState82[1];
-  var _useState83 = useState(null),
-    _useState84 = _slicedToArray(_useState83, 2),
-    selectedCellId = _useState84[0],
-    setSelectedCellId = _useState84[1];
+    selectedCellId = _useState82[0],
+    setSelectedCellId = _useState82[1];
   useEffect(function () {
     try {
       localStorage.setItem('sudoku_input_mode', inputMode);
@@ -360,10 +315,10 @@ function SudokuGame() {
   }, [inputMode]);
 
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
-  var _useState85 = useState(0),
-    _useState86 = _slicedToArray(_useState85, 2),
-    dockTick = _useState86[0],
-    setDockTick = _useState86[1];
+  var _useState83 = useState(0),
+    _useState84 = _slicedToArray(_useState83, 2),
+    dockTick = _useState84[0],
+    setDockTick = _useState84[1];
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
       return setDockTick(function (t) {
@@ -416,40 +371,40 @@ function SudokuGame() {
   };
 
   // 禮物與反擊機制 (盤面直接覆蓋)
-  var _useState87 = useState({}),
+  var _useState85 = useState({}),
+    _useState86 = _slicedToArray(_useState85, 2),
+    unopenedGifts = _useState86[0],
+    setUnopenedGifts = _useState86[1];
+  var _useState87 = useState(initialDataRef.current.sizeDef.chars),
     _useState88 = _slicedToArray(_useState87, 2),
-    unopenedGifts = _useState88[0],
-    setUnopenedGifts = _useState88[1];
-  var _useState89 = useState(initialDataRef.current.sizeDef.chars),
+    keyMapping = _useState88[0],
+    setKeyMapping = _useState88[1];
+  var _useState89 = useState([]),
     _useState90 = _slicedToArray(_useState89, 2),
-    keyMapping = _useState90[0],
-    setKeyMapping = _useState90[1];
+    flippedKeys = _useState90[0],
+    setFlippedKeys = _useState90[1];
   var _useState91 = useState([]),
     _useState92 = _slicedToArray(_useState91, 2),
-    flippedKeys = _useState92[0],
-    setFlippedKeys = _useState92[1];
-  var _useState93 = useState([]),
-    _useState94 = _slicedToArray(_useState93, 2),
-    flares = _useState94[0],
-    setFlares = _useState94[1];
+    flares = _useState92[0],
+    setFlares = _useState92[1];
 
   // === 道具系統：水球霧化 + 格子清除 ===
-  var _useState95 = useState([]),
+  var _useState93 = useState([]),
+    _useState94 = _slicedToArray(_useState93, 2),
+    myWeapons = _useState94[0],
+    setMyWeapons = _useState94[1]; // ['balloon','eraser',...]
+  var _useState95 = useState({}),
     _useState96 = _slicedToArray(_useState95, 2),
-    myWeapons = _useState96[0],
-    setMyWeapons = _useState96[1]; // ['balloon','eraser',...]
+    foggedBoxes = _useState96[0],
+    setFoggedBoxes = _useState96[1]; // { boxId: expiryTimestamp }
   var _useState97 = useState({}),
     _useState98 = _slicedToArray(_useState97, 2),
-    foggedBoxes = _useState98[0],
-    setFoggedBoxes = _useState98[1]; // { boxId: expiryTimestamp }
-  var _useState99 = useState({}),
+    erasingCells = _useState98[0],
+    setErasingCells = _useState98[1]; // { cellId: { value, timestamp } }
+  var _useState99 = useState('my'),
     _useState100 = _slicedToArray(_useState99, 2),
-    erasingCells = _useState100[0],
-    setErasingCells = _useState100[1]; // { cellId: { value, timestamp } }
-  var _useState101 = useState('my'),
-    _useState102 = _slicedToArray(_useState101, 2),
-    finishViewMode = _useState102[0],
-    setFinishViewMode = _useState102[1]; // 'my' | 'god'
+    finishViewMode = _useState100[0],
+    setFinishViewMode = _useState100[1]; // 'my' | 'god'
   var lastMilestoneRef = useRef(0); // 已跨越的 10% 里程碑數量（0~9）
 
   var processedEventsRef = useRef(new Set());
@@ -457,49 +412,49 @@ function SudokuGame() {
   var scrambledCharsRef = useRef(new Set());
   var modeIcons = ['🖋️', '✏️', '🖌️'];
   var modeTitles = ['填答模式', '草稿模式', '畫筆作記號'];
-  var _useState103 = useState(3),
-    _useState104 = _slicedToArray(_useState103, 2),
-    zoomModeIdx = _useState104[0],
-    setZoomModeIdx = _useState104[1];
-  var _useState105 = useState({
+  var _useState101 = useState(3),
+    _useState102 = _slicedToArray(_useState101, 2),
+    zoomModeIdx = _useState102[0],
+    setZoomModeIdx = _useState102[1];
+  var _useState103 = useState({
       value: 1.0,
       visible: false
     }),
-    _useState106 = _slicedToArray(_useState105, 2),
-    zoomIndicator = _useState106[0],
-    setZoomIndicator = _useState106[1];
+    _useState104 = _slicedToArray(_useState103, 2),
+    zoomIndicator = _useState104[0],
+    setZoomIndicator = _useState104[1];
   var zoomIndicatorTimer = useRef(null);
-  var _useState107 = useState(false),
-    _useState108 = _slicedToArray(_useState107, 2),
-    isClosingModal = _useState108[0],
-    setIsClosingModal = _useState108[1];
+  var _useState105 = useState(false),
+    _useState106 = _slicedToArray(_useState105, 2),
+    isClosingModal = _useState106[0],
+    setIsClosingModal = _useState106[1];
 
   // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
-  var _useState109 = useState(false),
-    _useState110 = _slicedToArray(_useState109, 2),
-    zoomMenuOpen = _useState110[0],
-    setZoomMenuOpen = _useState110[1];
-  var _useState111 = useState({
+  var _useState107 = useState(false),
+    _useState108 = _slicedToArray(_useState107, 2),
+    zoomMenuOpen = _useState108[0],
+    setZoomMenuOpen = _useState108[1];
+  var _useState109 = useState({
       x: -1,
       y: -1
     }),
+    _useState110 = _slicedToArray(_useState109, 2),
+    zoomMenuPos = _useState110[0],
+    setZoomMenuPos = _useState110[1];
+  var _useState111 = useState(false),
     _useState112 = _slicedToArray(_useState111, 2),
-    zoomMenuPos = _useState112[0],
-    setZoomMenuPos = _useState112[1];
-  var _useState113 = useState(false),
-    _useState114 = _slicedToArray(_useState113, 2),
-    isDraggingZoom = _useState114[0],
-    setIsDraggingZoom = _useState114[1];
+    isDraggingZoom = _useState112[0],
+    setIsDraggingZoom = _useState112[1];
   var wasZoomDragged = useRef(false);
   var zoomDragTimer = useRef(null);
+  var _useState113 = useState(false),
+    _useState114 = _slicedToArray(_useState113, 2),
+    modeSubOpen = _useState114[0],
+    setModeSubOpen = _useState114[1];
   var _useState115 = useState(false),
     _useState116 = _slicedToArray(_useState115, 2),
-    modeSubOpen = _useState116[0],
-    setModeSubOpen = _useState116[1];
-  var _useState117 = useState(false),
-    _useState118 = _slicedToArray(_useState117, 2),
-    zoomOpen = _useState118[0],
-    setZoomOpen = _useState118[1];
+    zoomOpen = _useState116[0],
+    setZoomOpen = _useState116[1];
   var advanceInteractionMode = function advanceInteractionMode() {
     var next = (interactionMode + 1) % 3;
     setInteractionMode(next);
@@ -513,61 +468,61 @@ function SudokuGame() {
     }
     advanceInteractionMode();
   };
-  var _useState119 = useState({
+  var _useState117 = useState({
       x: -1,
       y: -1
     }),
+    _useState118 = _slicedToArray(_useState117, 2),
+    modeMenuPos = _useState118[0],
+    setModeMenuPos = _useState118[1];
+  var _useState119 = useState(false),
     _useState120 = _slicedToArray(_useState119, 2),
-    modeMenuPos = _useState120[0],
-    setModeMenuPos = _useState120[1];
-  var _useState121 = useState(false),
-    _useState122 = _slicedToArray(_useState121, 2),
-    isDraggingMode = _useState122[0],
-    setIsDraggingMode = _useState122[1];
+    isDraggingMode = _useState120[0],
+    setIsDraggingMode = _useState120[1];
   var wasModeDragged = useRef(false);
   var modeDragTimer = useRef(null);
-  var _useState123 = useState(true),
+  var _useState121 = useState(true),
+    _useState122 = _slicedToArray(_useState121, 2),
+    menuVertical = _useState122[0],
+    setMenuVertical = _useState122[1]; // 共用排列方向偏好
+  var _useState123 = useState(false),
     _useState124 = _slicedToArray(_useState123, 2),
-    menuVertical = _useState124[0],
-    setMenuVertical = _useState124[1]; // 共用排列方向偏好
-  var _useState125 = useState(false),
+    isGenerating = _useState124[0],
+    setIsGenerating = _useState124[1];
+  var _useState125 = useState(""),
     _useState126 = _slicedToArray(_useState125, 2),
-    isGenerating = _useState126[0],
-    setIsGenerating = _useState126[1];
-  var _useState127 = useState(""),
-    _useState128 = _slicedToArray(_useState127, 2),
-    genProgress = _useState128[0],
-    setGenProgress = _useState128[1];
+    genProgress = _useState126[0],
+    setGenProgress = _useState126[1];
   var isAutoFillingRef = useRef(false);
-  var _useState129 = useState(null),
+  var _useState127 = useState(null),
+    _useState128 = _slicedToArray(_useState127, 2),
+    colorPickerTarget = _useState128[0],
+    setColorPickerTarget = _useState128[1];
+  var _useState129 = useState([]),
     _useState130 = _slicedToArray(_useState129, 2),
-    colorPickerTarget = _useState130[0],
-    setColorPickerTarget = _useState130[1];
-  var _useState131 = useState([]),
+    colorSeq = _useState130[0],
+    setColorSeq = _useState130[1];
+  var _useState131 = useState(""),
     _useState132 = _slicedToArray(_useState131, 2),
-    colorSeq = _useState132[0],
-    setColorSeq = _useState132[1];
+    editName = _useState132[0],
+    setEditName = _useState132[1];
   var _useState133 = useState(""),
     _useState134 = _slicedToArray(_useState133, 2),
-    editName = _useState134[0],
-    setEditName = _useState134[1];
-  var _useState135 = useState(""),
+    roomId = _useState134[0],
+    setRoomId = _useState134[1];
+  var _useState135 = useState(false),
     _useState136 = _slicedToArray(_useState135, 2),
-    roomId = _useState136[0],
-    setRoomId = _useState136[1];
-  var _useState137 = useState(false),
-    _useState138 = _slicedToArray(_useState137, 2),
-    isHost = _useState138[0],
-    setIsHost = _useState138[1];
+    isHost = _useState136[0],
+    setIsHost = _useState136[1];
   var isHostRef = useRef(false);
+  var _useState137 = useState(""),
+    _useState138 = _slicedToArray(_useState137, 2),
+    tempRoomId = _useState138[0],
+    setTempRoomId = _useState138[1];
   var _useState139 = useState(""),
     _useState140 = _slicedToArray(_useState139, 2),
-    tempRoomId = _useState140[0],
-    setTempRoomId = _useState140[1];
-  var _useState141 = useState(""),
-    _useState142 = _slicedToArray(_useState141, 2),
-    tempPlayerName = _useState142[0],
-    setTempPlayerName = _useState142[1];
+    tempPlayerName = _useState140[0],
+    setTempPlayerName = _useState140[1];
   // ===== 每日一題（比照數橋） =====
   var dailyTodayStr = function dailyTodayStr() {
     var d = new Date();
@@ -578,29 +533,29 @@ function SudokuGame() {
     d.setDate(d.getDate() + delta);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
-  var _useState143 = useState(function () {
+  var _useState141 = useState(function () {
       return dailyTodayStr();
     }),
+    _useState142 = _slicedToArray(_useState141, 2),
+    dailyPickDate = _useState142[0],
+    setDailyPickDate = _useState142[1];
+  var _useState143 = useState(null),
     _useState144 = _slicedToArray(_useState143, 2),
-    dailyPickDate = _useState144[0],
-    setDailyPickDate = _useState144[1];
-  var _useState145 = useState(null),
-    _useState146 = _slicedToArray(_useState145, 2),
-    dailyDate = _useState146[0],
-    setDailyDate = _useState146[1]; // 進行中的每日題日期（null=非每日模式）
+    dailyDate = _useState144[0],
+    setDailyDate = _useState144[1]; // 進行中的每日題日期（null=非每日模式）
   var dailyRef = useRef(null);
   var dailyRecordedRef = useRef(false);
-  var _useState147 = useState(function () {
+  var _useState145 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
       } catch (e) {
         return {};
       }
     }),
-    _useState148 = _slicedToArray(_useState147, 2),
-    dailyRecords = _useState148[0],
-    setDailyRecords = _useState148[1];
-  var _useState149 = useState(function () {
+    _useState146 = _slicedToArray(_useState145, 2),
+    dailyRecords = _useState146[0],
+    setDailyRecords = _useState146[1];
+  var _useState147 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
       } catch (e) {
@@ -610,14 +565,14 @@ function SudokuGame() {
         };
       }
     }),
+    _useState148 = _slicedToArray(_useState147, 2),
+    dailyStreak = _useState148[0],
+    setDailyStreak = _useState148[1];
+  var _useState149 = useState(false),
     _useState150 = _slicedToArray(_useState149, 2),
-    dailyStreak = _useState150[0],
-    setDailyStreak = _useState150[1];
-  var _useState151 = useState(false),
-    _useState152 = _slicedToArray(_useState151, 2),
-    showTutorial = _useState152[0],
-    setShowTutorial = _useState152[1];
-  var _useState153 = useState([{
+    showTutorial = _useState150[0],
+    setShowTutorial = _useState150[1];
+  var _useState151 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -625,37 +580,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
+    _useState152 = _slicedToArray(_useState151, 2),
+    playersList = _useState152[0],
+    setPlayersList = _useState152[1];
+  var _useState153 = useState(false),
     _useState154 = _slicedToArray(_useState153, 2),
-    playersList = _useState154[0],
-    setPlayersList = _useState154[1];
-  var _useState155 = useState(false),
+    isConnecting = _useState154[0],
+    setIsConnecting = _useState154[1];
+  var _useState155 = useState(""),
     _useState156 = _slicedToArray(_useState155, 2),
-    isConnecting = _useState156[0],
-    setIsConnecting = _useState156[1];
-  var _useState157 = useState(""),
+    connectionStatus = _useState156[0],
+    setConnectionStatus = _useState156[1];
+  var _useState157 = useState(false),
     _useState158 = _slicedToArray(_useState157, 2),
-    connectionStatus = _useState158[0],
-    setConnectionStatus = _useState158[1];
-  var _useState159 = useState(false),
+    showCancelButton = _useState158[0],
+    setShowCancelButton = _useState158[1];
+  var _useState159 = useState(true),
     _useState160 = _slicedToArray(_useState159, 2),
-    showCancelButton = _useState160[0],
-    setShowCancelButton = _useState160[1];
+    showOtherCursors = _useState160[0],
+    setShowOtherCursors = _useState160[1];
   var _useState161 = useState(true),
     _useState162 = _slicedToArray(_useState161, 2),
-    showOtherCursors = _useState162[0],
-    setShowOtherCursors = _useState162[1];
-  var _useState163 = useState(true),
+    showGhostProgress = _useState162[0],
+    setShowGhostProgress = _useState162[1];
+  var _useState163 = useState({}),
     _useState164 = _slicedToArray(_useState163, 2),
-    showGhostProgress = _useState164[0],
-    setShowGhostProgress = _useState164[1];
-  var _useState165 = useState({}),
+    cursors = _useState164[0],
+    setCursors = _useState164[1];
+  var _useState165 = useState([]),
     _useState166 = _slicedToArray(_useState165, 2),
-    cursors = _useState166[0],
-    setCursors = _useState166[1];
-  var _useState167 = useState([]),
-    _useState168 = _slicedToArray(_useState167, 2),
-    ripples = _useState168[0],
-    setRipples = _useState168[1];
+    ripples = _useState166[0],
+    setRipples = _useState166[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -4357,24 +4312,24 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
+  var _useState167 = useState(false),
+    _useState168 = _slicedToArray(_useState167, 2),
+    platTournLock = _useState168[0],
+    setPlatTournLock = _useState168[1];
   var _useState169 = useState(false),
     _useState170 = _slicedToArray(_useState169, 2),
-    platTournLock = _useState170[0],
-    setPlatTournLock = _useState170[1];
-  var _useState171 = useState(false),
-    _useState172 = _slicedToArray(_useState171, 2),
-    platHub = _useState172[0],
-    setPlatHub = _useState172[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+    platHub = _useState170[0],
+    setPlatHub = _useState170[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
-  var _useState173 = useState(null),
-    _useState174 = _slicedToArray(_useState173, 2),
-    tournRoundInfo = _useState174[0],
-    setTournRoundInfo = _useState174[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState171 = useState(null),
+    _useState172 = _slicedToArray(_useState171, 2),
+    tournRoundInfo = _useState172[0],
+    setTournRoundInfo = _useState172[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState175 = useState(0),
-    _useState176 = _slicedToArray(_useState175, 2),
-    setTournTick = _useState176[1];
+  var _useState173 = useState(0),
+    _useState174 = _slicedToArray(_useState173, 2),
+    setTournTick = _useState174[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -5337,32 +5292,7 @@ function SudokuGame() {
       className: "text-slate-800 font-black text-xl tracking-widest uppercase italic"
     }, "Sudoku Master")), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-5"
-    }, function () {
-      var last = null;
-      try {
-        last = JSON.parse(localStorage.getItem('sudoku_last_session') || 'null');
-      } catch (e) {
-        last = null;
-      }
-      if (last && Date.now() - last.time < 3600000 * 24) {
-        var disabled = lastSessionAlive === false;
-        return /*#__PURE__*/React.createElement("button", {
-          disabled: disabled || lastSessionAlive === null,
-          onClick: function onClick() {
-            setTempPlayerName(last.name || "");
-            setTempRoomId(last.rid);
-            myNameRef.current = last.name;
-            setEngine('peerjs');
-            engineRef.current = 'peerjs';
-            setIsConnecting(true);
-            setConnectionStatus("🔍 正在尋找原房主...");
-            setupPeerJS(last.rid, last.name, false);
-          },
-          className: "w-full py-4 border-4 border-slate-800 rounded-xl font-black text-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] transition-all ".concat(disabled ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none grayscale' : 'bg-amber-400 text-slate-900 animate-pulse hover:translate-x-[2px] hover:translate-y-[2px]')
-        }, lastSessionAlive === null ? "⏳ 正在檢查連線..." : disabled ? "\uD83D\uDEAB \u623F\u9593\u5DF2\u5931\u6548 (".concat(last.rid, ")") : "\uD83D\uDD04 \u6062\u5FA9\u4E0A\u6B21\u5C0D\u5C40 (".concat(last.rid, ")"));
-      }
-      return null;
-    }(), /*#__PURE__*/React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("button", {
       onClick: startSinglePlayer,
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
