@@ -983,70 +983,90 @@ function HashiGame() {
 
   var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
 
-  var _useState169 = useState(null),
+  var _useState169 = useState(false),
       _useState170 = _slicedToArray(_useState169, 2),
-      raceCountdown = _useState170[0],
-      setRaceCountdown = _useState170[1];
+      resultsDismissedUi = _useState170[0],
+      setResultsDismissedUi = _useState170[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+
+
+  var _useState171 = useState(false),
+      _useState172 = _slicedToArray(_useState171, 2),
+      leaveArm = _useState172[0],
+      setLeaveArm = _useState172[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
+
+
+  var leaveArmTimerRef = useRef(null);
+
+  var _useState173 = useState(false),
+      _useState174 = _slicedToArray(_useState173, 2),
+      showExitMenu = _useState174[0],
+      setShowExitMenu = _useState174[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
+
+
+  var _useState175 = useState(null),
+      _useState176 = _slicedToArray(_useState175, 2),
+      raceCountdown = _useState176[0],
+      setRaceCountdown = _useState176[1];
 
   // ⭐ 星級評分
 
 
-  var _useState171 = useState(0),
-      _useState172 = _slicedToArray(_useState171, 2),
-      stars = _useState172[0],
-      setStars = _useState172[1];
+  var _useState177 = useState(0),
+      _useState178 = _slicedToArray(_useState177, 2),
+      stars = _useState178[0],
+      setStars = _useState178[1];
 
-  var _useState173 = useState(false),
-      _useState174 = _slicedToArray(_useState173, 2),
-      isNewBest = _useState174[0],
-      setIsNewBest = _useState174[1];
+  var _useState179 = useState(false),
+      _useState180 = _slicedToArray(_useState179, 2),
+      isNewBest = _useState180[0],
+      setIsNewBest = _useState180[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState175 = useState([]),
-      _useState176 = _slicedToArray(_useState175, 2),
-      bursts = _useState176[0],
-      setBursts = _useState176[1];
+  var _useState181 = useState([]),
+      _useState182 = _slicedToArray(_useState181, 2),
+      bursts = _useState182[0],
+      setBursts = _useState182[1];
 
-  var _useState177 = useState([]),
-      _useState178 = _slicedToArray(_useState177, 2),
-      confetti = _useState178[0],
-      setConfetti = _useState178[1];
+  var _useState183 = useState([]),
+      _useState184 = _slicedToArray(_useState183, 2),
+      confetti = _useState184[0],
+      setConfetti = _useState184[1];
 
   // 每日一題
 
 
-  var _useState179 = useState(false),
-      _useState180 = _slicedToArray(_useState179, 2),
-      isDailyMode = _useState180[0],
-      setIsDailyMode = _useState180[1];
-
-  var _useState181 = useState(""),
-      _useState182 = _slicedToArray(_useState181, 2),
-      dailyDateStr = _useState182[0],
-      setDailyDateStr = _useState182[1];
-
-  var _useState183 = useState(0),
-      _useState184 = _slicedToArray(_useState183, 2),
-      dailyStreak = _useState184[0],
-      setDailyStreak = _useState184[1];
-
-  var _useState185 = useState(null),
+  var _useState185 = useState(false),
       _useState186 = _slicedToArray(_useState185, 2),
-      dailyDone = _useState186[0],
-      setDailyDone = _useState186[1];
+      isDailyMode = _useState186[0],
+      setIsDailyMode = _useState186[1];
+
+  var _useState187 = useState(""),
+      _useState188 = _slicedToArray(_useState187, 2),
+      dailyDateStr = _useState188[0],
+      setDailyDateStr = _useState188[1];
+
+  var _useState189 = useState(0),
+      _useState190 = _slicedToArray(_useState189, 2),
+      dailyStreak = _useState190[0],
+      setDailyStreak = _useState190[1];
+
+  var _useState191 = useState(null),
+      _useState192 = _slicedToArray(_useState191, 2),
+      dailyDone = _useState192[0],
+      setDailyDone = _useState192[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState187 = useState(function () {
+  var _useState193 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState188 = _slicedToArray(_useState187, 2),
-      dailyMenuDate = _useState188[0],
-      setDailyMenuDate = _useState188[1];
+      _useState194 = _slicedToArray(_useState193, 2),
+      dailyMenuDate = _useState194[0],
+      setDailyMenuDate = _useState194[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1079,22 +1099,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState189 = useState(false),
-      _useState190 = _slicedToArray(_useState189, 2),
-      zoomOpen = _useState190[0],
-      setZoomOpen = _useState190[1];
+  var _useState195 = useState(false),
+      _useState196 = _slicedToArray(_useState195, 2),
+      zoomOpen = _useState196[0],
+      setZoomOpen = _useState196[1];
 
-  var _useState191 = useState(false),
-      _useState192 = _slicedToArray(_useState191, 2),
-      drawSubOpen = _useState192[0],
-      setDrawSubOpen = _useState192[1];
+  var _useState197 = useState(false),
+      _useState198 = _slicedToArray(_useState197, 2),
+      drawSubOpen = _useState198[0],
+      setDrawSubOpen = _useState198[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState193 = useState(0),
-      _useState194 = _slicedToArray(_useState193, 2),
-      dockTick = _useState194[0],
-      setDockTick = _useState194[1];
+  var _useState199 = useState(0),
+      _useState200 = _slicedToArray(_useState199, 2),
+      dockTick = _useState200[0],
+      setDockTick = _useState200[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -2726,13 +2746,16 @@ function HashiGame() {
     var fin = inRace && raceState === 'finished' && raceResult;
     var wait = inRace && raceWaiting && raceState === 'racing';
     if (!fin && !wait) {
-      window.PlatResults.hide();resultsDismissRef.current = null;return;
+      window.PlatResults.hide();resultsDismissRef.current = null;if (resultsDismissedUi) setResultsDismissedUi(false);if (leaveArm) setLeaveArm(false);return;
     }
     if (resultsDismissRef.current === raceState) {
       window.PlatResults.hide();return;
     }
+    if (resultsDismissedUi) setResultsDismissedUi(false);
+    var homeBtn = leaveArm ? { id: 'home', label: '⚠️ 確定離開？', kind: 'danger' } : { id: 'home', label: '離開' };
     var watchAction = function watchAction() {
       resultsDismissRef.current = raceState;
+      setResultsDismissedUi(true);
       window.PlatResults.hide();
       var opps = Object.keys(brawlBoards);
       if (opps.length) setGodViewUid(opps[0]);
@@ -2750,13 +2773,24 @@ function HashiGame() {
         stars: iFinished ? stars : null,
         note: typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.tourn ? null : !isHostRef.current ? '再來一局／回等待室都會帶全員一起' : null,
         buttons: typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.tourn ? [// 錦標賽：下一局照賽程走，不給再來一局
-        { id: 'watch', label: '👁️ 看盤面' }, { id: 'lobby', label: '🏁 回等待室', kind: 'primary' }, { id: 'home', label: '離開' }] : [{ id: 'watch', label: '👁️ 看盤面' }, { id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }, { id: 'home', label: '離開' }],
+        { id: 'watch', label: '👁️ 看盤面' }, { id: 'lobby', label: '🏁 回等待室', kind: 'primary' }, homeBtn] : [{ id: 'watch', label: '👁️ 看盤面' }, { id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }, homeBtn],
         onAction: function onAction(id) {
           if (id === 'watch') watchAction();else if (id === 'rematch') {
             window.PlatResults.hide();playAgain();
           } else if (id === 'lobby') {
             window.PlatResults.hide();requestLobby();
           } else if (id === 'home') {
+            if (!leaveArm) {
+              // 第一次按只是武裝確認（防誤按），3.5 秒內再按才真的離開
+              setLeaveArm(true);
+              if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current);
+              leaveArmTimerRef.current = setTimeout(function () {
+                return setLeaveArm(false);
+              }, 3500);
+              return;
+            }
+            if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current);
+            setLeaveArm(false);
             window.PlatResults.hide();handleGoHome();
           }
         }
@@ -3276,19 +3310,43 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState195 = useState(false),
-      _useState196 = _slicedToArray(_useState195, 2),
-      platTournLock = _useState196[0],
-      setPlatTournLock = _useState196[1];
+  var _useState201 = useState(false),
+      _useState202 = _slicedToArray(_useState201, 2),
+      platTournLock = _useState202[0],
+      setPlatTournLock = _useState202[1];
 
-  var _useState197 = useState(false),
-      _useState198 = _slicedToArray(_useState197, 2),
-      platHub = _useState198[0],
-      setPlatHub = _useState198[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+  var _useState203 = useState(false),
+      _useState204 = _slicedToArray(_useState203, 2),
+      platHub = _useState204[0],
+      setPlatHub = _useState204[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
 
 
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
+
+  var _useState205 = useState(null),
+      _useState206 = _slicedToArray(_useState205, 2),
+      tournRoundInfo = _useState206[0],
+      setTournRoundInfo = _useState206[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+
+
+  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
+
+  var _useState207 = useState(0),
+      _useState208 = _slicedToArray(_useState207, 2),
+      setTournTick = _useState208[1];
+
+  useEffect(function () {
+    if (!(platHub && platTournLock)) return;
+    var t = setInterval(function () {
+      return setTournTick(function (x) {
+        return x + 1;
+      });
+    }, 1000);
+    return function () {
+      return clearInterval(t);
+    };
+  }, [platHub, platTournLock]);
   var tournRosterRef = useRef(null); // 五戰名單帶入：本局預期選手（殼 sess.tourn.roster），等待室先種灰色未到席位（與數獨同款）
   // ===== 平台 Phase C 接入：殼 launch 時自動進多人（暱稱由殼帶入，跳過 nick 步） =====
   useEffect(function () {
@@ -3298,6 +3356,8 @@ function HashiGame() {
         setPlatTournLock(!!sess.tourn);
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         setPlatHub(!!sess.hub);platHubRef.current = !!sess.hub;
+        setTournRoundInfo(sess.tourn ? { round: sess.tourn.round, total: sess.tourn.total, playoff: !!sess.tourn.playoff, entrants: sess.tourn.entrants } : null);
+        tournWaitSinceRef.current = sess.tourn ? Date.now() : null;
         if (sess.settings) {
           // 房間框架帶入的設定（全員同一份）：大亂鬥設定＋關卡一次種下（數橋沒有「去第幾名」這種設定）
           var st = sess.settings;
@@ -3329,8 +3389,9 @@ function HashiGame() {
           setTakenNames([]);
           setupPeerJS(sess.code, false);
         }
-        // 房間框架流程：準備/人數在殼房間頁已經把關，房主端等人到齊就直接開局
-        if (sess.hub && sess.isHost) {
+        // 房間框架流程：一般對局準備/人數在殼房間頁已經把關，房主端等人到齊就直接開局；
+        // 錦標賽每一小局改走等待卡門檻（全員確認準備房主才能開始，或等滿 1 分鐘強制開始），不自動開局
+        if (sess.hub && sess.isHost && !sess.tourn) {
           if (hubStartTimerRef.current) clearInterval(hubStartTimerRef.current);
           var tries = 0;
           hubStartTimerRef.current = setInterval(function () {
@@ -3350,7 +3411,7 @@ function HashiGame() {
         }
       },
       exit: function exit() {
-        setPlatTournLock(false);tournRosterRef.current = null;setPlatHub(false);platHubRef.current = false;if (hubStartTimerRef.current) {
+        setPlatTournLock(false);tournRosterRef.current = null;setPlatHub(false);platHubRef.current = false;setTournRoundInfo(null);tournWaitSinceRef.current = null;if (hubStartTimerRef.current) {
           clearInterval(hubStartTimerRef.current);hubStartTimerRef.current = null;
         }handleGoHome();
       },
@@ -5075,6 +5136,23 @@ function HashiGame() {
     return aActive - bActive;
   });
 
+  // 錦標賽每局開局門檻（房主）：全員到齊且全員準備才能開始；等滿 1 分鐘（且至少 2 人到齊）可強制開始
+  var tournGatePresent = playersList.filter(function (p) {
+    return !p.isSpectator && !p.pending;
+  });
+  var tournExpected = tournRoundInfo && tournRoundInfo.entrants || tournGatePresent.length;
+  var tournAllPresent = tournGatePresent.length >= Math.max(2, tournExpected);
+  var tournAllReady = tournGatePresent.length > 0 && tournGatePresent.every(function (p) {
+    return p.isReady;
+  });
+  var tournWaitMs = tournWaitSinceRef.current ? Date.now() - tournWaitSinceRef.current : 0;
+  var tournWaited = tournWaitMs >= 60000;
+  var tournCanStart = tournGatePresent.length >= 2 && (tournWaited || tournAllPresent && tournAllReady);
+  var tournMyEntry = playersList.find(function (p) {
+    return p.id === myId;
+  });
+  var tournStartNote = tournAllPresent && tournAllReady ? '全員準備好了，等房主開始！' : tournWaited ? '已等滿 1 分鐘，房主可強制開始' : !tournAllPresent ? '等待選手到齊…（或 ' + Math.max(0, 60 - Math.floor(tournWaitMs / 1000)) + ' 秒後可強制開始）' : '等待全員準備（或 ' + Math.max(0, 60 - Math.floor(tournWaitMs / 1000)) + ' 秒後可強制開始）';
+
   return React.createElement(
     'div',
     { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
@@ -5352,7 +5430,9 @@ function HashiGame() {
             ),
             React.createElement(
               'button',
-              { onClick: handleGoHome, className: 'bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
+              { onClick: function onClick() {
+                  if (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
+                }, className: 'bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
               !isMultiplayer ? '🏠' : '🔌',
               React.createElement(
                 'span',
@@ -6191,7 +6271,139 @@ function HashiGame() {
             renderDockCapsule(false)
           )
         ),
-        roomOpen && platHub ? React.createElement(
+        resultsDismissedUi && inRace && raceState === 'finished' && React.createElement(
+          'button',
+          { onClick: function onClick() {
+              resultsDismissRef.current = null;setResultsDismissedUi(false);
+            }, className: 'fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+          '\uD83C\uDFC6 \u7D50\u679C'
+        ),
+        showExitMenu && React.createElement(
+          'div',
+          { className: 'fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4', onClick: function onClick() {
+              return setShowExitMenu(false);
+            } },
+          React.createElement(
+            'div',
+            { className: 'bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-6 w-full max-w-xs text-center animate-popUpCenter', onClick: function onClick(e) {
+                return e.stopPropagation();
+              } },
+            React.createElement(
+              'div',
+              { className: 'font-black text-xl text-[#2d2a26] mb-4' },
+              '\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  setShowExitMenu(false);if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
+                }, className: 'w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+              '\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  setShowExitMenu(false);handleGoHome();
+                }, className: 'w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+              '\uD83D\uDD0C \u9000\u51FA\u5C0D\u5C40'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setShowExitMenu(false);
+                }, className: 'w-full py-2 text-slate-400 font-bold hover:text-slate-700' },
+              '\u53D6\u6D88'
+            )
+          )
+        ),
+        roomOpen && platHub && platTournLock ? React.createElement(
+          'div',
+          { className: 'absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4 flex' },
+          React.createElement(
+            'div',
+            { className: 'bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-6 max-w-md w-full my-auto mx-auto' },
+            React.createElement(
+              'div',
+              { className: 'text-center text-4xl mb-1' },
+              '\uD83C\uDFC6'
+            ),
+            React.createElement(
+              'div',
+              { className: 'font-black text-2xl text-[#2d2a26] text-center' },
+              '\u9326\u6A19\u8CFD\u30FB',
+              tournRoundInfo && tournRoundInfo.playoff ? '加賽' : '第 ' + (tournRoundInfo && tournRoundInfo.round || '?') + ' 局'
+            ),
+            React.createElement(
+              'div',
+              { className: 'font-bold text-slate-400 text-sm text-center mt-1 mb-4' },
+              '\u672C\u5C40\uFF1A\u6578\u6A4B\u5927\u4E82\u9B25\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB'
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex flex-col gap-2 mb-4' },
+              playersList.filter(function (p) {
+                return !p.isSpectator;
+              }).map(function (p) {
+                return React.createElement(
+                  'div',
+                  { key: p.id, className: 'flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800' },
+                  React.createElement('span', { className: 'w-4 h-4 rounded-full border-2 border-slate-800 inline-block shrink-0', style: { background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } }),
+                  React.createElement(
+                    'span',
+                    { className: 'truncate' },
+                    p.name,
+                    p.isHost ? ' 👑' : '',
+                    p.id === myId ? '（你）' : ''
+                  ),
+                  React.createElement(
+                    'span',
+                    { className: 'ml-auto shrink-0' },
+                    p.pending ? React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md' },
+                      '\u672A\u5230'
+                    ) : p.isReady ? React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-emerald-100 border border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-md' },
+                      '\u2705 \u6E96\u5099\u597D\u4E86'
+                    ) : React.createElement(
+                      'span',
+                      { className: 'text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md' },
+                      '\u672A\u6E96\u5099'
+                    )
+                  )
+                );
+              })
+            ),
+            tournMyEntry && !tournMyEntry.pending && React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  return setMyReady(!(tournMyEntry && tournMyEntry.isReady));
+                }, className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500') },
+              tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'
+            ),
+            isHostRef.current ? React.createElement(
+              'div',
+              null,
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    if (mpModeRef.current === 'race') startRace();else startCoop();
+                  }, disabled: !tournCanStart, className: 'w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed' },
+                '\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40'
+              ),
+              React.createElement(
+                'p',
+                { className: 'text-xs text-slate-500 font-bold text-center mt-2' },
+                tournStartNote
+              )
+            ) : React.createElement(
+              'p',
+              { className: 'font-black text-slate-700 animate-pulse text-center' },
+              '\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...'
+            )
+          )
+        ) : roomOpen && platHub ? React.createElement(
           'div',
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4' },
           React.createElement(
