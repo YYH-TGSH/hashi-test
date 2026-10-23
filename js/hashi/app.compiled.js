@@ -1209,6 +1209,7 @@ function HashiGame() {
   var raceProgressRef = useRef({});
   var hostMilestonesRef = useRef({});
   var brawlSettingsRef = useRef({ sizeId: 2, itemsEnabled: true, godNumbers: true });
+  var customDimsRef = useRef(null); // 房間頁帶入的自訂尺寸 {w,h}（關卡選自訂時生成題目用）
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
@@ -3362,10 +3363,24 @@ function HashiGame() {
           // 房間框架帶入的設定（全員同一份）：大亂鬥設定＋關卡一次種下（數橋沒有「去第幾名」這種設定）
           var st = sess.settings;
           applyBrawlSettings(_extends({}, brawlSettingsRef.current, st.brawl || {}, { sizeId: st.sizeId }), false);
-          var lv = LEVELS.find(function (l) {
-            return l.id === st.sizeId;
-          });
-          if (lv) setCurrentLevelId(lv.id); // 合作關卡：房主開房載入時照這個關卡走
+          customDimsRef.current = st.customW || st.customH ? { w: Math.max(5, Math.min(100, Number(st.customW) || 15)), h: Math.max(5, Math.min(100, Number(st.customH) || 15)) } : null;
+          if (st.sizeId === 'custom') setCurrentLevelId('custom');else {
+            var lv = LEVELS.find(function (l) {
+              return l.id === st.sizeId;
+            });if (lv) setCurrentLevelId(lv.id);
+          } // 合作關卡：房主開房載入時照這個關卡走
+          // 合作模式：房主照房間頁選的關卡先生成題目（原本沒生成、永遠是初始 10x10）；競速由 startRace 自己生成
+          if (sess.isHost && sess.mode !== 'brawl' && sess.mode !== 'race') {
+            var coopDef = st.sizeId === 'custom' ? { id: 'custom', name: '⚙️ 自訂', width: (customDimsRef.current || {}).w || 15, height: (customDimsRef.current || {}).h || 15 } : LEVELS.find(function (l) {
+              return l.id === st.sizeId;
+            }) || null;
+            if (coopDef) setTimeout(function () {
+              if (!isHostRef.current) return;
+              var data = HASHI_PUZZLE.generateUniqueHashi(coopDef);
+              var empty = HASHI_PUZZLE.generateEmptyBridges(data);
+              syncState({ levelId: coopDef.id, randomLevelData: data, bridges: empty, strokes: [], showSolution: false, startTime: Date.now() });
+            }, 250);
+          }
         } else if (sess.tourn && sess.isHost) {
           // 賽程預設：套用賽程的關卡
           applyBrawlSettings(_extends({}, brawlSettingsRef.current, { sizeId: sess.tourn.sizeId }), true);
@@ -3940,9 +3955,10 @@ function HashiGame() {
     }
   };
 
-  var handleGoHome = function handleGoHome() {
+  var handleGoHome = function handleGoHome(platLeave) {
     setRoomOpen(false);setShowRoomSettings(false);
-    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
+    // platLeave==='leave'：連線模式個人退出（只有自己回大廳、其他人繼續、房主退出由殼接管）；其餘走舊語義（房主帶全員回等待室）
+    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY(platLeave === 'leave' ? 'player-leave' : 'game-exit');
     if (engineRef.current !== 'none') {
       if (!isHostRef.current && engineRef.current === 'peerjs' && connRef.current) {
         // 有禮貌地先傳送退出訊號給房主，再關閉連線
@@ -3994,7 +4010,8 @@ function HashiGame() {
     var def = LEVELS.find(function (l) {
       return l.id === st.sizeId;
     }) || LEVELS[1];
-    var targetLevelDef = { id: def.id, name: def.name, width: def.width, height: def.height, description: "🏁 大亂鬥專用題目，祝好運！" };
+    var cdims = st.sizeId === 'custom' && customDimsRef.current ? customDimsRef.current : null;
+    var targetLevelDef = { id: def.id, name: def.name, width: cdims ? cdims.w : def.width, height: cdims ? cdims.h : def.height, description: "🏁 大亂鬥專用題目，祝好運！" };
     var newRandomData = HASHI_PUZZLE.generateUniqueHashi(targetLevelDef);
     var empty = HASHI_PUZZLE.generateEmptyBridges(newRandomData);
     var startAt = Date.now() + 3500;
@@ -4063,6 +4080,9 @@ function HashiGame() {
   };
   // 結算「回等待室」：來賓送請求，房主帶全員一起回
   var requestLobby = function requestLobby() {
+    if (platHubRef.current) {
+      if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');return;
+    } // 平台房間框架：回等待室＝回殼的房間頁（房主帶全員、來賓只回自己）
     if (isHostRef.current) {
       returnToLobby();return;
     }
@@ -5026,11 +5046,6 @@ function HashiGame() {
               'span',
               { className: 'inline-block animate-float-slow animate-float-slow-d bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
               '\u6A4B'
-            ),
-            React.createElement(
-              'span',
-              { className: 'inline-block self-center bg-[#2d2a26] text-[#4ade80] text-base px-3 py-1.5 border-[3px] border-slate-800 rounded-lg transform rotate-3 shadow-[3px_3px_0px_rgba(30,41,59,1)] tracking-widest' },
-              '\u6E2C\u8A66\u7248'
             )
           ),
           React.createElement(
@@ -5124,7 +5139,7 @@ function HashiGame() {
         'div',
         { className: 'shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10' },
         'Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.',
-        ' (v' + (window.PLAT_VERSION || '2.18') + ' 測試版)'
+        ' (v' + (window.PLAT_VERSION || '2.18') + ')'
       ),
       tutorialOverlay
     );
@@ -5176,11 +5191,6 @@ function HashiGame() {
                 'span',
                 { className: 'hidden sm:inline' },
                 '\u6578\u6A4B'
-              ),
-              React.createElement(
-                'span',
-                { className: 'bg-[#2d2a26] text-[#4ade80] text-[10px] md:text-xs px-1.5 py-0.5 rounded-md tracking-widest' },
-                '\u6E2C\u8A66\u7248'
               )
             ),
             React.createElement(
@@ -5431,7 +5441,7 @@ function HashiGame() {
             React.createElement(
               'button',
               { onClick: function onClick() {
-                  if (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
+                  var N = typeof window !== 'undefined' ? window.__PLAT_NET : null;if (N && N.inMatch === 'hashi' || typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
                 }, className: 'bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
               !isMultiplayer ? '🏠' : '🔌',
               React.createElement(
@@ -6293,7 +6303,7 @@ function HashiGame() {
               { className: 'font-black text-xl text-[#2d2a26] mb-4' },
               '\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F'
             ),
-            React.createElement(
+            typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND() && React.createElement(
               'button',
               { onClick: function onClick() {
                   setShowExitMenu(false);if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
@@ -6303,9 +6313,16 @@ function HashiGame() {
             React.createElement(
               'button',
               { onClick: function onClick() {
-                  setShowExitMenu(false);handleGoHome();
+                  setShowExitMenu(false);requestLobby();
                 }, className: 'w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
-              '\uD83D\uDD0C \u9000\u51FA\u5C0D\u5C40'
+              '\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4'
+            ),
+            React.createElement(
+              'button',
+              { onClick: function onClick() {
+                  setShowExitMenu(false);handleGoHome('leave');
+                }, className: 'w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+              '\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09'
             ),
             React.createElement(
               'button',

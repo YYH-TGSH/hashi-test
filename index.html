@@ -70,7 +70,7 @@
           </div>
         </div>
       </div>
-      <div class="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (整合測試版 <span id="plat-ver">v1.1.1</span>)</div>
+      <div class="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (整合版 <span id="plat-ver">v1.1.1</span>)</div>
     </div>
   </div>
 
@@ -120,6 +120,7 @@
 
         <div id="lob-step-room" style="display:none">
           <div id="hub-room"></div>
+          <div id="hub-identity"></div>
         </div>
 
         <div id="lob-panel-tourn" style="display:none">
@@ -161,9 +162,12 @@
                       <option value="hard">🔴 困難</option>
                     </select>
                   </label>
-                  <label class="flex items-center justify-between">里程碑道具/武器 <input type="checkbox" id="ts-weapons" class="w-5 h-5 accent-amber-500" checked></label>
-                  <label class="flex items-center justify-between">禮物 <input type="checkbox" id="ts-gifts" class="w-5 h-5 accent-amber-500" checked></label>
-                  <label class="flex items-center justify-between">同數黃色提示 <input type="checkbox" id="ts-yellow" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">開啟陷害道具（水球/橡皮擦） <input type="checkbox" id="ts-weapons" class="w-5 h-5 accent-amber-500" checked></label>
+                  <label class="flex items-center gap-2">陷害道具延遲（秒） <input type="number" id="ts-wtime" min="0" max="600" value="60" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800"></label>
+                  <label class="flex items-center justify-between">開啟快速填答 <input type="checkbox" id="ts-quick" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">開啟循環模式 <input type="checkbox" id="ts-trav" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">開啟獲得與贈送禮物功能 <input type="checkbox" id="ts-gifts" class="w-5 h-5 accent-amber-500" checked></label>
+                  <label class="flex items-center justify-between">開啟底塊提示 <input type="checkbox" id="ts-yellow" class="w-5 h-5 accent-amber-500"></label>
                   <label class="flex items-center justify-between">上帝視角顯示數字 <input type="checkbox" id="ts-god" class="w-5 h-5 accent-amber-500"></label>
                 </div>
                 <div class="border-2 border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">

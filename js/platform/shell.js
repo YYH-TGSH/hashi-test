@@ -99,7 +99,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.11.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.12.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -293,11 +293,11 @@
   // 分頁（數獨/數橋/錦標賽）＋各款自己的設定表單＋準備/觀戰都在殼層；房主按開始才 doLaunch 載入遊戲。
   var HUB_SIZES = [{ id: 4, name: '4x4 幼幼班' }, { id: 9, name: '9x9 標準' }, { id: 16, name: '16x16 史詩' }];
   var HUB_DIFFS = [{ id: 'easy', name: '🟢 簡單' }, { id: 'medium', name: '🟡 普通' }, { id: 'hard', name: '🔴 困難' }];
-  var HUB_LEVELS = [{ id: 1, name: '5x5 幼幼班' }, { id: 2, name: '10x10 標準' }, { id: 3, name: '10x20 手機直式' }, { id: 4, name: '15x15 魔王' }, { id: 5, name: '20x20 史詩' }];
+  var HUB_LEVELS = [{ id: 1, name: '5x5 幼幼班' }, { id: 2, name: '10x10 標準' }, { id: 3, name: '10x20 手機直式' }, { id: 4, name: '15x15 魔王' }, { id: 5, name: '20x20 史詩' }, { id: 'custom', name: '⚙️ 自訂尺寸' }];
   function hubDefaults() {
     return {
-      sudoku: { mode: 'coop', sizeId: 9, diffId: 'medium', winnersCount: 3, allowWeapons: true, allowGifts: true, allowYellowHint: false, showNumbersInGodMode: false, allowOthersToPlayAgain: true },
-      hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true }
+      sudoku: { mode: 'coop', sizeId: 9, diffId: 'medium', winnersCount: 3, allowWeapons: true, allowGifts: true, allowYellowHint: false, showNumbersInGodMode: false, allowOthersToPlayAgain: true, allowQuickFill: false, allowTraversal: false, weaponStartTime: 60 },
+      hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true, customW: 15, customH: 15 }
     };
   }
   function ensureHub() {
@@ -314,9 +314,10 @@
   function hubCfgBroadcast(game) { platBroadcast({ kind: 'hubcfg', game: game, cfg: ensureHub().cfg[game] }); }
   function hubLaunchCfg(game) {
     var H = ensureHub(), c = H.cfg[game];
-    if (game === 'sudoku') return { mode: c.mode, sizeId: Number(c.sizeId) || 9, diffId: c.diffId || 'medium',
-      brawl: { winnersCount: Number(c.winnersCount) || 3, allowWeapons: c.allowWeapons !== false, allowGifts: c.allowGifts !== false, allowYellowHint: !!c.allowYellowHint, showNumbersInGodMode: !!c.showNumbersInGodMode, allowOthersToPlayAgain: c.allowOthersToPlayAgain !== false, allowQuickFill: false, allowTraversal: false, hideAnswers: true, weaponStartTime: 60 } };
-    return { mode: c.mode, sizeId: Number(c.sizeId) || 2, brawl: { itemsEnabled: c.itemsEnabled !== false, godNumbers: c.godNumbers !== false } };
+    if (game === 'sudoku') { var wt = Number(c.weaponStartTime); if (isNaN(wt)) wt = 60; wt = Math.max(0, Math.min(600, wt));
+      return { mode: c.mode, sizeId: Number(c.sizeId) || 9, diffId: c.diffId || 'medium',
+      brawl: { winnersCount: Number(c.winnersCount) || 3, allowWeapons: c.allowWeapons !== false, allowGifts: c.allowGifts !== false, allowYellowHint: !!c.allowYellowHint, showNumbersInGodMode: !!c.showNumbersInGodMode, allowOthersToPlayAgain: c.allowOthersToPlayAgain !== false, allowQuickFill: !!c.allowQuickFill, allowTraversal: !!c.allowTraversal, hideAnswers: true, weaponStartTime: wt } }; }
+    return { mode: c.mode, sizeId: c.sizeId === 'custom' ? 'custom' : (Number(c.sizeId) || 2), customW: Math.max(5, Math.min(100, Number(c.customW) || 15)), customH: Math.max(5, Math.min(100, Number(c.customH) || 15)), brawl: { itemsEnabled: c.itemsEnabled !== false, godNumbers: c.godNumbers !== false } };
   }
   function hubRacers() { return Net.roster.slice(); } // 房間頁不分觀戰：進房的都是選手（觀戰是對局內的事）
   function hubSpec() {
@@ -365,6 +366,10 @@
     var dis = Net.isHost ? '' : ' disabled';
     return '<label class="flex items-center justify-between font-bold text-slate-700 text-sm py-0.5"><span>' + label + '</span><input type="checkbox" data-hub-key="' + key + '" data-hub-game="' + game + '"' + (val ? ' checked' : '') + dis + ' class="w-5 h-5 accent-purple-500"></label>';
   }
+  function hubNum(game, key, val, label, min, max) {
+    var dis = Net.isHost ? '' : ' disabled';
+    return '<label class="flex items-center justify-between font-bold text-slate-700 text-sm py-0.5"><span>' + label + '</span><input type="number" min="' + min + '" max="' + max + '" data-hub-key="' + key + '" data-hub-game="' + game + '" value="' + val + '"' + dis + ' class="w-20 bg-white border-2 border-slate-800 rounded p-1 font-black text-slate-700 outline-none"></label>';
+  }
   function hubSettingsHtml() {
     var H = ensureHub();
     if (Net.roomTab === 'tourn') return '';
@@ -376,14 +381,21 @@
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">題目</span>' + hubSel('sudoku', 'sizeId', c.sizeId, HUB_SIZES) + hubSel('sudoku', 'diffId', c.diffId, HUB_DIFFS) + '</div>';
       if (c.mode === 'brawl') {
         h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">結束</span>' + hubSel('sudoku', 'winnersCount', c.winnersCount, [1, 2, 3, 4, 5].map(function (n) { return { id: n, name: '前 ' + n + ' 名結束' }; })) + '</div>';
-        h += hubChk('sudoku', 'allowWeapons', c.allowWeapons, '里程碑道具/武器');
-        h += hubChk('sudoku', 'allowGifts', c.allowGifts, '禮物');
-        h += hubChk('sudoku', 'allowYellowHint', c.allowYellowHint, '同數黃色提示');
+        h += hubChk('sudoku', 'allowWeapons', c.allowWeapons, '開啟陷害道具（水球/橡皮擦）');
+        h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 text-sm shrink-0">陷害道具延遲</span>' + hubSel('sudoku', 'weaponStartTime', c.weaponStartTime, [0, 30, 60, 90, 120, 180].map(function (n) { return { id: n, name: n + ' 秒' }; })) + '</div>';
+        h += hubChk('sudoku', 'allowQuickFill', c.allowQuickFill, '開啟快速填答');
+        h += hubChk('sudoku', 'allowTraversal', c.allowTraversal, '開啟循環模式');
+        h += hubChk('sudoku', 'allowGifts', c.allowGifts, '開啟獲得與贈送禮物功能');
+        h += hubChk('sudoku', 'allowYellowHint', c.allowYellowHint, '開啟底塊提示');
         h += hubChk('sudoku', 'showNumbersInGodMode', c.showNumbersInGodMode, '上帝視角顯示數字');
-        h += hubChk('sudoku', 'allowOthersToPlayAgain', c.allowOthersToPlayAgain, '其他人可按再來一局');
+        h += hubChk('sudoku', 'allowOthersToPlayAgain', c.allowOthersToPlayAgain, '允許其他玩家按再來一局');
       }
     } else {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">關卡</span>' + hubSel('hashi', 'sizeId', c.sizeId, HUB_LEVELS) + '</div>';
+      if (String(c.sizeId) === 'custom') {
+        h += hubNum('hashi', 'customW', c.customW, '自訂寬度（橫向島嶼數）', 5, 100);
+        h += hubNum('hashi', 'customH', c.customH, '自訂長度（直向島嶼數）', 5, 100);
+      }
       if (c.mode === 'race') {
         h += hubChk('hashi', 'itemsEnabled', c.itemsEnabled, '里程碑道具發放');
         h += hubChk('hashi', 'godNumbers', c.godNumbers, '上帝視角顯示數字');
@@ -407,6 +419,7 @@
     set('ts-size', H.cfg.sudoku.sizeId); set('ts-diff', H.cfg.sudoku.diffId);
     set('ts-weapons', H.cfg.sudoku.allowWeapons, 1); set('ts-gifts', H.cfg.sudoku.allowGifts, 1);
     set('ts-yellow', H.cfg.sudoku.allowYellowHint, 1); set('ts-god', H.cfg.sudoku.showNumbersInGodMode, 1);
+    set('ts-quick', H.cfg.sudoku.allowQuickFill, 1); set('ts-trav', H.cfg.sudoku.allowTraversal, 1); set('ts-wtime', H.cfg.sudoku.weaponStartTime);
     set('th-size', H.cfg.hashi.sizeId);
     set('th-items', H.cfg.hashi.itemsEnabled, 1); set('th-god', H.cfg.hashi.godNumbers, 1);
   }
@@ -421,7 +434,80 @@
     }
     PlatRoom.update(hubSpec());
     hubRenderSettings();
+    hubRenderIdentity();
     syncTournForm();
+  }
+  // ---------- 房間頁改暱稱/代表色（v1.12.0）：房主可改任何人、玩家可改自己；房主端驗證後寫回名單並廣播，被改的人由 roster 同步回 Net.me ----------
+  function hubSyncMeFromRoster() {
+    var me = null;
+    Net.roster.forEach(function (p) { if ((p.uid || p.pid) === Net.myUid) me = p; });
+    if (me && (me.name !== Net.me.name || me.color !== Net.me.color)) {
+      Net.me.name = me.name; Net.me.color = me.color;
+      storeSet('plat_name', me.name); storeSet('plat_color', me.color);
+      updateDock();
+    }
+  }
+  function hubApplyIdentity(entry, name, color) {
+    name = (name || '').trim().slice(0, 12);
+    if (!name) return '⚠️ 暱稱不能空白';
+    var dup = Net.roster.some(function (p) { return p !== entry && normName(p.name) === normName(name); });
+    if (dup) return '⚠️ 這個暱稱已經有人用了';
+    if (color !== 'rainbow' && PLAT_COLORS.indexOf(color) < 0) color = entry.color;
+    var old = entry.name;
+    entry.name = name; entry.color = color;
+    if ((entry.uid || entry.pid) === Net.myUid) { Net.me.name = name; Net.me.color = color; storeSet('plat_name', name); storeSet('plat_color', color); updateDock(); }
+    platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
+    if (old !== name) sysChat('🪪 ' + old + ' 改名為 ' + name);
+    renderLobby();
+    return null;
+  }
+  function hubIdSave(uid) {
+    var H = ensureHub();
+    var entry = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === uid) entry = p; });
+    if (!entry) return;
+    var inp = $('hub-id-name'); var name = inp ? inp.value : (H._idName || entry.name);
+    var color = H._idColor || entry.color;
+    H._idEdit = null; H._idName = null; H._idKey = '';
+    if (Net.isHost) { var err = hubApplyIdentity(entry, name, color); if (err) lobbyMsg(err); }
+    else if (uid === Net.myUid) {
+      name = (name || '').trim().slice(0, 12);
+      if (!name) { lobbyMsg('⚠️ 暱稱不能空白'); hubRenderIdentity(); return; }
+      if (Net.roster.some(function (p) { return (p.uid || p.pid) !== uid && normName(p.name) === normName(name); })) { lobbyMsg('⚠️ 這個暱稱已經有人用了'); hubRenderIdentity(); return; }
+      platToHost({ kind: 'identity', name: name, color: color });
+    }
+    hubRenderIdentity();
+  }
+  function hubRenderIdentity() {
+    var box = $('hub-identity'); if (!box) return;
+    if (!hubVisible()) { if (box.innerHTML) box.innerHTML = ''; return; }
+    var H = ensureHub();
+    var key = Net.roster.map(function (p) { return (p.uid || p.pid) + ':' + p.name + ':' + p.color; }).join('|') + '#' + (Net.isHost ? 'H' : 'G') + '#' + (H._idEdit || '') + '#' + (H._idColor || '');
+    if (H._idKey === key && box.innerHTML) return;
+    H._idKey = key;
+    var html = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 text-left shadow-[4px_4px_0px_#1e293b]">';
+    html += '<h3 class="font-black border-b-2 border-slate-100 pb-2 mb-2">🪪 暱稱 / 代表色</h3>';
+    Net.roster.forEach(function (p) {
+      var k2 = p.uid || p.pid, isMe = k2 === Net.myUid, canEdit = Net.isHost || isMe;
+      var dot = p.color === 'rainbow' ? 'background:linear-gradient(45deg,red,orange,yellow,green,blue,indigo,violet)' : ('background:' + p.color);
+      html += '<div class="py-1.5 border-b border-slate-100">';
+      html += '<div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full border-2 border-slate-800 inline-block shrink-0" style="' + dot + '"></span><span class="font-black text-slate-800 truncate">' + esc(p.name) + (p.host ? ' 👑' : '') + (isMe ? '（你）' : '') + '</span>';
+      if (canEdit && H._idEdit !== k2) html += '<button data-id-edit="' + k2 + '" class="ml-auto shrink-0 text-xs font-black bg-slate-100 border-2 border-slate-800 rounded-lg px-2 py-1">✏️ 修改</button>';
+      html += '</div>';
+      if (canEdit && H._idEdit === k2) {
+        html += '<div class="mt-2 flex flex-col gap-2">';
+        html += '<input id="hub-id-name" type="text" maxlength="12" value="' + esc(H._idName != null ? H._idName : p.name) + '" class="w-full border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800 outline-none">';
+        html += '<div class="flex flex-wrap gap-1.5">';
+        PLAT_COLORS.forEach(function (c) { html += '<button data-id-color="' + c + '" class="w-7 h-7 rounded-full border-2 ' + (H._idColor === c ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:' + c + '"></button>'; });
+        if (isMe && storeGet('plat_rainbow') === '1') html += '<button data-id-color="rainbow" class="w-7 h-7 rounded-full border-2 ' + (H._idColor === 'rainbow' ? 'border-slate-900 ring-2 ring-slate-800' : 'border-slate-300') + '" style="background:linear-gradient(45deg,red,orange,yellow,green,blue,indigo,violet)"></button>';
+        html += '</div>';
+        html += '<div class="flex gap-2"><button data-id-save="' + k2 + '" class="flex-1 py-1.5 bg-emerald-400 border-2 border-slate-800 rounded-lg font-black text-slate-900">✓ 儲存</button><button data-id-cancel="1" class="flex-1 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-500">取消</button></div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    html += '<div class="text-xs text-slate-400 font-bold mt-1">' + (Net.isHost ? '房主可以修改任何人的暱稱與代表色' : '你可以修改自己的暱稱與代表色') + '</div>';
+    html += '</div>';
+    box.innerHTML = html;
   }
   function hubWire() {
     var H = ensureHub(); if (H._wired) return; H._wired = true;
@@ -436,7 +522,7 @@
         return;
       }
       var tid = t.id || '';
-      var TKEYS = { 'ts-size': ['sudoku', 'sizeId', 0], 'ts-diff': ['sudoku', 'diffId', 0], 'ts-weapons': ['sudoku', 'allowWeapons', 1], 'ts-gifts': ['sudoku', 'allowGifts', 1], 'ts-yellow': ['sudoku', 'allowYellowHint', 1], 'ts-god': ['sudoku', 'showNumbersInGodMode', 1], 'th-size': ['hashi', 'sizeId', 0], 'th-items': ['hashi', 'itemsEnabled', 1], 'th-god': ['hashi', 'godNumbers', 1] };
+      var TKEYS = { 'ts-size': ['sudoku', 'sizeId', 0], 'ts-diff': ['sudoku', 'diffId', 0], 'ts-weapons': ['sudoku', 'allowWeapons', 1], 'ts-gifts': ['sudoku', 'allowGifts', 1], 'ts-yellow': ['sudoku', 'allowYellowHint', 1], 'ts-god': ['sudoku', 'showNumbersInGodMode', 1], 'ts-quick': ['sudoku', 'allowQuickFill', 1], 'ts-trav': ['sudoku', 'allowTraversal', 1], 'ts-wtime': ['sudoku', 'weaponStartTime', 0], 'th-size': ['hashi', 'sizeId', 0], 'th-items': ['hashi', 'itemsEnabled', 1], 'th-god': ['hashi', 'godNumbers', 1] };
       if (TKEYS[tid]) {
         var tk = TKEYS[tid];
         H2.cfg[tk[0]][tk[1]] = tk[2] ? t.checked : (isNaN(Number(t.value)) ? t.value : Number(t.value));
@@ -450,6 +536,17 @@
       H2.cfg[g].mode = b.getAttribute('data-hub-mode');
       Net.armedByGame[g] = H2.cfg[g].mode;
       hubSaveCfg(); hubCfgBroadcast(g); hubRender();
+    });
+    root.addEventListener('click', function (e) {
+      var t = e.target; if (!t || !t.closest) return;
+      var H3 = ensureHub();
+      var eb = t.closest('[data-id-edit]');
+      if (eb) { var uid3 = eb.getAttribute('data-id-edit'); var en3 = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === uid3) en3 = p; }); if (en3 && (Net.isHost || uid3 === Net.myUid)) { H3._idEdit = uid3; H3._idColor = en3.color; H3._idName = en3.name; H3._idKey = ''; hubRenderIdentity(); } return; }
+      var cb3 = t.closest('[data-id-color]');
+      if (cb3) { var inp3 = $('hub-id-name'); if (inp3) H3._idName = inp3.value; H3._idColor = cb3.getAttribute('data-id-color'); H3._idKey = ''; hubRenderIdentity(); return; }
+      var sb3 = t.closest('[data-id-save]');
+      if (sb3) { hubIdSave(sb3.getAttribute('data-id-save')); return; }
+      if (t.closest('[data-id-cancel]')) { H3._idEdit = null; H3._idName = null; H3._idKey = ''; hubRenderIdentity(); }
     });
     setInterval(function () { if (hubVisible()) hubRender(); }, 1000); // 開始閘門的 60 秒倒數 + 名單保鮮
   }
@@ -514,6 +611,7 @@
   }
   function onRealConnClose(c) {
     var pid = c.peer;
+    if (Net.conns[pid] && Net.conns[pid] !== c) return; // 舊連線的遲到 close（同對象已換綁/重連新連線）：忽略，避免誤觸接管或誤刪名單
     var vp = Net.gamePeer;
     if (vp && !vp._destroyed) { try { vp._notifyClose(c); } catch (e) {} }
     if (!Net.active || Net.ending) { delete Net.conns[pid]; return; }
@@ -563,6 +661,16 @@
     switch (d.kind) {
       case 'join': {
         if (!Net.isHost) return;
+        // 同 uid 回座（離房後一鍵重連/斷線重連）：舊條目還在名單裡（舊連線尚未逾時清除）時先換綁新 pid，不要誤判暱稱已被占用
+        if (d.uid) {
+          var reJ = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === d.uid && p.pid !== pid) reJ = p; });
+          if (reJ) {
+            var oldPidJ = reJ.pid;
+            reJ.pid = pid; reJ.name = d.name || reJ.name; reJ.color = d.color || reJ.color; reJ.offline = false;
+            delete Net.lastSeen[oldPidJ];
+            var ocJ = Net.conns[oldPidJ]; if (ocJ) { delete Net.conns[oldPidJ]; try { ocJ.close(); } catch (e) {} }
+          }
+        }
         var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(d.name); });
         if (clash) { platSend(c, { kind: 'reject', reason: 'name_taken' }); return; }
         if (!Net.roster.some(function (p) { return p.pid === pid; })) {
@@ -583,7 +691,7 @@
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
         break;
       }
-      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); renderLobby();
+      case 'roster': Net.roster = d.players || []; if (d.code) Net.code = d.code; Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); hubSyncMeFromRoster(); renderLobby();
         if (!Net.isHost && !Net.inMatch && !Net.tourn) { var fbT = setTimeout(function () { if (Net.active && !Net.inMatch && !Net.tourn) maybeAutoEnterRoom(); }, 1500); }
         break;
       case 'ping': {
@@ -629,6 +737,13 @@
       }
       case 'hubstate': { var H10 = ensureHub(); H10.ready = d.ready || {}; H10.spec = d.spec || {}; renderLobby(); break; }
       case 'hubcfg': { var H11 = ensureHub(); if (d.game && d.cfg) H11.cfg[d.game] = d.cfg; if (hubVisible()) hubRender(); break; }
+      case 'identity': { // 房間頁改暱稱/代表色：來賓只能改自己（以寄件者 pid 為準，不信任訊息裡的 uid），房主驗證後套用到名單並廣播
+        if (!Net.isHost) break;
+        var ie2 = null; Net.roster.forEach(function (p) { if (p.pid === pid) ie2 = p; });
+        if (ie2) { var ierr2 = hubApplyIdentity(ie2, d.name, d.color); if (ierr2) { var ic2 = Net.conns[pid]; if (ic2) platSend(ic2, { kind: 'identity-denied', msg: ierr2 }); } }
+        break;
+      }
+      case 'identity-denied': lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
       case 'launch': {
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
@@ -638,6 +753,7 @@
         break;
       }
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
+      case 'host-leaving': if (!Net.isHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）
       case 'tourn-setup': Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + ((d.cfg && d.cfg.totalRounds) || 5) + ' 局'); renderTourn(); break;
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
@@ -884,7 +1000,13 @@
     if (type === 'game-exit') {
       if (!Net.inMatch) return;
       if (Net.isHost) { platBroadcast({ kind: 'return' }); doReturnToLobby(); }
-      else Net.inMatch = null;
+      else doReturnToLobby(); // v1.12.0：來賓按回等待室＝只有自己回房間頁（其他人繼續對局），不再只清 inMatch 把人卡在遊戲首頁
+    } else if (type === 'player-leave') {
+      // v1.12.0：連線模式個人退出——只有自己離房回大廳，其他人繼續；房主退出先廣播 host-leaving，其餘人走接管選舉升格新房主
+      if (!Net.active || Net.leaving) return;
+      Net.leaving = true;
+      if (Net.isHost) platBroadcast({ kind: 'host-leaving' });
+      setTimeout(function () { Net.leaving = false; endSession('你已離開房間'); }, 350); // 留一點時間讓遊戲層的 LEAVE 訊號先送出
     } else if (type === 'host-gone') {
       onHostConnLost(); // 接管流程（殼層選舉升格），不再直接結束連線
     }
@@ -914,7 +1036,7 @@
     var t = Net.tourn; if (!t) return null;
     var settings = null;
     if (t.curGame === 'sudoku') settings = { mode: 'brawl', sizeId: t.sudoku.sizeId, diffId: t.sudoku.diffId,
-      brawl: { winnersCount: t.entrants.length, allowWeapons: t.sudoku.allowWeapons !== false, allowGifts: t.sudoku.allowGifts !== false, allowYellowHint: !!t.sudoku.allowYellowHint, showNumbersInGodMode: !!t.sudoku.showNumbersInGodMode, allowOthersToPlayAgain: true, allowQuickFill: false, allowTraversal: false, hideAnswers: true, weaponStartTime: 60 } };
+      brawl: { winnersCount: t.entrants.length, allowWeapons: t.sudoku.allowWeapons !== false, allowGifts: t.sudoku.allowGifts !== false, allowYellowHint: !!t.sudoku.allowYellowHint, showNumbersInGodMode: !!t.sudoku.showNumbersInGodMode, allowOthersToPlayAgain: true, allowQuickFill: !!t.sudoku.allowQuickFill, allowTraversal: !!t.sudoku.allowTraversal, hideAnswers: true, weaponStartTime: (t.sudoku.weaponStartTime == null ? 60 : t.sudoku.weaponStartTime) } };
     else if (t.curGame === 'hashi') settings = { mode: 'brawl', sizeId: t.hashi.sizeId,
       brawl: { itemsEnabled: t.hashi.itemsEnabled !== false, godNumbers: t.hashi.godNumbers !== false } };
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
@@ -947,7 +1069,7 @@
     if (!Net.isHost || Net.tourn) return;
     var sC = ensureHub().cfg.sudoku, hC = ensureHub().cfg.hashi;
     var cfg = { order: $('t-order').value,
-      sudoku: { sizeId: Number(sC.sizeId) || 9, diffId: sC.diffId || 'medium', allowWeapons: sC.allowWeapons !== false, allowGifts: sC.allowGifts !== false, allowYellowHint: !!sC.allowYellowHint, showNumbersInGodMode: !!sC.showNumbersInGodMode },
+      sudoku: { sizeId: Number(sC.sizeId) || 9, diffId: sC.diffId || 'medium', allowWeapons: sC.allowWeapons !== false, allowGifts: sC.allowGifts !== false, allowYellowHint: !!sC.allowYellowHint, showNumbersInGodMode: !!sC.showNumbersInGodMode, allowQuickFill: !!sC.allowQuickFill, allowTraversal: !!sC.allowTraversal, weaponStartTime: (function () { var w = Number(sC.weaponStartTime); return isNaN(w) ? 60 : Math.max(0, Math.min(600, w)); })() },
       hashi: { sizeId: Number(hC.sizeId) || 2, itemsEnabled: hC.itemsEnabled !== false, godNumbers: hC.godNumbers !== false },
       roundSecs: Number($('t-secs').value), totalRounds: Number(($('t-rounds') || {}).value) || 5, rounds: null,
       entrants: Net.roster.map(function (p) { return { pid: p.pid, uid: p.uid || p.pid, name: p.name, color: p.color }; }) };

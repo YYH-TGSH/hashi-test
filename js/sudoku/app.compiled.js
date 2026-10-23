@@ -2450,6 +2450,10 @@ function SudokuGame() {
     }, 300);
   };
   var handleBackToLobby = function handleBackToLobby() {
+    if (platHubRef.current) {
+      if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
+      return;
+    } // 平台房間框架：回等待室＝回殼的房間頁（房主帶全員、來賓只回自己）
     if (isMultiplayer && !isHostRef.current && engineRef.current === 'peerjs') {
       if (connRef.current) connRef.current.send({
         type: 'REQ_PLAY_AGAIN'
@@ -3836,10 +3840,11 @@ function SudokuGame() {
       isSpectator: false
     }]);
   };
-  var handleGoHome = function handleGoHome() {
+  var handleGoHome = function handleGoHome(platLeave) {
     dailyRef.current = null;
     setDailyDate(null);
-    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
+    // platLeave==='leave'：連線模式個人退出（只有自己回大廳、其他人繼續、房主退出由殼接管）；其餘走舊語義（房主帶全員回等待室）
+    if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY(platLeave === 'leave' ? 'player-leave' : 'game-exit');
     if (engineRef.current === 'peerjs') {
       if (!isHostRef.current && connRef.current) {
         connRef.current.send({
@@ -5362,11 +5367,6 @@ function SudokuGame() {
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        if (window.PLAT_show) window.PLAT_show('lobby');
-      },
-      className: "w-full py-4 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
-    }, "\uD83C\uDF10 \u591A\u4EBA\u9023\u7DDA"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
         return startDailyGame(dailyPickDate);
       },
       className: "w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
@@ -5552,7 +5552,7 @@ function SudokuGame() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-black text-xl text-[#2d2a26] mb-4"
-  }, "\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F"), /*#__PURE__*/React.createElement("button", {
+  }, "\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F"), typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND() && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
       if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
@@ -5561,10 +5561,16 @@ function SudokuGame() {
   }, "\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
-      handleGoHome();
+      handleBackToLobby();
     },
     className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
-  }, "\uD83D\uDD0C \u9000\u51FA\u5C0D\u5C40"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setShowExitMenu(false);
+      handleGoHome('leave');
+    },
+    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+  }, "\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowExitMenu(false);
     },
@@ -5886,7 +5892,8 @@ function SudokuGame() {
     className: "hidden sm:inline"
   }, "\u5B58\u6A94")), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
-      if (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
+      var N = typeof window !== 'undefined' ? window.__PLAT_NET : null;
+      if (N && N.inMatch === 'sudoku' || typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
     },
     className: "bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
     title: "\u56DE\u9996\u9801/\u65B7\u7DDA"
