@@ -4411,6 +4411,20 @@ function SudokuGame() {
     if (!window.__PLAT_PLATFORM) return;
     window.__PLAT_HOOKS_sudoku = {
       enter: function enter(sess) {
+        // 開新局先清掉上一局的結算暫存（同數橋）：贏家/完賽名單/比賽階段全歸零，免得舊結算在新局重播
+        setWinner(null);
+        setIsWon(false);
+        setEndTime(null);
+        isWinnerDeclaredRef.current = false;
+        setBrawlWinners([]);
+        setHideVictoryModal(false);
+        resultsDismissRef.current = null;
+        setResultsDismissedUi(false);
+        setLeaveArm(false);
+        setMatchPhase('waiting');
+        stateRef.current = _objectSpread(_objectSpread({}, stateRef.current), {}, {
+          matchPhase: 'waiting'
+        });
         setPlatTournLock(!!sess.tourn);
         platTournLockRef.current = !!sess.tourn;
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;

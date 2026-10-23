@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.12.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.12.3'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -442,7 +442,7 @@
   function hubRacers() { return Net.roster.slice(); } // 房間頁不分觀戰：進房的都是選手（觀戰是對局內的事）
   function hubSpec() {
     var H = ensureHub();
-    var game = Net.armed.game, c = H.cfg[game];
+    var game = Net.armed.game, c = H.cfg[game] || hubDefaults()[game] || hubDefaults().sudoku; // cfg 缺遊戲（舊版存檔/異常狀態）也不能讓房間頁掛掉
     var brawl = c.mode === 'brawl' || c.mode === 'race';
     var racers = hubRacers();
     var allReady = racers.length > 0 && racers.every(function (p) { return !!H.ready[p.uid || p.pid]; });
@@ -497,7 +497,7 @@
   function hubSettingsHtml() {
     var H = ensureHub();
     if (Net.roomTab === 'tourn') return '';
-    var game = Net.armed.game, c = H.cfg[game];
+    var game = Net.armed.game, c = H.cfg[game] || hubDefaults()[game] || hubDefaults().sudoku;
     var h = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 flex flex-col gap-2.5 text-left shadow-[4px_4px_0px_#1e293b]">';
     h += '<h3 class="font-black border-b-2 border-slate-100 pb-2">⚙️ 對局設定' + (Net.isHost ? '' : '（房主設定）') + '</h3>';
     h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">模式</span>' + hubModeBtns(game, 'coop', c.mode) + hubModeBtns(game, game === 'hashi' ? 'race' : 'brawl', c.mode) + '</div>';

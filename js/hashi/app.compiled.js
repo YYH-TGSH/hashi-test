@@ -3354,6 +3354,13 @@ function HashiGame() {
     if (!PLAT_MODE) return;
     window.__PLAT_HOOKS_hashi = {
       enter: function enter(sess) {
+        // 開新局先清掉上一局的結算暫存：raceState 若停在 finished＋舊 raceResult，結算 effect 會在新局一進去就重播舊結果（錦標賽結束後再開大亂鬥實機踩到）
+        setRaceState('idle');raceStateRef.current = 'idle';
+        setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
+        raceResultsRef.current = {};myFinishTimeRef.current = null;
+        resultsDismissRef.current = null;setResultsDismissedUi(false);setLeaveArm(false);
+        setBrawlBoards({});setGodViewUid(null);
+        setIsWon(false);setEndTime(null);resetWinMeta();
         setPlatTournLock(!!sess.tourn);
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         setPlatHub(!!sess.hub);platHubRef.current = !!sess.hub;
