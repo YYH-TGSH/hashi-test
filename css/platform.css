@@ -45,34 +45,7 @@ body[data-view="lobby"] {
   margin: 0; padding: 0;
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
-/* Phase C：殼 dock（聊天/視訊/喇叭/大廳） */
-#plat-dock {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 99990;
-  height: calc(54px + env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: row; align-items: flex-start; justify-content: center; gap: 14px;
-  background: transparent; border-top: none;
-  box-shadow: none; padding: 5px 10px 0;
-}
-/* 遊戲畫面裡 strip 隱藏：按鈕改由遊戲畫進自己的底部列（同排同款） */
-body[data-view="hashi"] #plat-dock, body[data-view="sudoku"] #plat-dock { display: none !important; }
-/* dock 顯示時，遊戲/大廳畫面自動讓出底部 54px */
-body.dock-on .plat-view.active { height: calc(100dvh - 54px - env(safe-area-inset-bottom, 0px)); }
-body.dock-on #view-home.active, body.dock-on #view-lobby.active { overflow-y: auto; }
-body.dock-on #view-sudoku.active, body.dock-on #view-hashi.active { height: auto; }
-#plat-dock button {
-  position: relative; width: 44px; height: 44px; border-radius: 14px;
-  background: #fff; border: 3px solid #1e293b; font-size: 20px;
-  box-shadow: 3px 3px 0 #1e293b; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-#plat-dock button:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(30,41,59,1); }
-#plat-dock button.on { background: #1e293b; color: #fff; }
-#plat-dock .dock-label { position: absolute; bottom: 2px; right: 5px; font-size: 8px; font-weight: 900; }
-#dock-chat-badge {
-  position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: 9999px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 900;
-  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
-}
+/* v1.12.5：下方正方形 dock 條已刪除——聊天/視訊/離開房間統一在 PlatRoom 卡片內（膠囊＋離開鈕） */
 /* 視訊圓形頭像條（右側直排） */
 #plat-videos {
   position: fixed; inset: 0; z-index: 99989; pointer-events: none;

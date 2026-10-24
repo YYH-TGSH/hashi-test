@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.12.4'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = "1.12.5";
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -1205,8 +1205,15 @@
   }
   function tournCheckDone() {
     var t = Net.tourn; if (!t || t.settled) return;
+    var anyFinished = t.finishOrder.length > 0;
     var done = t.entrants.every(function (e) {
       if (t.finishOrder.indexOf(e.uid) >= 0) return true;
+      // 未到者不擋結算（使用者 2026-10-24 規則）：本局從未進場（entered ack 非本局）且無任何進度流量，
+      // 而其他人已完賽時視同了結——結算時他以進度 0 排最後；中途加入的權利只到結算發生前為止
+      if (anyFinished) {
+        var ack = (t.acks || {})[e.uid] || {};
+        if (ack.entered !== t.round && !(t.progress[e.uid] > 0)) return true;
+      }
       if (!t.disc[e.uid]) return false;
       // 斷線旗標只在本人真的不在房間時才算數：重連回來的選手還在玩，要等他完賽，不能提前結算
       var present = Net.roster.some(function (p) { return (p.uid || p.pid) === e.uid || p.pid === e.pid; });
@@ -1256,10 +1263,10 @@
         });
       } else rescueTournNodes();
     }
-    var ro = prRegion('roster'), ct = prRegion('controls'), dk2 = prRegion('dock');
-    [ro, ct, dk2].forEach(function (n) { if (n) n.style.display = showTourn ? 'none' : ''; });
+    var ro = prRegion('roster'), ct = prRegion('controls');
+    [ro, ct].forEach(function (n) { if (n) n.style.display = showTourn ? 'none' : ''; });
     if (PR.slot) PR.slot.style.display = showTourn ? 'none' : '';
-    var lv = PR.el.querySelector('[data-pr="leave"]'); if (lv) lv.style.display = showTourn ? 'none' : '';
+    // 錦標賽分頁也要有卡片內的聊天/視訊膠囊＋離開房間（跟兩款遊戲等待室同款、使用者指示）：dock 與 leave 不隨分頁隱藏
     if (ro && ro.previousElementSibling) ro.previousElementSibling.style.display = showTourn ? 'none' : '';
     if (!tabsRg) return;
     var t = Net.tourn;
@@ -1517,16 +1524,9 @@
 
   // ---------- 視訊（v2.18 禮儀：麥克風預設關、喇叭預設關、發言提示） ----------
   function updateDock() {
-    var dock = $('plat-dock'); if (!dock) return;
-    dock.style.display = (Net.active && document.body.getAttribute('data-view') === 'lobby') ? 'flex' : 'none'; // strip 只留在大廳：回主頁也要收掉（遊戲畫面由 CSS 隱藏、遊戲自繪膠囊）
-    document.body.classList.toggle('dock-on', !!Net.active);
+    // v1.12.5：下方正方形 dock 條已刪（使用者指示）——聊天/視訊/離開房間統一收進 PlatRoom 卡片內的膠囊＋離開鈕（房間頁全分頁，含錦標賽）
     window.__PLAT_SESSION_ACTIVE = !!Net.active;
     if (window.PlatDock) window.PlatDock._emit();
-    var v = $('dock-video'); v.className = Net.videoOn ? 'on' : ''; v.textContent = Net.videoOn ? '📹' : '🎥';
-    var mic = $('dock-mic'); mic.style.display = Net.videoOn ? 'flex' : 'none'; mic.textContent = Net.micMuted ? '🔇' : '🎤'; mic.className = Net.micMuted ? '' : 'on';
-    var sp = $('dock-speaker');
-    sp.style.display = (Net.videoOn || Object.keys(Net.remoteStreams).length > 0) ? 'flex' : 'none';
-    sp.textContent = Net.speakerOn ? '🔊' : '🔈'; sp.className = Net.speakerOn ? 'on' : '';
   }
   window.__PLAT_UPDATE_DOCK = updateDock;
   // 遊戲內底部列的平台按鈕 API（💬/🎥/🎤/🔈/回大廳）：遊戲在平台模式＋連線中時
@@ -2357,17 +2357,6 @@
       else createRoom();
     };
     var tStartBtn = $('t-start'); if (tStartBtn) tStartBtn.onclick = tournCreate;
-    $('dock-chat').onclick = function () { Net.chatOpen ? closeChat() : openChat(); };
-    $('dock-video').onclick = toggleVideo;
-    $('dock-mic').onclick = toggleMic;
-    $('dock-speaker').onclick = toggleSpeaker;
-    $('dock-lobby').onclick = function () {
-      if (Net.inMatch) {
-        var g = Net.inMatch;
-        if (Net.isHost) { platBroadcast({ kind: 'return' }); doReturnToLobby(); }
-        else { Net.inMatch = null; exitGameHook(g); window.PLAT_show('lobby'); renderLobby(); }
-      } else window.PLAT_show('lobby');
-    };
     $('plat-chat-close').onclick = function (e) { e.stopPropagation(); closeChat(); };
     $('plat-chat-min').onclick = function (e) {
       e.stopPropagation();
