@@ -1068,6 +1068,18 @@ function HashiGame() {
       dailyMenuDate = _useState194[0],
       setDailyMenuDate = _useState194[1];
 
+  var _useState195 = useState(false),
+      _useState196 = _slicedToArray(_useState195, 2),
+      showDailyCal = _useState196[0],
+      setShowDailyCal = _useState196[1];
+
+  var _useState197 = useState(function () {
+    return HASHI_PUZZLE.getDailyDateStr().slice(0, 7);
+  }),
+      _useState198 = _slicedToArray(_useState197, 2),
+      dailyCalYM = _useState198[0],
+      setDailyCalYM = _useState198[1];
+
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
     return getDailyStatus(dailyMenuDate);
@@ -1099,22 +1111,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState195 = useState(false),
-      _useState196 = _slicedToArray(_useState195, 2),
-      zoomOpen = _useState196[0],
-      setZoomOpen = _useState196[1];
+  var _useState199 = useState(false),
+      _useState200 = _slicedToArray(_useState199, 2),
+      zoomOpen = _useState200[0],
+      setZoomOpen = _useState200[1];
 
-  var _useState197 = useState(false),
-      _useState198 = _slicedToArray(_useState197, 2),
-      drawSubOpen = _useState198[0],
-      setDrawSubOpen = _useState198[1];
+  var _useState201 = useState(false),
+      _useState202 = _slicedToArray(_useState201, 2),
+      drawSubOpen = _useState202[0],
+      setDrawSubOpen = _useState202[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState199 = useState(0),
-      _useState200 = _slicedToArray(_useState199, 2),
-      dockTick = _useState200[0],
-      setDockTick = _useState200[1];
+  var _useState203 = useState(0),
+      _useState204 = _slicedToArray(_useState203, 2),
+      dockTick = _useState204[0],
+      setDockTick = _useState204[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -3011,6 +3023,125 @@ function HashiGame() {
     setIsHeaderCollapsed(true);
   };
 
+  // ===== 📅 每日一題月曆（亮燈=已完成、未來反灰不可選；點日期直接開那天的題目） =====
+  var renderDailyCalendar = function renderDailyCalendar() {
+    if (!showDailyCal) return null;
+    var todayStr = HASHI_PUZZLE.getDailyDateStr();
+    var todayYM = todayStr.slice(0, 7);
+    var ym = dailyCalYM < '2026-01' ? '2026-01' : dailyCalYM > todayYM ? todayYM : dailyCalYM;
+    var cy = parseInt(ym.slice(0, 4), 10),
+        cm = parseInt(ym.slice(5, 7), 10) - 1;
+    var firstDow = new Date(cy, cm, 1).getDay();
+    var daysInMonth = new Date(cy, cm + 1, 0).getDate();
+    var shiftYM = function shiftYM(delta) {
+      var d = new Date(cy, cm + delta, 1);return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    };
+    var cells = [];
+    for (var i = 0; i < firstDow; i++) {
+      cells.push(null);
+    }for (var day = 1; day <= daysInMonth; day++) {
+      var ds = ym + '-' + String(day).padStart(2, '0');
+      cells.push({ ds: ds, day: day, future: ds > todayStr, done: !!readDailyRecord(ds), today: ds === todayStr, picked: ds === dailyMenuDate });
+    }
+    var pickDay = function pickDay(ds) {
+      setShowDailyCal(false);setDailyMenuDate(ds);startDailyMode(ds);
+    };
+    var navBtn = "w-9 h-9 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none";
+    return React.createElement(
+      'div',
+      { className: 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4', onClick: function onClick() {
+          return setShowDailyCal(false);
+        } },
+      React.createElement(
+        'div',
+        { className: 'bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-sm p-5', onClick: function onClick(e) {
+            return e.stopPropagation();
+          } },
+        React.createElement(
+          'div',
+          { className: 'flex items-center justify-between mb-3' },
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setDailyCalYM(shiftYM(-1));
+              }, disabled: ym <= '2026-01', className: navBtn },
+            '\u25C0'
+          ),
+          React.createElement(
+            'div',
+            { className: 'font-black text-xl text-slate-800' },
+            '\uD83D\uDCC5 ',
+            cy,
+            ' \u5E74 ',
+            cm + 1,
+            ' \u6708'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setDailyCalYM(shiftYM(1));
+              }, disabled: ym >= todayYM, className: navBtn },
+            '\u25B6'
+          )
+        ),
+        React.createElement(
+          'div',
+          { className: 'grid grid-cols-7 gap-1 mb-1' },
+          ['日', '一', '二', '三', '四', '五', '六'].map(function (w) {
+            return React.createElement(
+              'div',
+              { key: w, className: 'text-center font-black text-xs text-slate-400 py-1' },
+              w
+            );
+          })
+        ),
+        React.createElement(
+          'div',
+          { className: 'grid grid-cols-7 gap-1' },
+          cells.map(function (c, i) {
+            if (!c) return React.createElement('div', { key: 'b' + i });
+            var cls = 'relative h-11 rounded-lg font-black text-sm flex items-center justify-center border-2 ';
+            if (c.future) cls += 'bg-slate-100 text-slate-300 border-transparent cursor-not-allowed';else if (c.done) cls += 'bg-[#4ade80] text-slate-900 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none';else if (c.today) cls += 'bg-white text-slate-800 border-slate-800 ring-2 ring-inset ring-slate-800 active:translate-y-0.5';else if (c.picked) cls += 'bg-sky-100 text-slate-800 border-sky-500 active:translate-y-0.5';else cls += 'bg-white text-slate-600 border-slate-200 active:translate-y-0.5';
+            return React.createElement(
+              'button',
+              { key: c.ds, disabled: c.future, onClick: function onClick() {
+                  return pickDay(c.ds);
+                }, className: cls },
+              c.day,
+              c.done ? React.createElement(
+                'span',
+                { className: 'absolute top-0 right-1 text-[9px]' },
+                '\u2713'
+              ) : null,
+              c.today && !c.done ? React.createElement(
+                'span',
+                { className: 'absolute bottom-0 right-1 text-[8px] text-slate-400' },
+                '\u4ECA\u5929'
+              ) : null
+            );
+          })
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex items-center justify-between mt-4' },
+          React.createElement(
+            'span',
+            { className: 'text-xs font-bold text-slate-500' },
+            React.createElement('span', { className: 'inline-block w-3 h-3 rounded-sm bg-[#4ade80] border border-slate-800 align-middle mr-1' }),
+            '\u4EAE\u71C8\uFF1D\u5DF2\u5B8C\u6210\u30FB\u7070\u8272\uFF1D\u9084\u6C92\u5230'
+          ),
+          React.createElement(
+            'button',
+            { onClick: function onClick() {
+                return setShowDailyCal(false);
+              }, className: 'px-4 py-2 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none' },
+            '\u95DC\u9589'
+          )
+        )
+      )
+    );
+  };
+
   // ===== 🎰 暱稱拉霸機（只給沒手動填暱稱的玩家） =====
   var spinSlot = function spinSlot(pool) {
     if (slotTimerRef.current) {
@@ -3311,31 +3442,31 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState201 = useState(false),
-      _useState202 = _slicedToArray(_useState201, 2),
-      platTournLock = _useState202[0],
-      setPlatTournLock = _useState202[1];
+  var _useState205 = useState(false),
+      _useState206 = _slicedToArray(_useState205, 2),
+      platTournLock = _useState206[0],
+      setPlatTournLock = _useState206[1];
 
-  var _useState203 = useState(false),
-      _useState204 = _slicedToArray(_useState203, 2),
-      platHub = _useState204[0],
-      setPlatHub = _useState204[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+  var _useState207 = useState(false),
+      _useState208 = _slicedToArray(_useState207, 2),
+      platHub = _useState208[0],
+      setPlatHub = _useState208[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
 
 
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
 
-  var _useState205 = useState(null),
-      _useState206 = _slicedToArray(_useState205, 2),
-      tournRoundInfo = _useState206[0],
-      setTournRoundInfo = _useState206[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState209 = useState(null),
+      _useState210 = _slicedToArray(_useState209, 2),
+      tournRoundInfo = _useState210[0],
+      setTournRoundInfo = _useState210[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
 
 
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
 
-  var _useState207 = useState(0),
-      _useState208 = _slicedToArray(_useState207, 2),
-      setTournTick = _useState208[1];
+  var _useState211 = useState(0),
+      _useState212 = _slicedToArray(_useState211, 2),
+      setTournTick = _useState212[1];
 
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
@@ -5096,9 +5227,14 @@ function HashiGame() {
                   }, disabled: dailyMenuDate <= MIN_DAILY_DATE, className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none' },
                 '\u25C0'
               ),
-              React.createElement('input', { type: 'date', value: dailyMenuDate, min: MIN_DAILY_DATE, max: HASHI_PUZZLE.getDailyDateStr(), onChange: function onChange(e) {
-                  return setDailyMenuDate(clampDailyDate(e.target.value));
-                }, className: 'border-2 border-slate-800 rounded-md px-1.5 py-1 font-bold text-sm bg-white text-slate-800 outline-none' }),
+              React.createElement(
+                'button',
+                { onClick: function onClick() {
+                    setDailyCalYM(dailyMenuDate.slice(0, 7));setShowDailyCal(true);
+                  }, className: 'border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none' },
+                '\uD83D\uDCC5 ',
+                dailyMenuDate
+              ),
               React.createElement(
                 'button',
                 { onClick: function onClick() {
@@ -5141,7 +5277,8 @@ function HashiGame() {
         'Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.',
         ' (v' + (window.PLAT_VERSION || '2.18') + ')'
       ),
-      tutorialOverlay
+      tutorialOverlay,
+      renderDailyCalendar()
     );
   }
 
