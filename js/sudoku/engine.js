@@ -12,8 +12,9 @@ const SIZES = [
 ];
 const DIFFICULTIES = [
     { id: 'easy', name: "🟢 簡單", targets: { 4: [9, 12], 9: [40, 45], 16: [140, 150] } },
-    { id: 'medium', name: "🟡 普通", targets: { 4: [6, 7], 9: [27, 32], 16: [100, 120] } },
-    { id: 'hard', name: "🔴 困難", targets: { 4: [3, 4], 9: [20, 22], 16: [70, 85] } }
+    { id: 'medium', name: "🟡 普通", targets: { 4: [6, 7], 9: [27, 32], 16: [105, 120] } },
+    // 16×16 困難原訂 70–85 格：隨機挖洞＋唯一解驗證在 30 秒內不可達（實測高原 ~104 格），每局必磨滿 30 秒；校準到 98–108（仍有 148+ 洞）
+    { id: 'hard', name: "🔴 困難", targets: { 4: [3, 4], 9: [20, 22], 16: [98, 108] } }
 ];
 
 const BASE_4 = [[0, 1, 2, 3], [2, 3, 0, 1], [1, 0, 3, 2], [3, 2, 1, 0]];
@@ -53,49 +54,53 @@ function getSolutionGrid(puzzleCells, sizeDef) {
     return null;
 }
 
-function countSolutions(grid, size, boxW, boxH, limit = 2) {
+// 唯一解驗證（位元遮罩版）：budget = { deadline } 時，超過期限中止並回傳 -1（未知）——
+// 16×16 稀疏盤面單次驗證曾卡住主執行緒 100+ 秒（連線心跳全凍結＝雙方斷線），
+// 呼叫端把 -1 當「不是唯一解」處理（補回洞口），題目正確性不受影響、只是少挖一點。
+function countSolutions(grid, size, boxW, boxH, limit = 2, budget = null) {
     let count = 0;
-    const getCandidates = (y, x) => {
-        let used = new Array(size).fill(false);
-        for (let i = 0; i < size; i++) {
-            if (grid[y][i] !== null) used[grid[y][i]] = true;
-            if (grid[i][x] !== null) used[grid[i][x]] = true;
-        }
-        const by = Math.floor(y / boxH) * boxH;
-        const bx = Math.floor(x / boxW) * boxW;
-        for (let dy = 0; dy < boxH; dy++) {
-            for (let dx = 0; dx < boxW; dx++) {
-                let val = grid[by + dy][bx + dx];
-                if (val !== null) used[val] = true;
-            }
-        }
-        let candidates = [];
-        for (let v = 0; v < size; v++) if (!used[v]) candidates.push(v);
-        return candidates;
-    };
+    const fullMask = (1 << size) - 1;
+    const rowMask = new Array(size).fill(0), colMask = new Array(size).fill(0), boxMask = new Array(size).fill(0);
+    const boxesPerRow = size / boxW;
+    const boxIdx = (y, x) => Math.floor(y / boxH) * boxesPerRow + Math.floor(x / boxW);
+    const empties = [];
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const v = grid[y][x];
+        if (v === null || v === undefined) empties.push(y * size + x);
+        else { const bit = 1 << v; rowMask[y] |= bit; colMask[x] |= bit; boxMask[boxIdx(y, x)] |= bit; }
+    }
+    let nodes = 0, aborted = false;
+    const popcount = (m) => { let c = 0; while (m) { m &= m - 1; c++; } return c; };
 
     const solve = () => {
-        let minCandidates = size + 1;
-        let bestY = -1; let bestX = -1; let bestCand = null;
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                if (grid[y][x] === null) {
-                    const cands = getCandidates(y, x);
-                    if (cands.length === 0) return false;
-                    if (cands.length < minCandidates) { minCandidates = cands.length; bestY = y; bestX = x; bestCand = cands; if (minCandidates === 1) break; }
-                }
-            }
-            if (minCandidates === 1) break;
+        if (budget) { if ((++nodes & 511) === 0 && Date.now() > budget.deadline) { aborted = true; return true; } }
+        // MRV：挑候選最少的空格
+        let bestI = -1, bestMask = 0, bestCount = size + 1;
+        for (let i = 0; i < empties.length; i++) {
+            const pos = empties[i]; if (pos < 0) continue;
+            const y = (pos / size) | 0, x = pos % size;
+            const mask = fullMask & ~(rowMask[y] | colMask[x] | boxMask[boxIdx(y, x)]);
+            const c = popcount(mask);
+            if (c === 0) return false;
+            if (c < bestCount) { bestCount = c; bestI = i; bestMask = mask; if (c === 1) break; }
         }
-        if (bestY === -1) { count++; return count >= limit; }
-        for (let i = 0; i < bestCand.length; i++) {
-            grid[bestY][bestX] = bestCand[i];
-            if (solve()) { grid[bestY][bestX] = null; return true; }
-            grid[bestY][bestX] = null;
+        if (bestI === -1) { count++; return count >= limit; }
+        const pos = empties[bestI], y = (pos / size) | 0, x = pos % size, b = boxIdx(y, x);
+        empties[bestI] = -1;
+        let m = bestMask;
+        while (m) {
+            const bit = m & -m; m &= m - 1;
+            rowMask[y] |= bit; colMask[x] |= bit; boxMask[b] |= bit;
+            const done = solve();
+            rowMask[y] &= ~bit; colMask[x] &= ~bit; boxMask[b] &= ~bit;
+            if (done) { empties[bestI] = pos; return true; }
+            if (aborted) { empties[bestI] = pos; return true; }
         }
+        empties[bestI] = pos;
         return false;
     };
-    solve(); return count;
+    solve();
+    return aborted ? -1 : count;
 }
 
 async function generateSudokuAsync(sizeId, diffId, onProgress) {
@@ -114,6 +119,8 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         if (isTimedOut) break;
+        // 16×16 單次嘗試上限 8 秒：挖到高原期（怎麼挖都破壞唯一解）就換新盤重挖，別把全域 30 秒磨在一張盤上
+        const attemptDeadline = Date.now() + 8000;
 
         let grid = (size === 4 ? BASE_4 : size === 9 ? BASE_9 : BASE_16).map(row => [...row]);
         const charPool = [...chars]; charPool.sort(() => Math.random() - 0.5);
@@ -137,6 +144,7 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
 
         for (let i = 0; i < maxCheckHoles; i++) {
             const now = Date.now();
+            if (size === 16 && now > attemptDeadline) break; // 本次嘗試放棄，交給下一次嘗試（bestResult 已保留最佳盤）
             const elapsedSecs = Math.floor((now - generationStartTime) / 1000);
 
             if (elapsedSecs >= 20) {
@@ -155,7 +163,11 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
                 if (p1.x !== p2.x || p1.y !== p2.y) { puzzle[p2.y][p2.x] = null; testGrid[p2.y][p2.x] = null; removed = 2; }
                 const testNumGrid = testGrid.map(row => row.map(v => v === null ? null : chars.indexOf(v)));
 
-                if (countSolutions(testNumGrid, size, boxW, boxH, 2) !== 1) {
+                // 單次驗證預算（超時回 -1（≠1）→ 補回洞口；主執行緒不再被單次驗證長卡，連線心跳不中斷）：
+                // 淺處 300ms 求快，深處（接近目標格數）放寬到 2 秒把驗證算完，避免困難 16×16 永遠挖不到底
+                const holesLeft = currentClues - targetClues;
+                const checkBudgetMs = size !== 16 ? 300 : (holesLeft > 40 ? 250 : (holesLeft > 15 ? 600 : 1200));
+                if (countSolutions(testNumGrid, size, boxW, boxH, 2, { deadline: Date.now() + checkBudgetMs }) !== 1) {
                     puzzle[p1.y][p1.x] = backup1; testGrid[p1.y][p1.x] = backup1;
                     if (removed === 2) { puzzle[p2.y][p2.x] = backup2; testGrid[p2.y][p2.x] = backup2; }
                     failCount++;
