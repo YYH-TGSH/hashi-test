@@ -3043,6 +3043,9 @@ function HashiGame() {
       var ds = ym + '-' + String(day).padStart(2, '0');
       cells.push({ ds: ds, day: day, future: ds > todayStr, done: !!readDailyRecord(ds), today: ds === todayStr, picked: ds === dailyMenuDate });
     }
+    while (cells.length < 42) {
+      cells.push(null);
+    } // 每月一律 6 列：卡片高度固定，切換月份時 ◀ ▶ 不會上下跑
     var pickDay = function pickDay(ds) {
       setShowDailyCal(false);setDailyMenuDate(ds);startDailyMode(ds);
     };
@@ -3099,7 +3102,7 @@ function HashiGame() {
           'div',
           { className: 'grid grid-cols-7 gap-1' },
           cells.map(function (c, i) {
-            if (!c) return React.createElement('div', { key: 'b' + i });
+            if (!c) return React.createElement('div', { key: 'b' + i, className: 'h-11' });
             var cls = 'relative h-11 rounded-lg font-black text-sm flex items-center justify-center border-2 ';
             if (c.future) cls += 'bg-slate-100 text-slate-300 border-transparent cursor-not-allowed';else if (c.done) cls += 'bg-[#4ade80] text-slate-900 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none';else if (c.today) cls += 'bg-white text-slate-800 border-slate-800 ring-2 ring-inset ring-slate-800 active:translate-y-0.5';else if (c.picked) cls += 'bg-sky-100 text-slate-800 border-sky-500 active:translate-y-0.5';else cls += 'bg-white text-slate-600 border-slate-200 active:translate-y-0.5';
             return React.createElement(
