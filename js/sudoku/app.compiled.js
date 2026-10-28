@@ -1104,6 +1104,18 @@ function SudokuGame() {
     });
   }, [cells, localCells, levelData, startTime, sizeId, diffId, strokes, isBrawlMode, brawlWinners, brawlSettings, winner, matchPhase, countdownTarget, keyMapping, unopenedGifts, myWeapons, ghostHints, finishViewMode]);
 
+  // 🏁 我完賽 → 自動轉上帝模式（使用者 2026-10-28）：不用按鈕、不怕成績卡關掉就打不開；每場只自動切一次，之後手動切回「我的版面」不再強迫
+  var autoGodRef = useRef(false);
+  useEffect(function () {
+    if (!isBrawlMode || finishViewMode !== 'my' || autoGodRef.current) return;
+    if (!brawlWinners.some(function (w) {
+      return w.id === myId;
+    })) return;
+    autoGodRef.current = true;
+    setFinishViewMode('god');
+    toggleSpectator(myId, true, true);
+  }, [brawlWinners, isBrawlMode, finishViewMode]);
+
   // 連線超時處理 (v3.8.14)
   useEffect(function () {
     var timer;
@@ -4400,6 +4412,7 @@ function SudokuGame() {
       }
     }
     setIsSpectator(false);
+    autoGodRef.current = false; // 新局：重置「完賽自動轉上帝」的一次性旗標
     syncState({
       isGenerating: true,
       isBrawlMode: isBrawl,

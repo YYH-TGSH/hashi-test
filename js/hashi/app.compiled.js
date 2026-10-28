@@ -2770,8 +2770,11 @@ function HashiGame() {
       resultsDismissRef.current = raceState;
       setResultsDismissedUi(true);
       window.PlatResults.hide();
-      var opps = Object.keys(brawlBoards);
-      if (opps.length) setGodViewUid(opps[0]);
+      // 等待態（我已完賽）：畫面已自動轉上帝視角面板（raceWaiting），關卡即可，不用再開 modal；
+      // 全場結算態：維持開 modal 看盤面
+      if (raceState === 'finished') {
+        var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
+      }
     };
     if (fin) {
       var iFinished = raceResult.entries.some(function (e) {
@@ -4385,7 +4388,7 @@ function HashiGame() {
     }
     if (!maybeFinalize()) {
       setRaceWaiting(true);
-      showToast("⏳ 你完成了！等待對手...");
+      showToast("🏁 你完成了！已自動轉為上帝模式觀戰");
     }
   };
 
@@ -6583,7 +6586,7 @@ function HashiGame() {
             )
           )
         ) : null,
-        raceState === 'spectating' && React.createElement(
+        (raceState === 'spectating' || inRace && raceWaiting) && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
           React.createElement(
@@ -6595,7 +6598,7 @@ function HashiGame() {
               React.createElement(
                 'h2',
                 { className: 'text-2xl font-black text-[#2d2a26]' },
-                '\uD83D\uDC41\uFE0F \u89C0\u6230\u4E2D'
+                raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'
               ),
               React.createElement(
                 'span',
@@ -6606,7 +6609,9 @@ function HashiGame() {
             React.createElement(
               'div',
               { className: 'flex gap-1.5 mb-3 flex-wrap' },
-              raceRacers.map(function (uid) {
+              raceRacers.filter(function (uid) {
+                return raceState === 'spectating' || uid !== myId;
+              }).map(function (uid) {
                 var p = playersList.find(function (x) {
                   return x.id === uid;
                 });
@@ -6662,18 +6667,6 @@ function HashiGame() {
             'span',
             { className: 'px-2 py-1 bg-purple-100/95 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs shadow' },
             '\u2753 \u5E7B\u5F71\u4E2D'
-          )
-        ),
-        inRace && raceWaiting && raceState === 'racing' && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(
-          'div',
-          { className: 'absolute top-2 left-1/2 -translate-x-1/2 z-[58] bg-slate-800 text-white px-5 py-2 rounded-full font-black border-[3px] border-white shadow-lg animate-pulse whitespace-nowrap' },
-          '\u23F3 \u7B49\u5F85\u5C0D\u624B\u5B8C\u6210... ',
-          React.createElement(
-            'button',
-            { onClick: function onClick() {
-                var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
-              }, className: 'underline ml-1' },
-            '\uD83D\uDC41\uFE0F \u8F49\u8B8A\u70BA\u4E0A\u5E1D\u6A21\u5F0F\uFF08\u89C0\u6230\uFF09'
           )
         ),
         inRace && raceState === 'finished' && raceResult && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(
