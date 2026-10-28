@@ -1,6 +1,6 @@
 // 平台殼：畫面切換 + 遊戲啟動（兩款 app 已由 build 預先編譯，點進去直接執行）
 (function () {
-  var booted = { sudoku: false, hashi: false };
+  var booted = { sudoku: false, hashi: false, mines: false };
   var statusEl = null;
   function status(msg) {
     if (!statusEl) statusEl = document.getElementById('plat-status-body');
@@ -73,19 +73,19 @@
       var N2 = window.__PLAT_NET;
       if (N2 && N2.active) {
         var fromView = document.body.getAttribute('data-view');
-        if ((fromView === 'sudoku' || fromView === 'hashi') && !N2.inMatch) N2.armed.game = fromView; // 從哪款按多人連線，房間頁就先停在那款的分頁
+        if ((fromView === 'sudoku' || fromView === 'hashi' || fromView === 'mines') && !N2.inMatch) N2.armed.game = fromView; // 從哪款按多人連線，房間頁就先停在那款的分頁
         if (N2.inMatch) { window.PLAT_show(N2.inMatch); return; }
         if (window.__PLAT_SHOW_HUB) { window.__PLAT_SHOW_HUB(); return; }
       }
     }
     currentView = name;
-    ['home', 'sudoku', 'hashi', 'lobby'].forEach(function (v) {
+    ['home', 'sudoku', 'hashi', 'mines', 'lobby'].forEach(function (v) {
       document.getElementById('view-' + v).classList.toggle('active', v === name);
     });
     document.body.setAttribute('data-view', name);
     if (window.__PLAT_UPDATE_DOCK) window.__PLAT_UPDATE_DOCK(); // updateDock 在另一個 IIFE：舊版直接寫函數名永遠是 undefined、dock 在回主頁時不會收
     if (name === 'lobby' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 進多人連線才探測房間存續（主畫面不放重連鈕）
-    if (name === 'sudoku' || name === 'hashi') {
+    if (name === 'sudoku' || name === 'hashi' || name === 'mines') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
     window.scrollTo(0, 0);
@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.13.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.14.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -122,7 +122,7 @@
   }
   var Net = {
     active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '',
-    armed: { game: (function () { try { var g = localStorage.getItem('plat_armed_game'); return (g === 'hashi' || g === 'sudoku') ? g : 'sudoku'; } catch (e) { return 'sudoku'; } })(), mode: 'coop' }, armedByGame: { sudoku: 'coop', hashi: 'coop' }, roomTab: 'sudoku',
+    armed: { game: (function () { try { var g = localStorage.getItem('plat_armed_game'); return (g === 'hashi' || g === 'sudoku' || g === 'mines') ? g : 'sudoku'; } catch (e) { return 'sudoku'; } })(), mode: 'coop' }, armedByGame: { sudoku: 'coop', hashi: 'coop', mines: 'coop' }, roomTab: 'sudoku',
     me: { name: '', color: PLAT_COLORS[2] },
     roster: [], conns: {}, gamePeer: null, inMatch: null,
     lastSeen: {}, hostSeen: 0, _lastPing: 0, _hostWarned: false,
@@ -414,10 +414,12 @@
   var HUB_SIZES = [{ id: 4, name: '4x4 幼幼班' }, { id: 9, name: '9x9 標準' }, { id: 16, name: '16x16 史詩' }];
   var HUB_DIFFS = [{ id: 'easy', name: '🟢 簡單' }, { id: 'medium', name: '🟡 普通' }, { id: 'hard', name: '🔴 困難' }];
   var HUB_LEVELS = [{ id: 1, name: '5x5 幼幼班' }, { id: 2, name: '10x10 標準' }, { id: 3, name: '10x20 手機直式' }, { id: 4, name: '15x15 魔王' }, { id: 5, name: '20x20 史詩' }, { id: 'custom', name: '⚙️ 自訂尺寸' }];
+  var HUB_MINES_SIZES = [{ id: 9, name: '9×9・10 雷' }, { id: 16, name: '16×16・40 雷' }];
   function hubDefaults() {
     return {
       sudoku: { mode: 'coop', sizeId: 9, diffId: 'medium', winnersCount: 3, allowWeapons: true, allowGifts: true, allowYellowHint: false, showNumbersInGodMode: false, allowOthersToPlayAgain: true, allowQuickFill: false, allowTraversal: false, weaponStartTime: 60 },
-      hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true, customW: 15, customH: 15 }
+      hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true, customW: 15, customH: 15 },
+      mines: { mode: 'coop', sizeId: 9 }
     };
   }
   function ensureHub() {
@@ -428,7 +430,7 @@
     return Net.hub;
   }
   function hubSaveCfg() { var H = ensureHub(); try { storeSet('plat_hub_cfg', JSON.stringify(H.cfg)); } catch (e) {} }
-  function hubAccent() { return Net.roomTab === 'tourn' ? '#f59e0b' : (Net.armed.game === 'hashi' ? '#4ade80' : '#ffcc00'); }
+  function hubAccent() { return Net.roomTab === 'tourn' ? '#f59e0b' : (Net.armed.game === 'hashi' ? '#4ade80' : (Net.armed.game === 'mines' ? '#f97316' : '#ffcc00')); }
   function hubGameMode(game) { var H = ensureHub(); return H.cfg[game].mode; }
   function hubStateBroadcast() { platBroadcast({ kind: 'hubstate', ready: ensureHub().ready, spec: ensureHub().spec }); }
   function hubCfgBroadcast(game) { platBroadcast({ kind: 'hubcfg', game: game, cfg: ensureHub().cfg[game] }); }
@@ -437,6 +439,7 @@
     if (game === 'sudoku') { var wt = Number(c.weaponStartTime); if (isNaN(wt)) wt = 60; wt = Math.max(0, Math.min(600, wt));
       return { mode: c.mode, sizeId: Number(c.sizeId) || 9, diffId: c.diffId || 'medium',
       brawl: { winnersCount: Number(c.winnersCount) || 3, allowWeapons: c.allowWeapons !== false, allowGifts: c.allowGifts !== false, allowYellowHint: !!c.allowYellowHint, showNumbersInGodMode: !!c.showNumbersInGodMode, allowOthersToPlayAgain: c.allowOthersToPlayAgain !== false, allowQuickFill: !!c.allowQuickFill, allowTraversal: !!c.allowTraversal, hideAnswers: true, weaponStartTime: wt } }; }
+    if (game === 'mines') return { mode: c.mode, sizeId: Number(c.sizeId) || 9, brawl: {} };
     return { mode: c.mode, sizeId: c.sizeId === 'custom' ? 'custom' : (Number(c.sizeId) || 2), customW: Math.max(5, Math.min(100, Number(c.customW) || 15)), customH: Math.max(5, Math.min(100, Number(c.customH) || 15)), brawl: { itemsEnabled: c.itemsEnabled !== false, godNumbers: c.godNumbers !== false } };
   }
   function hubRacers() { return Net.roster.slice(); } // 房間頁不分觀戰：進房的都是選手（觀戰是對局內的事）
@@ -478,7 +481,7 @@
   function hubModeBtns(game, mode, cur) {
     var dis = Net.isHost ? '' : ' disabled';
     var on = 'background:#1e293b;color:#fff';
-    return '<button data-hub-mode="' + mode + '" data-hub-game="' + game + '"' + dis + ' class="flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm" style="' + (cur === mode ? on : 'background:#f1f5f9;color:#64748b') + '">' + (mode === 'coop' ? '🤝 合作模式' : '⚔️ 大亂鬥模式') + '</button>';
+    return '<button data-hub-mode="' + mode + '" data-hub-game="' + game + '"' + dis + ' class="flex-1 px-2 py-2 rounded-lg border-2 border-slate-800 font-black text-sm" style="' + (cur === mode ? on : 'background:#f1f5f9;color:#64748b') + '">' + (mode === 'coop' ? '🤝 合作模式' : (game === 'mines' ? '⚔️ 競速模式' : '⚔️ 大亂鬥模式')) + '</button>';
   }
   function hubSel(game, key, val, opts) {
     var dis = Net.isHost ? '' : ' disabled';
@@ -500,7 +503,7 @@
     var game = Net.armed.game, c = H.cfg[game] || hubDefaults()[game] || hubDefaults().sudoku;
     var h = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 flex flex-col gap-2.5 text-left shadow-[4px_4px_0px_#1e293b]">';
     h += '<h3 class="font-black border-b-2 border-slate-100 pb-2">⚙️ 對局設定' + (Net.isHost ? '' : '（房主設定）') + '</h3>';
-    h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">模式</span>' + hubModeBtns(game, 'coop', c.mode) + hubModeBtns(game, game === 'hashi' ? 'race' : 'brawl', c.mode) + '</div>';
+    h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">模式</span>' + hubModeBtns(game, 'coop', c.mode) + hubModeBtns(game, game === 'sudoku' ? 'brawl' : 'race', c.mode) + '</div>';
     if (game === 'sudoku') {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">題目</span>' + hubSel('sudoku', 'sizeId', c.sizeId, HUB_SIZES) + hubSel('sudoku', 'diffId', c.diffId, HUB_DIFFS) + '</div>';
       if (c.mode === 'brawl') {
@@ -514,6 +517,10 @@
         h += hubChk('sudoku', 'showNumbersInGodMode', c.showNumbersInGodMode, '上帝視角顯示數字');
         h += hubChk('sudoku', 'allowOthersToPlayAgain', c.allowOthersToPlayAgain, '允許其他玩家按再來一局');
       }
+    } else if (game === 'mines') {
+      h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">盤面</span>' + hubSel('mines', 'sizeId', c.sizeId, HUB_MINES_SIZES) + '</div>';
+      if (c.mode === 'race') h += '<div class="text-xs font-bold text-slate-400">競速規則：同一個盤面各玩各的，最快排完的人贏；踩到雷直接出局，照當時進度排名。</div>';
+      else h += '<div class="text-xs font-bold text-slate-400">合作規則：共用同一個盤面一起排雷，踩到雷全隊失敗。</div>';
     } else {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">關卡</span>' + hubSel('hashi', 'sizeId', c.sizeId, HUB_LEVELS) + '</div>';
       if (String(c.sizeId) === 'custom') {
@@ -546,6 +553,7 @@
     set('ts-quick', H.cfg.sudoku.allowQuickFill, 1); set('ts-trav', H.cfg.sudoku.allowTraversal, 1); set('ts-wtime', H.cfg.sudoku.weaponStartTime);
     set('th-size', H.cfg.hashi.sizeId);
     set('th-items', H.cfg.hashi.itemsEnabled, 1); set('th-god', H.cfg.hashi.godNumbers, 1);
+    set('tm-size', H.cfg.mines.sizeId);
   }
   function hubRender() {
     if (!window.PlatRoom) return;
@@ -613,7 +621,7 @@
         return;
       }
       var tid = t.id || '';
-      var TKEYS = { 'ts-size': ['sudoku', 'sizeId', 0], 'ts-diff': ['sudoku', 'diffId', 0], 'ts-weapons': ['sudoku', 'allowWeapons', 1], 'ts-gifts': ['sudoku', 'allowGifts', 1], 'ts-yellow': ['sudoku', 'allowYellowHint', 1], 'ts-god': ['sudoku', 'showNumbersInGodMode', 1], 'ts-quick': ['sudoku', 'allowQuickFill', 1], 'ts-trav': ['sudoku', 'allowTraversal', 1], 'ts-wtime': ['sudoku', 'weaponStartTime', 0], 'th-size': ['hashi', 'sizeId', 0], 'th-items': ['hashi', 'itemsEnabled', 1], 'th-god': ['hashi', 'godNumbers', 1] };
+      var TKEYS = { 'ts-size': ['sudoku', 'sizeId', 0], 'ts-diff': ['sudoku', 'diffId', 0], 'ts-weapons': ['sudoku', 'allowWeapons', 1], 'ts-gifts': ['sudoku', 'allowGifts', 1], 'ts-yellow': ['sudoku', 'allowYellowHint', 1], 'ts-god': ['sudoku', 'showNumbersInGodMode', 1], 'ts-quick': ['sudoku', 'allowQuickFill', 1], 'ts-trav': ['sudoku', 'allowTraversal', 1], 'ts-wtime': ['sudoku', 'weaponStartTime', 0], 'th-size': ['hashi', 'sizeId', 0], 'th-items': ['hashi', 'itemsEnabled', 1], 'th-god': ['hashi', 'godNumbers', 1], 'tm-size': ['mines', 'sizeId', 0] };
       if (TKEYS[tid]) {
         var tk = TKEYS[tid];
         H2.cfg[tk[0]][tk[1]] = tk[2] ? t.checked : (isNaN(Number(t.value)) ? t.value : Number(t.value));
@@ -670,7 +678,7 @@
     var H = ensureHub();
     if (!H.enteredAt) H.enteredAt = Date.now();
     hubWire();
-    ['home', 'sudoku', 'hashi', 'lobby'].forEach(function (v) {
+    ['home', 'sudoku', 'hashi', 'mines', 'lobby'].forEach(function (v) {
       document.getElementById('view-' + v).classList.toggle('active', v === 'lobby');
     });
     document.body.setAttribute('data-view', 'lobby');
@@ -776,6 +784,7 @@
         platSend(c, { kind: 'hubstate', ready: ensureHub().ready, spec: ensureHub().spec });
         platSend(c, { kind: 'hubcfg', game: 'sudoku', cfg: ensureHub().cfg.sudoku });
         platSend(c, { kind: 'hubcfg', game: 'hashi', cfg: ensureHub().cfg.hashi });
+        platSend(c, { kind: 'hubcfg', game: 'mines', cfg: ensureHub().cfg.mines });
         if (Net.tourn) { platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() }); var tsm = tournStateMsg(); if (tsm) platSend(c, tsm); }
         if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined });
         renderLobby();
@@ -857,7 +866,7 @@
         }
         break;
       }
-      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
+      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
       case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
       case 'tourn-abort': tournClear(); renderLobby(); break;
     }
@@ -1109,7 +1118,8 @@
   // ---------- 混合大亂鬥賽程 PlatTourn（房主權威；嗅探遊戲訊息計分；設計見 phase-d-design.md） ----------
   var TOURN_PTS = [10, 7, 5, 3, 2];
   function tournPts(rank) { return rank <= 5 ? TOURN_PTS[rank - 1] : 1; }
-  function tournGameName(g) { return g === 'sudoku' ? '🔢 數獨' : '🌉 數橋'; }
+  function tournGameName(g) { return g === 'sudoku' ? '🔢 數獨' : (g === 'mines' ? '💣 踩地雷' : '🌉 數橋'); }
+  function tournGameLabel(g) { return tournGameName(g) + (g === 'mines' ? '競速' : '大亂鬥'); } // 地雷錦標賽是純競速（無道具），不叫大亂鬥
   function tournUidByName(name) {
     var t = Net.tourn; if (!t || !name) return null;
     var n = normName(name);
@@ -1132,38 +1142,42 @@
       brawl: { winnersCount: t.entrants.length, allowWeapons: t.sudoku.allowWeapons !== false, allowGifts: t.sudoku.allowGifts !== false, allowYellowHint: !!t.sudoku.allowYellowHint, showNumbersInGodMode: !!t.sudoku.showNumbersInGodMode, allowOthersToPlayAgain: true, allowQuickFill: !!t.sudoku.allowQuickFill, allowTraversal: !!t.sudoku.allowTraversal, hideAnswers: true, weaponStartTime: (t.sudoku.weaponStartTime == null ? 60 : t.sudoku.weaponStartTime) } };
     else if (t.curGame === 'hashi') settings = { mode: 'brawl', sizeId: t.hashi.sizeId,
       brawl: { itemsEnabled: t.hashi.itemsEnabled !== false, godNumbers: t.hashi.godNumbers !== false } };
+    else if (t.curGame === 'mines') settings = { mode: 'brawl', sizeId: t.mines.sizeId, brawl: {} };
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
       roster: t.entrants.map(function (e) { return { uid: e.uid, name: e.name, color: e.color }; }),
-      sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : t.hashi.sizeId, diffId: t.sudoku.diffId, roundSecs: t.roundSecs, settings: settings };
+      sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : (t.curGame === 'mines' ? t.mines.sizeId : t.hashi.sizeId), diffId: t.sudoku.diffId, roundSecs: t.roundSecs, settings: settings };
   }
   function tournBuildRounds(order, n) {
     n = n || 5;
     var rounds = [], i;
-    if (order === 'random') { for (i = 0; i < n; i++) rounds.push(Math.random() < 0.5 ? 'sudoku' : 'hashi'); return rounds; }
-    var first = order === 'alt-h' ? 'hashi' : 'sudoku', second = first === 'sudoku' ? 'hashi' : 'sudoku';
-    for (i = 0; i < n; i++) rounds.push(i % 2 === 0 ? first : second);
+    var games = ['sudoku', 'hashi', 'mines']; // 三款循環（數獨→數橋→地雷），以選定的起頭款為首
+    if (order === 'random') { for (i = 0; i < n; i++) rounds.push(games[Math.floor(Math.random() * 3)]); return rounds; }
+    var first = order === 'alt-h' ? 'hashi' : (order === 'alt-m' ? 'mines' : 'sudoku');
+    var start = games.indexOf(first);
+    for (i = 0; i < n; i++) rounds.push(games[(start + i) % 3]);
     return rounds;
   }
   // （v1.11.0 起錦標賽設定改讀房間框架的表單 hub cfg，不再讀各遊戲的等待室——遊戲在開賽前根本不載入）
   function tournPublicCfg() {
     var t = Net.tourn;
-    return { rounds: t.rounds, order: t.order, sudoku: t.sudoku, hashi: t.hashi, roundSecs: t.roundSecs, totalRounds: t.totalRounds, entrants: t.entrants };
+    return { rounds: t.rounds, order: t.order, sudoku: t.sudoku, hashi: t.hashi, mines: t.mines, roundSecs: t.roundSecs, totalRounds: t.totalRounds, entrants: t.entrants };
   }
   function tournNewState(cfg, phase) {
     Net._podiumKey = '';
     var totals = {}, wins = {};
     cfg.entrants.forEach(function (e) { totals[e.uid] = 0; wins[e.uid] = 0; });
     return { phase: phase, round: 1, totalRounds: cfg.totalRounds, order: cfg.order, rounds: cfg.rounds,
-      sudoku: cfg.sudoku, hashi: cfg.hashi, roundSecs: cfg.roundSecs, entrants: cfg.entrants,
+      sudoku: cfg.sudoku, hashi: cfg.hashi, mines: cfg.mines, roundSecs: cfg.roundSecs, entrants: cfg.entrants,
       totals: totals, wins: wins, history: [], curGame: null, settled: false, startedAt: 0, endsAt: 0,
-      progress: {}, finishOrder: [], uidMap: {}, cellTrack: {}, totalBlanks: 0, disc: {}, acks: {}, timer: null, armTimer: null, tiedPids: null, champion: null, endNote: '' };
+      progress: {}, finishOrder: [], boom: {}, uidMap: {}, cellTrack: {}, totalBlanks: 0, disc: {}, acks: {}, timer: null, armTimer: null, tiedPids: null, champion: null, endNote: '' };
   }
   function tournCreate() {
     if (!Net.isHost || Net.tourn) return;
-    var sC = ensureHub().cfg.sudoku, hC = ensureHub().cfg.hashi;
+    var sC = ensureHub().cfg.sudoku, hC = ensureHub().cfg.hashi, mC = ensureHub().cfg.mines;
     var cfg = { order: $('t-order').value,
       sudoku: { sizeId: Number(sC.sizeId) || 9, diffId: sC.diffId || 'medium', allowWeapons: sC.allowWeapons !== false, allowGifts: sC.allowGifts !== false, allowYellowHint: !!sC.allowYellowHint, showNumbersInGodMode: !!sC.showNumbersInGodMode, allowQuickFill: !!sC.allowQuickFill, allowTraversal: !!sC.allowTraversal, weaponStartTime: (function () { var w = Number(sC.weaponStartTime); return isNaN(w) ? 60 : Math.max(0, Math.min(600, w)); })() },
       hashi: { sizeId: Number(hC.sizeId) || 2, itemsEnabled: hC.itemsEnabled !== false, godNumbers: hC.godNumbers !== false },
+      mines: { sizeId: Number(mC.sizeId) || 9 },
       roundSecs: Number($('t-secs').value), totalRounds: Number(($('t-rounds') || {}).value) || 5, rounds: null,
       entrants: Net.roster.map(function (p) { return { pid: p.pid, uid: p.uid || p.pid, name: p.name, color: p.color }; }) };
     cfg.rounds = tournBuildRounds(cfg.order, cfg.totalRounds);
@@ -1178,13 +1192,13 @@
     var t = Net.tourn; if (!t) return;
     t.curGame = t.phase === 'playoff' ? 'hashi' : t.rounds[t.round - 1];
     t.settled = false; t.startedAt = 0; t.endsAt = 0;
-    t.progress = {}; t.finishOrder = []; t.uidMap = {}; t.cellTrack = {}; t.totalBlanks = 0; t.disc = {};
+    t.progress = {}; t.finishOrder = []; t.boom = {}; t.uidMap = {}; t.cellTrack = {}; t.totalBlanks = 0; t.disc = {};
     if (t.timer) { clearTimeout(t.timer); t.timer = null; }
     if (t.armTimer) { clearTimeout(t.armTimer); t.armTimer = null; }
     var sess = tournSess();
     platBroadcast({ kind: 'launch', game: t.curGame, mode: 'brawl', tourn: sess });
     doLaunch(t.curGame, 'brawl', sess);
-    sysChat('🏆 第 ' + t.round + ' 局：' + tournGameName(t.curGame) + '大亂鬥');
+    sysChat('🏆 第 ' + t.round + ' 局：' + tournGameLabel(t.curGame));
     if (t.roundSecs > 0) {
       t.armTimer = setTimeout(function () {
         if (Net.tourn === t && !t.startedAt && !t.settled) { t.startedAt = Date.now(); t.endsAt = Date.now() + t.roundSecs * 1000; tournArmTimer(); }
@@ -1208,6 +1222,7 @@
     var anyFinished = t.finishOrder.length > 0;
     var done = t.entrants.every(function (e) {
       if (t.finishOrder.indexOf(e.uid) >= 0) return true;
+      if (t.boom && t.boom[e.uid]) return true; // 踩地雷出局＝本局了結（照當時進度排名；不走 finishOrder 以免進度被灌成 100）
       // 未到者不擋結算（使用者 2026-10-24 規則）：本局從未進場（entered ack 非本局）且無任何進度流量，
       // 而其他人已完賽時視同了結——結算時他以進度 0 排最後；中途加入的權利只到結算發生前為止
       if (anyFinished) {
@@ -1279,12 +1294,12 @@
       var dim = tournLive && id !== 'tourn' && !on;
       return '<button data-rtab="' + id + '" class="lob-tab' + (on ? ' lob-tab-on' : '') + '" style="flex:1' + (dim ? ';opacity:.45' : '') + '">' + label + '</button>';
     }
-    var h = '<div class="flex gap-1.5">' + tabBtn('sudoku', '🔢 數獨') + tabBtn('hashi', '🌉 數橋') + tabBtn('tourn', '🏆 錦標賽') + '</div>';
+    var h = '<div class="flex gap-1.5">' + tabBtn('sudoku', '🔢 數獨') + tabBtn('hashi', '🌉 數橋') + tabBtn('mines', '💣 踩地雷') + tabBtn('tourn', '🏆 錦標賽') + '</div>';
     // 模式（合作/大亂鬥）不在這裡切：兩款的「對局設定」裡本來就有，殼只負責換遊戲（使用者指示刪除重複的模式列）
     if (Net.roomTab !== 'tourn') {
       if (tournLive) h += '<div class="text-center text-[11px] font-black text-amber-600 mt-1.5">🏆 賽程進行中・本局由賽程決定</div>';
       else if (Net.armed.game && Net.inMatch && Net.armed.game !== Net.inMatch) {
-        var gn2 = Net.armed.game === 'hashi' ? '數橋' : '數獨';
+        var gn2 = Net.armed.game === 'hashi' ? '數橋' : (Net.armed.game === 'mines' ? '踩地雷' : '數獨');
         h += '<div class="text-center text-[11px] font-black text-sky-700 mt-1.5">' + (Net.isHost ? ('已選「' + gn2 + '」・按下方開始鈕帶大家過去') : ('房主已選「' + gn2 + '」・等房主開始後一起過去')) + '</div>';
       }
       else if (!Net.isHost) h += '<div class="text-center text-[11px] font-black text-slate-400 mt-1.5">遊戲由房主選擇，跟著房主走</div>';
@@ -1357,7 +1372,7 @@
   }
   function tournStateMsg() { // 完整賽程狀態（接管備份/重連同步用）
     var t = Net.tourn; if (!t) return null;
-    return { kind: 'tourn-score', phase: t.phase, round: t.round, game: t.curGame, progress: t.progress, finishOrder: t.finishOrder, totals: t.totals, wins: t.wins, history: t.history };
+    return { kind: 'tourn-score', phase: t.phase, round: t.round, game: t.curGame, progress: t.progress, finishOrder: t.finishOrder, boom: t.boom, totals: t.totals, wins: t.wins, history: t.history };
   }
   function tournSnapshot(force) { // 局中定期把進度/完賽序同步給全員，接管時新房主才有資料結算本局
     var t = Net.tourn; if (!t || !Net.isHost) return;
@@ -1432,6 +1447,14 @@
           tournSnapshot(false);
         }
       }
+    } else if (t.curGame === 'mines') {
+      // 踩地雷：進度是 0–1 小數，換算成百分比與另兩款同尺度；踩雷出局走 boom 集合（不進 finishOrder，進度才不會被灌成 100）
+      if (d.type === 'MINE_START' && !t.startedAt) {
+        t.startedAt = d.startAt || Date.now();
+        if (t.roundSecs > 0) { t.endsAt = t.startedAt + t.roundSecs * 1000; tournArmTimer(); }
+      } else if (d.type === 'MINE_PROGRESS') { var p5 = pidOf(d.uid); if (p5) { t.progress[p5] = Math.round((d.progress || 0) * 100); tournSnapshot(false); } }
+      else if (d.type === 'MINE_FINISH') tournMarkFinished(pidOf(d.uid));
+      else if (d.type === 'MINE_BOOM') { var p6 = pidOf(d.uid); if (p6) { t.progress[p6] = Math.round((d.progress || 0) * 100); (t.boom = t.boom || {})[p6] = true; tournSnapshot(true); tournCheckDone(); } }
     }
   }
   // 錦標賽局中「結束本局」：v1.11.1 起不再有浮動鈕（太容易誤觸）——改藏進兩款遊戲標頭的「退出」選單裡，
@@ -1466,7 +1489,7 @@
     t.history.forEach(function (h) { if (h.round > t.totalRounds) hasPlayoff = true; });
     if (hasPlayoff) html += '<span class="px-2 py-1 rounded-lg border-2 border-slate-800 text-xs font-black bg-rose-100 text-rose-600">加賽 數橋</span>';
     html += '</div>';
-    if (t.phase === 'playing' || t.phase === 'playoff') html += '<div class="font-black text-slate-700 text-sm mb-2">▶ ' + (t.phase === 'playoff' ? '加賽' : '第 ' + t.round + ' 局') + '進行中：' + tournGameName(t.curGame) + '大亂鬥' + (t.roundSecs > 0 ? '（限時 ' + Math.round(t.roundSecs / 60) + ' 分鐘）' : '') + '</div>';
+    if (t.phase === 'playing' || t.phase === 'playoff') html += '<div class="font-black text-slate-700 text-sm mb-2">▶ ' + (t.phase === 'playoff' ? '加賽' : '第 ' + t.round + ' 局') + '進行中：' + tournGameLabel(t.curGame) + (t.roundSecs > 0 ? '（限時 ' + Math.round(t.roundSecs / 60) + ' 分鐘）' : '') + '</div>';
     else if (t.phase === 'standings') html += '<div class="font-black text-slate-700 text-sm mb-2">第 ' + t.round + ' 局結束，下一局：' + tournGameName(t.rounds[t.round]) + '</div>';
     else if (t.phase === 'playoff-pending') html += '<div class="font-black text-rose-600 text-sm mb-2">⚖️ 總分同分、冠軍局數也同分 — 加賽一局數橋決勝！</div>';
     else if (t.phase === 'ended' && t.champion) html += '<div class="font-black text-amber-600 text-lg mb-1 text-center">🏆 總冠軍：' + esc(t.champion.name) + '</div>' + (t.endNote ? '<div class="text-center text-xs text-slate-500 font-bold mb-1">' + esc(t.endNote) + '</div>' : '');
@@ -1799,7 +1822,7 @@
     var dk = prRegion('dock'); if (dk) dk.innerHTML = prDockHtml(ac);
     if (Net.isHost && !Net.tourn && Net.armed.game && Net.inMatch && Net.armed.game !== Net.inMatch) {
       var sb2 = PR.el.querySelector('[data-pr="start"]');
-      if (sb2) { sb2.disabled = false; sb2.textContent = '🚀 帶大家去' + (Net.armed.game === 'hashi' ? '數橋' : '數獨'); var np2 = sb2.nextElementSibling; if (np2 && np2.tagName === 'P') np2.style.display = 'none'; }
+      if (sb2) { sb2.disabled = false; sb2.textContent = '🚀 帶大家去' + (Net.armed.game === 'hashi' ? '數橋' : (Net.armed.game === 'mines' ? '踩地雷' : '數獨')); var np2 = sb2.nextElementSibling; if (np2 && np2.tagName === 'P') np2.style.display = 'none'; }
     }
     renderRoomTabs();
   }
@@ -1980,7 +2003,7 @@
     if (byRank[3]) stageOrder.push(byRank[3]);
     var h = '<div style="background:#fff;border:4px solid #1e293b;border-radius:24px;box-shadow:10px 10px 0 rgba(30,41,59,1);padding:20px 18px 14px;width:100%;max-width:430px;text-align:center;animation:podIn .3s ease-out both;max-height:92vh;overflow-y:auto">';
     h += '<div style="font-weight:900;font-size:22px;color:#1e293b">🏆 第 ' + entry.round + ' 局結果</div>';
-    h += '<div style="font-weight:900;font-size:13px;color:#64748b;margin-bottom:6px">' + tournGameName(entry.game) + '大亂鬥</div>';
+    h += '<div style="font-weight:900;font-size:13px;color:#64748b;margin-bottom:6px">' + tournGameLabel(entry.game) + '</div>';
     h += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:6px;border-bottom:4px solid #1e293b;padding:0 4px">' + stageOrder.map(colHtml).join('') + '</div>';
     if (rest.length) {
       h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">' + rest.map(function (r, i) {

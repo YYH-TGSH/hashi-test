@@ -18,6 +18,17 @@ overscroll-behavior-y: none;
       margin: 0; padding: 0;
       font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
+body[data-view="mines"] {
+overscroll-behavior-y: none;
+      background-color: #fdf3e7;
+      background-image:
+        radial-gradient(#f7ddba 3px, transparent 3.5px),
+        radial-gradient(#f3d3a7 1.5px, transparent 2px),
+        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
+      background-size: 28px 28px, 12px 12px, 100% 100%;
+      margin: 0; padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+}
 
 /* 平台殼樣式（body 背景由 build 依各遊戲 body 規則產生 data-view 版本） */
 body[data-view="home"] {
