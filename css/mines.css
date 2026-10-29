@@ -10,3 +10,23 @@ button { transition: all 150ms ease; }
     }
     .animate-popIn { animation: popIn 0.18s ease both; }
     .mine-cell { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    /* 玩法教學動畫（卡片式，比照數獨 tut-*；mtut- 前綴避免平台同頁與數獨撞名） */
+    @keyframes mtutCover { 0%, 22% { opacity: 1; } 38%, 84% { opacity: 0; } 97%, 100% { opacity: 1; } }
+    @keyframes mtutNum { 0%, 22% { opacity: 0; } 38%, 84% { opacity: 1; } 97%, 100% { opacity: 0; } }
+    .mtut-cover { animation: mtutCover 3.2s ease-in-out infinite; }
+    .mtut-num { animation: mtutNum 3.2s ease-in-out infinite; }
+    @keyframes mtutTap { 0%, 12% { transform: translateY(-2px); } 20%, 30% { transform: translateY(2px); } 42%, 100% { transform: translateY(-2px); } }
+    .mtut-finger { animation: mtutTap 3.2s ease-in-out infinite; }
+    .mtut-finger2 { animation: mtutTap 3.6s ease-in-out infinite; }
+    @keyframes mtutFlag { 0%, 16% { opacity: 0; transform: scale(0.4); } 30%, 80% { opacity: 1; transform: scale(1); } 94%, 100% { opacity: 0; transform: scale(0.4); } }
+    .mtut-flag { animation: mtutFlag 3s ease-in-out infinite; }
+    @keyframes mtutChip { 0%, 16% { background-color: #ffffff; } 30%, 80% { background-color: #fed7aa; } 94%, 100% { background-color: #ffffff; } }
+    .mtut-chip { animation: mtutChip 3s ease-in-out infinite; }
+    @keyframes mtutChordNum { 0%, 34% { opacity: 0; } 50%, 86% { opacity: 1; } 97%, 100% { opacity: 0; } }
+    @keyframes mtutChordCover { 0%, 34% { opacity: 1; } 50%, 86% { opacity: 0; } 97%, 100% { opacity: 1; } }
+    .mtut-chord-num { animation: mtutChordNum 3.6s ease-in-out infinite; }
+    .mtut-chord-cover { animation: mtutChordCover 3.6s ease-in-out infinite; }
+    @keyframes mtutBoom { 0%, 26% { transform: translate(0, 0) rotate(0deg); background-color: #e2e8f0; } 32% { transform: translate(1px, -1px) rotate(4deg); background-color: #fca5a5; } 38% { transform: translate(-2px, 1px) rotate(-5deg); background-color: #fca5a5; } 44% { transform: translate(1px, 1px) rotate(3deg); background-color: #fca5a5; } 52%, 86% { transform: translate(0, 0) rotate(0deg); background-color: #fca5a5; } 96%, 100% { transform: translate(0, 0) rotate(0deg); background-color: #e2e8f0; } }
+    .mtut-boom { animation: mtutBoom 3.4s ease-in-out infinite; }
+    @keyframes mtutTrophy { 0%, 55% { transform: scale(1) rotate(0deg); } 68% { transform: scale(1.25) rotate(-6deg); } 82%, 100% { transform: scale(1) rotate(0deg); } }
+    .mtut-trophy { animation: mtutTrophy 3.4s ease-in-out infinite; display: inline-block; }

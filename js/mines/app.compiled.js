@@ -2321,25 +2321,272 @@ function MinesGame() {
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showDailyCal && renderDailyCalendar(), showHelp && /*#__PURE__*/React.createElement("div", {
-      className: "fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4",
+      className: "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4",
       onClick: function onClick() {
         return setShowHelp(false);
       }
     }, /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-md w-full p-6 animate-popIn",
+      className: "bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative animate-popIn",
       onClick: function onClick(e) {
         return e.stopPropagation();
       }
-    }, /*#__PURE__*/React.createElement("h3", {
-      className: "font-black text-2xl text-slate-800 mb-3"
-    }, "\u2753 \u600E\u9EBC\u73A9"), /*#__PURE__*/React.createElement("div", {
-      className: "font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
-    }, /*#__PURE__*/React.createElement("p", null, "\u26CF\uFE0F \u9EDE\u683C\u5B50\u6316\u958B\u3002\u6578\u5B57\u8868\u793A\u5B83\u5468\u570D 8 \u683C\u88E1\u6709\u5E7E\u9846\u5730\u96F7\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDEA9 \u61F7\u7591\u662F\u5730\u96F7\u5C31\u5207\u5230\u300C\u63D2\u65D7\u300D\u6A21\u5F0F\u9EDE\u5B83\uFF08\u6216\u9577\u6309\u683C\u5B50\uFF09\u505A\u8A18\u865F\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCA1 \u5DF2\u7D93\u6316\u958B\u7684\u6578\u5B57\u683C\uFF1A\u65C1\u908A\u65D7\u5B50\u6578\u91CF\u525B\u597D\u7B49\u65BC\u6578\u5B57\u6642\uFF0C\u518D\u9EDE\u5B83\u6703\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83C\uDFC6 \u628A\u6240\u6709\u4E0D\u662F\u5730\u96F7\u7684\u683C\u5B50\u6316\u958B\u5C31\u8D0F\u4E86\uFF1B\u6316\u5230\u5730\u96F7\u5C31\u7D50\u675F\u3002\u7B2C\u4E00\u4E0B\u4FDD\u8B49\u4E0D\u6703\u8E29\u96F7\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u5927\u5BB6\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u76F4\u63A5\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002")), /*#__PURE__*/React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setShowHelp(false);
       },
-      className: "mt-4 w-full py-2.5 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
-    }, "\u77E5\u9053\u4E86"))));
+      className: "absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10"
+    }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
+      className: "text-2xl font-black text-slate-800 border-b-4 border-[#fb923c] inline-block pb-1 mb-5"
+    }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "relative"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-[3px]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#f8fafc',
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-num",
+      style: {
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#f8fafc'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#f8fafc',
+        color: NUM_COLORS[2]
+      }
+    }, "2")), /*#__PURE__*/React.createElement("span", {
+      className: "mtut-finger absolute text-3xl pointer-events-none",
+      style: {
+        left: 63,
+        top: 62
+      }
+    }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
+      className: "text-center font-black text-slate-700"
+    }, "\u9EDE\u683C\u5B50\u6316\u958B\u2014\u2014\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u6709\u5E7E\u9846\u5730\u96F7")), /*#__PURE__*/React.createElement("div", {
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-flag text-3xl"
+    }, "\uD83D\uDEA9"))), /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center gap-2 mb-3"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "px-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
+    }, "\u26CF\uFE0F \u6316\u958B"), /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chip px-3 py-2 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
+    }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("p", {
+      className: "text-center font-black text-slate-700"
+    }, "\u61F7\u7591\u662F\u5730\u96F7\uFF1F\u5207\u5230\u300C\u63D2\u65D7\u300D\u6A21\u5F0F\u9EDE\u5B83\uFF0C\u6216\u9577\u6309\u683C\u5B50\u505A\u8A18\u865F")), /*#__PURE__*/React.createElement("div", {
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "relative"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-[3px]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 flex items-center justify-center text-xl rounded-[4px] border border-orange-900/20",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }, "\uD83D\uDEA9"), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chord-num",
+      style: {
+        color: NUM_COLORS[2]
+      }
+    }, "2"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chord-num",
+      style: {
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chord-num",
+      style: {
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#f8fafc',
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chord-num",
+      style: {
+        color: NUM_COLORS[1]
+      }
+    }, "1"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-chord-num",
+      style: {
+        color: NUM_COLORS[2]
+      }
+    }, "2"), /*#__PURE__*/React.createElement("div", {
+      className: "mtut-chord-cover absolute inset-0",
+      style: {
+        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+      }
+    }))), /*#__PURE__*/React.createElement("span", {
+      className: "mtut-finger2 absolute text-3xl pointer-events-none",
+      style: {
+        left: 63,
+        top: 62
+      }
+    }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
+      className: "text-center font-black text-slate-700"
+    }, "\u6578\u5B57\u65C1\u7684\u65D7\u5B50\u6578\u525B\u597D\u7B49\u65BC\u6578\u5B57\u6642\uFF0C\u518D\u9EDE\u6578\u5B57\u683C\uFF0C\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u4E00\u6B21\u6316\u958B")), /*#__PURE__*/React.createElement("div", {
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center gap-8 mb-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col items-center gap-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "mtut-boom w-14 h-14 flex items-center justify-center text-3xl rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#e2e8f0'
+      }
+    }, "\uD83D\uDCA3"), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-black text-slate-400"
+    }, "\u8E29\u5230\u96F7")), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col items-center gap-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20",
+      style: {
+        background: '#f8fafc'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "mtut-trophy text-3xl"
+    }, "\uD83C\uDFC6")), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-black text-slate-400"
+    }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
+      className: "text-center font-black text-slate-700"
+    }, "\u4E0D\u662F\u5730\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u5730\u96F7\u5C31\u7D50\u675F\u2014\u2014\u7B2C\u4E00\u4E0B\u4FDD\u8B49\u4E0D\u8E29\u96F7")), /*#__PURE__*/React.createElement("div", {
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
+    }, /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u76F4\u63A5\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002"))), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setShowHelp(false);
+      },
+      className: "w-full py-3.5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+    }, "\u77E5\u9053\u4E86\uFF0C\u958B\u59CB\u73A9\uFF01"))));
   }
 
   // ---------- 多人等待畫面（hub 一般對局：房主全員到齊自動開局；錦標賽：準備+房主開始） ----------
