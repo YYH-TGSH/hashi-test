@@ -550,33 +550,23 @@ function SudokuGame() {
     _useState144 = _slicedToArray(_useState143, 2),
     dailyPickDate = _useState144[0],
     setDailyPickDate = _useState144[1];
-  var _useState145 = useState(false),
+  var _useState145 = useState(null),
     _useState146 = _slicedToArray(_useState145, 2),
-    showDailyCal = _useState146[0],
-    setShowDailyCal = _useState146[1];
-  var _useState147 = useState(function () {
-      return dailyTodayStr().slice(0, 7);
-    }),
-    _useState148 = _slicedToArray(_useState147, 2),
-    dailyCalYM = _useState148[0],
-    setDailyCalYM = _useState148[1];
-  var _useState149 = useState(null),
-    _useState150 = _slicedToArray(_useState149, 2),
-    dailyDate = _useState150[0],
-    setDailyDate = _useState150[1]; // 進行中的每日題日期（null=非每日模式）
+    dailyDate = _useState146[0],
+    setDailyDate = _useState146[1]; // 進行中的每日題日期（null=非每日模式）
   var dailyRef = useRef(null);
   var dailyRecordedRef = useRef(false);
-  var _useState151 = useState(function () {
+  var _useState147 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
       } catch (e) {
         return {};
       }
     }),
-    _useState152 = _slicedToArray(_useState151, 2),
-    dailyRecords = _useState152[0],
-    setDailyRecords = _useState152[1];
-  var _useState153 = useState(function () {
+    _useState148 = _slicedToArray(_useState147, 2),
+    dailyRecords = _useState148[0],
+    setDailyRecords = _useState148[1];
+  var _useState149 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
       } catch (e) {
@@ -586,14 +576,14 @@ function SudokuGame() {
         };
       }
     }),
-    _useState154 = _slicedToArray(_useState153, 2),
-    dailyStreak = _useState154[0],
-    setDailyStreak = _useState154[1];
-  var _useState155 = useState(false),
-    _useState156 = _slicedToArray(_useState155, 2),
-    showTutorial = _useState156[0],
-    setShowTutorial = _useState156[1];
-  var _useState157 = useState([{
+    _useState150 = _slicedToArray(_useState149, 2),
+    dailyStreak = _useState150[0],
+    setDailyStreak = _useState150[1];
+  var _useState151 = useState(false),
+    _useState152 = _slicedToArray(_useState151, 2),
+    showTutorial = _useState152[0],
+    setShowTutorial = _useState152[1];
+  var _useState153 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -601,37 +591,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
+    _useState154 = _slicedToArray(_useState153, 2),
+    playersList = _useState154[0],
+    setPlayersList = _useState154[1];
+  var _useState155 = useState(false),
+    _useState156 = _slicedToArray(_useState155, 2),
+    isConnecting = _useState156[0],
+    setIsConnecting = _useState156[1];
+  var _useState157 = useState(""),
     _useState158 = _slicedToArray(_useState157, 2),
-    playersList = _useState158[0],
-    setPlayersList = _useState158[1];
+    connectionStatus = _useState158[0],
+    setConnectionStatus = _useState158[1];
   var _useState159 = useState(false),
     _useState160 = _slicedToArray(_useState159, 2),
-    isConnecting = _useState160[0],
-    setIsConnecting = _useState160[1];
-  var _useState161 = useState(""),
+    showCancelButton = _useState160[0],
+    setShowCancelButton = _useState160[1];
+  var _useState161 = useState(true),
     _useState162 = _slicedToArray(_useState161, 2),
-    connectionStatus = _useState162[0],
-    setConnectionStatus = _useState162[1];
-  var _useState163 = useState(false),
+    showOtherCursors = _useState162[0],
+    setShowOtherCursors = _useState162[1];
+  var _useState163 = useState(true),
     _useState164 = _slicedToArray(_useState163, 2),
-    showCancelButton = _useState164[0],
-    setShowCancelButton = _useState164[1];
-  var _useState165 = useState(true),
+    showGhostProgress = _useState164[0],
+    setShowGhostProgress = _useState164[1];
+  var _useState165 = useState({}),
     _useState166 = _slicedToArray(_useState165, 2),
-    showOtherCursors = _useState166[0],
-    setShowOtherCursors = _useState166[1];
-  var _useState167 = useState(true),
+    cursors = _useState166[0],
+    setCursors = _useState166[1];
+  var _useState167 = useState([]),
     _useState168 = _slicedToArray(_useState167, 2),
-    showGhostProgress = _useState168[0],
-    setShowGhostProgress = _useState168[1];
-  var _useState169 = useState({}),
-    _useState170 = _slicedToArray(_useState169, 2),
-    cursors = _useState170[0],
-    setCursors = _useState170[1];
-  var _useState171 = useState([]),
-    _useState172 = _slicedToArray(_useState171, 2),
-    ripples = _useState172[0],
-    setRipples = _useState172[1];
+    ripples = _useState168[0],
+    setRipples = _useState168[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -4169,106 +4159,17 @@ function SudokuGame() {
   };
 
   // ===== 📅 每日一題月曆（亮燈=已完成、未來反灰不可選；點日期直接開那天的題目） =====
-  var renderDailyCalendar = function renderDailyCalendar() {
-    if (!showDailyCal) return null;
-    var todayStr = dailyTodayStr();
-    var todayYM = todayStr.slice(0, 7);
-    var ym = dailyCalYM < '2026-01' ? '2026-01' : dailyCalYM > todayYM ? todayYM : dailyCalYM;
-    var cy = parseInt(ym.slice(0, 4), 10),
-      cm = parseInt(ym.slice(5, 7), 10) - 1;
-    var firstDow = new Date(cy, cm, 1).getDay();
-    var daysInMonth = new Date(cy, cm + 1, 0).getDate();
-    var shiftYM = function shiftYM(delta) {
-      var d = new Date(cy, cm + delta, 1);
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    };
-    var cells = [];
-    for (var i = 0; i < firstDow; i++) cells.push(null);
-    for (var day = 1; day <= daysInMonth; day++) {
-      var ds = ym + '-' + String(day).padStart(2, '0');
-      cells.push({
-        ds: ds,
-        day: day,
-        future: ds > todayStr,
-        done: !!dailyRecords[ds],
-        today: ds === todayStr,
-        picked: ds === dailyPickDate
-      });
-    }
-    while (cells.length < 42) cells.push(null); // 每月一律 6 列：卡片高度固定，切換月份時 ◀ ▶ 不會上下跑
-    var pickDay = function pickDay(ds) {
-      setShowDailyCal(false);
-      setDailyPickDate(ds);
-      startDailyGame(ds);
-    };
-    var navBtn = "w-9 h-9 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none";
-    return /*#__PURE__*/React.createElement("div", {
-      className: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
-      onClick: function onClick() {
-        return setShowDailyCal(false);
+  var openDailyCal = function openDailyCal() {
+    if (window.PlatCalendar) window.PlatCalendar.show({
+      accent: '#ffcc00',
+      records: dailyRecords,
+      selected: dailyPickDate,
+      onPick: function onPick(ds) {
+        setDailyPickDate(ds);
+        startDailyGame(ds);
       }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-sm p-5",
-      onClick: function onClick(e) {
-        return e.stopPropagation();
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between mb-3"
-    }, /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setDailyCalYM(shiftYM(-1));
-      },
-      disabled: ym <= '2026-01',
-      className: navBtn
-    }, "\u25C0"), /*#__PURE__*/React.createElement("div", {
-      className: "font-black text-xl text-slate-800"
-    }, "\uD83D\uDCC5 ", cy, " \u5E74 ", cm + 1, " \u6708"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setDailyCalYM(shiftYM(1));
-      },
-      disabled: ym >= todayYM,
-      className: navBtn
-    }, "\u25B6")), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-7 gap-1 mb-1"
-    }, ['日', '一', '二', '三', '四', '五', '六'].map(function (w) {
-      return /*#__PURE__*/React.createElement("div", {
-        key: w,
-        className: "text-center font-black text-xs text-slate-400 py-1"
-      }, w);
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-7 gap-1"
-    }, cells.map(function (c, i) {
-      if (!c) return /*#__PURE__*/React.createElement("div", {
-        key: 'b' + i,
-        className: "h-11"
-      });
-      var cls = 'relative h-11 rounded-lg font-black text-sm flex items-center justify-center border-2 ';
-      if (c.future) cls += 'bg-slate-100 text-slate-300 border-transparent cursor-not-allowed';else if (c.done) cls += 'bg-[#ffcc00] text-slate-900 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none';else if (c.today) cls += 'bg-white text-slate-800 border-slate-800 ring-2 ring-inset ring-slate-800 active:translate-y-0.5';else if (c.picked) cls += 'bg-sky-100 text-slate-800 border-sky-500 active:translate-y-0.5';else cls += 'bg-white text-slate-600 border-slate-200 active:translate-y-0.5';
-      return /*#__PURE__*/React.createElement("button", {
-        key: c.ds,
-        disabled: c.future,
-        onClick: function onClick() {
-          return pickDay(c.ds);
-        },
-        className: cls
-      }, c.day, c.done ? /*#__PURE__*/React.createElement("span", {
-        className: "absolute top-0 right-1 text-[9px]"
-      }, "\u2713") : null, c.today && !c.done ? /*#__PURE__*/React.createElement("span", {
-        className: "absolute bottom-0 right-1 text-[8px] text-slate-400"
-      }, "\u4ECA\u5929") : null);
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between mt-4"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-bold text-slate-500"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "inline-block w-3 h-3 rounded-sm bg-[#ffcc00] border border-slate-800 align-middle mr-1"
-    }), "\u4EAE\u71C8\uFF1D\u5DF2\u5B8C\u6210\u30FB\u7070\u8272\uFF1D\u9084\u6C92\u5230"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setShowDailyCal(false);
-      },
-      className: "px-4 py-2 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none"
-    }, "\u95DC\u9589"))));
-  };
+    });
+  }; // 每日月曆已統一為殼端 PlatCalendar（v1.16）
 
   // 每日一題完賽記錄（連擊只認今天；補玩只記該日成績）
   useEffect(function () {
@@ -4495,24 +4396,24 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState173 = useState(false),
-    _useState174 = _slicedToArray(_useState173, 2),
-    platTournLock = _useState174[0],
-    setPlatTournLock = _useState174[1];
-  var _useState175 = useState(false),
-    _useState176 = _slicedToArray(_useState175, 2),
-    platHub = _useState176[0],
-    setPlatHub = _useState176[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+  var _useState169 = useState(false),
+    _useState170 = _slicedToArray(_useState169, 2),
+    platTournLock = _useState170[0],
+    setPlatTournLock = _useState170[1];
+  var _useState171 = useState(false),
+    _useState172 = _slicedToArray(_useState171, 2),
+    platHub = _useState172[0],
+    setPlatHub = _useState172[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
-  var _useState177 = useState(null),
-    _useState178 = _slicedToArray(_useState177, 2),
-    tournRoundInfo = _useState178[0],
-    setTournRoundInfo = _useState178[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState173 = useState(null),
+    _useState174 = _slicedToArray(_useState173, 2),
+    tournRoundInfo = _useState174[0],
+    setTournRoundInfo = _useState174[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState179 = useState(0),
-    _useState180 = _slicedToArray(_useState179, 2),
-    setTournTick = _useState180[1];
+  var _useState175 = useState(0),
+    _useState176 = _slicedToArray(_useState175, 2),
+    setTournTick = _useState176[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -5508,10 +5409,7 @@ function SudokuGame() {
       disabled: dailyPickDate <= '2026-01-01',
       className: "w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
     }, "\u25C0"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        setDailyCalYM(dailyPickDate.slice(0, 7));
-        setShowDailyCal(true);
-      },
+      onClick: openDailyCal,
       className: "border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
     }, "\uD83D\uDCC5 ", dailyPickDate), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
@@ -5537,7 +5435,7 @@ function SudokuGame() {
       className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
-    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), tutorialOverlay, renderDailyCalendar());
+    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), tutorialOverlay);
   }
 
   // 錦標賽每局開局門檻（房主）：全員到齊且全員準備才能開始；等滿 1 分鐘（且至少 2 人到齊）可強制開始

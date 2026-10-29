@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.15.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.16.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -1950,6 +1950,91 @@
     },
     hide: function () { if (!PR2.spec && !PR2.json) return; PR2.spec = null; PR2.json = ''; pr2Render(); },
     _visible: function () { return !!PR2.spec; }
+  };
+
+  // ---------- 每日一題月曆（PlatCalendar）：三款遊戲共用同一份實作（v1.16 統一） ----------
+  // cfg: { accent:'#ffcc00', records:{ 'YYYY-MM-DD': … }, selected:'YYYY-MM-DD', onPick:function(ds) }
+  // 規格（使用者定案）：固定 42 格、完成日以主題色亮起＋✓、今天外框、過去未玩可選、未來反灰停用、月份範圍 [2026-01, 本月]、點可玩日立即回呼 onPick
+  var PCAL = { el: null, cfg: null, ym: '' };
+  function pcalPad(n) { return (n < 10 ? '0' : '') + n; }
+  function pcalToday() { var d = new Date(); return d.getFullYear() + '-' + pcalPad(d.getMonth() + 1) + '-' + pcalPad(d.getDate()); }
+  function pcalEl() {
+    if (!PCAL.el) {
+      var el = document.createElement('div');
+      el.id = 'plat-calendar';
+      el.className = 'fixed inset-0 flex items-center justify-center bg-black/50 p-4';
+      el.style.zIndex = '9990'; el.style.display = 'none';
+      el.addEventListener('click', function (e) {
+        if (e.target === el) { window.PlatCalendar.hide(); return; }
+        var b = e.target && e.target.closest ? e.target.closest('[data-pcal]') : null;
+        if (!b || b.disabled) return;
+        var act = b.getAttribute('data-pcal');
+        if (act === 'close') window.PlatCalendar.hide();
+        else if (act === 'prev' || act === 'next') {
+          var cy = parseInt(PCAL.ym.slice(0, 4), 10), cm = parseInt(PCAL.ym.slice(5, 7), 10) - 1 + (act === 'next' ? 1 : -1);
+          var d = new Date(cy, cm, 1);
+          PCAL.ym = d.getFullYear() + '-' + pcalPad(d.getMonth() + 1);
+          pcalRender();
+        } else if (act === 'day') {
+          var ds = b.getAttribute('data-ds');
+          var cfg = PCAL.cfg;
+          window.PlatCalendar.hide();
+          if (cfg && cfg.onPick) cfg.onPick(ds);
+        }
+      });
+      document.body.appendChild(el);
+      PCAL.el = el;
+    }
+    return PCAL.el;
+  }
+  function pcalRender() {
+    var cfg = PCAL.cfg; if (!cfg) return;
+    var el = pcalEl();
+    var today = pcalToday(), todayYM = today.slice(0, 7);
+    var ym = PCAL.ym < '2026-01' ? '2026-01' : (PCAL.ym > todayYM ? todayYM : PCAL.ym);
+    PCAL.ym = ym;
+    var cy = parseInt(ym.slice(0, 4), 10), cm = parseInt(ym.slice(5, 7), 10) - 1;
+    var firstDow = new Date(cy, cm, 1).getDay();
+    var daysInMonth = new Date(cy, cm + 1, 0).getDate();
+    var rec = cfg.records || {};
+    var cells = '';
+    var i;
+    for (i = 0; i < firstDow; i++) cells += '<div class="h-11"></div>';
+    for (var day = 1; day <= daysInMonth; day++) {
+      var ds = ym + '-' + pcalPad(day);
+      var future = ds > today, done = !!rec[ds], isToday = ds === today, picked = ds === cfg.selected;
+      var cls = 'relative h-11 rounded-lg font-black text-sm flex items-center justify-center border-2 ';
+      if (future) cls += 'bg-slate-100 text-slate-300 border-transparent cursor-not-allowed';
+      else if (done) cls += 'bg-[' + cfg.accent + '] text-slate-900 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none';
+      else if (isToday) cls += 'bg-white text-slate-800 border-slate-800 ring-2 ring-inset ring-slate-800 active:translate-y-0.5';
+      else if (picked) cls += 'bg-sky-100 text-slate-800 border-sky-500 active:translate-y-0.5';
+      else cls += 'bg-white text-slate-600 border-slate-200 active:translate-y-0.5';
+      cells += '<button data-pcal="day" data-ds="' + ds + '"' + (future ? ' disabled' : '') + ' class="' + cls + '">' + day +
+        (done ? '<span class="absolute top-0 right-1 text-[9px]">✓</span>' : '') +
+        (isToday && !done ? '<span class="absolute bottom-0 right-1 text-[8px] text-slate-400">今天</span>' : '') + '</button>';
+    }
+    var total = firstDow + daysInMonth;
+    for (i = total; i < 42; i++) cells += '<div class="h-11"></div>';
+    var navBtn = 'w-9 h-9 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none';
+    el.innerHTML =
+      '<div class="bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-sm p-5">' +
+        '<div class="flex items-center justify-between mb-3">' +
+          '<button data-pcal="prev" ' + (ym <= '2026-01' ? 'disabled' : '') + ' class="' + navBtn + '">◀</button>' +
+          '<div class="font-black text-xl text-slate-800">📅 ' + cy + ' 年 ' + (cm + 1) + ' 月</div>' +
+          '<button data-pcal="next" ' + (ym >= todayYM ? 'disabled' : '') + ' class="' + navBtn + '">▶</button>' +
+        '</div>' +
+        '<div class="grid grid-cols-7 gap-1 mb-1">' + ['日', '一', '二', '三', '四', '五', '六'].map(function (w) { return '<div class="text-center font-black text-xs text-slate-400 py-1">' + w + '</div>'; }).join('') + '</div>' +
+        '<div class="grid grid-cols-7 gap-1">' + cells + '</div>' +
+        '<div class="flex items-center justify-between mt-4">' +
+          '<span class="text-xs font-bold text-slate-500"><span class="inline-block w-3 h-3 rounded-sm bg-[' + cfg.accent + '] border border-slate-800 align-middle mr-1"></span>亮燈＝已完成・灰色＝還沒到</span>' +
+          '<button data-pcal="close" class="px-4 py-2 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none">關閉</button>' +
+        '</div>' +
+      '</div>';
+  }
+  window.PlatCalendar = {
+    show: function (cfg) { PCAL.cfg = cfg || {}; PCAL.ym = pcalToday().slice(0, 7); pcalRender(); pcalEl().style.display = 'flex'; },
+    hide: function () { if (PCAL.el) PCAL.el.style.display = 'none'; PCAL.cfg = null; },
+    _visible: function () { return !!(PCAL.el && PCAL.el.style.display === 'flex'); }
   };
 
   // ---------- 五戰小局結算頒獎台（PlatPodium）：前三名上山字台、本局分數動畫加進總分、未得名滾下台 ----------

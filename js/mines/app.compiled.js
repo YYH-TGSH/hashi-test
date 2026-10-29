@@ -377,20 +377,6 @@ function MinesGame() {
     _useState34 = _slicedToArray(_useState33, 2),
     dailySel = _useState34[0],
     setDailySel = _useState34[1]; // 主畫面每日一題目前選取日期
-  var _useState35 = useState(false),
-    _useState36 = _slicedToArray(_useState35, 2),
-    showDailyCal = _useState36[0],
-    setShowDailyCal = _useState36[1];
-  var _useState37 = useState(function () {
-      var d = new Date();
-      return {
-        y: d.getFullYear(),
-        m: d.getMonth()
-      };
-    }),
-    _useState38 = _slicedToArray(_useState37, 2),
-    dailyCalYM = _useState38[0],
-    setDailyCalYM = _useState38[1];
   var firstRef = useRef(true); // 本局是否還沒挖第一下（首點保護/計時起點）
   var statusRef = useRef('ready');
   statusRef.current = status;
@@ -690,58 +676,58 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState39 = useState(false),
+  var _useState35 = useState(false),
+    _useState36 = _slicedToArray(_useState35, 2),
+    mpOn = _useState36[0],
+    setMpOn = _useState36[1];
+  var _useState37 = useState('off'),
+    _useState38 = _slicedToArray(_useState37, 2),
+    mpPhase = _useState38[0],
+    setMpPhase = _useState38[1]; // off|waiting|countdown|playing|done
+  var _useState39 = useState([]),
     _useState40 = _slicedToArray(_useState39, 2),
-    mpOn = _useState40[0],
-    setMpOn = _useState40[1];
-  var _useState41 = useState('off'),
+    players = _useState40[0],
+    setPlayers = _useState40[1];
+  var _useState41 = useState(false),
     _useState42 = _slicedToArray(_useState41, 2),
-    mpPhase = _useState42[0],
-    setMpPhase = _useState42[1]; // off|waiting|countdown|playing|done
-  var _useState43 = useState([]),
+    myReadySt = _useState42[0],
+    setMyReadySt = _useState42[1];
+  var _useState43 = useState({}),
     _useState44 = _slicedToArray(_useState43, 2),
-    players = _useState44[0],
-    setPlayers = _useState44[1];
-  var _useState45 = useState(false),
+    godBoards = _useState44[0],
+    setGodBoards = _useState44[1];
+  var _useState45 = useState(null),
     _useState46 = _slicedToArray(_useState45, 2),
-    myReadySt = _useState46[0],
-    setMyReadySt = _useState46[1];
-  var _useState47 = useState({}),
+    godUid = _useState46[0],
+    setGodUid = _useState46[1];
+  var _useState47 = useState(null),
     _useState48 = _slicedToArray(_useState47, 2),
-    godBoards = _useState48[0],
-    setGodBoards = _useState48[1];
+    raceFinal = _useState48[0],
+    setRaceFinal = _useState48[1];
   var _useState49 = useState(null),
     _useState50 = _slicedToArray(_useState49, 2),
-    godUid = _useState50[0],
-    setGodUid = _useState50[1];
-  var _useState51 = useState(null),
+    myOutcome = _useState50[0],
+    setMyOutcome = _useState50[1]; // 'finished'|'boom'
+  var _useState51 = useState(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    raceFinal = _useState52[0],
-    setRaceFinal = _useState52[1];
-  var _useState53 = useState(null),
+    leaveArm = _useState52[0],
+    setLeaveArm = _useState52[1];
+  var _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    myOutcome = _useState54[0],
-    setMyOutcome = _useState54[1]; // 'finished'|'boom'
-  var _useState55 = useState(false),
+    showExitMenu = _useState54[0],
+    setShowExitMenu = _useState54[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState55 = useState(''),
     _useState56 = _slicedToArray(_useState55, 2),
-    leaveArm = _useState56[0],
-    setLeaveArm = _useState56[1];
-  var _useState57 = useState(false),
+    coopBoomBy = _useState56[0],
+    setCoopBoomBy = _useState56[1];
+  var _useState57 = useState(null),
     _useState58 = _slicedToArray(_useState57, 2),
-    feArm = _useState58[0],
-    setFeArm = _useState58[1];
-  var _useState59 = useState(''),
+    cdNum = _useState58[0],
+    setCdNum = _useState58[1];
+  var _useState59 = useState(0),
     _useState60 = _slicedToArray(_useState59, 2),
-    coopBoomBy = _useState60[0],
-    setCoopBoomBy = _useState60[1];
-  var _useState61 = useState(null),
-    _useState62 = _slicedToArray(_useState61, 2),
-    cdNum = _useState62[0],
-    setCdNum = _useState62[1];
-  var _useState63 = useState(0),
-    _useState64 = _slicedToArray(_useState63, 2),
-    waitTick = _useState64[0],
-    setWaitTick = _useState64[1];
+    waitTick = _useState60[0],
+    setWaitTick = _useState60[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -777,8 +763,7 @@ function MinesGame() {
     stateTrailRef = useRef(null); // MINE_STATE 節流的尾隨補送（純插旗不改 progress，沒補送對手永遠看不到最後一支旗）
   var startedAtRef = useRef(null),
     myReadyRef = useRef(false),
-    leaveArmTimerRef = useRef(null),
-    feArmTimerRef = useRef(null);
+    leaveArmTimerRef = useRef(null);
   var iAmSpecRef = useRef(false);
   function setPlayersBoth(p) {
     playersRef.current = p;
@@ -848,6 +833,7 @@ function MinesGame() {
       isHost: false,
       mode: 'coop',
       tourn: false,
+      tournInfo: null,
       hub: false,
       code: '',
       sizeId: 9,
@@ -1599,6 +1585,7 @@ function MinesGame() {
       isHost: !!sess.isHost,
       mode: sess.mode === 'coop' ? 'coop' : 'race',
       tourn: !!sess.tourn,
+      tournInfo: sess.tourn || null,
       hub: !!sess.hub,
       code: sess.code,
       sizeId: Number(st.sizeId) || 9,
@@ -1660,6 +1647,11 @@ function MinesGame() {
     }
   }
   function requestLobby() {
+    // 平台房間框架：回等待室＝回殼的房間頁（比照數獨 handleBackToLobby/數橋 requestLobby：不分房主來賓一律通知殼，房主由殼廣播 return 帶全員、來賓只回自己）
+    if (typeof window !== 'undefined' && window.__PLAT_PLATFORM) {
+      if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
+      return;
+    }
     if (mpRef.current.isHost) {
       if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
     } else mpSend({
@@ -1668,7 +1660,8 @@ function MinesGame() {
     });
   }
   function leaveMatch() {
-    // 個人離開（其他人繼續）
+    // 個人離開（其他人繼續）：先通知殼離房（endSession 清 inMatch/名單並切回多人入口），再做遊戲層清理——舊版只做本地清理、沒通知殼，殼還以為在對局中，人會卡在地雷頁、之後按多人連線又被 inMatch 劫回地雷頁
+    if (typeof window !== 'undefined' && window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('player-leave');
     if (mpRef.current.isHost) mpSend({
       type: 'HOST_LEFT',
       uid: myId
@@ -1694,28 +1687,6 @@ function MinesGame() {
       type: 'READY',
       uid: myId,
       ready: v
-    });
-  }
-  function toggleSpec(key) {
-    var p = playersRef.current.find(function (x) {
-      return x.id === key;
-    });
-    if (!p) return;
-    if (mpRef.current.isHost) {
-      setPlayersBoth(playersRef.current.map(function (x) {
-        return x.id === key ? Object.assign({}, x, {
-          spectator: !x.spectator
-        }) : x;
-      }));
-      hostBroadcast({
-        type: 'PLAYERS_UPDATE',
-        players: playersRef.current
-      });
-      if (key === myId) iAmSpecRef.current = !p.spectator;
-    } else if (key === myId) mpSend({
-      type: 'SPEC',
-      uid: myId,
-      spectator: !p.spectator
     });
   }
 
@@ -2198,111 +2169,19 @@ function MinesGame() {
   }
 
   // ---------- 每日一題月曆（規格比照數獨/數橋：固定 6 列、完成亮燈、未來反灰） ----------
-  function renderDailyCalendar() {
-    var y = dailyCalYM.y,
-      m = dailyCalYM.m;
-    var startDay = new Date(y, m, 1).getDay();
-    var daysInMonth = new Date(y, m + 1, 0).getDate();
-    var rec = readDailyRecords(),
-      today = todayStr();
-    var arr = [],
-      i;
-    for (i = 0; i < startDay; i++) arr.push(null);
-    for (i = 1; i <= daysInMonth; i++) arr.push(i);
-    while (arr.length < 42) arr.push(null);
-    var canPrev = !(y === 2026 && m === 0);
-    var nd = new Date();
-    var canNext = !(y === nd.getFullYear() && m === nd.getMonth());
-    function shiftMonth(delta) {
-      var mm = m + delta,
-        yy = y;
-      if (mm < 0) {
-        mm = 11;
-        yy--;
+  function openDailyCal() {
+    if (window.PlatCalendar) window.PlatCalendar.show({
+      accent: '#fb923c',
+      records: readDailyRecords(),
+      selected: dailySel,
+      onPick: function onPick(ds) {
+        setDailySel(ds);
+        SFX.click();
+        startDaily(ds);
       }
-      if (mm > 11) {
-        mm = 0;
-        yy++;
-      }
-      setDailyCalYM({
-        y: yy,
-        m: mm
-      });
-    }
-    return /*#__PURE__*/React.createElement("div", {
-      className: "fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4",
-      onClick: function onClick() {
-        return setShowDailyCal(false);
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-md w-full p-5 animate-popIn",
-      onClick: function onClick(e) {
-        return e.stopPropagation();
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between mb-3"
-    }, /*#__PURE__*/React.createElement("button", {
-      disabled: !canPrev,
-      onClick: function onClick() {
-        return shiftMonth(-1);
-      },
-      className: "w-10 h-10 rounded-lg border-2 border-slate-800 font-black text-lg bg-white disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
-    }, "\u25C0"), /*#__PURE__*/React.createElement("div", {
-      className: "font-black text-xl text-slate-800"
-    }, y, " \u5E74 ", m + 1, " \u6708"), /*#__PURE__*/React.createElement("button", {
-      disabled: !canNext,
-      onClick: function onClick() {
-        return shiftMonth(1);
-      },
-      className: "w-10 h-10 rounded-lg border-2 border-slate-800 font-black text-lg bg-white disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
-    }, "\u25B6")), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-7 gap-1 text-center font-black text-slate-400 text-sm mb-1"
-    }, ['日', '一', '二', '三', '四', '五', '六'].map(function (wd) {
-      return /*#__PURE__*/React.createElement("div", {
-        key: wd
-      }, wd);
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-7 gap-1"
-    }, arr.map(function (dd, idx) {
-      if (dd == null) return /*#__PURE__*/React.createElement("div", {
-        key: idx,
-        className: "h-11"
-      });
-      var ds = y + '-' + (m + 1 < 10 ? '0' : '') + (m + 1) + '-' + (dd < 10 ? '0' : '') + dd;
-      var future = ds > today,
-        done = rec[ds] != null,
-        isToday = ds === today,
-        isSel = ds === dailySel;
-      var cls = 'h-11 rounded-lg font-black relative border-2 ';
-      if (future) cls += 'bg-slate-100 text-slate-300 border-transparent';else if (done) cls += 'bg-[#fb923c] text-slate-900 border-slate-800';else cls += 'bg-white text-slate-700 border-slate-200';
-      if (isToday) cls += ' ring-4 ring-slate-800 ring-inset';
-      if (isSel && !isToday) cls += ' ring-4 ring-sky-400 ring-inset';
-      return /*#__PURE__*/React.createElement("button", {
-        key: idx,
-        disabled: future,
-        className: cls,
-        onClick: function onClick() {
-          setDailySel(ds);
-          setShowDailyCal(false);
-          SFX.click();
-          startDaily(ds);
-        }
-      }, dd, done && /*#__PURE__*/React.createElement("span", {
-        className: "absolute top-0 right-0.5 text-[10px]"
-      }, "\u2713"), isToday && /*#__PURE__*/React.createElement("span", {
-        className: "absolute bottom-0 left-0 right-0 text-[9px] leading-none"
-      }, "\u4ECA\u5929"));
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "mt-3 flex items-center justify-between"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-bold text-slate-400"
-    }, "\u4EAE\u71C8\uFF1D\u5DF2\u5B8C\u6210\u30FB\u7070\u8272\uFF1D\u9084\u6C92\u5230"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setShowDailyCal(false);
-      },
-      className: "px-4 py-1.5 bg-slate-800 text-white rounded-lg font-black"
-    }, "\u95DC\u9589"))));
-  }
+    });
+  } // 每日月曆已統一為殼端 PlatCalendar（v1.16）
+
   if (screen === 'setup') {
     return /*#__PURE__*/React.createElement("div", {
       key: "setup",
@@ -2373,14 +2252,7 @@ function MinesGame() {
       },
       className: "w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\u25C0"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        var p = dailySel.split('-');
-        setDailyCalYM({
-          y: +p[0],
-          m: +p[1] - 1
-        });
-        setShowDailyCal(true);
-      },
+      onClick: openDailyCal,
       className: "flex-1 py-2.5 bg-white border-2 border-slate-800 rounded-lg font-black text-lg text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\uD83D\uDCC5 ", dailySel, dIsToday ? '（今天）' : ''), /*#__PURE__*/React.createElement("button", {
       disabled: dailySel >= todayStr(),
@@ -2402,7 +2274,7 @@ function MinesGame() {
       className: "z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
-    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showDailyCal && renderDailyCalendar(), showHelp && /*#__PURE__*/React.createElement("div", {
+    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showHelp && /*#__PURE__*/React.createElement("div", {
       className: "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4",
       onClick: function onClick() {
         return setShowHelp(false);
@@ -2671,10 +2543,29 @@ function MinesGame() {
     }, "\u77E5\u9053\u4E86\uFF0C\u958B\u59CB\u73A9\uFF01"))));
   }
 
-  // ---------- 多人等待畫面（hub 一般對局：房主全員到齊自動開局；錦標賽：準備+房主開始） ----------
+  // ---------- 多人等待畫面（站規：等候室只有殼的房間頁一個，遊戲內不另設——hub 一般對局只顯示極簡等待卡等自動開局；錦標賽用與數獨/數橋同款的局間等待卡：名單徽章＋準備鈕＋房主開始本局） ----------
   if (screen === 'mp') {
     var M = mpRef.current;
     var szName = (SIZES[M.sizeId] || SIZES[9]).name;
+    if (!M.tourn) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: "mp",
+        className: "min-h-screen w-full flex flex-col items-center p-4 relative"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "flex-1 flex items-center justify-center w-full"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "text-5xl mb-3"
+      }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
+        className: "font-black text-2xl text-slate-800 animate-pulse"
+      }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
+        className: "font-bold text-slate-400 text-sm mt-2"
+      }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))), /*#__PURE__*/React.createElement("div", {
+        ref: platBarRef,
+        className: "h-16 shrink-0 w-full max-w-md"
+      }));
+    }
     var racersW = players.filter(function (p) {
       return !p.spectator && !p.pending;
     });
@@ -2685,63 +2576,65 @@ function MinesGame() {
       return p.ready;
     });
     var waitedW = waitSinceRef.current ? Date.now() - waitSinceRef.current : 0;
-    var canStartW = M.isHost && racersW.length >= 2 && (!M.tourn || pendW.length === 0 && allReadyW || waitedW >= 60000); // 錦標賽閘門比照數獨：全員到齊+全員準備，或等滿 60 秒（未到者開賽清席、遲到觀戰加入）
-    var startNoteW = !M.isHost ? '' : racersW.length < 2 ? '等待選手加入（至少 2 位）…' : M.tourn ? canStartW ? pendW.length ? '未到的選手將以觀戰身分加入' : '' : pendW.length ? '等待全員到齊…' : '等待全員準備（或 ' + Math.max(0, 60 - Math.floor(waitedW / 1000)) + ' 秒後開放開始）' : M.hub ? '全員到齊後自動開始，也可以直接開始' : '';
+    var canStartW = M.isHost && racersW.length >= 2 && (pendW.length === 0 && allReadyW || waitedW >= 60000); // 錦標賽閘門比照數獨：全員到齊+全員準備，或等滿 60 秒（未到者開賽清席、遲到觀戰加入）
+    var startNoteW = !M.isHost ? '' : racersW.length < 2 ? '等待選手加入（至少 2 位）…' : canStartW ? pendW.length ? '未到的選手將以觀戰身分加入' : '' : pendW.length ? '等待全員到齊…' : '等待全員準備（或 ' + Math.max(0, 60 - Math.floor(waitedW / 1000)) + ' 秒後開放開始）';
+    var myEntryW = players.find(function (p) {
+      return p.id === myId;
+    });
+    var tInfo = M.tournInfo || {};
     return /*#__PURE__*/React.createElement("div", {
       key: "mp",
-      className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative"
+      className: "min-h-screen w-full flex flex-col items-center p-4 relative"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
-    }, /*#__PURE__*/React.createElement("h2", {
-      className: "font-black text-2xl text-slate-800 mb-1"
-    }, "\uD83D\uDCA3 \u8E29\u5730\u96F7", M.tourn ? '・錦標賽' : ''), /*#__PURE__*/React.createElement("p", {
-      className: "font-bold text-slate-400 text-sm mb-4"
-    }, M.mode === 'race' ? '⚔️ 競速對戰' : '🤝 合作模式', "\u30FB", szName, "\u30FB\u623F\u9593 ", M.code), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 flex items-center justify-center w-full"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-center text-4xl mb-1"
+    }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
+      className: "font-black text-2xl text-slate-800 text-center"
+    }, "\u9326\u6A19\u8CFD\u30FB\u7B2C ", tInfo.round || '?', " \u5C40"), /*#__PURE__*/React.createElement("div", {
+      className: "font-bold text-slate-400 text-sm text-center mt-1 mb-4"
+    }, "\u672C\u5C40\uFF1A\u8E29\u5730\u96F7\u7AF6\u901F\u30FB", szName, "\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB"), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-2 mb-4"
     }, players.map(function (p) {
       return /*#__PURE__*/React.createElement("div", {
         key: p.id,
-        className: "flex items-center gap-2 bg-slate-50 border-2 border-slate-200 rounded-lg px-3 py-2"
+        className: "flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"
       }, /*#__PURE__*/React.createElement("span", {
         className: "w-4 h-4 rounded-full border-2 border-slate-800 shrink-0",
         style: {
           background: p.color
         }
       }), /*#__PURE__*/React.createElement("span", {
-        className: "font-black text-slate-700 flex-1 text-left truncate"
-      }, p.name, p.id === myId ? '（你）' : ''), p.isHost && /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-black text-slate-500"
-      }, "\uD83D\uDC51 \u623F\u4E3B"), p.pending ? /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-black text-slate-400"
+        className: "truncate"
+      }, p.name, p.isHost ? ' 👑' : '', p.id === myId ? '（你）' : ''), /*#__PURE__*/React.createElement("span", {
+        className: "ml-auto shrink-0"
+      }, p.pending ? /*#__PURE__*/React.createElement("span", {
+        className: "text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md"
       }, "\u672A\u5230") : p.offline ? /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-black text-rose-500"
+        className: "text-[10px] bg-rose-100 border border-rose-400 text-rose-600 px-1.5 py-0.5 rounded-md"
       }, "\u96E2\u7DDA") : p.spectator ? /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-black text-sky-600"
-      }, "\uD83D\uDC41\uFE0F \u89C0\u6230") : M.mode === 'race' && p.ready ? /*#__PURE__*/React.createElement("span", {
-        className: "text-xs font-black text-emerald-600"
-      }, "\u2705 \u5DF2\u6E96\u5099") : null, (M.isHost || p.id === myId) && !p.pending && /*#__PURE__*/React.createElement("button", {
-        onClick: function onClick() {
-          return toggleSpec(p.id);
-        },
-        className: "text-xs font-black px-2 py-1 rounded-md border-2 border-slate-300 bg-white active:translate-y-[1px]"
-      }, p.spectator ? '🎮 改參賽' : '👁️ 改觀戰'));
+        className: "text-[10px] bg-sky-100 border border-sky-400 text-sky-700 px-1.5 py-0.5 rounded-md"
+      }, "\uD83D\uDC41\uFE0F \u89C0\u6230") : p.ready ? /*#__PURE__*/React.createElement("span", {
+        className: "text-[10px] bg-emerald-100 border border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-md"
+      }, "\u2705 \u6E96\u5099\u597D\u4E86") : /*#__PURE__*/React.createElement("span", {
+        className: "text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md"
+      }, "\u672A\u6E96\u5099")));
     }), !players.length && /*#__PURE__*/React.createElement("p", {
-      className: "font-bold text-slate-400"
-    }, "\u9023\u7DDA\u4E2D\u2026")), M.tourn && M.mode === 'race' && /*#__PURE__*/React.createElement("button", {
+      className: "font-bold text-slate-400 text-center py-2"
+    }, "\u9023\u7DDA\u4E2D\u2026")), myEntryW && !myEntryW.pending && !myEntryW.spectator && /*#__PURE__*/React.createElement("button", {
       onClick: toggleMyReady,
-      className: "w-full py-3 mb-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
-    }, myReadySt ? '✅ 已準備（點擊取消）' : '✋ 我準備好了'), M.isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+      className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500')
+    }, myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'), M.isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
       disabled: !canStartW,
       onClick: startMatch,
-      className: "w-full py-3.5 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 disabled:shadow-none"
-    }, M.mode === 'race' ? '⚔️ 開始競速' : '🤝 開始合作'), startNoteW && /*#__PURE__*/React.createElement("p", {
-      className: "text-xs font-bold text-slate-400 mt-2 text-center"
+      className: "w-full py-3 bg-[#fb923c] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
+    }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), startNoteW && /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-slate-500 font-bold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
-      className: "font-black text-slate-400 text-center py-1"
-    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB\u2026"), /*#__PURE__*/React.createElement("button", {
-      onClick: requestLobby,
-      className: "w-full mt-3 py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
-    }, "\uD83C\uDFC1 \u56DE\u623F\u9593\u9801")), /*#__PURE__*/React.createElement("div", {
+      className: "font-black text-slate-700 animate-pulse text-center"
+    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))), /*#__PURE__*/React.createElement("div", {
       ref: platBarRef,
       className: "h-16 shrink-0 w-full max-w-md"
     }));
@@ -2758,29 +2651,11 @@ function MinesGame() {
       width: colW,
       maxWidth: "100%"
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: requestLobby,
-    className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, "\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     className: "font-black text-slate-700"
   }, mpRef.current.mode === 'race' ? '⚔️ 競速對戰' : '🤝 合作模式'), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5"
-  }, mpRef.current.tourn && mpRef.current.isHost && typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND() && /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      if (!feArm) {
-        setFeArm(true);
-        if (feArmTimerRef.current) clearTimeout(feArmTimerRef.current);
-        feArmTimerRef.current = setTimeout(function () {
-          return setFeArm(false);
-        }, 3500);
-      } else {
-        if (feArmTimerRef.current) clearTimeout(feArmTimerRef.current);
-        setFeArm(false);
-        if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
-      }
-    },
-    className: "px-2.5 py-1.5 bg-rose-500 border-2 border-slate-800 rounded-lg font-black text-white shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, feArm ? '⚠️ 確定結束？' : '⏹️ 結束本局'), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       var m = !muted;
       setMuted(m);
@@ -2790,20 +2665,13 @@ function MinesGame() {
     className: "px-2.5 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
   }, muted ? '🔇' : '🔊'), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
-      if (!leaveArm) {
-        setLeaveArm(true);
-        if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current);
-        leaveArmTimerRef.current = setTimeout(function () {
-          return setLeaveArm(false);
-        }, 3500);
-      } else {
-        if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current);
-        setLeaveArm(false);
-        leaveMatch();
-      }
+      return setShowExitMenu(true);
     },
+    title: "\u96E2\u958B\u5C0D\u5C40",
     className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, leaveArm ? '⚠️ 確定離開？' : '🚪 離開'))) : /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD0C", /*#__PURE__*/React.createElement("span", {
+    className: "ml-1"
+  }, "\u9000\u51FA")))) : /*#__PURE__*/React.createElement("div", {
     className: "w-full flex items-center justify-between mb-2",
     style: {
       width: colW,
@@ -2831,7 +2699,42 @@ function MinesGame() {
       if (dailyDate) startDaily(dailyDate);else newGame(sizeId);
     },
     className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, "\uD83D\uDD04 \u91CD\u958B"))), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD04 \u91CD\u958B"))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
+    onClick: function onClick() {
+      return setShowExitMenu(false);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn",
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-black text-xl text-slate-800 mb-4"
+  }, "\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F"), typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND() && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setShowExitMenu(false);
+      if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
+    },
+    className: "w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+  }, "\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setShowExitMenu(false);
+      requestLobby();
+    },
+    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+  }, "\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setShowExitMenu(false);
+      leaveMatch();
+    },
+    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+  }, "\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowExitMenu(false);
+    },
+    className: "w-full py-2 text-slate-400 font-bold hover:text-slate-700"
+  }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
     className: "w-full flex items-center justify-between mb-2 px-1",
     style: {
       width: colW,
