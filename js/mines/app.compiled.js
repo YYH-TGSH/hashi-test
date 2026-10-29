@@ -160,18 +160,38 @@ function computeNums(w, h, L) {
   }
   return N;
 }
-// 第一次點擊保護：若首點是雷，把那顆雷確定性地移到「最低編號的非雷格」（全員同 seed+同首點 → 同結果；競速時各人只影響自己的盤）
-function relocateMine(L, clickIdx) {
-  if (!L[clickIdx]) return L;
-  var NL = L.slice();
-  NL[clickIdx] = false;
-  for (var i = 0; i < NL.length; i++) {
-    if (i !== clickIdx && !NL[i]) {
-      NL[i] = true;
-      break;
+// 第一次點擊保護（2026-10-29 使用者定案）：點的格子＋周圍 8 格整圈都不能有雷——把保護圈內的雷
+// 依編號序移到圈外「最低編號的非雷格」（圈內格不可當落點）。確定性：全員同 seed＋同首點 → 同結果；競速時各人只影響自己的盤
+// 回傳 { layout: 新盤面, moves: [[from, to], ...] }（moves 空陣列＝本來就安全、盤面不變）
+function makeFirstSafe(L, w, h, clickIdx) {
+  var zone = {};
+  zone[clickIdx] = true;
+  neighborsOf(w, h, clickIdx).forEach(function (i) {
+    zone[i] = true;
+  });
+  var NL = L.slice(),
+    moves = [];
+  Object.keys(zone).map(Number).filter(function (i) {
+    return NL[i];
+  }).sort(function (a, b) {
+    return a - b;
+  }).forEach(function (from) {
+    NL[from] = false;
+    var placed = false;
+    for (var i = 0; i < NL.length; i++) {
+      if (!zone[i] && !NL[i]) {
+        NL[i] = true;
+        moves.push([from, i]);
+        placed = true;
+        break;
+      }
     }
-  }
-  return NL;
+    if (!placed) NL[from] = true; // 圈外無空格（本遊戲的雷密度不會發生）：退回原位，不吃掉雷
+  });
+  return {
+    layout: NL,
+    moves: moves
+  };
 }
 // 從 from 挖開：回傳 {cells: 新狀態陣列, hit: 踩到的雷 index 或 -1, opened: 本次新開的安全格數}
 // cells 狀態：'h' 未開 / 'o' 已開 / 'f' 插旗
@@ -442,8 +462,9 @@ function MinesGame() {
       N = baseNums,
       C = baseCells;
     if (firstRef.current) {
-      if (L[from]) {
-        L = relocateMine(L, from);
+      var fs = makeFirstSafe(L, sp.w, sp.h, from);
+      if (fs.moves.length) {
+        L = fs.layout;
         N = computeNums(sp.w, sp.h, L);
         setLayout(L);
         setNums(N);
@@ -997,14 +1018,11 @@ function MinesGame() {
       if (C[idx] !== 'h') return;
       var reloc = null;
       if (firstRef.current) {
-        if (L[idx]) {
-          var NL = relocateMine(L, idx);
-          for (var ri = 0; ri < NL.length; ri++) if (NL[ri] && !L[ri]) {
-            reloc = [idx, ri];
-            break;
-          }
-          L = NL;
+        var fs2 = makeFirstSafe(L, sp.w, sp.h, idx);
+        if (fs2.moves.length) {
+          L = fs2.layout;
           N = computeNums(sp.w, sp.h, L);
+          reloc = fs2.moves;
         }
         firstRef.current = false;
       }
@@ -1045,8 +1063,11 @@ function MinesGame() {
       bN = boardRef.current.nums;
     if (m.reloc && bL) {
       var NL2 = bL.slice();
-      NL2[m.reloc[0]] = false;
-      NL2[m.reloc[1]] = true;
+      var pairs = typeof m.reloc[0] === 'number' ? [m.reloc] : m.reloc;
+      pairs.forEach(function (pr) {
+        NL2[pr[0]] = false;
+        NL2[pr[1]] = true;
+      });
       bL = NL2;
       var spR = SIZES[mpRef.current.sizeId] || SIZES[9];
       bN = computeNums(spR.w, spR.h, bL);
@@ -2577,7 +2598,7 @@ function MinesGame() {
       className: "text-xs font-black text-slate-400"
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-black text-slate-700"
-    }, "\u4E0D\u662F\u5730\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u5730\u96F7\u5C31\u7D50\u675F\u2014\u2014\u7B2C\u4E00\u4E0B\u4FDD\u8B49\u4E0D\u8E29\u96F7")), /*#__PURE__*/React.createElement("div", {
+    }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F")), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, /*#__PURE__*/React.createElement("div", {
       className: "font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
