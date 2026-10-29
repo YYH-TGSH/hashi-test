@@ -1026,6 +1026,7 @@ function SudokuGame() {
     setFoggedBoxes({});
     setFinishViewMode('my');
     lastMilestoneRef.current = 0;
+    autoGodRef.current = false; // 每場重置自動上帝旗標：原本只有房主的 generateAndSync 會清，來賓第二場起完賽不再自動轉上帝（v1.13.0 功能對來賓半殘，稽核修）
   }, [startTime]);
   useEffect(function () {
     if (selectedChar && completedChars.has(selectedChar)) setSelectedChar(null);
@@ -1106,6 +1107,7 @@ function SudokuGame() {
 
   // 🏁 我完賽 → 自動轉上帝模式（使用者 2026-10-28）：不用按鈕、不怕成績卡關掉就打不開；每場只自動切一次，之後手動切回「我的版面」不再強迫
   var autoGodRef = useRef(false);
+  var matchTokenRef = useRef(null); // 對局世代代幣：房主每開新局鑄一個、隨每則 SYNC 廣播；收到代幣不符的 SYNC＝上一局遲到訊息，丟棄（原本 sessionId 從未賦值、世代守衛是死碼，稽核修）
   useEffect(function () {
     if (!isBrawlMode || finishViewMode !== 'my' || autoGodRef.current) return;
     if (!brawlWinners.some(function (w) {
@@ -1826,6 +1828,9 @@ function SudokuGame() {
   };
   handleReceiveCounterAttackRef.current = function () {
     if (isSpectator) return;
+    if (stateRef.current.matchPhase !== 'playing' || stateRef.current.brawlWinners.some(function (w) {
+      return w.id === myId;
+    })) return; // 非對局中/已完賽不受理：遲到訊息不可污染下一局或已完成的盤面（稽核修）
     showToast("💥 遭到反擊！數字按鍵順序大亂！");
     setKeyMapping(function (prev) {
       var newMap = _toConsumableArray(prev);
@@ -1966,6 +1971,7 @@ function SudokuGame() {
   // 接收道具：各項道具上限 3 個
   handleReceiveWeaponRef.current = function (ev) {
     if (ev.targetUid !== myId || isSpectator) return;
+    if (stateRef.current.matchPhase !== 'playing') return; // 等待/倒數期收到的遲到道具不進背包（稽核修）
     setMyWeapons(function (prev) {
       if (prev.filter(function (w) {
         return w === ev.weaponType;
@@ -1992,6 +1998,9 @@ function SudokuGame() {
       return;
     }
     if (isSpectator) return;
+    if (stateRef.current.matchPhase !== 'playing' || stateRef.current.brawlWinners.some(function (w) {
+      return w.id === myId;
+    })) return; // 霧效以絕對時間計：非對局中受理會滲進下一局開頭（稽核修）
     // 選一個隨機宮格（從有數字的格子中選）
     var totalBoxes = cSizeDef.size; // 9x9 有 9 個宮格 (boxId 0~8)
     var randomBoxId = Math.floor(Math.random() * totalBoxes);
@@ -2026,6 +2035,9 @@ function SudokuGame() {
       return;
     }
     if (isSpectator) return;
+    if (stateRef.current.matchPhase !== 'playing' || stateRef.current.brawlWinners.some(function (w) {
+      return w.id === myId;
+    })) return; // 已完賽的盤面不可被遲到的橡皮擦擦格（稽核修）
     var solution = solutionGridRef.current;
     if (!solution) return;
     // 找所有已填正確、非預填、非系統揭露的格子
@@ -2080,6 +2092,7 @@ function SudokuGame() {
 
   // 玩家主動使用道具：廣播攻擊
   var handleUseWeapon = function handleUseWeapon(weaponType) {
+    if (stateRef.current.matchPhase !== 'playing') return; // 發射端同守衛：等待/倒數期不可攻擊（稽核修）
     if (stateRef.current.myWeapons.length === 0) return;
     var idx = stateRef.current.myWeapons.indexOf(weaponType);
     if (idx === -1) return;
@@ -2272,6 +2285,7 @@ function SudokuGame() {
   };
   var syncState = function syncState(partial) {
     var shouldBroadcast = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    if (partial.matchToken) matchTokenRef.current = partial.matchToken;else if (isHostRef.current && partial.isGenerating === true) matchTokenRef.current = Math.random().toString(36).slice(2, 10); // 房主開新局鑄代幣
     if (partial.cells !== undefined) setCells(partial.cells);
     if (partial.localCells !== undefined) setLocalCells(partial.localCells);
     if (partial.levelData !== undefined) setLevelData(partial.levelData);
@@ -2317,9 +2331,9 @@ function SudokuGame() {
     }
     if (partial.sizeId !== undefined) {
       setSizeId(partial.sizeId);
-      setKeyMapping(SIZES.find(function (s) {
+      setKeyMapping((SIZES.find(function (s) {
         return s.id === partial.sizeId;
-      }).chars);
+      }) || SIZES[1] || SIZES[0]).chars); // 未知 sizeId（跨版/損毀 SYNC）要有 fallback，不可裸解引用丟例外中斷整段 handler
     }
     if (partial.diffId !== undefined) setDiffId(partial.diffId);
     if (partial.strokes !== undefined) setStrokes(partial.strokes);
@@ -2352,6 +2366,7 @@ function SudokuGame() {
       }
       // 注意：永遠不廣播 localCells 與 selectedChar 給其他玩家 (v3.8.32)
 
+      if (matchTokenRef.current) broadcastData.matchToken = matchTokenRef.current; // 每則 SYNC 都蓋世代代幣
       if (isHostRef.current) connsRef.current.forEach(function (c) {
         return c.send({
           type: 'SYNC',
@@ -2477,12 +2492,15 @@ function SudokuGame() {
   var closeVictoryModal = function closeVictoryModal() {
     return setHideVictoryModal(true);
   };
+  var toastTimerRef = useRef(null);
   var showToast = function showToast(m) {
     setToastMsg(m);
-    setTimeout(function () {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(function () {
       return setToastMsg("");
     }, 4000);
-  };
+  }; // 新 toast 先取消舊計時器，否則前一則的計時器會提早清掉後一則（稽核修）
+
   var getSvgCoords = function getSvgCoords(clientX, clientY) {
     var svg = svgRef.current;
     if (!svg) return null;
@@ -4537,6 +4555,7 @@ function SudokuGame() {
     window.__PLAT_HOOKS_sudoku = {
       enter: function enter(sess) {
         // 開新局先清掉上一局的結算暫存（同數橋）：贏家/完賽名單/比賽階段全歸零，免得舊結算在新局重播
+        matchTokenRef.current = null; // 世代代幣歸零：新房間的第一則 SYNC 重新認領，避免舊房間的代幣把新局 SYNC 全擋掉
         setWinner(null);
         setIsWon(false);
         setEndTime(null);
@@ -4905,8 +4924,10 @@ function SudokuGame() {
               });
               showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40"));
             } else if (m.type === 'SYNC') {
-              syncState(m.data, false);
-              if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
+              if (!(m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime))) {
+                syncState(m.data, false);
+                if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
+              }
             } else if (m.type === 'PLAYERS_UPDATE') {
               if (m.players) setPlayersList(m.players);
             } else if (m.type === 'REQ_READY') {
@@ -5011,12 +5032,7 @@ function SudokuGame() {
               connsRef.current.forEach(function (conn) {
                 if (conn.open && conn !== c) conn.send(m);
               });
-            } else if (m.type === 'REQ_REJOIN') connRef.current.send({
-              type: 'JOIN',
-              pName: myNameRef.current || "玩家",
-              uid: myId,
-              color: myColorRef.current
-            });else if (m.type === 'RECEIVE_GIFT') {
+            } else if (m.type === 'REQ_REJOIN') {/* 房主不處理 REQ_REJOIN：原寫法用房主恆為 null 的 connRef 會丟 TypeError；來賓自癒靠自己週期性重送 JOIN（稽核修） */} else if (m.type === 'RECEIVE_GIFT') {
               setUnopenedGifts(function (prev) {
                 var q = prev[m.targetUid] || [];
                 return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, m.targetUid, [].concat(_toConsumableArray(q), [m.senderUid || 'system'])));
@@ -5125,18 +5141,20 @@ function SudokuGame() {
             setPlayersList(m.players);
             setIsSpectator(m.isSpectator);
           } else if (m.type === 'SYNC') {
-            syncState(m.data, false);
-            if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
-            // 客端收到同步後也立刻存檔備援 (v3.8.21)
-            if (roomId && !isSpectator) {
-              saveLocalProgress(roomId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells, m.data.sessionId || stateRef.current.sessionId, {
-                solution: solutionGridRef.current,
-                players: playersListRef.current,
-                sizeId: m.data.sizeId,
-                diffId: m.data.diffId,
-                isBrawl: m.data.isBrawlMode,
-                isGhost: m.data.isBrawlMode
-              });
+            if (m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面 */} else {
+              syncState(m.data, false);
+              if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
+              // 客端收到同步後也立刻存檔備援 (v3.8.21)
+              if (roomId && !isSpectator) {
+                saveLocalProgress(roomId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells, m.data.sessionId || stateRef.current.sessionId, {
+                  solution: solutionGridRef.current,
+                  players: playersListRef.current,
+                  sizeId: m.data.sizeId,
+                  diffId: m.data.diffId,
+                  isBrawl: m.data.isBrawlMode,
+                  isGhost: m.data.isBrawlMode
+                });
+              }
             }
           } else if (m.type === 'PLAYERS_UPDATE') {
             if (m.players) setPlayersList(m.players);

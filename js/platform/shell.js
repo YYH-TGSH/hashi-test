@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.14.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.14.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -546,7 +546,7 @@
   }
   function syncTournForm() {
     var H = ensureHub(), dis = !Net.isHost;
-    function set(id, v, isChk) { var el = $(id); if (!el) return; if (isChk) el.checked = !!v; else el.value = String(v); el.disabled = dis; }
+    function set(id, v, isChk) { var el = $(id); if (!el) return; if (!isChk && document.activeElement === el && (el.tagName === 'INPUT')) return; if (isChk) el.checked = !!v; else el.value = String(v); el.disabled = dis; } // 正在編輯的文字欄不覆寫：hubRender 每秒/每次名單變動都會跑，打字途中被蓋回舊值很惱人
     set('ts-size', H.cfg.sudoku.sizeId); set('ts-diff', H.cfg.sudoku.diffId);
     set('ts-weapons', H.cfg.sudoku.allowWeapons, 1); set('ts-gifts', H.cfg.sudoku.allowGifts, 1);
     set('ts-yellow', H.cfg.sudoku.allowYellowHint, 1); set('ts-god', H.cfg.sudoku.showNumbersInGodMode, 1);
@@ -771,16 +771,17 @@
             var ocJ = Net.conns[oldPidJ]; if (ocJ) { delete Net.conns[oldPidJ]; try { ocJ.close(); } catch (e) {} }
           }
         }
-        var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(d.name); });
+        var safeName = String(d.name || '玩家').replace(/[<>&"']/g, '').slice(0, 12) || '玩家'; // 名稱來自網路輸入：一律去 HTML 字元＋截 12 字再進名單（名單多處以 innerHTML 渲染）
+        var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(safeName); });
         if (clash) { platSend(c, { kind: 'reject', reason: 'name_taken' }); return; }
         if (!Net.roster.some(function (p) { return p.pid === pid; })) {
-          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: d.name || '玩家', color: d.color, host: false, _joinedAt: Date.now() });
+          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: safeName, color: d.color, host: false, _joinedAt: Date.now() });
         }
         Net.lastSeen[pid] = Date.now();
         tournRebind();
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }, pid);
-        sysChat('👋 ' + (d.name || '玩家') + ' 加入了房間');
+        sysChat('👋 ' + safeName + ' 加入了房間');
         platSend(c, { kind: 'hubstate', ready: ensureHub().ready, spec: ensureHub().spec });
         platSend(c, { kind: 'hubcfg', game: 'sudoku', cfg: ensureHub().cfg.sudoku });
         platSend(c, { kind: 'hubcfg', game: 'hashi', cfg: ensureHub().cfg.hashi });
@@ -827,7 +828,7 @@
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); } break;
+      case 'arm': if (!Net.isHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
       case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
       case 'ready': case 'spec': {
         if (!Net.isHost) return;
@@ -846,6 +847,7 @@
       }
       case 'identity-denied': lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
       case 'launch': {
+        if (['sudoku', 'hashi', 'mines'].indexOf(d.game) < 0) break; // 未知 game（跨版/損毀訊息）不可把畫面切成整面空白
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
           var dupLaunch = Net.inMatch === d.game && (!d.tourn || (Net.tourn && Net.tourn.round === d.tourn.round));
@@ -855,7 +857,7 @@
       }
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
       case 'host-leaving': if (!Net.isHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）
-      case 'tourn-setup': Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + ((d.cfg && d.cfg.totalRounds) || 5) + ' 局'); renderTourn(); break;
+      case 'tourn-setup': if (d.cfg && d.cfg.entrants) { Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + (d.cfg.totalRounds || 5) + ' 局'); renderTourn(); } break; // cfg 缺失/缺 entrants 時 tournNewState 會丟例外讓 Net.tourn 半成品，先擋下
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
           var ta = Net.tourn, all2 = (ta.acks = ta.acks || {});
@@ -866,7 +868,7 @@
         }
         break;
       }
-      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
+      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; if (d.tiedPids) tst.tiedPids = d.tiedPids; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
       case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
       case 'tourn-abort': tournClear(); renderLobby(); break;
     }
@@ -925,7 +927,7 @@
         if (done) return; done = true;
         Net.conns[Net.hostPid] = c; wireConn(c);
         Net.migrating = false;
-        Net.restored = true; // 接管重連：遊戲由 migrateGame 重設，launch 重播不可再 enter 一次（雙重 setup 會弄亂 refs）
+        Net.restored = !!Net.inMatch; // 接管重連：對局中才需要擋 launch 重播（遊戲已由 migrateGame 重設）；不在對局中（房間頁斷線）不可設，否則旗標殘留會吞掉下一局的 launch（v1.14.2 稽核修）
         platSend(c, { kind: 'join', name: Net.me.name, color: Net.me.color, uid: Net.myUid, ver: PLAT_VERSION });
         sysChat('📡 已重連到新房主');
         renderLobby(); updateDock();
@@ -939,8 +941,8 @@
     var hk = window['__PLAT_HOOKS_' + g]; if (!hk) return;
     var sess = { code: Net.code, name: Net.me.name, isHost: amHost, mode: Net.matchMode || 'coop' };
     window.__PLAT_CREATING_GAME = g;
-    if (hk.migrate) { try { hk.migrate(amHost, sess); } catch (e) {} }
-    else if (hk.enter) { try { hk.enter(sess); } catch (e) {} }
+    if (hk.migrate) { try { hk.migrate(amHost, sess); } catch (e) { console.error('[plat] migrate ' + g + ' failed', e); platToast('⚠️ 遊戲接管重設失敗，可能需要回房間頁重開'); } }
+    else if (hk.enter) { try { hk.enter(sess); } catch (e) { console.error('[plat] migrate-enter ' + g + ' failed', e); platToast('⚠️ 遊戲接管重設失敗，可能需要回房間頁重開'); } }
     window.__PLAT_CREATING_GAME = null;
   }
   function teardownPeer() {
@@ -950,6 +952,7 @@
   }
   function endSession(msg) {
     Net.migrating = false;
+    Net.restored = false; // 場次結束一律清接管旗標，不讓它殘留吞下一局 launch
     rejoinBusy(false);
     if (Net.hub) { Net.hub.enteredAt = 0; Net.hub.ready = {}; Net.hub.spec = {}; }
     Net.lastLaunch = null;
@@ -965,6 +968,7 @@
     if (msg) lobbyMsg(msg);
   }
   function createRoom() {
+    if (Net.peer && !Net.peer.destroyed) return; // 已有 peer 時重入建房只會產生雙 peer 狀態混亂
     var name = readIdentity();
     if (!name) { lobbyMsg('⚠️ 請先輸入暱稱'); return; }
     var code = storeGet('plat_code');
@@ -1003,6 +1007,7 @@
     });
   }
   function joinRoom() {
+    if (Net.peer && !Net.peer.destroyed) return; // 同 createRoom：防重入雙 peer
     var name = readIdentity();
     if (!name) { lobbyMsg('⚠️ 請先輸入暱稱'); return; }
     var code = ($('lob-code').value || '').trim();
@@ -1080,14 +1085,14 @@
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
       window.__PLAT_CREATING_GAME = game; // enter 內建立的 VirtualPeer 蓋上本遊戲戳記（背景遊戲訊息靠它在 routeData 被丟棄）
-      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true }); } catch (e) {}
+      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true }); } catch (e) { console.error('[plat] enter ' + game + ' failed', e); platToast('⚠️ 遊戲啟動失敗，請回房間頁再試一次'); }
       window.__PLAT_CREATING_GAME = null;
       if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game, uid: Net.myUid }); }
     });
   }
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
   function doReturnToLobby() {
-    var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null;
+    var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null; Net.restored = false; // 回房間頁＝本局結束：接管旗標一律清，launch 重播沒來也不許殘留到下一局
     if (g) exitGameHook(g);
     // 注意：這裡不 podHide——頒獎台是回大廳的儀式，來賓先收到 tourn-score 播台、隨後才被 return 帶回大廳，藏掉就永遠看不到
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
@@ -1174,11 +1179,11 @@
   function tournCreate() {
     if (!Net.isHost || Net.tourn) return;
     var sC = ensureHub().cfg.sudoku, hC = ensureHub().cfg.hashi, mC = ensureHub().cfg.mines;
-    var cfg = { order: $('t-order').value,
+    var cfg = { order: ($('t-order') || {}).value || 'alt-s',
       sudoku: { sizeId: Number(sC.sizeId) || 9, diffId: sC.diffId || 'medium', allowWeapons: sC.allowWeapons !== false, allowGifts: sC.allowGifts !== false, allowYellowHint: !!sC.allowYellowHint, showNumbersInGodMode: !!sC.showNumbersInGodMode, allowQuickFill: !!sC.allowQuickFill, allowTraversal: !!sC.allowTraversal, weaponStartTime: (function () { var w = Number(sC.weaponStartTime); return isNaN(w) ? 60 : Math.max(0, Math.min(600, w)); })() },
       hashi: { sizeId: Number(hC.sizeId) || 2, itemsEnabled: hC.itemsEnabled !== false, godNumbers: hC.godNumbers !== false },
       mines: { sizeId: Number(mC.sizeId) || 9 },
-      roundSecs: Number($('t-secs').value), totalRounds: Number(($('t-rounds') || {}).value) || 5, rounds: null,
+      roundSecs: Number(($('t-secs') || {}).value) || 300, totalRounds: Number(($('t-rounds') || {}).value) || 5, rounds: null,
       entrants: Net.roster.map(function (p) { return { pid: p.pid, uid: p.uid || p.pid, name: p.name, color: p.color }; }) };
     cfg.rounds = tournBuildRounds(cfg.order, cfg.totalRounds);
     var badVer = Net.roster.filter(function (p) { return p.ver && p.ver !== PLAT_VERSION; });
@@ -1372,7 +1377,7 @@
   }
   function tournStateMsg() { // 完整賽程狀態（接管備份/重連同步用）
     var t = Net.tourn; if (!t) return null;
-    return { kind: 'tourn-score', phase: t.phase, round: t.round, game: t.curGame, progress: t.progress, finishOrder: t.finishOrder, boom: t.boom, totals: t.totals, wins: t.wins, history: t.history };
+    return { kind: 'tourn-score', phase: t.phase, round: t.round, game: t.curGame, progress: t.progress, finishOrder: t.finishOrder, boom: t.boom, totals: t.totals, wins: t.wins, history: t.history, tiedPids: t.tiedPids };
   }
   function tournSnapshot(force) { // 局中定期把進度/完賽序同步給全員，接管時新房主才有資料結算本局
     var t = Net.tourn; if (!t || !Net.isHost) return;
@@ -1580,7 +1585,7 @@
   // popover 開合（zoomOpen/drawOpen）由殼持有；模式鈕規則與數獨/數橋原行為一致：
   // 在塗鴉模式且 popover 關閉時按模式鈕 → 只重開 popover；其餘 → onAction('mode-press') 由遊戲切換。
   var PB = { el: null, cfg: null, state: null, zoomOpen: false, drawOpen: false, dockOpen: false, lastMode: -1, unsub: null, lastJson: null };
-  function pbEsc(t) { return String(t == null ? '' : t); }
+  function pbEsc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); } // 名稱/標籤進 innerHTML 前一律跳脫（原為直通，改造客戶端送 HTML 名稱可注入標記）
   function pbRender() {
     if (!PB.el || !PB.state || !PB.cfg) return;
     var st = PB.state, ac = PB.cfg.accent || '#ffcc00';
@@ -2259,7 +2264,7 @@
   VirtualConn.prototype.close = function () { this._closed = true; }; // 共用連線：不關實體連線
   VirtualConn.prototype._fire = function (ev, arg) {
     var l = this._cbs[ev] || [];
-    for (var i = 0; i < l.length; i++) { try { l[i](arg); } catch (e) {} }
+    for (var i = 0; i < l.length; i++) { try { l[i](arg); } catch (e) { console.warn('[plat] game conn handler error (' + ev + ')', e); } } // 不再全靜默：遊戲 handler 丟例外至少留 console 紀錄可查
   };
   function VirtualPeer(id) {
     this.id = id || Net.myPid;
@@ -2281,7 +2286,7 @@
   };
   VirtualPeer.prototype._fire = function (ev, arg) {
     var l = this._cbs[ev] || [];
-    for (var i = 0; i < l.length; i++) { try { l[i](arg); } catch (e) {} }
+    for (var i = 0; i < l.length; i++) { try { l[i](arg); } catch (e) { console.warn('[plat] game peer handler error (' + ev + ')', e); } }
   };
   VirtualPeer.prototype.wrapperFor = function (realConn, peerLabel) {
     var key = realConn.peer;
@@ -2358,6 +2363,7 @@
     var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
+      if (colorSpinning) return; // 拉霸進行中擋手動連點：否則會先建一次房、拉霸結束的回呼再補點一次，產生兩個 peer（完成回呼是在 colorSpinning 清除後才觸發，不受此守衛影響）
       var name = (nameInp.value || '').trim();
       if (!name) {
         if (slotTimer) return;

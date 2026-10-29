@@ -114,7 +114,8 @@ function normName(n) {
 function readDailyRecord(dateStr) {
   try {
     var raw = localStorage.getItem('hashi_daily_' + dateStr);
-    return raw ? JSON.parse(raw) : null;
+    var p = raw ? JSON.parse(raw) : null;
+    return p && typeof p.time === 'number' && isFinite(p.time) ? p : null; // 形狀不符（舊版/損毀資料）視同無紀錄：recordDailyWin 直接讀 prev.time 算 Math.min，NaN 會一路污染最佳時間（稽核修）
   } catch (e) {
     return null;
   }
@@ -1963,12 +1964,15 @@ function HashiGame() {
     if (interactionMode === 2) {
       if (drawSubMode === 'pen' && isDrawingRef.current) {
         isDrawingRef.current = false;
-        if (currentPathDataRef.current) {
-          var newStrokes = [].concat(_toConsumableArray(stateRef.current.strokes), [{ id: Date.now() + '-' + myId, uid: myId, path: currentPathDataRef.current }]);
-          raceAwareSync({ strokes: newStrokes });
-          currentPathDataRef.current = "";
-          if (drawingPathRef.current) drawingPathRef.current.style.display = 'none';
-        }
+        if (e.type === 'pointercancel') {
+          currentPathDataRef.current = "";if (drawingPathRef.current) drawingPathRef.current.style.display = 'none';
+        } // pointercancel 比照架橋手勢：作廢不結算，不可把半截筆觸送出（稽核修）
+        else if (currentPathDataRef.current) {
+            var newStrokes = [].concat(_toConsumableArray(stateRef.current.strokes), [{ id: Date.now() + '-' + myId, uid: myId, path: currentPathDataRef.current }]);
+            raceAwareSync({ strokes: newStrokes });
+            currentPathDataRef.current = "";
+            if (drawingPathRef.current) drawingPathRef.current.style.display = 'none';
+          }
       }
       if (e.type === 'pointerleave' || e.type === 'pointercancel' || e.pointerType === 'touch') {
         if (eraserRef.current) eraserRef.current.style.display = 'none';
@@ -2153,10 +2157,10 @@ function HashiGame() {
       var cur = mine.find(function (b) {
         return samePair(b, solB);
       });
-      if (!cur || cur.count >= solB.count) return false;
+      if (!cur || cur.count + (cur.draftCount || 0) >= solB.count) return false; // 總量（實線＋草稿）已達解答量不可再補：原只看實線，草稿 2 條時補實線會衝破上限 2（稽核修）
       return !mine.some(function (b) {
-        return b.count > 0 && !samePair(b, solB) && segCross(solB, b);
-      });
+        return b.count + (b.draftCount || 0) > 0 && !samePair(b, solB) && segCross(solB, b);
+      }); // 交叉阻擋也要算草稿橋，否則補出的實線會跨過既有草稿
     });
     if (!cands.length) {
       showToast('🧲 目前沒有能補上的正確橋');return false;
@@ -3752,8 +3756,15 @@ function HashiGame() {
               });
               // 🏁 比賽進行中回座/加入：補發 RACE_RESUME（選手還原盤面快照、觀戰者進上帝視角）
               if (mpModeRef.current === 'race' && (raceStateRef.current === 'countdown' || raceStateRef.current === 'racing')) {
+                // 重連回座先撤銷他斷線時被記的 DNF 並廣播，否則他之後的 RACE_FINISH 會被各端的 DNF 紀錄擋下、各端名次分歧（稽核修）
+                if (raceResultsRef.current[m.uid] && raceResultsRef.current[m.uid].dnf) {
+                  delete raceResultsRef.current[m.uid];
+                  connsRef.current.forEach(function (conn) {
+                    if (conn !== c && conn.open) conn.send({ type: 'RACE_UNDNF', uid: m.uid });
+                  });
+                }
                 var snap = brawlBoardsRef.current[m.uid];
-                c.send({ type: 'RACE_RESUME', data: { randomLevelData: stateRef.current.randomLevelData, levelId: stateRef.current.levelId, showSolution: false, startTime: raceStartAtRef.current, strokes: [] }, startAt: raceStartAtRef.current, racers: racersRef.current, settings: brawlSettingsRef.current, bridges: snap ? snap.bridges : null, progress: raceProgressRef.current });
+                c.send({ type: 'RACE_RESUME', data: { randomLevelData: stateRef.current.randomLevelData, levelId: stateRef.current.levelId, showSolution: false, startTime: raceStartAtRef.current, strokes: [] }, startAt: raceStartAtRef.current, racers: racersRef.current, settings: brawlSettingsRef.current, bridges: snap ? snap.bridges : null, progress: raceProgressRef.current, results: raceResultsRef.current });
               }
               // 📹 若房主已開視訊，自動撥給新加入的玩家，並同步麥克風狀態
               if (!PLAT_MODE && videoOnRef.current && localStreamRef.current && c.open) {
@@ -4007,6 +4018,17 @@ function HashiGame() {
             beginRace(m.data, m.startAt, m.racers, m.settings);
             if (m.bridges) setBridges(m.bridges);
             if (m.progress) setRaceProgress(m.progress);
+            if (m.results) {
+              // 房主端的既有成績（完賽/DNF）一併帶回：beginRace 剛把本地成績清空，不補回來可能永遠湊不滿結算人數（稽核修）
+              var rr = {};
+              Object.keys(m.results).forEach(function (k) {
+                if (k !== myId) rr[k] = m.results[k];
+              });
+              raceResultsRef.current = rr;
+              if (m.results[myId] && m.results[myId].timeMs != null) myFinishTimeRef.current = m.results[myId].timeMs; // 自己重整頁面回座：恢復自己的完賽時間（自己的成績不進 raceResultsRef，maybeFinalize 是分開計的）
+            }
+          } else if (m.type === 'RACE_UNDNF') {
+            if (raceResultsRef.current[m.uid] && raceResultsRef.current[m.uid].dnf) delete raceResultsRef.current[m.uid]; // 對手斷線又回座：撤銷 DNF，他完賽時才會被承認
           } else if (m.type === 'RACE_PROGRESS') {
             setRaceProgress(function (prev) {
               return _extends({}, prev, _defineProperty({}, m.uid, { progress: m.progress, name: m.name, color: m.color }));
@@ -4127,6 +4149,7 @@ function HashiGame() {
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
+    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0); // 道具特效也要清：回主畫面後 8-10 秒內開單機/合作局，上一局的霧/幻影/顛倒會直接漏進新局（其他離場路徑都有清，獨漏這條，稽核修）
     resetWinMeta();
   };
 
@@ -4317,6 +4340,13 @@ function HashiGame() {
       stateRef.current = _extends({}, stateRef.current, payload);
       setBrawlBoards({});setGodViewUid(null);
       setRaceResult(null);setRaceWaiting(false);
+      raceResultsRef.current = {}; // 觀戰者也要清上一場成績/進度：不清的話新局第一筆 RACE_FINISH 會被舊紀錄擋下、maybeFinalize 還會拿舊成績提前結算（稽核修，選手分支本來就有清）
+      var seedS = {};
+      playersListRef.current.forEach(function (p) {
+        seedS[p.id] = { progress: 0, name: p.name, color: p.color };
+      });
+      if (!seedS[myId]) seedS[myId] = { progress: 0, name: myNameRef.current || '你', color: myColorRef.current };
+      setRaceProgress(seedS);
       myItemsRef.current = [];setMyItems([]);
       setRaceState('spectating');raceStateRef.current = 'spectating';
       levelDimRef.current = { w: payload.randomLevelData.width, h: payload.randomLevelData.height };

@@ -369,11 +369,11 @@ function MinesGame() {
   var spec = SIZES[sizeId] || SIZES[9];
   var totalSafe = spec.w * spec.h - spec.mines;
   var openedSafe = useMemo(function () {
-    if (!cells || !layout) return 0;
+    if (!cells) return 0;
     var c = 0;
-    for (var i = 0; i < cells.length; i++) if (cells[i] === 'o' && !layout[i]) c++;
+    for (var i = 0; i < cells.length; i++) if (cells[i] === 'o' && (!layout || !layout[i])) c++;
     return c;
-  }, [cells, layout]);
+  }, [cells, layout]); // layout 為 null（合作來賓看不到雷位）時直接數已開格：'o' 恆為安全格，進度才不會恆 0%
   var flagsUsed = useMemo(function () {
     return cells ? countFlags(cells) : 0;
   }, [cells]);
@@ -731,6 +731,8 @@ function MinesGame() {
   var stateAtRef = useRef(0),
     lastProgRef = useRef(-1),
     dismissRef = useRef(null);
+  var stateArgsRef = useRef(null),
+    stateTrailRef = useRef(null); // MINE_STATE 節流的尾隨補送（純插旗不改 progress，沒補送對手永遠看不到最後一支旗）
   var startedAtRef = useRef(null),
     myReadyRef = useRef(false),
     leaveArmTimerRef = useRef(null),
@@ -824,6 +826,11 @@ function MinesGame() {
     outcomeRef.current = null;
     setCdNum(null);
     iAmSpecRef.current = false;
+    boardRef.current = {
+      layout: null,
+      nums: null,
+      cells: null
+    }; // 上一場的權威盤面不可殘留到新場次（新 session 的 waiting 期若收到 ACT 會拿舊盤運算，稽核修）
   }
 
   // ----- 競速：本地狀態送出（progress 小訊息 + god 用盤面快照節流） -----
@@ -843,8 +850,15 @@ function MinesGame() {
         progress: prog
       });
     }
+    stateArgsRef.current = [cellsArr, numsArr, layoutArr];
     var now = Date.now();
-    if (!force && now - stateAtRef.current < 250) return;
+    if (!force && now - stateAtRef.current < 250) {
+      if (!stateTrailRef.current) stateTrailRef.current = setTimeout(function () {
+        stateTrailRef.current = null;
+        if (stateArgsRef.current) raceSendState(stateArgsRef.current[0], stateArgsRef.current[1], stateArgsRef.current[2], true);
+      }, 270);
+      return;
+    }
     stateAtRef.current = now;
     var sparse = {};
     for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') sparse[i] = numsArr[i];
@@ -981,9 +995,15 @@ function MinesGame() {
       if (C[idx] === 'h') C[idx] = 'f';else if (C[idx] === 'f') C[idx] = 'h';else return;
     } else {
       if (C[idx] !== 'h') return;
+      var reloc = null;
       if (firstRef.current) {
         if (L[idx]) {
-          L = relocateMine(L, idx);
+          var NL = relocateMine(L, idx);
+          for (var ri = 0; ri < NL.length; ri++) if (NL[ri] && !L[ri]) {
+            reloc = [idx, ri];
+            break;
+          }
+          L = NL;
           N = computeNums(sp.w, sp.h, L);
         }
         firstRef.current = false;
@@ -1008,6 +1028,7 @@ function MinesGame() {
       sparse: coopSparse(C, N),
       hit: hit,
       statusAfter: stAfter,
+      reloc: reloc || undefined,
       mines: stAfter === 'lost' ? L.map(function (v, i) {
         return v ? i : -1;
       }).filter(function (v) {
@@ -1019,6 +1040,33 @@ function MinesGame() {
   }
   function adoptCoopDo(m) {
     var arr = (m.cells || '').split('');
+    // boardRef 必須跟著 MINE_DO 同步：來賓的 boardRef 原本整場停在開局快照，房主中途離開、來賓接任後 processCoopAct 會拿舊盤面定序、把全場進度洗掉（稽核修・高）
+    var bL = boardRef.current.layout,
+      bN = boardRef.current.nums;
+    if (m.reloc && bL) {
+      var NL2 = bL.slice();
+      NL2[m.reloc[0]] = false;
+      NL2[m.reloc[1]] = true;
+      bL = NL2;
+      var spR = SIZES[mpRef.current.sizeId] || SIZES[9];
+      bN = computeNums(spR.w, spR.h, bL);
+      if (mpRef.current.isHost) {
+        setLayout(bL);
+        setNums(bN);
+      }
+    }
+    if (m.statusAfter === 'lost' && m.mines) {
+      var LL = new Array(arr.length).fill(false);
+      m.mines.forEach(function (i) {
+        LL[i] = true;
+      });
+      bL = LL;
+    }
+    boardRef.current = {
+      layout: bL,
+      nums: bN,
+      cells: arr.slice()
+    };
     setCells(arr);
     setNums(function (prev) {
       var N = prev ? prev.slice() : new Array(arr.length).fill(0);
@@ -1154,6 +1202,8 @@ function MinesGame() {
   function onMpData(m, conn) {
     if (!m || !m.type) return;
     var H = mpRef.current.isHost;
+    // 房主端驗寄件者：連線在 JOIN 時已綁 conn.__uid，之後帶 uid 的訊息必須相符，冒名把對手打成出局/完賽一律丟棄（稽核修）
+    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH'].indexOf(m.type) >= 0) return;
     switch (m.type) {
       case 'JOIN':
         if (H) hostOnJoin(m, conn);
@@ -1235,9 +1285,10 @@ function MinesGame() {
           var pl = playersRef.current.find(function (p) {
             return p.id === m.uid;
           });
-          processCoopAct(m.kind, m.idx, m.uid, pl ? pl.name : '');
+          if (pl && !pl.spectator && mpRef.current.phase === 'playing') processCoopAct(m.kind, m.idx, m.uid, pl.name);
         }
         break;
+      // 觀戰者/倒數期間的 ACT 不受理：adoptCoopDo 會把全員 status 設成 playing 偷跑盤面（稽核修）
       case 'MINE_DO':
         if (!H && mpRef.current.mode === 'coop') adoptCoopDo(m);
         break;
@@ -1302,7 +1353,7 @@ function MinesGame() {
         mode: mpRef.current.mode,
         sizeId: mpRef.current.sizeId,
         phase: phase,
-        seed: mpRef.current.seed,
+        seed: myEntry && myEntry.spectator ? undefined : mpRef.current.seed,
         startAt: mpRef.current.startAt,
         god: godRef.current,
         youSpec: !!(myEntry && myEntry.spectator),
@@ -1334,6 +1385,16 @@ function MinesGame() {
         mpRef.current.phase = m.phase;
         setMpPhase(m.phase);
         setScreen('game');
+        if (m.phase === 'countdown' && m.startAt) {
+          // 倒數中進場的觀戰者：MINE_START 已廣播完不會重送，自己排程在 startAt 切成 playing，否則整場卡在空白畫面（稽核修）
+          var specDelay = Math.max(0, m.startAt - Date.now()) + 60;
+          setTimeout(function () {
+            if (mpRef.current.phase === 'countdown' && iAmSpecRef.current) {
+              mpRef.current.phase = 'playing';
+              setMpPhase('playing');
+            }
+          }, specDelay);
+        }
         if (m.coopSnap) adoptCoopDo({
           cells: m.coopSnap.cells,
           sparse: m.coopSnap.sparse,
@@ -1348,9 +1409,12 @@ function MinesGame() {
     }
   }
   function onHostLeft(m) {
-    // 房主個人離開：名單第一位非房主選手接手當房主
+    // 房主個人離開：名單第一位「在線的非觀戰選手」接手當房主（全端同一份名單、同一個篩法，結論一致；原寫法挑到離線者會無人接任、挑到觀戰者會帶觀戰旗標主持，稽核修）
     var racers = playersRef.current.filter(function (p) {
-      return !p.isHost;
+      return !p.isHost && !p.offline && !p.spectator && !p.pending;
+    });
+    if (!racers.length) racers = playersRef.current.filter(function (p) {
+      return !p.isHost && !p.offline && !p.pending;
     });
     if (racers.length && racers[0].id === myId) becomeHost(true);
   }
@@ -1404,18 +1468,27 @@ function MinesGame() {
     });
     p.on('open', function () {
       if (promoting) {
+        var oldHost = playersRef.current.find(function (pl) {
+          return pl.isHost && pl.id !== myId;
+        });
         setPlayersBoth(playersRef.current.map(function (pl) {
           return pl.id === myId ? Object.assign({}, pl, {
             isHost: true,
             offline: false
           }) : Object.assign({}, pl, {
-            isHost: false
+            isHost: false,
+            offline: oldHost && pl.id === oldHost.id ? true : pl.offline
           });
         }));
         hostBroadcast({
           type: 'PLAYERS_UPDATE',
           players: playersRef.current
         });
+        if (boardRef.current.layout && mpRef.current.mode === 'coop') {
+          setLayout(boardRef.current.layout);
+          if (boardRef.current.nums) setNums(boardRef.current.nums);
+        } // 接任房主補上自己的 layout state（boardRef 已由 MINE_DO 同步成真盤面）
+        checkRaceEnd(); // 已離開的原房主標了 offline：若其他人都完賽/出局，本局可能就此可結算（原房主不標 offline 會永遠卡住結算，稽核修）
       }
     });
   }
