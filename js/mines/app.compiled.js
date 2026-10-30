@@ -615,10 +615,10 @@ function MinesGame() {
       if (mpRef.current.phase !== 'playing' || iAmSpecRef.current || !cells) return;
       if (mpRef.current.mode === 'coop') {
         if (status === 'won' || status === 'lost') return;
-        if (inputMode === 'flag') {
+        if (inputMode === 'flag' && cells[idx] !== 'o') {
           mpSendAct('flag', idx);
           return;
-        }
+        } // 插旗模式點已開的數字格：照樣和弦揭露（使用者 2026-10-30 指示，三路徑同規）
         if (cells[idx] === 'f') return;
         if (cells[idx] === 'o') {
           // 合作和弦：把鄰格挖開拆成單格動作依序送出（房主定序，踩雷後後續的會被擋下）
@@ -637,20 +637,20 @@ function MinesGame() {
       }
       // 競速：本地盤面 + 廣播
       if (outcomeRef.current || status === 'won' || status === 'lost') return;
-      if (inputMode === 'flag') {
+      if (inputMode === 'flag' && cells[idx] !== 'o') {
         toggleFlag(idx);
         return;
-      }
+      } // 插旗模式點已開格 → 下方 chord 揭露
       if (cells[idx] === 'f') return;
       var res = cells[idx] === 'o' ? chord(idx) : doReveal(idx, cells, layout, nums);
       if (res) afterRaceAction(res.cells, res.nums, res.layout);
       return;
     }
     if (!cells || status === 'won' || status === 'lost') return;
-    if (inputMode === 'flag') {
+    if (inputMode === 'flag' && cells[idx] !== 'o') {
       toggleFlag(idx);
       return;
-    }
+    } // 插旗模式點已開格 → 下方 chord 揭露
     if (cells[idx] === 'f') return;
     if (cells[idx] === 'o') {
       chord(idx);
@@ -2690,7 +2690,7 @@ function MinesGame() {
     className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#fb923c] inline-block pb-0.5"
   }, "\uD83D\uDCDC \u904A\u6232\u898F\u5247"), /*#__PURE__*/React.createElement("ol", {
     className: "list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold"
-  }, /*#__PURE__*/React.createElement("li", null, "\u9EDE\u683C\u5B50\u6316\u958B\uFF1A\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u7684\u5730\u96F7\u6578\uFF0C\u7A7A\u767D\u683C\u6703\u81EA\u52D5\u5C55\u958B\u3002"), /*#__PURE__*/React.createElement("li", null, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\uFF0B\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u5730\u96F7\uFF0C\u653E\u5FC3\u958B\u59CB\u3002"), /*#__PURE__*/React.createElement("li", null, "\u89BA\u5F97\u662F\u96F7\u5C31\u63D2\u65D7\uFF1A\u5207\u5230 \uD83D\uDEA9 \u63D2\u65D7\u6A21\u5F0F\u518D\u9EDE\u683C\u5B50\uFF0C\u6216\u9577\u6309\u683C\u5B50\u76F4\u63A5\u63D2\u65D7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6578\u5B57\u548C\u5468\u570D\u7684\u65D7\u6578\u4E00\u6A23\u6642\uFF0C\u518D\u9EDE\u90A3\u500B\u6578\u5B57\uFF0C\u53EF\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u3002")))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("li", null, "\u9EDE\u683C\u5B50\u6316\u958B\uFF1A\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u7684\u5730\u96F7\u6578\uFF0C\u7A7A\u767D\u683C\u6703\u81EA\u52D5\u5C55\u958B\u3002"), /*#__PURE__*/React.createElement("li", null, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\uFF0B\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u5730\u96F7\uFF0C\u653E\u5FC3\u958B\u59CB\u3002"), /*#__PURE__*/React.createElement("li", null, "\u89BA\u5F97\u662F\u96F7\u5C31\u63D2\u65D7\uFF1A\u5207\u5230 \uD83D\uDEA9 \u63D2\u65D7\u6A21\u5F0F\u518D\u9EDE\u683C\u5B50\uFF0C\u6216\u9577\u6309\u683C\u5B50\u76F4\u63A5\u63D2\u65D7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6578\u5B57\u548C\u5468\u570D\u7684\u65D7\u6578\u4E00\u6A23\u6642\uFF0C\u518D\u9EDE\u90A3\u500B\u6578\u5B57\uFF0C\u53EF\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\uFF08\u6316\u958B\uFF0F\u63D2\u65D7\u6A21\u5F0F\u90FD\u53EF\u4EE5\uFF09\u3002")))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-2 w-full"
   }, /*#__PURE__*/React.createElement("span", {
     className: "bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0"
