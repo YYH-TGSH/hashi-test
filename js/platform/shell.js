@@ -28,7 +28,7 @@
   function loadCode(name, cb) {
     var el = document.getElementById('code-' + name);
     if (el) { cb(el.textContent); return; }
-    fetch('js/' + name + '/app.compiled.js').then(function (r) {
+    fetch('js/' + name + '/app.compiled.js?v=' + PLAT_VERSION).then(function (r) { // 帶版號破快取：三款程式走 fetch 載入，不帶版號會吃 GitHub Pages 的 10 分鐘舊快取（v1.17.1 使用者回報「推了沒感覺」的真通道）
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.text();
     }).then(cb).catch(function (e) {
@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.17.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.17.3'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
