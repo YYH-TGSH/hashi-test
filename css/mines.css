@@ -30,3 +30,7 @@ button { transition: all 150ms ease; }
     .mtut-boom { animation: mtutBoom 3.4s ease-in-out infinite; }
     @keyframes mtutTrophy { 0%, 55% { transform: scale(1) rotate(0deg); } 68% { transform: scale(1.25) rotate(-6deg); } 82%, 100% { transform: scale(1) rotate(0deg); } }
     .mtut-trophy { animation: mtutTrophy 3.4s ease-in-out infinite; display: inline-block; }
+
+/* 隱藏滾動條但保持可滾動（比照數獨） */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

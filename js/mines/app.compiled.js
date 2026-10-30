@@ -442,6 +442,7 @@ function MinesGame() {
 
   // ---------- 開局 ----------
   function newGame(szId, seed, daily) {
+    setHdrOpen(true); // 單機/每日開始：標頭規則面板展開（比照數獨）
     var sp = SIZES[szId] || SIZES[9];
     var sd = seed != null ? seed : Math.random() * 4294967296 >>> 0;
     var L = makeLayout(sp.w, sp.h, sp.mines, sd);
@@ -716,18 +717,22 @@ function MinesGame() {
     _useState54 = _slicedToArray(_useState53, 2),
     showExitMenu = _useState54[0],
     setShowExitMenu = _useState54[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
-  var _useState55 = useState(''),
+  var _useState55 = useState(false),
     _useState56 = _slicedToArray(_useState55, 2),
-    coopBoomBy = _useState56[0],
-    setCoopBoomBy = _useState56[1];
-  var _useState57 = useState(null),
+    hdrOpen = _useState56[0],
+    setHdrOpen = _useState56[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState57 = useState(''),
     _useState58 = _slicedToArray(_useState57, 2),
-    cdNum = _useState58[0],
-    setCdNum = _useState58[1];
-  var _useState59 = useState(0),
+    coopBoomBy = _useState58[0],
+    setCoopBoomBy = _useState58[1];
+  var _useState59 = useState(null),
     _useState60 = _slicedToArray(_useState59, 2),
-    waitTick = _useState60[0],
-    setWaitTick = _useState60[1];
+    cdNum = _useState60[0],
+    setCdNum = _useState60[1];
+  var _useState61 = useState(0),
+    _useState62 = _slicedToArray(_useState61, 2),
+    waitTick = _useState62[0],
+    setWaitTick = _useState62[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -1907,6 +1912,7 @@ function MinesGame() {
         sessRef.current = sess || null;
         // 開新局先清掉上一局的結算暫存（站規：新局絕不能重播上一局的結算）
         cleanupMp();
+        setHdrOpen(false);
         setRaceFinal(null);
         finalRef.current = null;
         setMyOutcome(null);
@@ -2640,66 +2646,121 @@ function MinesGame() {
     }));
   }
 
-  // ---------- 對局畫面 ----------
+  // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
   var over = status === 'won' || status === 'lost';
+  var hbtn = "px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-slate-800 shrink-0";
   return /*#__PURE__*/React.createElement("div", {
     key: "game",
-    className: "min-h-screen w-full flex flex-col items-center p-3 relative"
-  }, mpOn ? /*#__PURE__*/React.createElement("div", {
-    className: "w-full flex items-center justify-between mb-2",
+    className: "h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative",
     style: {
-      width: colW,
-      maxWidth: "100%"
+      backgroundColor: '#fdf3e7',
+      backgroundImage: 'radial-gradient(#f7ddba 2px, transparent 2px)',
+      backgroundSize: '12px 12px'
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-slate-700"
-  }, mpRef.current.mode === 'race' ? '⚔️ 競速對戰' : '🤝 合作模式'), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-1.5"
-  }, /*#__PURE__*/React.createElement("button", {
+    className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fb923c] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 flex-nowrap shrink-0"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "font-black tracking-tight uppercase text-base md:text-2xl text-slate-900 flex items-center gap-1 shrink-0"
+  }, "\uD83D\uDCA3", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline"
+  }, "\u8E29\u5730\u96F7")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1 bg-[#2d2a26] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
+  }, "\u23F1 ", fmtTime(elapsed)), dailyDate && !mpOn && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
+  }, "\uD83D\uDCC5 \u6BCF\u65E5 ", dailyDate.slice(5), dailyDate !== todayStr() ? ' 補玩' : ''), mpOn && /*#__PURE__*/React.createElement("span", {
+    className: "bg-emerald-400 text-slate-900 px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0"
+  }, mpRef.current.mode === 'race' ? '⚔️ 競速對戰' : '🤝 合作模式')), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
-      var m = !muted;
-      setMuted(m);
-      sSet('mines_muted', m ? '1' : '0');
+      return setHdrOpen(function (o) {
+        return !o;
+      });
     },
-    title: muted ? '取消靜音' : '靜音',
-    className: "px-2.5 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, muted ? '🔇' : '🔊'), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setShowExitMenu(true);
-    },
-    title: "\u96E2\u958B\u5C0D\u5C40",
-    className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, "\uD83D\uDD0C", /*#__PURE__*/React.createElement("span", {
-    className: "ml-1"
-  }, "\u9000\u51FA")))) : /*#__PURE__*/React.createElement("div", {
-    className: "w-full flex items-center justify-between mb-2",
-    style: {
-      width: colW,
-      maxWidth: "100%"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setScreen('home');
-    },
-    className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, "\u2190 \u4E3B\u9078\u55AE"), /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-slate-700"
-  }, dailyDate ? '📅 ' + dailyDate : spec.name), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-1.5"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      var m = !muted;
-      setMuted(m);
-      sSet('mines_muted', m ? '1' : '0');
-    },
-    title: muted ? '取消靜音' : '靜音',
-    className: "px-2.5 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, muted ? '🔇' : '🔊'), /*#__PURE__*/React.createElement("button", {
+    className: "shrink-0 flex px-1.5 py-0.5 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] items-center gap-1 whitespace-nowrap"
+  }, hdrOpen ? '🔼 縮小面板' : '🔽 展開規則')), /*#__PURE__*/React.createElement("div", {
+    className: "w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 " + (hdrOpen ? 'max-h-[500px] opacity-100 scale-y-100' : 'max-h-0 opacity-0 scale-y-95')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-2 md:p-3 text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#fb923c] inline-block pb-0.5"
+  }, "\uD83D\uDCDC \u904A\u6232\u898F\u5247"), /*#__PURE__*/React.createElement("ol", {
+    className: "list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold"
+  }, /*#__PURE__*/React.createElement("li", null, "\u9EDE\u683C\u5B50\u6316\u958B\uFF1A\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u7684\u5730\u96F7\u6578\uFF0C\u7A7A\u767D\u683C\u6703\u81EA\u52D5\u5C55\u958B\u3002"), /*#__PURE__*/React.createElement("li", null, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\uFF0B\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u5730\u96F7\uFF0C\u653E\u5FC3\u958B\u59CB\u3002"), /*#__PURE__*/React.createElement("li", null, "\u89BA\u5F97\u662F\u96F7\u5C31\u63D2\u65D7\uFF1A\u5207\u5230 \uD83D\uDEA9 \u63D2\u65D7\u6A21\u5F0F\u518D\u9EDE\u683C\u5B50\uFF0C\u6216\u9577\u6309\u683C\u5B50\u76F4\u63A5\u63D2\u65D7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6578\u5B57\u548C\u5468\u570D\u7684\u65D7\u6578\u4E00\u6A23\u6642\uFF0C\u518D\u9EDE\u90A3\u500B\u6578\u5B57\uFF0C\u53EF\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u3002")))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2 w-full"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0"
+  }, "\u2699\uFE0F ", spec.name, "\u30FB", spec.mines, " \u96F7"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 md:gap-2 flex-wrap items-center ml-auto"
+  }, !mpOn && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       if (dailyDate) startDaily(dailyDate);else newGame(sizeId);
     },
-    className: "px-3 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-slate-700 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
-  }, "\uD83D\uDD04 \u91CD\u958B"))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
+    className: hbtn,
+    title: "\u91CD\u958B\u4E00\u5C40"
+  }, "\uD83D\uDD04", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline ml-1"
+  }, "\u91CD\u958B")), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      var m = !muted;
+      setMuted(m);
+      sSet('mines_muted', m ? '1' : '0');
+    },
+    title: muted ? '取消靜音' : '靜音',
+    className: hbtn
+  }, muted ? '🔇' : '🔊'), mpOn ? /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowExitMenu(true);
+    },
+    className: hbtn,
+    title: "\u96E2\u958B\u5C0D\u5C40"
+  }, "\uD83D\uDD0C", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline ml-1"
+  }, "\u9000\u51FA")) : /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setScreen('home');
+    },
+    className: hbtn,
+    title: "\u56DE\u4E3B\u9078\u55AE"
+  }, "\uD83C\uDFE0", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline ml-1"
+  }, "\u4E3B\u9078\u55AE"))))), /*#__PURE__*/React.createElement("div", {
+    className: "w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0"
+  }, "\uD83D\uDCA3 ", spec.mines - flagsUsed), /*#__PURE__*/React.createElement("div", {
+    className: "flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black shrink-0"
+  }, /*#__PURE__*/React.createElement("button", {
+    "data-mode": "dig",
+    onClick: function onClick() {
+      return setInputMode('dig');
+    },
+    className: "px-4 py-1.5",
+    style: inputMode === 'dig' ? {
+      background: ACCENT,
+      color: '#fff'
+    } : {
+      color: '#64748b'
+    }
+  }, "\u26CF\uFE0F \u6316\u958B"), /*#__PURE__*/React.createElement("button", {
+    "data-mode": "flag",
+    onClick: function onClick() {
+      return setInputMode('flag');
+    },
+    className: "px-4 py-1.5",
+    style: inputMode === 'flag' ? {
+      background: '#dc2626',
+      color: '#fff'
+    } : {
+      color: '#64748b'
+    }
+  }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
+    className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0"
+  }, "\u9032\u5EA6 ", Math.floor(progress * 100), "%", status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : '')), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
     onClick: function onClick() {
       return setShowExitMenu(false);
@@ -2735,50 +2796,10 @@ function MinesGame() {
     },
     className: "w-full py-2 text-slate-400 font-bold hover:text-slate-700"
   }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
-    className: "w-full flex items-center justify-between mb-2 px-1",
-    style: {
-      width: colW,
-      maxWidth: "100%"
-    }
+    className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1"
-  }, "\uD83D\uDCA3 ", spec.mines - flagsUsed), /*#__PURE__*/React.createElement("div", {
-    className: "flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black"
-  }, /*#__PURE__*/React.createElement("button", {
-    "data-mode": "dig",
-    onClick: function onClick() {
-      return setInputMode('dig');
-    },
-    className: "px-4 py-1.5",
-    style: inputMode === 'dig' ? {
-      background: ACCENT,
-      color: '#fff'
-    } : {
-      color: '#64748b'
-    }
-  }, "\u26CF\uFE0F \u6316\u958B"), /*#__PURE__*/React.createElement("button", {
-    "data-mode": "flag",
-    onClick: function onClick() {
-      return setInputMode('flag');
-    },
-    className: "px-4 py-1.5",
-    style: inputMode === 'flag' ? {
-      background: '#dc2626',
-      color: '#fff'
-    } : {
-      color: '#64748b'
-    }
-  }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1"
-  }, "\u23F1 ", fmtTime(elapsed))), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn"
-  }, renderBoard()), /*#__PURE__*/React.createElement("div", {
-    className: "w-full mt-2 px-1 flex items-center justify-between font-black text-slate-500 text-sm",
-    style: {
-      width: colW,
-      maxWidth: "100%"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\u9032\u5EA6 ", Math.floor(progress * 100), "%"), /*#__PURE__*/React.createElement("span", null, status === 'ready' ? '點任意格開始' : status === 'playing' ? '排雷中…' : '')), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
+    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0"
+  }, renderBoard()), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
     var cc = players.map(function (p, ix) {
       return {
         p: p,
@@ -2843,7 +2864,10 @@ function MinesGame() {
         background: p.color
       }
     }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%');
-  })), renderGodPanel(), over && !mpOn && /*#__PURE__*/React.createElement("div", {
+  })), renderGodPanel()), /*#__PURE__*/React.createElement("div", {
+    ref: platBarRef,
+    className: "h-16 shrink-0 w-full"
+  }), over && !mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn"
@@ -2865,13 +2889,6 @@ function MinesGame() {
       return setScreen('home');
     },
     className: "w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
-  }, "\u56DE\u4E3B\u9078\u55AE")))), /*#__PURE__*/React.createElement("div", {
-    ref: platBarRef,
-    className: "h-16 shrink-0 w-full mt-auto",
-    style: {
-      width: colW,
-      maxWidth: "100%"
-    }
-  }));
+  }, "\u56DE\u4E3B\u9078\u55AE"))))));
 }
 ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createElement(window.PlatBoundary, null, React.createElement(MinesGame)));
