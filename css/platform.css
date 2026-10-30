@@ -147,3 +147,11 @@ body.plat-room-on[data-view="hashi"] {
   background-color: #2b3a55 !important;
   background-image: none !important;
 }
+
+
+/* 全域按壓回彈（使用者 2026-10-30 指示：所有按鈕都要有按壓回彈）
+   用 :where() 壓低特異度：已有 Tailwind transition/active 效果的按鈕以自身樣式為準（同特異度時其樣式表較晚載入勝出），
+   本規則只補齊沒寫按壓效果的按鈕；transform 不撐版面，盤面格子按鈕也適用 */
+:where(button) { -webkit-tap-highlight-color: transparent; }
+:where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
+:where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
