@@ -4406,6 +4406,7 @@ function SudokuGame() {
     setPlatHub = _useState172[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
+  var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
   var _useState173 = useState(null),
     _useState174 = _slicedToArray(_useState173, 2),
     tournRoundInfo = _useState174[0],
@@ -4544,14 +4545,13 @@ function SudokuGame() {
             var present = (playersListRef.current || []).filter(function (p) {
               return !p.pending;
             }).length;
-            if (expected >= 2 && present >= expected) {
+            if (expected >= 2 && present >= expected && !stateRef.current.isGenerating) {
               clearInterval(hubStartTimerRef.current);
               hubStartTimerRef.current = null;
               handleForceStart();
-            } else if (tries > 90) {
-              clearInterval(hubStartTimerRef.current);
-              hubStartTimerRef.current = null;
             }
+            // 不再等 45 秒就放棄：來賓裝置慢（載入/生成競態）時舊版會直接死局——房主永遠等不到開局、來賓永遠在等待。
+            // 計時器活到 exit/開局為止（enter 的冪等重設與 exit 都會清），每 500ms 重查即可。
           }, 500);
         }
       },
@@ -4650,6 +4650,10 @@ function SudokuGame() {
   }, []);
   var setupPeerJS = function setupPeerJS(rId, pName, isCreating) {
     // 冪等重設：重複 setup（接管/重入/launch 重播）先清掉舊 peer 與 conn refs，避免 SYNC 送進死連線或重複綁定
+    if (joinRetryRef.current) {
+      clearInterval(joinRetryRef.current);
+      joinRetryRef.current = null;
+    }
     if (peerRef.current) {
       try {
         peerRef.current.destroy();
@@ -4823,7 +4827,7 @@ function SudokuGame() {
                 });
                 return nList;
               });
-              showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40"));
+              if (!existingPlayer) showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40")); // 重送 JOIN 的冪等回應不再跳提示
             } else if (m.type === 'SYNC') {
               if (!(m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime))) {
                 syncState(m.data, false);
@@ -5024,6 +5028,27 @@ function SudokuGame() {
             pName: pName,
             uid: myId
           });
+          // JOIN 重送保險：開局瞬間訊息遺失（連線重建/房主端 handler 晚註冊）時，單次 JOIN 一掉就永遠卡在同步畫面。
+          // 房主的 JOIN handler 冪等（已在名單者只更新並回最新 INIT 快照），所以在 waiting 階段每 3 秒重送直到開局。
+          if (joinRetryRef.current) clearInterval(joinRetryRef.current);
+          var joinTries = 0;
+          joinRetryRef.current = setInterval(function () {
+            joinTries++;
+            if (joinTries > 40 || connRef.current !== c || stateRef.current.matchPhase !== 'waiting') {
+              clearInterval(joinRetryRef.current);
+              joinRetryRef.current = null;
+              return;
+            }
+            if (c.open) {
+              try {
+                c.send({
+                  type: 'JOIN',
+                  pName: pName,
+                  uid: myId
+                });
+              } catch (e) {}
+            }
+          }, 3000);
         });
         c.on('data', function (m) {
           hostSeenRef.current = Date.now();
@@ -5093,6 +5118,10 @@ function SudokuGame() {
               timestamp: Date.now()
             }]);
           });else if (m.type === 'JOIN_REJECTED') {
+            if (joinRetryRef.current) {
+              clearInterval(joinRetryRef.current);
+              joinRetryRef.current = null;
+            }
             setIsConnecting(false);
             showToast("⚠️ 無法加入：暱稱衝突");
           } else if (m.type === 'RECEIVE_GIFT') {

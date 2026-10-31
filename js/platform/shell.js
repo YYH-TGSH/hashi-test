@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.17.4'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.17.5'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -2337,7 +2337,18 @@
   Object.defineProperty(VirtualConn.prototype, 'open', { get: function () { return !this._closed && !(this._vp && this._vp._destroyed) && !!this._real.open; } });
   VirtualConn.prototype.on = function (ev, cb) {
     (this._cbs[ev] = this._cbs[ev] || []).push(cb);
-    if (ev === 'open' && this.open) { var s = this; setTimeout(function () { if (!s._closed) cb(); }, 0); }
+    if (ev === 'open') {
+      var s = this;
+      if (this.open) { setTimeout(function () { if (!s._closed) cb(); }, 0); }
+      else if (this._real && this._real.on) {
+        // 實體連線還在談判（真機 WebRTC 要 0.5–3 秒、連線在開局當下重建時更久）：註冊當下未 open 不代表永遠不 open，
+        // 必須在實體連線真正 open 時補發，否則遊戲層的 open 回呼（數獨來賓靠它送 JOIN）永遠遺失、雙邊卡死（2026-10-31 大亂鬥開局卡死案）
+        var fired = false;
+        var fire = function () { if (fired || s._closed) return; fired = true; cb(); };
+        this._real.on('open', fire);
+        setTimeout(function () { if (s.open) fire(); }, 0); // 補註冊與 open 之間的競態
+      }
+    }
     if (ev === 'data' && this._dq.length) { var q = this._dq; this._dq = []; var s2 = this; setTimeout(function () { q.forEach(function (m) { s2._deliverData(m); }); }, 0); }
     return this;
   };
