@@ -962,112 +962,107 @@ function HashiGame() {
       fxPhantom = _useState160[0],
       setFxPhantom = _useState160[1];
 
-  var _useState161 = useState(0),
+  var _useState161 = useState(Date.now()),
       _useState162 = _slicedToArray(_useState161, 2),
-      fxInvertUntil = _useState162[0],
-      setFxInvertUntil = _useState162[1];
+      fxNow = _useState162[0],
+      setFxNow = _useState162[1];
 
-  var _useState163 = useState(Date.now()),
+  var _useState163 = useState(null),
       _useState164 = _slicedToArray(_useState163, 2),
-      fxNow = _useState164[0],
-      setFxNow = _useState164[1];
+      raceResult = _useState164[0],
+      setRaceResult = _useState164[1];
 
-  var _useState165 = useState(null),
+  var _useState165 = useState(false),
       _useState166 = _slicedToArray(_useState165, 2),
-      raceResult = _useState166[0],
-      setRaceResult = _useState166[1];
-
-  var _useState167 = useState(false),
-      _useState168 = _slicedToArray(_useState167, 2),
-      raceWaiting = _useState168[0],
-      setRaceWaiting = _useState168[1];
+      raceWaiting = _useState166[0],
+      setRaceWaiting = _useState166[1];
 
   var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
 
+  var _useState167 = useState(false),
+      _useState168 = _slicedToArray(_useState167, 2),
+      resultsDismissedUi = _useState168[0],
+      setResultsDismissedUi = _useState168[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+
+
   var _useState169 = useState(false),
       _useState170 = _slicedToArray(_useState169, 2),
-      resultsDismissedUi = _useState170[0],
-      setResultsDismissedUi = _useState170[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
-
-
-  var _useState171 = useState(false),
-      _useState172 = _slicedToArray(_useState171, 2),
-      leaveArm = _useState172[0],
-      setLeaveArm = _useState172[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
+      leaveArm = _useState170[0],
+      setLeaveArm = _useState170[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
 
 
   var leaveArmTimerRef = useRef(null);
 
-  var _useState173 = useState(false),
+  var _useState171 = useState(false),
+      _useState172 = _slicedToArray(_useState171, 2),
+      showExitMenu = _useState172[0],
+      setShowExitMenu = _useState172[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
+
+
+  var _useState173 = useState(null),
       _useState174 = _slicedToArray(_useState173, 2),
-      showExitMenu = _useState174[0],
-      setShowExitMenu = _useState174[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
-
-
-  var _useState175 = useState(null),
-      _useState176 = _slicedToArray(_useState175, 2),
-      raceCountdown = _useState176[0],
-      setRaceCountdown = _useState176[1];
+      raceCountdown = _useState174[0],
+      setRaceCountdown = _useState174[1];
 
   // ⭐ 星級評分
 
 
-  var _useState177 = useState(0),
-      _useState178 = _slicedToArray(_useState177, 2),
-      stars = _useState178[0],
-      setStars = _useState178[1];
+  var _useState175 = useState(0),
+      _useState176 = _slicedToArray(_useState175, 2),
+      stars = _useState176[0],
+      setStars = _useState176[1];
 
-  var _useState179 = useState(false),
-      _useState180 = _slicedToArray(_useState179, 2),
-      isNewBest = _useState180[0],
-      setIsNewBest = _useState180[1];
+  var _useState177 = useState(false),
+      _useState178 = _slicedToArray(_useState177, 2),
+      isNewBest = _useState178[0],
+      setIsNewBest = _useState178[1];
 
   // ✨ 爽感：粒子與撒花
 
 
+  var _useState179 = useState([]),
+      _useState180 = _slicedToArray(_useState179, 2),
+      bursts = _useState180[0],
+      setBursts = _useState180[1];
+
   var _useState181 = useState([]),
       _useState182 = _slicedToArray(_useState181, 2),
-      bursts = _useState182[0],
-      setBursts = _useState182[1];
-
-  var _useState183 = useState([]),
-      _useState184 = _slicedToArray(_useState183, 2),
-      confetti = _useState184[0],
-      setConfetti = _useState184[1];
+      confetti = _useState182[0],
+      setConfetti = _useState182[1];
 
   // 每日一題
 
 
-  var _useState185 = useState(false),
+  var _useState183 = useState(false),
+      _useState184 = _slicedToArray(_useState183, 2),
+      isDailyMode = _useState184[0],
+      setIsDailyMode = _useState184[1];
+
+  var _useState185 = useState(""),
       _useState186 = _slicedToArray(_useState185, 2),
-      isDailyMode = _useState186[0],
-      setIsDailyMode = _useState186[1];
+      dailyDateStr = _useState186[0],
+      setDailyDateStr = _useState186[1];
 
-  var _useState187 = useState(""),
+  var _useState187 = useState(0),
       _useState188 = _slicedToArray(_useState187, 2),
-      dailyDateStr = _useState188[0],
-      setDailyDateStr = _useState188[1];
+      dailyStreak = _useState188[0],
+      setDailyStreak = _useState188[1];
 
-  var _useState189 = useState(0),
+  var _useState189 = useState(null),
       _useState190 = _slicedToArray(_useState189, 2),
-      dailyStreak = _useState190[0],
-      setDailyStreak = _useState190[1];
-
-  var _useState191 = useState(null),
-      _useState192 = _slicedToArray(_useState191, 2),
-      dailyDone = _useState192[0],
-      setDailyDone = _useState192[1];
+      dailyDone = _useState190[0],
+      setDailyDone = _useState190[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState193 = useState(function () {
+  var _useState191 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState194 = _slicedToArray(_useState193, 2),
-      dailyMenuDate = _useState194[0],
-      setDailyMenuDate = _useState194[1];
+      _useState192 = _slicedToArray(_useState191, 2),
+      dailyMenuDate = _useState192[0],
+      setDailyMenuDate = _useState192[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1100,22 +1095,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
+  var _useState193 = useState(false),
+      _useState194 = _slicedToArray(_useState193, 2),
+      zoomOpen = _useState194[0],
+      setZoomOpen = _useState194[1];
+
   var _useState195 = useState(false),
       _useState196 = _slicedToArray(_useState195, 2),
-      zoomOpen = _useState196[0],
-      setZoomOpen = _useState196[1];
-
-  var _useState197 = useState(false),
-      _useState198 = _slicedToArray(_useState197, 2),
-      drawSubOpen = _useState198[0],
-      setDrawSubOpen = _useState198[1];
+      drawSubOpen = _useState196[0],
+      setDrawSubOpen = _useState196[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState199 = useState(0),
-      _useState200 = _slicedToArray(_useState199, 2),
-      dockTick = _useState200[0],
-      setDockTick = _useState200[1];
+  var _useState197 = useState(0),
+      _useState198 = _slicedToArray(_useState197, 2),
+      dockTick = _useState198[0],
+      setDockTick = _useState198[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -1214,7 +1209,7 @@ function HashiGame() {
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
-  var fxRef = useRef({ fog: {}, phantom: {}, invertUntil: 0 });
+  var fxRef = useRef({ fog: {}, phantom: {} });
   var prevIslandDoneRef = useRef({});
 
   var MAX_SAFE_DIMENSION = 8500;
@@ -2034,7 +2029,7 @@ function HashiGame() {
   };
 
   // ⚔️ 大亂鬥道具系統
-  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧水球', w: 2 }, { key: 'phantom', icon: '❓', name: '數字幻影', w: 2 }, { key: 'invert', icon: '🔀', name: '單雙顛倒', w: 2 }, { key: 'magnet', icon: '🧲', name: '磁鐵', w: 2 }];
+  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧水球', w: 2 }, { key: 'phantom', icon: '❓', name: '數字幻影', w: 2 }, { key: 'gift', icon: '🎁', name: '禮物', w: 2 }];
   var applyBrawlSettings = function applyBrawlSettings(settings, broadcast) {
     if (!settings) return;
     brawlSettingsRef.current = settings;
@@ -2058,7 +2053,9 @@ function HashiGame() {
     } catch (e) {}
   };
   var pickRandomItem = function pickRandomItem() {
-    var r = Math.random() * 11,
+    var r = Math.random() * BRAWL_ITEMS.reduce(function (s, x) {
+      return s + x.w;
+    }, 0),
         pick = BRAWL_ITEMS[0];
     for (var i = 0; i < BRAWL_ITEMS.length; i++) {
       r -= BRAWL_ITEMS[i].w;if (r <= 0) {
@@ -2105,9 +2102,11 @@ function HashiGame() {
     });
     if (!meta) return;
     if (myFinishTimeRef.current != null) return; // 已完賽不再獲得道具（盤面凍結）
-    if (myItemsRef.current.length >= 3) {
-      showToast('🎒 道具已滿，里程碑道具流掉了');return;
-    }
+    if (m.item !== 'gift' && myItemsRef.current.filter(function (x) {
+      return x === m.item;
+    }).length >= 3) {
+      showToast('🎒 ' + meta.name + ' 已有 3 個，里程碑道具流掉了');return;
+    } // 禮物無上限，其他三種各上限 3（使用者定案）
     var ni = myItemsRef.current.concat([m.item]);
     myItemsRef.current = ni;setMyItems(ni);
     showToast('🎁 里程碑道具：你獲得 ' + meta.icon + ' ' + meta.name + '！');
@@ -2115,7 +2114,7 @@ function HashiGame() {
       window.HASHI_SOUND.play('star');
     } catch (e) {}
   };
-  var applyMagnet = function applyMagnet() {
+  var applyGift = function applyGift() {
     var rld = stateRef.current.randomLevelData;
     var sol = rld && rld.solution || [];
     var mine = stateRef.current.bridges || [];
@@ -2145,20 +2144,23 @@ function HashiGame() {
       var cur = mine.find(function (b) {
         return samePair(b, solB);
       });
-      if (!cur || cur.count + (cur.draftCount || 0) >= solB.count) return false; // 總量（實線＋草稿）已達解答量不可再補：原只看實線，草稿 2 條時補實線會衝破上限 2（稽核修）
+      if (!cur || cur.locked) return false; // 禮物補過的橋已鎖定，不重複補
+      if (cur.count >= solB.count) return false; // 實線已補滿
+      if (cur.count + (cur.draftCount || 0) > solB.count) return false; // 草稿太多（總量超過解答量）先不補，避免衝破上限 2
       return !mine.some(function (b) {
         return b.count + (b.draftCount || 0) > 0 && !samePair(b, solB) && segCross(solB, b);
       }); // 交叉阻擋也要算草稿橋，否則補出的實線會跨過既有草稿
     });
     if (!cands.length) {
-      showToast('🧲 目前沒有能補上的正確橋');return false;
+      showToast('🎁 目前沒有能補上的正確橋');return false;
     }
     var pickB = cands[Math.floor(Math.random() * cands.length)];
+    // 禮物：直接把這對島的正確橋補滿（解答是雙橋就補兩條），草稿一併轉實線，並標 locked 鎖定——之後點按/拖曳/炸橋都不能改它
     var nb = mine.map(function (b) {
-      return samePair(b, pickB) ? _extends({}, b, { count: Math.min(2, b.count + 1), owner: myId }) : b;
+      return samePair(b, pickB) ? _extends({}, b, { count: pickB.count, draftCount: 0, owner: myId, locked: true }) : b;
     });
     raceAwareSync({ bridges: nb });
-    showToast('🧲 磁鐵幫你補上一條正確的橋！');
+    showToast('🎁 禮物幫你把一對島的正確橋補滿並鎖定了！');
     try {
       window.HASHI_SOUND.play('bridge');
     } catch (e) {}
@@ -2173,8 +2175,8 @@ function HashiGame() {
     var now = Date.now();
     if (m.item === 'bomb') {
       var cur = (stateRef.current.bridges || []).filter(function (b) {
-        return b.count > 0;
-      });
+        return b.count > 0 && !b.locked;
+      }); // 禮物鎖定的橋炸不掉
       if (!cur.length) {
         showToast('💣 ' + (m.fromName || '對手') + ' 想炸你的橋，但你還沒架橋！');return;
       }
@@ -2205,9 +2207,6 @@ function HashiGame() {
       }
       fxRef.current.phantom = ph;setFxPhantom(ph);
       showToast('❓ ' + (m.fromName || '對手') + ' 用了數字幻影！');
-    } else if (m.item === 'invert') {
-      fxRef.current.invertUntil = now + 10000;setFxInvertUntil(now + 10000);
-      showToast('🔀 ' + (m.fromName || '對手') + ' 讓你的單雙橋顛倒 10 秒！');
     }
   };
   var useBrawlItem = function useBrawlItem(key) {
@@ -2220,8 +2219,8 @@ function HashiGame() {
     var meta = BRAWL_ITEMS.find(function (x) {
       return x.key === key;
     });
-    if (key === 'magnet') {
-      if (!applyMagnet()) return;
+    if (key === 'gift') {
+      if (!applyGift()) return;
     } else {
       var target = null,
           best = -1,
@@ -2283,10 +2282,10 @@ function HashiGame() {
         var lines = [];
         if (b.count >= 1) {
           if (b.count === 2) {
-            lines.push(React.createElement('line', { key: b.id + '-a', x1: x1 + (horiz ? 0 : -off), y1: y1 + (horiz ? -off : 0), x2: x2 + (horiz ? 0 : -off), y2: y2 + (horiz ? -off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
-            lines.push(React.createElement('line', { key: b.id + '-b', x1: x1 + (horiz ? 0 : off), y1: y1 + (horiz ? off : 0), x2: x2 + (horiz ? 0 : off), y2: y2 + (horiz ? off : 0), stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+            lines.push(React.createElement('line', { key: b.id + '-a', x1: x1 + (horiz ? 0 : -off), y1: y1 + (horiz ? -off : 0), x2: x2 + (horiz ? 0 : -off), y2: y2 + (horiz ? -off : 0), stroke: b.locked ? '#000000' : '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+            lines.push(React.createElement('line', { key: b.id + '-b', x1: x1 + (horiz ? 0 : off), y1: y1 + (horiz ? off : 0), x2: x2 + (horiz ? 0 : off), y2: y2 + (horiz ? off : 0), stroke: b.locked ? '#000000' : '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
           } else {
-            lines.push(React.createElement('line', { key: b.id, x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
+            lines.push(React.createElement('line', { key: b.id, x1: x1, y1: y1, x2: x2, y2: y2, stroke: b.locked ? '#000000' : '#1e293b', strokeWidth: '4', strokeLinecap: 'round' }));
           }
         } else if (b.draftCount > 0) {
           lines.push(React.createElement('line', { key: b.id + '-d', x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#94a3b8', strokeWidth: '4', strokeDasharray: '6 5', strokeLinecap: 'round' }));
@@ -2374,7 +2373,7 @@ function HashiGame() {
   };
   // 特效計時：到期自動清除
   useEffect(function () {
-    var hasFx = fxInvertUntil > 0 || Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
+    var hasFx = Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
     if (!hasFx) return;
     var iv = setInterval(function () {
       var now = Date.now();setFxNow(now);
@@ -2389,14 +2388,11 @@ function HashiGame() {
       var np = prune(fxRef.current.phantom);if (np !== fxRef.current.phantom) {
         fxRef.current.phantom = np;setFxPhantom(np);
       }
-      if (fxRef.current.invertUntil && fxRef.current.invertUntil <= now) {
-        fxRef.current.invertUntil = 0;setFxInvertUntil(0);
-      }
     }, 500);
     return function () {
       return clearInterval(iv);
     };
-  }, [fxFog, fxPhantom, fxInvertUntil]);
+  }, [fxFog, fxPhantom]);
 
   // 🏁 競速進度推送：用最新的 bridges 直接計算並廣播（架橋當下同步呼叫，不依賴 effect 時序）
   var pushRaceProgress = function pushRaceProgress(bridgesArr) {
@@ -2599,6 +2595,11 @@ function HashiGame() {
       return b.id === bId;
     });
     if (!target) return;
+    if (target.locked) {
+      showToast('🎁 這是禮物補上的橋，已鎖定，不會被改掉');try {
+        window.HASHI_SOUND.play('error');
+      } catch (e) {}return;
+    } // 禮物橋：誤觸不刪（點按/拖曳共用此入口）
 
     if (target.count + (target.draftCount || 0) === 0) {
       if (crossedBridgeIds.has(bId)) {
@@ -2637,10 +2638,6 @@ function HashiGame() {
           newDraftCount = 0;
         } else {
           newCount = (b.count + 1) % 3;
-        }
-        // 🔀 單雙顛倒特效中：產生的 1 與 2 互換
-        if (fxRef.current.invertUntil > Date.now()) {
-          if (newCount === 1) newCount = 2;else if (newCount === 2) newCount = 1;
         }
       }
 
@@ -3327,31 +3324,31 @@ function HashiGame() {
     });
   }, [playersList]);
 
+  var _useState199 = useState(false),
+      _useState200 = _slicedToArray(_useState199, 2),
+      platTournLock = _useState200[0],
+      setPlatTournLock = _useState200[1];
+
   var _useState201 = useState(false),
       _useState202 = _slicedToArray(_useState201, 2),
-      platTournLock = _useState202[0],
-      setPlatTournLock = _useState202[1];
-
-  var _useState203 = useState(false),
-      _useState204 = _slicedToArray(_useState203, 2),
-      platHub = _useState204[0],
-      setPlatHub = _useState204[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+      platHub = _useState202[0],
+      setPlatHub = _useState202[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
 
 
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
 
-  var _useState205 = useState(null),
-      _useState206 = _slicedToArray(_useState205, 2),
-      tournRoundInfo = _useState206[0],
-      setTournRoundInfo = _useState206[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState203 = useState(null),
+      _useState204 = _slicedToArray(_useState203, 2),
+      tournRoundInfo = _useState204[0],
+      setTournRoundInfo = _useState204[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
 
 
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
 
-  var _useState207 = useState(0),
-      _useState208 = _slicedToArray(_useState207, 2),
-      setTournTick = _useState208[1];
+  var _useState205 = useState(0),
+      _useState206 = _slicedToArray(_useState205, 2),
+      setTournTick = _useState206[1];
 
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
@@ -4024,7 +4021,7 @@ function HashiGame() {
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
-    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0); // 道具特效也要清：回主畫面後 8-10 秒內開單機/合作局，上一局的霧/幻影/顛倒會直接漏進新局（其他離場路徑都有清，獨漏這條，稽核修）
+    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({}); // 道具特效也要清：回主畫面後 8-10 秒內開單機/合作局，上一局的霧/幻影會直接漏進新局（其他離場路徑都有清，獨漏這條，稽核修）
     resetWinMeta();
   };
 
@@ -4087,7 +4084,7 @@ function HashiGame() {
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);
     setRaceProgress({});raceResultsRef.current = {};myFinishTimeRef.current = null;
     myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
+    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
     setRoomOpen(true);
   };
   var returnToLobby = function returnToLobby() {
@@ -4245,7 +4242,7 @@ function HashiGame() {
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
     myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};
     setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
+    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
     stateRef.current = _extends({}, stateRef.current, payload);
     var seed = {};
     playersListRef.current.forEach(function (p) {
@@ -4386,7 +4383,7 @@ function HashiGame() {
   var exitRaceToSolo = function exitRaceToSolo() {
     setRoomOpen(false);
     myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {}, invertUntil: 0 };setFxFog({});setFxPhantom({});setFxInvertUntil(0);
+    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
@@ -5846,7 +5843,7 @@ function HashiGame() {
         ),
         inRace && (raceState === 'racing' || raceState === 'finished') && myItems.length > 0 && React.createElement(
           'div',
-          { className: 'absolute bottom-24 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-2.5' },
+          { className: 'absolute bottom-20 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-4' },
           Object.keys(myItems.reduce(function (acc, k) {
             acc[k] = (acc[k] || 0) + 1;return acc;
           }, {})).map(function (k) {
@@ -5860,7 +5857,7 @@ function HashiGame() {
               'button',
               { key: k, onClick: function onClick() {
                   return useBrawlItem(k);
-                }, disabled: raceState !== 'racing', className: 'relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center active:translate-y-[2px] active:shadow-none disabled:opacity-40 transition-all' },
+                }, disabled: raceState !== 'racing', className: 'anim-item relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center active:translate-y-[2px] active:shadow-none disabled:opacity-40 transition-all' },
               React.createElement(
                 'span',
                 { className: 'text-[22px] md:text-2xl leading-none' },
@@ -6028,6 +6025,9 @@ function HashiGame() {
                   if (lineStroke === 'rainbow') isRainbow = true;
                   lineOpacity = b.owner === myId ? 1 : 0.5;
                 }
+                if (b.locked) {
+                  lineStroke = '#000000';lineOpacity = 1;isRainbow = false;
+                } // 禮物橋：黑色實線鎖定
 
                 var isCrossed = crossedBridgeIds.has(b.id);
                 var isIslandHovered = (hoveredIslandId === b.from || hoveredIslandId === b.to) && interactionMode < 2;
@@ -6542,20 +6542,13 @@ function HashiGame() {
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
-        inRace && raceState === 'racing' && (fxInvertUntil > fxNow || Object.keys(fxFog).some(function (id) {
+        inRace && raceState === 'racing' && (Object.keys(fxFog).some(function (id) {
           return fxFog[id] > fxNow;
         }) || Object.keys(fxPhantom).some(function (id) {
           return fxPhantom[id] > fxNow;
         })) && React.createElement(
           'div',
           { className: 'absolute top-2 left-2 z-[57] flex gap-1.5 pointer-events-none' },
-          fxInvertUntil > fxNow && React.createElement(
-            'span',
-            { className: 'px-2 py-1 bg-red-100/95 border-2 border-red-400 text-red-700 rounded-lg font-black text-xs shadow' },
-            '\uD83D\uDD00 \u985B\u5012\u4E2D ',
-            Math.ceil((fxInvertUntil - fxNow) / 1000),
-            's'
-          ),
           Object.keys(fxFog).some(function (id) {
             return fxFog[id] > fxNow;
           }) && React.createElement(

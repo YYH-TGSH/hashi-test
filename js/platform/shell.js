@@ -28,13 +28,19 @@
   function loadCode(name, cb) {
     var el = document.getElementById('code-' + name);
     if (el) { cb(el.textContent); return; }
-    fetch('js/' + name + '/app.compiled.js?v=' + PLAT_VERSION).then(function (r) { // 帶版號破快取：三款程式走 fetch 載入，不帶版號會吃 GitHub Pages 的 10 分鐘舊快取（v1.17.1 使用者回報「推了沒感覺」的真通道）
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    }).then(cb).catch(function (e) {
-      booted[name] = false;
-      status('❌ 載入 ' + name + ' 程式失敗: ' + e.message);
-    });
+    var attempt = 0;
+    (function tryFetch() {
+      attempt++;
+      fetch('js/' + name + '/app.compiled.js?v=' + PLAT_VERSION).then(function (r) { // 帶版號破快取：三款程式走 fetch 載入，不帶版號會吃 GitHub Pages 的 10 分鐘舊快取（v1.17.1 使用者回報「推了沒感覺」的真通道）
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }).then(cb).catch(function (e) {
+        if (attempt < 3) { status('⏳ 載入 ' + name + ' 失敗（' + e.message + '），自動重試 ' + attempt + '/2…'); setTimeout(tryFetch, 1500); return; }
+        booted[name] = false;
+        status('❌ 載入 ' + name + ' 程式失敗: ' + e.message);
+        if (window.__PLAT_TOAST) window.__PLAT_TOAST('❌ 遊戲程式載入失敗，請檢查網路連線後再試一次');
+      });
+    })();
   }
   function boot(name) {
     if (booted[name]) { status(name + ' 已啟動過（略過）'); return; }
@@ -64,6 +70,8 @@
       }
     });
   }
+  window.__PLAT_BOOT = function (name) { if (!booted[name]) boot(name); }; // 背景預載：只執行＋掛載遊戲到隱藏的 view，不切畫面
+  window.__PLAT_REBOOT = function (name) { booted[name] = false; boot(name); }; // 載入卡住時強制重啟一款遊戲
   // （v1.8.0 起）左上角「🏠 平台」鈕已移除：回大廳改由兩款遊戲主畫面最下方的藍色大按鈕擔任（使用者指定）
   var currentView = 'home';
   window.PLAT_show = function (name) {
@@ -100,7 +108,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.17.6'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.18.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -186,6 +194,7 @@
     for (var pid in Net.conns) { if (pid !== exceptPid) platSend(Net.conns[pid], obj); }
   }
   function platToHost(obj) { var c = Net.conns[Net.hostPid]; if (c) platSend(c, obj); }
+  window.__PLAT_TOAST = platToast;
   function platToast(msg) {
     var el = $('plat-toast');
     if (!el) {
@@ -673,6 +682,7 @@
     platBroadcast({ kind: 'launch', game: game, mode: mode, cfg: payload });
     doLaunch(game, mode, null, payload);
   }
+  function platPreload() { var g = Net.armed && Net.armed.game; if (g && window.__PLAT_BOOT) { try { window.__PLAT_BOOT(g); } catch (e) {} } } // 把開局的載入成本移出關鍵路徑：進房間/換遊戲時就背景載好
   function showHubRoom() {
     if (!Net.active) return;
     rejoinBusy(false);
@@ -689,6 +699,8 @@
     renderTourn();
     window.scrollTo(0, 0);
   }
+  window.__PLAT_SHOW_HUB = showHubRoom;
+  var _showHubRoomOrig = showHubRoom; showHubRoom = function () { var r = _showHubRoomOrig.apply(null, arguments); platPreload(); return r; };
   window.__PLAT_SHOW_HUB = showHubRoom;
 
   // ---------- 連線管理 ----------
@@ -831,7 +843,7 @@
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
+      case 'arm': if (!Net.isHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); platPreload(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
       case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
       case 'ready': case 'spec': {
         if (!Net.isHost) return;
@@ -1047,15 +1059,22 @@
   }
 
   // ---------- 進/出對局 ----------
-  function waitForHook(game, cb) {
+  function waitForHook(game, cb, retried) {
     var tries = 0;
     (function poll() {
       var hk = window['__PLAT_HOOKS_' + game];
       if (hk && hk.enter) { cb(hk); return; }
       tries++;
       if (tries === 25) platToast('⏳ 遊戲還在載入，正在等它就緒…');
-      if (tries === 110) platToast('⚠️ 遊戲載入逾時，請回平台後再重新進入');
-      if (tries < 120) setTimeout(poll, 400);
+      if (tries < 120) { setTimeout(poll, 400); return; }
+      // 等滿 48 秒還沒就緒：不要默默死掉——強制重啟這款遊戲再等一輪（真機上 fetch/eval/掛載任何一步卡住都靠這裡自癒）
+      if (!retried) {
+        platToast('⏳ 遊戲載入卡住，正在自動重新載入…');
+        if (window.__PLAT_REBOOT) { try { window.__PLAT_REBOOT(game); } catch (e) {} }
+        waitForHook(game, cb, true);
+      } else {
+        platToast('⚠️ 遊戲載入逾時，請回房間頁後再試一次');
+      }
     })();
   }
   function tournSelfAck(what, round, game) {
@@ -1299,7 +1318,7 @@
     roomTabsSig = sig;
     function tabBtn(id, label) {
       var on = id === 'tourn' ? (Net.roomTab === 'tourn') : (Net.roomTab !== 'tourn' && Net.armed.game === id);
-      var dim = tournLive && id !== 'tourn' && !on;
+      var dim = (tournLive && id !== 'tourn' && !on) || !Net.isHost; // 來賓端：四顆分頁全反灰（只有房主能選遊戲）
       return '<button data-rtab="' + id + '" class="lob-tab' + (on ? ' lob-tab-on' : '') + '" style="flex:1' + (dim ? ';opacity:.45' : '') + '">' + label + '</button>';
     }
     var h = '<div class="flex gap-1.5">' + tabBtn('sudoku', '🔢 數獨') + tabBtn('hashi', '🌉 數橋') + tabBtn('mines', '💣 踩地雷') + tabBtn('tourn', '🏆 錦標賽') + '</div>';
@@ -1333,6 +1352,7 @@
       // 分頁只是選遊戲（使用者定案）：只改選定＋廣播同步，不 launch、不換畫面；房主按等待室的開始鈕才帶大家過去
       Net.armed.game = val; Net.roomTab = val;
       platBroadcast({ kind: 'arm', game: val });
+      platPreload();
       renderRoomTabs();
       prRenderRegions(); // 帶路標籤由 prRenderRegions 依 armed 重繪：不等遊戲端下一次 update（數橋等待室沒有每秒 update，標籤會永遠不變）
       if (hubVisible()) hubRender();

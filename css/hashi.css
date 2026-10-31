@@ -292,3 +292,8 @@
 :where(button) { -webkit-tap-highlight-color: transparent; }
 :where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
 :where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+
+/* 大亂鬥道具鈕浮動（比照數獨武器 anim-weapon 的 weaponFloat 節奏）：有道具可用時上下浮動招手 */
+@keyframes itemFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.anim-item { animation: itemFloat 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .anim-item { animation: none; } }
