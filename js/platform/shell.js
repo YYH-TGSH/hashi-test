@@ -100,7 +100,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.17.5'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.17.6'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -501,7 +501,7 @@
     var H = ensureHub();
     if (Net.roomTab === 'tourn') return '';
     var game = Net.armed.game, c = H.cfg[game] || hubDefaults()[game] || hubDefaults().sudoku;
-    var h = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 flex flex-col gap-2.5 text-left shadow-[4px_4px_0px_#1e293b]">';
+    var h = '<div class="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 flex flex-col gap-2.5 text-left shadow-[4px_4px_0px_#1e293b]' + (Net.isHost ? '' : ' hub-locked') + '">'; // 來賓端反灰：hub-locked 的 CSS 把整卡控制項壓灰，一眼看出只有房主能改
     h += '<h3 class="font-black border-b-2 border-slate-100 pb-2">⚙️ 對局設定' + (Net.isHost ? '' : '（房主設定）') + '</h3>';
     h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">模式</span>' + hubModeBtns(game, 'coop', c.mode) + hubModeBtns(game, game === 'sudoku' ? 'brawl' : 'race', c.mode) + '</div>';
     if (game === 'sudoku') {
@@ -546,6 +546,7 @@
   }
   function syncTournForm() {
     var H = ensureHub(), dis = !Net.isHost;
+    var tSetup = $('lob-tourn-setup'); if (tSetup && tSetup.classList) tSetup.classList.toggle('hub-locked', dis); // 來賓端錦標賽表單同樣反灰
     function set(id, v, isChk) { var el = $(id); if (!el) return; if (!isChk && document.activeElement === el && (el.tagName === 'INPUT')) return; if (isChk) el.checked = !!v; else el.value = String(v); el.disabled = dis; } // 正在編輯的文字欄不覆寫：hubRender 每秒/每次名單變動都會跑，打字途中被蓋回舊值很惱人
     set('ts-size', H.cfg.sudoku.sizeId); set('ts-diff', H.cfg.sudoku.diffId);
     set('ts-weapons', H.cfg.sudoku.allowWeapons, 1); set('ts-gifts', H.cfg.sudoku.allowGifts, 1);
@@ -1810,7 +1811,7 @@
       if (st.myReady !== null && st.myReady !== undefined || st.mySpectator !== null && st.mySpectator !== undefined) {
         c += '<div class="flex gap-2 mb-4">';
         if (st.myReady !== null && st.myReady !== undefined) {
-          c += '<button data-pr="ready" class="flex-1 py-3 rounded-xl border-[3px] border-slate-800 font-black text-base shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all" style="background:' + (st.myReady ? ac : '#ffffff') + ';color:' + (st.myReady ? '#0f172a' : '#64748b') + '">' + pbEsc(st.myReady ? (st.readyOn || '✅ 已準備') : (st.readyOff || '✋ 準備好了')) + '</button>';
+          c += '<button data-pr="ready"' + (st.myReady ? '' : ' data-pr-bob="1"') + ' class="flex-1 py-3 rounded-xl border-[3px] border-slate-800 font-black text-base shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all" style="background:' + (st.myReady ? ac : '#ffffff') + ';color:' + (st.myReady ? '#0f172a' : '#64748b') + '">' + pbEsc(st.myReady ? (st.readyOn || '✅ 已準備') : (st.readyOff || '✋ 準備好了')) + '</button>';
         }
         if (st.mySpectator !== null && st.mySpectator !== undefined) {
           c += '<button data-pr="spectator" class="px-4 py-3 rounded-xl border-[3px] border-slate-800 font-black text-base shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all ' + (st.mySpectator ? 'bg-sky-300 text-slate-900' : 'bg-white text-slate-500') + '">👁️ 觀戰</button>';
@@ -1824,7 +1825,7 @@
       } else if (st.waitingText) {
         c += '<p class="font-black text-slate-700 animate-pulse text-center">' + pbEsc(st.waitingText) + '</p>';
       }
-      ct.innerHTML = c;
+      ct.innerHTML = c ? '<div class="max-w-xl mx-auto w-full">' + c + '</div>' : '';
     }
     var dk = prRegion('dock'); if (dk) dk.innerHTML = prDockHtml(ac);
     if (Net.isHost && !Net.tourn && Net.armed.game && Net.inMatch && Net.armed.game !== Net.inMatch) {
@@ -1847,10 +1848,11 @@
       '<div data-pr-slot="settings"></div>' +
       '<div class="font-black text-slate-700 text-sm mb-1.5 text-left">玩家名單</div>' +
       '<div data-pr-region="roster" class="mb-4 flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1"></div>' +
-      '<div data-pr-region="controls"></div>' +
       '<div data-pr-region="dock" class="flex justify-center mt-4"></div>' +
       '<button data-pr="leave" class="w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline bg-transparent border-none cursor-pointer">離開房間</button>' +
-      '</div>';
+      '</div>' +
+      '<div data-pr-region="controls" class="pr-actionbar"></div>';
+    PR.el.style.paddingBottom = '150px'; // 懸浮列的高度留白：捲到底時 dock/離開房間不被遮住
     PR.slot = PR.el.querySelector('[data-pr-slot="settings"]');
   }
   function prClick(e) {

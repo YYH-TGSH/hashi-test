@@ -155,3 +155,19 @@ body.plat-room-on[data-view="hashi"] {
 :where(button) { -webkit-tap-highlight-color: transparent; }
 :where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
 :where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+
+/* 房間頁懸浮操作列（使用者 2026-10-31 指示）：準備/開始固定在畫面底部，不隨設定捲動；朋友常漏按準備是主因 */
+.pr-actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 240; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(253,245,230,.95); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border-top: 3px solid #1e293b; }
+.pr-actionbar:empty { display: none; }
+/* 飄動招手：還沒按的準備鈕、已解鎖的開始鈕上下浮動；狀態一變（已準備/未解鎖）CSS 條件不成立就自動停 */
+@keyframes plat-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+[data-pr="ready"][data-pr-bob="1"] { animation: plat-bob 1.15s ease-in-out infinite; }
+[data-pr="start"]:not(:disabled) { animation: plat-bob 1.15s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { [data-pr="ready"][data-pr-bob="1"], [data-pr="start"]:not(:disabled) { animation: none; } }
+/* 來賓端設定反灰（使用者 2026-10-31 指示）：不能控制的選項要明顯反灰，一眼看出只有房主能控制。
+   表單產生器不用逐個改樣式：容器掛 hub-locked 後整組壓灰，未來新增的設定欄位自動套用 */
+.hub-locked label { color: #94a3b8; }
+.hub-locked span { color: #94a3b8; }
+.hub-locked select, .hub-locked input[type="number"] { background-color: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
+.hub-locked input[type="checkbox"] { accent-color: #cbd5e1; }
+.hub-locked [data-hub-mode] { opacity: .45; }
