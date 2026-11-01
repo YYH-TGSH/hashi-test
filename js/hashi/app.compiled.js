@@ -2071,16 +2071,11 @@ function HashiGame() {
     } catch (e) {}
   };
   var pickRandomItem = function pickRandomItem() {
-    var r = Math.random() * BRAWL_ITEMS.reduce(function (s, x) {
-      return s + x.w;
-    }, 0),
-        pick = BRAWL_ITEMS[0];
-    for (var i = 0; i < BRAWL_ITEMS.length; i++) {
-      r -= BRAWL_ITEMS[i].w;if (r <= 0) {
-        pick = BRAWL_ITEMS[i];break;
-      }
-    }
-    return pick;
+    // 里程碑道具種類：炸橋／迷霧各半（使用者定案）——禮物不走里程碑彩券，禮物只由「完成總島數每 1/20」的島嶼系統發放
+    var pool = BRAWL_ITEMS.filter(function (x) {
+      return x.key === 'bomb' || x.key === 'fog';
+    });
+    return pool[Math.floor(Math.random() * pool.length)];
   };
   // 道具機率公式（使用者定案，兩款同形、保底統一 0.1）：禮物權重 = (1 − p)² + 保底（平方扶弱）；
   // 陷阱：先取 1 − p 再套同一個禮物公式 → 權重 = (1 − (1 − p))² + 保底 = p² + 保底（越強越容易被打，分布明顯拉開）。
