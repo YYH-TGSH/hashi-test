@@ -1869,21 +1869,18 @@ function SudokuGame() {
   // 道具系統：主機里程碑分配 + 接收道具 + 水球霧化 + 格子清除
   // ================================================================
 
-  // 道具機率公式（使用者定案，兩款同形）：發放回到舊制平方扶弱——禮物權重 = (1 − p)² + 保底（數獨舊保底 (100−pct)²+10 換算成比例 = 0.001）；
-  // 陷阱不另立公式，直接翻轉：陷阱權重 = 1 − 禮物機率（禮物機率＝禮物權重在候選集合內正規化）。效果鏡像：最弱最常拿到禮物、最不易被打；最強反過來。
+  // 道具機率公式（使用者定案，兩款同形、保底統一 0.1）：禮物權重 = (1 − p)² + 保底（平方扶弱）；
+  // 陷阱：先取 1 − p 再套同一個禮物公式 → 權重 = p² + 保底（越強越容易被打，分布明顯拉開）。抽選在候選集合內正規化；完賽者本來就被排除在候選之外。
   var platProgWeights = function platProgWeights(progs, mode, floor) {
-    var f = floor == null ? 0.15 : floor;
-    var gw = progs.map(function (x) {
+    var f = floor == null ? 0.1 : floor;
+    if (mode === 'attack') return progs.map(function (x) {
+      var q = Math.min(1, Math.max(0, x || 0));
+      return q * q + f;
+    });
+    return progs.map(function (x) {
       var d = 1 - Math.min(1, Math.max(0, x || 0));
       return d * d + f;
     });
-    if (mode !== 'attack') return gw;
-    var T = gw.reduce(function (a, b) {
-      return a + b;
-    }, 0);
-    return gw.map(function (w) {
-      return 1 - (T > 0 ? w / T : 1 / gw.length);
-    }); // 陷阱 = 1 − 禮物機率（翻轉）
   };
   var platPickWeighted = function platPickWeighted(items, ws) {
     var T = ws.reduce(function (a, b) {
@@ -1939,7 +1936,7 @@ function SudokuGame() {
     });
     var grantWs = platProgWeights(grantProgs.map(function (p) {
       return p / 100;
-    }), 'grant', 0.001); // 禮物權重 = (1 − p)² + 保底（舊制平方扶弱）
+    }), 'grant'); // 禮物權重 = (1 − p)² + 保底 0.1（平方扶弱）
     var candidateWeights = brawlCandidates.map(function (p, i) {
       return {
         id: p.id,
@@ -2182,7 +2179,7 @@ function SudokuGame() {
     });
     if (validPlayers.length === 0) return false;
 
-    // 攻擊目標：陷阱翻轉公式抽選（權重 = 1 − 禮物機率；進度口徑＝已解格數＋未拆禮物數，與進度條一致）
+    // 攻擊目標：陷阱公式抽選（權重 = p² + 保底 0.1；進度口徑＝已解格數＋未拆禮物數，與進度條一致）
     var totalEmpW = (stateRef.current.cells || []).filter(function (c) {
       return !c.isGiven;
     }).length || 1;
@@ -2191,7 +2188,7 @@ function SudokuGame() {
         return h && h[p.id];
       }).length + (giftsData[p.id] ? giftsData[p.id].length : 0)) / totalEmpW;
     });
-    var targetUid = platPickWeighted(validPlayers, platProgWeights(foeProgs, 'attack', 0.001)).id;
+    var targetUid = platPickWeighted(validPlayers, platProgWeights(foeProgs, 'attack')).id;
     var hitType = weaponType === 'balloon' ? 'WEAPON_HIT_FOG' : 'WEAPON_HIT_ERASE';
     var wMsg = {
       type: hitType,

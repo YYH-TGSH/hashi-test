@@ -2081,21 +2081,17 @@ function HashiGame() {
     }
     return pick;
   };
-  // 道具機率公式（使用者定案，兩款同形）：發放回到舊制平方扶弱——禮物權重 = (1 − p)² + 保底；
-  // 陷阱不另立公式，直接翻轉：陷阱權重 = 1 − 禮物機率（禮物機率＝禮物權重在候選集合內正規化）。
-  // 效果鏡像：最弱的人最常拿到禮物、最不易被打；最強的人反過來。抽選在候選集合內正規化。
+  // 道具機率公式（使用者定案，兩款同形、保底統一 0.1）：禮物權重 = (1 − p)² + 保底（平方扶弱）；
+  // 陷阱：先取 1 − p 再套同一個禮物公式 → 權重 = (1 − (1 − p))² + 保底 = p² + 保底（越強越容易被打，分布明顯拉開）。
+  // 抽選在候選集合內正規化；完賽者本來就被排除在候選之外（100% 即退出計算）。
   var platProgWeights = function platProgWeights(progs, mode, floor) {
-    var f = floor == null ? 0.15 : floor;
-    var gw = progs.map(function (x) {
+    var f = floor == null ? 0.1 : floor;
+    if (mode === 'attack') return progs.map(function (x) {
+      var q = Math.min(1, Math.max(0, x || 0));return q * q + f;
+    });
+    return progs.map(function (x) {
       var d = 1 - Math.min(1, Math.max(0, x || 0));return d * d + f;
     });
-    if (mode !== 'attack') return gw;
-    var T = gw.reduce(function (a, b) {
-      return a + b;
-    }, 0);
-    return gw.map(function (w) {
-      return 1 - (T > 0 ? w / T : 1 / gw.length);
-    }); // 陷阱 = 1 − 禮物機率（翻轉）
   };
   var platPickWeighted = function platPickWeighted(items, ws) {
     var T = ws.reduce(function (a, b) {
