@@ -960,7 +960,7 @@ function HashiGame() {
   var _useState159 = useState([]),
       _useState160 = _slicedToArray(_useState159, 2),
       fxFogBoxes = _useState160[0],
-      setFxFogBoxes = _useState160[1]; // 迷霧方框：[{id,minX,minY,maxX,maxY,until}]（格坐標，命中島嶼的外接矩形）
+      setFxFogBoxes = _useState160[1]; // 雲霧：[{id,minX,minY,maxX,maxY,until,cx,cy,R,puffs}]（命中島嶼外接矩形＋命中時算好的雲團幾何）
 
 
   var _useState161 = useState([]),
@@ -2045,7 +2045,7 @@ function HashiGame() {
   };
 
   // ⚔️ 大亂鬥道具系統
-  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧方框', w: 2 }, { key: 'gift', icon: '🎁', name: '禮物', w: 2 }];
+  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧', w: 2 }, { key: 'gift', icon: '🎁', name: '禮物', w: 2 }];
   // 道具列固定順序：禮物放正中間（使用者定案）
   var BRAWL_BAR_ORDER = ['bomb', 'gift', 'fog'];
   var applyBrawlSettings = function applyBrawlSettings(settings, broadcast) {
@@ -2282,7 +2282,7 @@ function HashiGame() {
       });
       fxRef.current.fog = fog;setFxFog(fog);
       if (hit.length) {
-        // 迷霧方框：整區外接矩形一次框起虛化，橋和數字全遮（渲染在盤面最上層，淡入進場、到期前淡出）
+        // 雲霧（使用者定案：不要方框虛化，要一團團的雲）：命中當下一次算好雲團幾何（中心／半徑／puff 配置），渲染只負責畫
         var box = { id: 'fog' + now + '-' + Math.floor(Math.random() * 100000), minX: Math.min.apply(null, hit.map(function (i) {
             return i.x;
           })), minY: Math.min.apply(null, hit.map(function (i) {
@@ -2292,10 +2292,25 @@ function HashiGame() {
           })), maxY: Math.max.apply(null, hit.map(function (i) {
             return i.y;
           })), until: now + 10000 };
+        var ccx0 = (box.minX + box.maxX) / 2 * SCALE + PADDING,
+            ccy0 = (box.minY + box.maxY) / 2 * SCALE + PADDING;
+        var natR = Math.sqrt(Math.pow((box.maxX - box.minX) * SCALE / 2, 2) + Math.pow((box.maxY - box.minY) * SCALE / 2, 2)) + ISLAND_RADIUS + 16;
+        var capR = Math.sqrt(svgW * svgH * 0.2 / Math.PI); // 上限：雲團外接圓面積 ≤ 盤面面積的 1/5（使用者定案）
+        box.R = Math.max(60, Math.min(natR, capR));
+        box.cx = svgW >= box.R * 2 ? Math.min(Math.max(ccx0, box.R), svgW - box.R) : svgW / 2; // 中心夾回盤內，雲不飄出界
+        box.cy = svgH >= box.R * 2 ? Math.min(Math.max(ccy0, box.R), svgH - box.R) : svgH / 2;
+        var seed = now % 2147483646 + 1;
+        var rnd = function rnd() {
+          seed = seed * 48271 % 2147483647;return seed / 2147483647;
+        };
+        var puffTpl = [[0, 0, 0.60], [-0.38, 0.17, 0.46], [0.40, 0.15, 0.44], [-0.30, -0.28, 0.40], [0.06, -0.40, 0.48], [0.40, -0.24, 0.37], [-0.60, 0.03, 0.33], [0.62, 0.05, 0.32]];
+        box.puffs = puffTpl.map(function (t) {
+          return { x: box.cx + (t[0] + (rnd() - 0.5) * 0.06) * box.R, y: box.cy + (t[1] + (rnd() - 0.5) * 0.06) * box.R, r: t[2] * box.R * (0.92 + rnd() * 0.16) };
+        }); // 抖動收緊：任一 puff 的外緣都留在 R 內，上限才守得住
         var nbx = (fxRef.current.boxes || []).concat([box]);
         fxRef.current.boxes = nbx;setFxFogBoxes(nbx);
       }
-      showToast('🌫️ ' + (m.fromName || '對手') + ' 用迷霧方框罩住了你的一區，連橋都看不到了！');
+      showToast('🌫️ ' + (m.fromName || '對手') + ' 放出一團雲霧罩住了你的一區，連橋都看不到了！');
     }
   };
   // 發動一次道具效果（不扣背包）：禮物用在自己、攻擊型自動打進度最高的未完賽對手；回傳是否真的發動
@@ -2491,7 +2506,7 @@ function HashiGame() {
       )
     );
   };
-  // 特效計時：到期自動清除（迷霧方框的淡出靠 fxNow 每 500ms 推進＋CSS transition 補間）
+  // 特效計時：到期自動清除（雲霧的淡出靠 fxNow 每 500ms 推進＋CSS transition 補間）
   useEffect(function () {
     var hasFx = Object.keys(fxFog).length > 0 || fxFogBoxes.length > 0 || fxMarks.length > 0;
     if (!hasFx) return;
@@ -6116,6 +6131,14 @@ function HashiGame() {
                 ),
                 React.createElement(
                   'radialGradient',
+                  { id: 'fogPuff' },
+                  React.createElement('stop', { offset: '0%', stopColor: '#ffffff', stopOpacity: '0.96' }),
+                  React.createElement('stop', { offset: '55%', stopColor: '#eef3f7', stopOpacity: '0.92' }),
+                  React.createElement('stop', { offset: '82%', stopColor: '#dde6ee', stopOpacity: '0.55' }),
+                  React.createElement('stop', { offset: '100%', stopColor: '#dde6ee', stopOpacity: '0' })
+                ),
+                React.createElement(
+                  'radialGradient',
                   { id: 'islandShine' },
                   React.createElement('stop', { offset: '0%', stopColor: '#ffffff', stopOpacity: '0.55' }),
                   React.createElement('stop', { offset: '100%', stopColor: '#ffffff', stopOpacity: '0' })
@@ -6423,20 +6446,25 @@ function HashiGame() {
               fxFogBoxes.filter(function (b) {
                 return b.until > fxNow;
               }).map(function (b) {
-                var bx = b.minX * SCALE + PADDING - SCALE * 0.54,
-                    by = b.minY * SCALE + PADDING - SCALE * 0.54;
-                var bw = (b.maxX - b.minX) * SCALE + SCALE * 1.08,
-                    bh = (b.maxY - b.minY) * SCALE + SCALE * 1.08;
                 var remain = b.until - fxNow;
-                var op = remain > 1600 ? 0.985 : Math.max(0.1, remain / 1600 * 0.985);
+                var op = remain > 1600 ? 1 : Math.max(0.12, remain / 1600);
+                var RR = b.R || 90,
+                    CCX = b.cx != null ? b.cx : (b.minX + b.maxX) / 2 * SCALE + PADDING,
+                    CCY = b.cy != null ? b.cy : (b.minY + b.maxY) / 2 * SCALE + PADDING;
                 return React.createElement(
                   'g',
-                  { key: b.id, className: 'pointer-events-none fog-box-in', style: { transformBox: 'fill-box', transformOrigin: 'center' } },
-                  React.createElement('rect', { x: bx, y: by, width: bw, height: bh, rx: '14', fill: '#dfe6ee', stroke: '#94a3b8', strokeWidth: '2.5', strokeDasharray: '7 5', style: { opacity: op, transition: 'opacity 0.5s ease' } }),
+                  { key: b.id, className: 'pointer-events-none fog-box-in', style: { opacity: op, transition: 'opacity 0.5s ease', transformBox: 'fill-box', transformOrigin: 'center' } },
                   React.createElement(
-                    'text',
-                    { x: bx + bw / 2, y: by + bh / 2, textAnchor: 'middle', dominantBaseline: 'central', fontSize: '26', className: 'select-none', style: { opacity: op, transition: 'opacity 0.5s ease' } },
-                    '\uD83C\uDF2B\uFE0F'
+                    'g',
+                    { className: 'fog-cloud-drift' },
+                    React.createElement(
+                      'g',
+                      { transform: 'translate(' + CCX + ' ' + CCY + ') scale(1 0.84) translate(' + -CCX + ' ' + -CCY + ')' },
+                      React.createElement('ellipse', { cx: CCX, cy: CCY, rx: RR * 0.68, ry: RR * 0.62, fill: '#f7fafc', fillOpacity: '0.97' }),
+                      (b.puffs || []).map(function (pf, i) {
+                        return React.createElement('circle', { key: i, cx: pf.x, cy: pf.y, r: pf.r, fill: 'url(#fogPuff)' });
+                      })
+                    )
                   )
                 );
               }),
