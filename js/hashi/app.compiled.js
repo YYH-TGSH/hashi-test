@@ -2081,7 +2081,32 @@ function HashiGame() {
     }
     return pick;
   };
-  // 里程碑發放（房主執行，比照數獨）：抽一件道具，再依進度加權抽一位玩家——越落後權重越高，但不是永遠最後一名
+  // 進度比例機率公式（使用者定案，兩款同形）：候選集合內，進度 p_i、總和 S——
+  // 發放（grant）權重 = 1 − p_i/S（越落後越容易拿到，但人人有份）；攻擊（attack）權重 = p_i/S（越領先越容易被打，但不是只有最強中）。
+  // S=0（全員 0 進度）時全員等權重。抽選在候選集合內正規化。
+  var platProgWeights = function platProgWeights(progs, mode) {
+    var S = progs.reduce(function (s, x) {
+      return s + Math.max(0, x || 0);
+    }, 0);
+    if (mode === 'attack') return progs.map(function (x) {
+      return S > 0 ? Math.max(0, x || 0) / S : 1;
+    });
+    return progs.map(function (x) {
+      return S > 0 ? 1 - Math.max(0, x || 0) / S : 1;
+    });
+  };
+  var platPickWeighted = function platPickWeighted(items, ws) {
+    var T = ws.reduce(function (a, b) {
+      return a + b;
+    }, 0);
+    if (!(T > 0) || !items.length) return items[Math.floor(Math.random() * items.length)];
+    var r = Math.random() * T;
+    for (var i = 0; i < items.length; i++) {
+      r -= ws[i];if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  };
+  // 里程碑發放（房主執行，比照數獨）：抽一件道具，再依進度比例公式抽一位收件人
   var handleBrawlMilestone = function handleBrawlMilestone(m) {
     if (!isHostRef.current) return;
     if (!brawlSettingsRef.current.itemsEnabled) return;
@@ -2094,20 +2119,10 @@ function HashiGame() {
     });
     if (!cands.length) return;
     var item = pickRandomItem();
-    var total = 0;
-    var ws = cands.map(function (pl) {
-      var info = raceProgressRef.current[pl.id];
-      var prog = info ? info.progress : 0;
-      var wgt = Math.pow(1 - prog, 2) + 0.15;
-      total += wgt;return wgt;
+    var progs = cands.map(function (pl) {
+      var info = raceProgressRef.current[pl.id];return info ? info.progress : 0;
     });
-    var r = Math.random() * total,
-        sel = cands[cands.length - 1];
-    for (var i = 0; i < cands.length; i++) {
-      r -= ws[i];if (r <= 0) {
-        sel = cands[i];break;
-      }
-    }
+    var sel = platPickWeighted(cands, platProgWeights(progs, 'grant'));
     var grant = { type: 'BRAWL_GRANT', toUid: sel.id, item: item.key, fromUid: m.uid };
     sendBrawlMsg(grant);
     if (sel.id === myId) applyBrawlGrant(grant);
@@ -2260,22 +2275,20 @@ function HashiGame() {
     });
     if (!meta) return false;
     if (key === 'gift') return applyGift();
-    var target = null,
-        best = -1,
-        tName = '';
-    playersListRef.current.forEach(function (p) {
-      if (p.id === myId) return;
-      if (raceResultsRef.current[p.id]) return; // 已完賽者盤面凍結，不可攻擊
-      if ((racersRef.current || []).length && racersRef.current.indexOf(p.id) < 0) return; // 觀戰者不在場上
-      var info = raceProgress[p.id];
-      var pr = info ? info.progress : 0;
-      if (pr > best) {
-        best = pr;target = p.id;tName = p.name;
-      }
+    // 攻擊目標：進度比例公式抽選（P(打 i) = p_i/Σp_候選）——越領先越容易中，但不是只有最強的會中
+    var foes = playersListRef.current.filter(function (p) {
+      if (p.id === myId) return false;
+      if (raceResultsRef.current[p.id]) return false; // 已完賽者盤面凍結，不可攻擊
+      if ((racersRef.current || []).length && racersRef.current.indexOf(p.id) < 0) return false; // 觀戰者不在場上
+      return true;
     });
-    if (!target) return false;
-    sendBrawlMsg({ type: 'BRAWL_ITEM', item: key, fromUid: myId, fromName: myNameRef.current || '對手', targetUid: target });
-    showToast(meta.icon + ' 已對 ' + (tName || '對手') + ' 使用 ' + meta.name + '！');
+    if (!foes.length) return false;
+    var foeProgs = foes.map(function (p) {
+      var info = raceProgress[p.id];return info ? info.progress : 0;
+    });
+    var sel = platPickWeighted(foes, platProgWeights(foeProgs, 'attack'));
+    sendBrawlMsg({ type: 'BRAWL_ITEM', item: key, fromUid: myId, fromName: myNameRef.current || '對手', targetUid: sel.id });
+    showToast(meta.icon + ' 已對 ' + (sel.name || '對手') + ' 使用 ' + meta.name + '！');
     return true;
   };
   var useBrawlItem = function useBrawlItem(key) {
@@ -2499,12 +2512,12 @@ function HashiGame() {
     });
     var p = done / islands.length;
     if (brawlSettingsRef.current.itemsEnabled) {
-      [0.25, 0.5, 0.75].forEach(function (t) {
-        if (p >= t && !milestonesRef.current[t]) {
+      for (var t = 5; t <= 100; t += 5) {
+        if (p * 100 >= t && !milestonesRef.current[t]) {
           milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
         }
-      });
-    }
+      }
+    } // 里程碑改每 5% 一格（5→100 共 20 格，量級對齊數獨 9x9；使用者定案）
     var nowB = Date.now();
     if (nowB - lastBrawlSentRef.current > 700) {
       lastBrawlSentRef.current = nowB;

@@ -1869,7 +1869,34 @@ function SudokuGame() {
   // 道具系統：主機里程碑分配 + 接收道具 + 水球霧化 + 格子清除
   // ================================================================
 
-  // 主機處理 MILESTONE_REACHED：加權計算哪些弱者獲得道具
+  // 進度比例機率公式（使用者定案，兩款同形）：候選集合內，進度 p_i、總和 S——
+  // 發放（grant）權重 = 1 − p_i/S（越落後越容易拿到，但人人有份）；攻擊（attack）權重 = p_i/S（越領先越容易被打，但不是只有最強中）。
+  // S=0（全員 0 進度）時全員等權重。抽選在候選集合內正規化。
+  var platProgWeights = function platProgWeights(progs, mode) {
+    var S = progs.reduce(function (s, x) {
+      return s + Math.max(0, x || 0);
+    }, 0);
+    if (mode === 'attack') return progs.map(function (x) {
+      return S > 0 ? Math.max(0, x || 0) / S : 1;
+    });
+    return progs.map(function (x) {
+      return S > 0 ? 1 - Math.max(0, x || 0) / S : 1;
+    });
+  };
+  var platPickWeighted = function platPickWeighted(items, ws) {
+    var T = ws.reduce(function (a, b) {
+      return a + b;
+    }, 0);
+    if (!(T > 0) || !items.length) return items[Math.floor(Math.random() * items.length)];
+    var r = Math.random() * T;
+    for (var i = 0; i < items.length; i++) {
+      r -= ws[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  };
+
+  // 主機處理 MILESTONE_REACHED：依進度比例公式抽一位玩家獲得道具
   handleMilestoneRef.current = function (ev) {
     if (!isHostRef.current) return;
     if (stateRef.current.brawlSettings.allowGifts === false) return;
@@ -1905,13 +1932,14 @@ function SudokuGame() {
       return !p.isSpectator && !winnersIds.includes(p.id);
     });
     if (brawlCandidates.length === 0) return;
-    var candidateWeights = brawlCandidates.map(function (p) {
-      var progress = getEffPct(p.id);
-      // 權重 = (100 - 進度)^2 + 10 (保底權重)
-      var weight = Math.pow(Math.max(1, 100 - progress), 2) + 10;
+    var grantProgs = brawlCandidates.map(function (p) {
+      return getEffPct(p.id);
+    });
+    var grantWs = platProgWeights(grantProgs, 'grant'); // 權重 = 1 − p_i/Σp（進度比例公式）
+    var candidateWeights = brawlCandidates.map(function (p, i) {
       return {
         id: p.id,
-        weight: weight
+        weight: grantWs[i]
       };
     });
     var totalWeight = candidateWeights.reduce(function (sum, w) {
@@ -2150,43 +2178,13 @@ function SudokuGame() {
     });
     if (validPlayers.length === 0) return false;
 
-    // 自己精確的進度（不檢查衝突，保持與進度條一致） (v3.13.4)
-    var myAccurateCount = localCells.filter(function (c) {
-      return !c.isGiven && c.value !== null;
-    }).length;
-    var myScore = Math.max(Object.values(hintsData).filter(function (h) {
-      return h && h[myId];
-    }).length, myAccurateCount) + (giftsData[myId] ? giftsData[myId].length : 0);
-    var strongerPlayers = validPlayers.filter(function (p) {
-      var pScore = Object.values(hintsData).filter(function (h) {
+    // 攻擊目標：進度比例公式抽選（P(打 i) = p_i/Σp_候選；進度口徑＝已解格數＋未拆禮物數，與進度條一致）
+    var foeScores = validPlayers.map(function (p) {
+      return Object.values(hintsData).filter(function (h) {
         return h && h[p.id];
       }).length + (giftsData[p.id] ? giftsData[p.id].length : 0);
-      return pScore > myScore;
     });
-    var targetUid;
-    if (strongerPlayers.length === 0) {
-      targetUid = validPlayers[Math.floor(Math.random() * validPlayers.length)].id;
-    } else {
-      // 權重計算：差距愈大，權重愈高 (差距的 2 次方 + 5 基礎分)
-      var weights = strongerPlayers.map(function (p) {
-        var pScore = Object.values(hintsData).filter(function (h) {
-          return h && h[p.id];
-        }).length + (giftsData[p.id] ? giftsData[p.id].length : 0);
-        return Math.pow(Math.max(1, pScore - myScore), 2) + 5;
-      });
-      var totalWeight = weights.reduce(function (a, b) {
-        return a + b;
-      }, 0);
-      var rand = Math.random() * totalWeight;
-      targetUid = strongerPlayers[strongerPlayers.length - 1].id;
-      for (var i = 0; i < strongerPlayers.length; i++) {
-        rand -= weights[i];
-        if (rand <= 0) {
-          targetUid = strongerPlayers[i].id;
-          break;
-        }
-      }
-    }
+    var targetUid = platPickWeighted(validPlayers, platProgWeights(foeScores, 'attack')).id;
     var hitType = weaponType === 'balloon' ? 'WEAPON_HIT_FOG' : 'WEAPON_HIT_ERASE';
     var wMsg = {
       type: hitType,
