@@ -147,7 +147,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.19.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.20.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -397,26 +397,47 @@
     if (hubVisible()) hubRender();
     renderTourn();
   }
+  // 代表色轉盤（v1.20.0）：盤面 20 格扇形 div（index 與舊色點一致，彩虹密碼 tapColorSeq 照舊餵 index）；
+  // 靜止時目前顏色對準頂端指針，hub 與預覽點顯示目前色；彩虹解鎖後在按鈕列給一顆真的可點選的彩虹鈕。
+  var wheelRot = 0; // 轉盤累積旋轉角（只增不減）
+  var wheelBuilt = false;
+  function segPolygon(i) {
+    var seg = 360 / PLAT_COLORS.length, a0 = i * seg, a1 = a0 + seg, pts = ['50% 50%'];
+    for (var a = a0; a <= a1 + 0.01; a += seg / 3) { var r = a * Math.PI / 180; pts.push((50 + 54 * Math.sin(r)).toFixed(1) + '% ' + (50 - 54 * Math.cos(r)).toFixed(1) + '%'); }
+    return 'polygon(' + pts.join(',') + ')';
+  }
   function renderColors() {
-    var wrap = $('lob-colors'); if (!wrap) return;
-    wrap.innerHTML = '';
-    var unlocked = storeGet('plat_rainbow') === '1';
-    PLAT_COLORS.forEach(function (c, i) {
-      var b = document.createElement('button');
-      b.style.background = c; b.title = c;
-      if (Net.me.color === c) b.className = 'sel';
-      b.setAttribute('data-lob-color', String(i));
-      b.onclick = function () { tapColorSeq(i); };
-      wrap.appendChild(b);
-    });
-    var dot = $('lob-color-dot');
-    if (dot) dot.style.background = (Net.me.color === 'rainbow') ? RAINBOW_BG : (Net.me.color || '#ccc');
-    if (unlocked) {
+    var rotor = $('lob-wheel-rotor'); if (!rotor) return;
+    if (!wheelBuilt) {
+      wheelBuilt = true;
+      PLAT_COLORS.forEach(function (c, i) {
+        var b = document.createElement('button');
+        b.className = 'wseg'; b.style.background = c; b.style.clipPath = segPolygon(i); b.title = c;
+        b.setAttribute('data-lob-color', String(i));
+        b.onclick = function () { tapColorSeq(i); };
+        rotor.appendChild(b);
+      });
+    }
+    var cur = (Net.me.color === 'rainbow') ? RAINBOW_BG : (Net.me.color || '#ccc');
+    var hub = $('lob-wheel-hub'); if (hub) hub.style.background = cur;
+    var dot = $('lob-color-dot'); if (dot) dot.style.background = cur;
+    var idx = PLAT_COLORS.indexOf(Net.me.color);
+    if (idx >= 0) {
+      var seg = 360 / PLAT_COLORS.length;
+      var wantMod = ((360 - (idx * seg + seg / 2)) % 360 + 360) % 360;
+      var curMod = ((wheelRot % 360) + 360) % 360;
+      if (Math.abs(curMod - wantMod) > 0.5) wheelRot += ((wantMod - curMod) + 360) % 360;
+      rotor.classList.remove('spinning');
+      rotor.style.transform = 'rotate(' + wheelRot + 'deg)';
+    }
+    var slot = $('lob-rainbow-slot'); if (!slot) return;
+    slot.innerHTML = '';
+    if (storeGet('plat_rainbow') === '1') {
       var rb = document.createElement('button');
-      rb.style.background = RAINBOW_BG; rb.title = 'rainbow';
+      rb.id = 'lob-rainbow-btn'; rb.style.background = RAINBOW_BG; rb.title = 'rainbow';
       if (Net.me.color === 'rainbow') rb.className = 'sel';
       rb.onclick = function () { Net.me.color = 'rainbow'; storeSet('plat_color', 'rainbow'); renderColors(); };
-      wrap.appendChild(rb);
+      slot.appendChild(rb);
     }
   }
   var tapSeq = [];
@@ -431,29 +452,24 @@
   function spinColor(cb) {
     if (colorSpinning) return;
     colorSpinning = true;
-    spinSound(1150);
+    spinSound(2100);
     var btn = $('lob-color-spin'); if (btn) btn.disabled = true;
-    var dot = $('lob-color-dot');
-    var start = Date.now(), dur = 1150, timer = null;
-    var tick = function () {
-      var t = (Date.now() - start) / dur;
-      var c = PLAT_COLORS[Math.floor(Math.random() * PLAT_COLORS.length)];
-      if (dot) dot.style.background = c;
-      var wrap = $('lob-colors'); // 下方色圈的圈選跟著一起跳（同一個顏色 index）
-      if (wrap) { var ci = PLAT_COLORS.indexOf(c); for (var wi = 0; wi < wrap.children.length; wi++) { if (wrap.children[wi].classList) wrap.children[wi].classList.toggle('sel', wi === ci); } }
-      if (t >= 1) {
-        Net.me.color = c; storeSet('plat_color', c);
-        if (storeGet('plat_rainbow') === '1' && Net.me.color === 'rainbow') Net.me.color = c;
-        colorSpinning = false;
-        Net.colorPicked = true; // 這次進房流程已決定代表色，確認時不要再自動轉一次
-        if (btn) btn.disabled = false;
-        renderColors(); if (Net.active) renderLobby();
-        if (cb) cb();
-        return;
-      }
-      timer = setTimeout(tick, 50 + 160 * t * t);
-    };
-    tick();
+    var idx = Math.floor(Math.random() * PLAT_COLORS.length);
+    var c = PLAT_COLORS[idx];
+    var seg = 360 / PLAT_COLORS.length;
+    var wantMod = ((360 - (idx * seg + seg / 2)) % 360 + 360) % 360;
+    var curMod = ((wheelRot % 360) + 360) % 360;
+    wheelRot += 5 * 360 + (((wantMod - curMod) + 360) % 360); // 至少轉 5 圈，最後把目標格中心停在指針下
+    var rotor = $('lob-wheel-rotor');
+    if (rotor) { rotor.classList.add('spinning'); rotor.style.transform = 'rotate(' + wheelRot + 'deg)'; }
+    setTimeout(function () {
+      Net.me.color = c; storeSet('plat_color', c);
+      colorSpinning = false;
+      Net.colorPicked = true; // 這次進房流程已決定代表色，確認時不要再自動轉一次
+      if (btn) btn.disabled = false;
+      renderColors(); if (Net.active) renderLobby();
+      if (cb) cb();
+    }, 2150);
   }
   function readIdentity() { return Net.me.name || ''; }
 
