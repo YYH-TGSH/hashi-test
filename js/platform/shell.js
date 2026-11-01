@@ -147,7 +147,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.28.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.29.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -408,7 +408,7 @@
     opts = opts || {};
     var SEG = 360 / PLAT_COLORS.length;
     var wrap = document.createElement('div'); wrap.className = 'fw-wrap';
-    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
+    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
     mount.appendChild(wrap);
     var wheel = wrap.querySelector('.fw-wheel'), rotor = wrap.querySelector('.fw-rotor'), hub = wrap.querySelector('.fw-hub');
     hub.style.fontSize = '30px'; hub.style.color = '#b45309';
@@ -430,7 +430,7 @@
     }
     function loop(ts) {
       if (mode !== 'idle' && mode !== 'rainbow') { rafId = null; return; }
-      if (lastTs) { rot += (ts - lastTs) / 1000 * (mode === 'rainbow' ? 90 : 12); applyRot(); }
+      if (lastTs) { rot += (ts - lastTs) / 1000 * (mode === 'rainbow' ? 90 : 12); applyRot(); if (mode === 'idle') followHub(); }
       lastTs = ts; rafId = requestAnimationFrame(loop);
     }
     function startLoop(m) { mode = m; lastTs = 0; if (!rafId) rafId = requestAnimationFrame(loop); }
@@ -441,8 +441,14 @@
       else if (color === 'rainbow') { hub.classList.add('plat-rainbow-anim'); hub.textContent = ''; }
       else { hub.style.background = color || '#ccc'; hub.textContent = ''; }
     }
+    // 車廂中心角＝ i*SEG（.cab 定位在分段起點角上，不在分段中央）——停車一律對齊車廂正中心，指針不壓線、不停在車廂頭
+    function cabinIdxAt(rotDeg) { var m = ((-(rotDeg) % 360) + 360) % 360; return Math.round(m / SEG) % PLAT_COLORS.length; }
+    function visualRot() { // spin 中 rotor 由 CSS transition 驅動，JS 的 rot 是終點值——讀實際矩陣角才能跟色
+      try { var t = getComputedStyle(rotor).transform; if (!t || t === 'none') return rot; var mm = t.match(/matrix\(([^)]+)\)/); if (!mm) return rot; var v = mm[1].split(','); return Math.atan2(parseFloat(v[1]), parseFloat(v[0])) * 180 / Math.PI; } catch (e) { return rot; }
+    }
+    function followHub() { paintHub(PLAT_COLORS[cabinIdxAt(visualRot())], ''); } // 旋轉時圓心跟著指針下的車廂變色（使用者定案：不要問號）
     function alignTo(idx) {
-      var wantMod = ((360 - (idx * SEG + SEG / 2)) % 360 + 360) % 360;
+      var wantMod = ((360 - idx * SEG) % 360 + 360) % 360;
       var curMod = ((rot % 360) + 360) % 360;
       rot += ((wantMod - curMod) + 360) % 360;
       rotor.classList.remove('spinning'); applyRot();
@@ -456,19 +462,27 @@
         if (mode === 'rainbow') api.rainbowOff();
         stopLoop();
         spinning = true;
-        var idx = Math.floor(Math.random() * PLAT_COLORS.length);
+        // 顏色不可重複（使用者定案）：房裡已被別人占用的顏色不進落點池，轉盤照跑、最後停在剩下的顏色上（20 人時最後一人就只剩最後一色）
+        var taken = (opts.getTaken ? (opts.getTaken() || []) : []);
+        var avail = [];
+        for (var ai = 0; ai < PLAT_COLORS.length; ai++) { if (taken.indexOf(PLAT_COLORS[ai]) < 0) avail.push(ai); }
+        if (!avail.length) { for (var aj = 0; aj < PLAT_COLORS.length; aj++) avail.push(aj); }
+        var idx = avail[Math.floor(Math.random() * avail.length)];
         var c = PLAT_COLORS[idx];
-        var wantMod = ((360 - (idx * SEG + SEG / 2)) % 360 + 360) % 360;
+        var wantMod = ((360 - idx * SEG) % 360 + 360) % 360;
         var curMod = ((rot % 360) + 360) % 360;
-        rot += 6 * 360 + (((wantMod - curMod) + 360) % 360); // 先加速衝 6 圈再緩停到目標車廂中心
+        rot += 6 * 360 + (((wantMod - curMod) + 360) % 360); // 先加速衝 6 圈再緩停到目標車廂正中心
         var gen = ++spinGen;
         rotor.classList.add('spinning'); applyRot();
+        var follow = function () { if (gen !== spinGen || !spinning) return; followHub(); requestAnimationFrame(follow); };
+        requestAnimationFrame(follow);
         setTimeout(function () {
           if (gen !== spinGen) return; // 被彩虹觸發作廢
           spinning = false; rotor.classList.remove('spinning');
           if (onDone) onDone(c);
         }, FERRIS_SPIN_MS + 60);
       },
+      pointerColor: function () { return PLAT_COLORS[cabinIdxAt(visualRot())]; },
       rainbowOn: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
         wheel.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
@@ -482,7 +496,7 @@
       setUndecided: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
         if (mode === 'rainbow') api.rainbowOff();
-        paintHub('', '？');
+        followHub(); // 不再顯示問號：未決定時也在轉，圓心直接跟著指針下的車廂變色
         startLoop('idle');
       },
       setDecided: function (color) {
@@ -500,7 +514,13 @@
   }
   // ---------- 大廳摩天輪（工廠實例 #1） ----------
   var lobWheel = null;
-  function getLobWheel() { if (!lobWheel) { var m = $('lob-wheel-wrap'); if (!m) return null; lobWheel = createFerris(m, { onPress: function () { spinColor(); } }); } return lobWheel; }
+  // 房裡其他人已占用的顏色（名稱與顏色都要不同——使用者定案）：選色落點與彩虹觸發都要避開
+  function takenColorsForPicker() {
+    var t = [];
+    if (Net.active && Net.roster) Net.roster.forEach(function (p) { if ((p.uid || p.pid) !== Net.myUid && p.color && t.indexOf(p.color) < 0) t.push(p.color); });
+    return t;
+  }
+  function getLobWheel() { if (!lobWheel) { var m = $('lob-wheel-wrap'); if (!m) return null; lobWheel = createFerris(m, { onPress: function () { spinColor(); }, getTaken: takenColorsForPicker }); } return lobWheel; }
   function settleLobbyColor(c) {
     Net.me.color = c; storeSet('plat_color', c);
     if (c === 'rainbow') storeSet('plat_rainbow', '1'); // 觸發即解鎖（房間編輯等舊路徑相容）
@@ -514,7 +534,7 @@
       dot.classList.remove('plat-rainbow-anim'); dot.style.background = ''; dot.textContent = '';
       dot.style.display = 'inline-flex'; dot.style.alignItems = 'center'; dot.style.justifyContent = 'center'; dot.style.fontWeight = '900'; dot.style.color = '#b45309'; dot.style.fontSize = '17px';
       if (w.isRainbow() || (Net.colorPicked && Net.me.color === 'rainbow')) dot.classList.add('plat-rainbow-anim');
-      else if (!Net.colorPicked) { dot.style.background = '#fff7e0'; dot.textContent = '？'; }
+      else if (!Net.colorPicked) { dot.style.background = w.pointerColor(); } // 未決定：跟摩天輪指針下的顏色一致，不再顯示問號
       else dot.style.background = Net.me.color || '#ccc';
     }
     if (w.isRainbow()) return;
@@ -523,6 +543,7 @@
   // 彩虹模式開關（快速連按選色鈕 5 次觸發；世代/回呼由工廠與 spinColor 的 colorSpinCb 接手）
   function triggerRainbow() {
     var w = getLobWheel(); if (!w || w.isRainbow()) return;
+    if (takenColorsForPicker().indexOf('rainbow') >= 0) { platToast('🌈 彩虹已被其他玩家使用，自動轉一般選色'); spinColor(); return; } // 顏色不可重複：彩虹被占用就不觸發
     var f = colorSpinCb; colorSpinCb = null;
     colorSpinning = false;
     w.rainbowOn();
@@ -571,7 +592,7 @@
     ov.style.display = 'flex';
     var mount = $('plat-pick-wheel'); mount.innerHTML = '';
     var presses = [];
-    var wheel = createFerris(mount, { onPress: function () { ovPress(); } });
+    var wheel = createFerris(mount, { onPress: function () { ovPress(); }, getTaken: takenColorsForPicker });
     wheel.setDecided(currentColor || PLAT_COLORS[0]);
     var ctx = pickCtx = { done: false };
     function finish(c) {
@@ -589,7 +610,7 @@
       var now = Date.now();
       presses = presses.filter(function (t) { return now - t <= 2800; });
       presses.push(now);
-      if (presses.length >= 5) { presses = []; wheel.rainbowOn(); finish('rainbow'); return; }
+      if (presses.length >= 5) { presses = []; if (takenColorsForPicker().indexOf('rainbow') >= 0) { platToast('🌈 彩虹已被其他玩家使用，自動轉一般選色'); ovSpin(); return; } wheel.rainbowOn(); finish('rainbow'); return; }
       ovSpin();
     }
     $('plat-pick-spin').onclick = ovPress;
@@ -960,12 +981,20 @@
     switch (d.kind) {
       case 'join': {
         if (!Net.isHost) return;
+        // 顏色不可重複（使用者定案：名稱與顏色都要不同）：來賓選的顏色已被占用 → 房主自動換第一個可用顏色（彩虹也算一色）；名稱重複在下方 reject 把關
+        var joinColor = d.color, colorSubbed = false;
+        if (joinColor) {
+          var takenC = {}; Net.roster.forEach(function (p) { if ((p.uid || p.pid) !== d.uid && p.pid !== pid && p.color) takenC[p.color] = 1; });
+          if (takenC[joinColor]) {
+            for (var ci2 = 0; ci2 < PLAT_COLORS.length; ci2++) { if (!takenC[PLAT_COLORS[ci2]]) { joinColor = PLAT_COLORS[ci2]; colorSubbed = true; break; } }
+          }
+        }
         // 同 uid 回座（離房後一鍵重連/斷線重連）：舊條目還在名單裡（舊連線尚未逾時清除）時先換綁新 pid，不要誤判暱稱已被占用
         if (d.uid) {
           var reJ = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === d.uid && p.pid !== pid) reJ = p; });
           if (reJ) {
             var oldPidJ = reJ.pid;
-            reJ.pid = pid; reJ.name = d.name || reJ.name; reJ.color = d.color || reJ.color; reJ.offline = false;
+            reJ.pid = pid; reJ.name = d.name || reJ.name; reJ.color = joinColor || reJ.color; reJ.offline = false;
             delete Net.lastSeen[oldPidJ];
             var ocJ = Net.conns[oldPidJ]; if (ocJ) { delete Net.conns[oldPidJ]; try { ocJ.close(); } catch (e) {} }
           }
@@ -974,8 +1003,9 @@
         var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(safeName); });
         if (clash) { platSend(c, { kind: 'reject', reason: 'name_taken' }); return; }
         if (!Net.roster.some(function (p) { return p.pid === pid; })) {
-          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: safeName, color: d.color, host: false, _joinedAt: Date.now() });
+          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: safeName, color: joinColor, host: false, _joinedAt: Date.now() });
         }
+        if (colorSubbed) sysChat('🎨 ' + safeName + ' 選的顏色已被占用，自動換了一個顏色');
         Net.lastSeen[pid] = Date.now();
         tournRebind();
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });

@@ -630,6 +630,11 @@ function SudokuGame() {
   var cellLongPressTimer = useRef(null);
   var isLongPressTriggered = useRef(false);
   var touchStartPt = useRef(null);
+  var tapSeqRef = useRef(0); // 每次 pointerdown 的點按序號：長按標記只擋同一次點按的放開，不毒到下一次
+  var longPressSeqRef = useRef(-1);
+  var tapInfoRef = useRef(null); // 本次點按落在哪一格（pointerup 直接處理點按用，不單靠 click）
+  var pointerTapDedupeRef = useRef(null); // pointerup 已處理過的點按：擋掉隨後跟來的重複 click
+
   var engineRef = useRef('none');
   var peerRef = useRef(null);
   var connRef = useRef(null);
@@ -1465,9 +1470,12 @@ function SudokuGame() {
     if (totalEmpty === 0) return;
 
     // 計算自己的有效完成率（使用 ghostProgress 的自身值，最精確）
-    var myCorrect = ghostProgress[myId] || 0;
+    // 注意：ghostProgress[myId] 本身已經是「百分比」（0–100），必須先換回格數才能加未拆禮物再除 totalEmpty。
+    // 舊式直接把百分比再除一次 totalEmpty，等於進度被放大約 (100/totalEmpty) 倍——里程碑在真實進度約 45% 時
+    // 就全部報完，後半場再也跨不到任何一格：只剩自己時什麼都拿不到（2026-11-01 使用者實機回報的病根）。
+    var myCorrectCells = Math.round((ghostProgress[myId] || 0) / 100 * totalEmpty);
     var myGifts = (stateRef.current.unopenedGifts[myId] || []).length;
-    var myEffectivePct = Math.min(99, Math.floor((myCorrect + myGifts) / totalEmpty * 100));
+    var myEffectivePct = Math.min(99, Math.floor((myCorrectCells + myGifts) / totalEmpty * 100));
 
     // 目前應達到的里程碑級別（每 5% 一個，使用者定案；原每 10%）
     var currentMilestone = Math.floor(myEffectivePct / 5);
@@ -2745,19 +2753,28 @@ function SudokuGame() {
         }]);
       });
 
-      // 設定長按清除偵測
+      // 設定長按清除偵測＋記錄本次點按：放開時改由 pointerup 直接處理點按，不再單靠 click——
+      // 觸控筆快速連點時瀏覽器的手勢仲裁常把 click 吃掉（水波紋已渲染、數字卻沒填，使用者實機回報）
       var cx = Math.floor((pt.x - PADDING) / CELL_SIZE);
       var cy = Math.floor((pt.y - PADDING) / CELL_SIZE);
       if (cx >= 0 && cx < cSizeDef.size && cy >= 0 && cy < cSizeDef.size) {
         var cellId = "".concat(cx, "-").concat(cy);
         isLongPressTriggered.current = false;
         touchStartPt.current = pt;
+        var seq = ++tapSeqRef.current;
+        tapInfoRef.current = {
+          cellId: cellId,
+          seq: seq
+        };
         cellLongPressTimer.current = setTimeout(function () {
           clearCell(cellId);
           isLongPressTriggered.current = true;
+          longPressSeqRef.current = seq;
           if (navigator.vibrate) navigator.vibrate(50);
           cellLongPressTimer.current = null;
         }, 500); // 500毫秒視為長按
+      } else {
+        tapInfoRef.current = null;
       }
     }
     if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
@@ -2823,6 +2840,32 @@ function SudokuGame() {
     if (cellLongPressTimer.current) {
       clearTimeout(cellLongPressTimer.current);
       cellLongPressTimer.current = null;
+    }
+
+    // 點按在 pointerup 直接處理（見 pointerdown 註解）：只認「放開時還在同一格、且這次點按沒觸發長按」。
+    // 處理過就記 dedupe，跟隨其後的 click 不再重複觸發；長按放開也標記已消費，擋掉隨後的 click。
+    var tapInfo = tapInfoRef.current;
+    tapInfoRef.current = null;
+    if (e.type === 'pointerup' && interactionMode < 2 && tapInfo) {
+      if (longPressSeqRef.current === tapInfo.seq) {
+        pointerTapDedupeRef.current = {
+          cellId: tapInfo.cellId,
+          t: Date.now()
+        };
+      } else {
+        var upPt = getSvgCoords(e.clientX, e.clientY);
+        if (upPt) {
+          var ux = Math.floor((upPt.x - PADDING) / CELL_SIZE);
+          var uy = Math.floor((upPt.y - PADDING) / CELL_SIZE);
+          if (ux + '-' + uy === tapInfo.cellId) {
+            pointerTapDedupeRef.current = {
+              cellId: tapInfo.cellId,
+              t: Date.now()
+            };
+            handleCellClick(tapInfo.cellId);
+          }
+        }
+      }
     }
     if (interactionMode === 2) {
       if (drawSubMode === 'pen' && isDrawingRef.current) {
@@ -6555,7 +6598,9 @@ function SudokuGame() {
       key: "cell-".concat(cell.id),
       id: "cell-".concat(cell.id),
       onClick: function onClick() {
-        return handleCellClick(cell.id);
+        var d = pointerTapDedupeRef.current;
+        if (d && d.cellId === cell.id && Date.now() - d.t < 700) return;
+        handleCellClick(cell.id);
       },
       className: interactionMode >= 2 ? 'pointer-events-none' : 'cursor-pointer group'
     }, /*#__PURE__*/React.createElement("rect", {

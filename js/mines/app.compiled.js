@@ -381,6 +381,7 @@ function MinesGame() {
   var statusRef = useRef('ready');
   statusRef.current = status;
   var lpRef = useRef(null); // 長按計時器（長按插旗）
+  var lpPtRef = useRef(null); // 長按起點座標（移動超過 10px 取消長按：滑動/捲動不是長按）
 
   var spec = SIZES[sizeId] || SIZES[9];
   var totalSafe = spec.w * spec.h - spec.mines;
@@ -659,20 +660,37 @@ function MinesGame() {
     doReveal(idx, cells, layout, nums);
   }
   var lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
-  function onCellDown(idx) {
+  function onCellDown(idx, e) {
     if (lpRef.current) clearTimeout(lpRef.current);
     lpFiredRef.current = false;
+    lpPtRef.current = e && typeof e.clientX === 'number' ? {
+      x: e.clientX,
+      y: e.clientY
+    } : null;
+    // 500ms 與數獨的長按清除一致（舊 380ms 太短：稍用力、稍慢的一般點按就被誤判成長按插旗——誤觸主因之一）
     lpRef.current = setTimeout(function () {
       lpRef.current = null;
+      lpPtRef.current = null;
       lpFiredRef.current = true;
       toggleFlag(idx);
-    }, 380);
+    }, 500);
+  }
+  function onCellMove(e) {
+    // 防誤觸：按住後移動超過 10px（手滑、想捲動頁面）就取消長按判定——舊版完全沒取消，
+    // 使用者按住格子往下滑想捲頁面，長按照樣計時、在起點格默默插旗（數獨本來就有 10px 取消，這裡補齊）
+    if (!lpRef.current || !lpPtRef.current || !e || typeof e.clientX !== 'number') return;
+    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > 10) {
+      clearTimeout(lpRef.current);
+      lpRef.current = null;
+      lpPtRef.current = null;
+    }
   }
   function onCellUp() {
     if (lpRef.current) {
       clearTimeout(lpRef.current);
       lpRef.current = null;
     }
+    lpPtRef.current = null;
   }
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
@@ -1980,7 +1998,7 @@ function MinesGame() {
   // ---------- 渲染 ----------
   var gapPx = sizeId === 16 ? 2 : 3;
   // 盤面隨視窗放大（iPad/大螢幕不再縮成手機尺寸）：可用寬 = min(視窗, 720) − 根層 padding 24 − 卡片 padding/邊框 26
-  var cellPx = Math.max(sizeId === 16 ? 18 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w)));
+  var cellPx = Math.max(sizeId === 16 ? 22 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
   var colW = spec.w * cellPx + (spec.w - 1) * gapPx + 26; // 對局畫面所有欄位（標頭列/狀態列/進度/貢獻/PlatBar）與盤同寬，不再各寬各的
   function renderCell(i) {
     var st = cells[i],
@@ -2044,11 +2062,13 @@ function MinesGame() {
       onClick: function onClick() {
         return onCellAction(i);
       },
-      onPointerDown: function onPointerDown() {
-        return onCellDown(i);
+      onPointerDown: function onPointerDown(e) {
+        return onCellDown(i, e);
       },
+      onPointerMove: onCellMove,
       onPointerUp: onCellUp,
       onPointerLeave: onCellUp,
+      onPointerCancel: onCellUp,
       onContextMenu: function onContextMenu(e) {
         e.preventDefault();
         toggleFlag(i);
@@ -2820,8 +2840,17 @@ function MinesGame() {
   }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0"
-  }, renderBoard()), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
+    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0",
+    style: {
+      maxWidth: '100%',
+      overflowX: 'auto'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 'max-content',
+      margin: '0 auto'
+    }
+  }, renderBoard())), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
     var cc = players.map(function (p, ix) {
       return {
         p: p,

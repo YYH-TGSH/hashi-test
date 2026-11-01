@@ -2081,19 +2081,24 @@ body[data-view="lobby"] {
    狀態：未決定＝慢轉＋圓心「？」；選色＝加速後緩停；彩虹＝持續自轉＋色相動畫。彩虹顯示一律走 .plat-rainbow-anim 動態變色，不用靜態漸層） */
 @keyframes platHue { to { filter: hue-rotate(360deg); } }
 .plat-rainbow-anim { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); animation: platHue 2.2s linear infinite; }
-.fw-wrap { position: relative; width: 216px; height: 216px; margin: 6px auto 14px; }
-.fw-wheel { position: absolute; inset: 0; border-radius: 9999px; border: 3px solid #1e293b; overflow: hidden; box-shadow: 3px 3px 0 rgba(30,41,59,1); background: radial-gradient(circle at 50% 42%, #f0f9ff 0%, #bae6fd 68%, #7dd3fc 100%); }
+.fw-wrap { position: relative; width: 216px; height: 254px; margin: 6px auto 14px; }
+.fw-wheel { position: absolute; left: 0; top: 0; width: 216px; height: 216px; border-radius: 9999px; border: 3px solid #1e293b; overflow: hidden; box-shadow: 3px 3px 0 rgba(30,41,59,1); background: radial-gradient(circle at 50% 42%, #f0f9ff 0%, #bae6fd 68%, #7dd3fc 100%); }
+.fw-stand { position: absolute; inset: 0; pointer-events: none; }
+.fw-leg { position: absolute; left: 50%; top: 130px; width: 9px; height: 104px; margin-left: -4.5px; background: #fff; border: 3px solid #1e293b; border-radius: 6px; transform-origin: 50% 6px; }
+.fw-leg.l { transform: rotate(23deg); }
+.fw-leg.r { transform: rotate(-23deg); }
+.fw-base { position: absolute; left: 50%; top: 234px; transform: translateX(-50%); width: 172px; height: 13px; background: #fff; border: 3px solid #1e293b; border-radius: 8px; box-shadow: 2px 2px 0 rgba(30,41,59,.55); }
 .fw-rotor { position: absolute; inset: 0; will-change: transform; }
 .fw-rotor.spinning { transition: transform 2.8s cubic-bezier(.83,0,.17,1); }
 .fw-rotor.spinning .cab { transition: transform 2.8s cubic-bezier(.83,0,.17,1); }
 .wseg { position: absolute; left: 50%; top: 50%; width: 0; height: 0; padding: 0; border: none; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.cab-arm { position: absolute; left: -1.5px; top: -84px; width: 3px; height: 84px; background: rgba(30,41,59,.30); border-radius: 2px; }
-.cab { position: absolute; left: 0; top: -84px; width: 34px; height: 27px; border-radius: 9px 9px 11px 11px; border: 2.5px solid #1e293b; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 1px 2px 0 rgba(30,41,59,.30); }
+.cab-arm { position: absolute; left: -1.5px; top: -90px; width: 3px; height: 90px; background: rgba(30,41,59,.30); border-radius: 2px; }
+.cab { position: absolute; left: 0; top: -90px; width: 24px; height: 22px; border-radius: 8px 8px 10px 10px; border: 2.5px solid #1e293b; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 1px 2px 0 rgba(30,41,59,.30); }
 .cab::before { content: ''; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1e293b; }
-.cab::after { content: ''; position: absolute; left: 50%; top: 5px; transform: translateX(-50%); width: 14px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.55); }
+.cab::after { content: ''; position: absolute; left: 50%; top: 4px; transform: translateX(-50%); width: 11px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.55); }
 .fw-wheel.rainbow-mode .cab { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) !important; animation: platHue 2.2s linear infinite; }
 .fw-pointer { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; font-size: 26px; line-height: 1; color: #1e293b; text-shadow: 0 2px 0 rgba(255,255,255,.85); pointer-events: none; }
-.fw-hub { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid #1e293b; background: #fff; z-index: 2; box-shadow: 2px 2px 0 rgba(30,41,59,.55); pointer-events: none; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+.fw-hub { position: absolute; left: 50%; top: 108px; width: 62px; height: 62px; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid #1e293b; background: #fff; z-index: 2; box-shadow: 2px 2px 0 rgba(30,41,59,.55); pointer-events: none; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 #lob-roster li { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; font-weight: 900; color: #1e293b; }
 #lob-roster .dot { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid #1e293b; flex-shrink: 0; }
 /* 大廳步驟：拉霸機 + 遊戲平台卡片 */
@@ -3852,6 +3857,11 @@ function SudokuGame() {
   var cellLongPressTimer = useRef(null);
   var isLongPressTriggered = useRef(false);
   var touchStartPt = useRef(null);
+  var tapSeqRef = useRef(0); // 每次 pointerdown 的點按序號：長按標記只擋同一次點按的放開，不毒到下一次
+  var longPressSeqRef = useRef(-1);
+  var tapInfoRef = useRef(null); // 本次點按落在哪一格（pointerup 直接處理點按用，不單靠 click）
+  var pointerTapDedupeRef = useRef(null); // pointerup 已處理過的點按：擋掉隨後跟來的重複 click
+
   var engineRef = useRef('none');
   var peerRef = useRef(null);
   var connRef = useRef(null);
@@ -4687,9 +4697,12 @@ function SudokuGame() {
     if (totalEmpty === 0) return;
 
     // 計算自己的有效完成率（使用 ghostProgress 的自身值，最精確）
-    var myCorrect = ghostProgress[myId] || 0;
+    // 注意：ghostProgress[myId] 本身已經是「百分比」（0–100），必須先換回格數才能加未拆禮物再除 totalEmpty。
+    // 舊式直接把百分比再除一次 totalEmpty，等於進度被放大約 (100/totalEmpty) 倍——里程碑在真實進度約 45% 時
+    // 就全部報完，後半場再也跨不到任何一格：只剩自己時什麼都拿不到（2026-11-01 使用者實機回報的病根）。
+    var myCorrectCells = Math.round((ghostProgress[myId] || 0) / 100 * totalEmpty);
     var myGifts = (stateRef.current.unopenedGifts[myId] || []).length;
-    var myEffectivePct = Math.min(99, Math.floor((myCorrect + myGifts) / totalEmpty * 100));
+    var myEffectivePct = Math.min(99, Math.floor((myCorrectCells + myGifts) / totalEmpty * 100));
 
     // 目前應達到的里程碑級別（每 5% 一個，使用者定案；原每 10%）
     var currentMilestone = Math.floor(myEffectivePct / 5);
@@ -5967,19 +5980,28 @@ function SudokuGame() {
         }]);
       });
 
-      // 設定長按清除偵測
+      // 設定長按清除偵測＋記錄本次點按：放開時改由 pointerup 直接處理點按，不再單靠 click——
+      // 觸控筆快速連點時瀏覽器的手勢仲裁常把 click 吃掉（水波紋已渲染、數字卻沒填，使用者實機回報）
       var cx = Math.floor((pt.x - PADDING) / CELL_SIZE);
       var cy = Math.floor((pt.y - PADDING) / CELL_SIZE);
       if (cx >= 0 && cx < cSizeDef.size && cy >= 0 && cy < cSizeDef.size) {
         var cellId = "".concat(cx, "-").concat(cy);
         isLongPressTriggered.current = false;
         touchStartPt.current = pt;
+        var seq = ++tapSeqRef.current;
+        tapInfoRef.current = {
+          cellId: cellId,
+          seq: seq
+        };
         cellLongPressTimer.current = setTimeout(function () {
           clearCell(cellId);
           isLongPressTriggered.current = true;
+          longPressSeqRef.current = seq;
           if (navigator.vibrate) navigator.vibrate(50);
           cellLongPressTimer.current = null;
         }, 500); // 500毫秒視為長按
+      } else {
+        tapInfoRef.current = null;
       }
     }
     if (engineRef.current !== 'peerjs' || !showOtherCursors) return;
@@ -6045,6 +6067,32 @@ function SudokuGame() {
     if (cellLongPressTimer.current) {
       clearTimeout(cellLongPressTimer.current);
       cellLongPressTimer.current = null;
+    }
+
+    // 點按在 pointerup 直接處理（見 pointerdown 註解）：只認「放開時還在同一格、且這次點按沒觸發長按」。
+    // 處理過就記 dedupe，跟隨其後的 click 不再重複觸發；長按放開也標記已消費，擋掉隨後的 click。
+    var tapInfo = tapInfoRef.current;
+    tapInfoRef.current = null;
+    if (e.type === 'pointerup' && interactionMode < 2 && tapInfo) {
+      if (longPressSeqRef.current === tapInfo.seq) {
+        pointerTapDedupeRef.current = {
+          cellId: tapInfo.cellId,
+          t: Date.now()
+        };
+      } else {
+        var upPt = getSvgCoords(e.clientX, e.clientY);
+        if (upPt) {
+          var ux = Math.floor((upPt.x - PADDING) / CELL_SIZE);
+          var uy = Math.floor((upPt.y - PADDING) / CELL_SIZE);
+          if (ux + '-' + uy === tapInfo.cellId) {
+            pointerTapDedupeRef.current = {
+              cellId: tapInfo.cellId,
+              t: Date.now()
+            };
+            handleCellClick(tapInfo.cellId);
+          }
+        }
+      }
     }
     if (interactionMode === 2) {
       if (drawSubMode === 'pen' && isDrawingRef.current) {
@@ -9777,7 +9825,9 @@ function SudokuGame() {
       key: "cell-".concat(cell.id),
       id: "cell-".concat(cell.id),
       onClick: function onClick() {
-        return handleCellClick(cell.id);
+        var d = pointerTapDedupeRef.current;
+        if (d && d.cellId === cell.id && Date.now() - d.t < 700) return;
+        handleCellClick(cell.id);
       },
       className: interactionMode >= 2 ? 'pointer-events-none' : 'cursor-pointer group'
     }, /*#__PURE__*/React.createElement("rect", {
@@ -18072,6 +18122,7 @@ function MinesGame() {
   var statusRef = useRef('ready');
   statusRef.current = status;
   var lpRef = useRef(null); // 長按計時器（長按插旗）
+  var lpPtRef = useRef(null); // 長按起點座標（移動超過 10px 取消長按：滑動/捲動不是長按）
 
   var spec = SIZES[sizeId] || SIZES[9];
   var totalSafe = spec.w * spec.h - spec.mines;
@@ -18350,20 +18401,37 @@ function MinesGame() {
     doReveal(idx, cells, layout, nums);
   }
   var lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
-  function onCellDown(idx) {
+  function onCellDown(idx, e) {
     if (lpRef.current) clearTimeout(lpRef.current);
     lpFiredRef.current = false;
+    lpPtRef.current = e && typeof e.clientX === 'number' ? {
+      x: e.clientX,
+      y: e.clientY
+    } : null;
+    // 500ms 與數獨的長按清除一致（舊 380ms 太短：稍用力、稍慢的一般點按就被誤判成長按插旗——誤觸主因之一）
     lpRef.current = setTimeout(function () {
       lpRef.current = null;
+      lpPtRef.current = null;
       lpFiredRef.current = true;
       toggleFlag(idx);
-    }, 380);
+    }, 500);
+  }
+  function onCellMove(e) {
+    // 防誤觸：按住後移動超過 10px（手滑、想捲動頁面）就取消長按判定——舊版完全沒取消，
+    // 使用者按住格子往下滑想捲頁面，長按照樣計時、在起點格默默插旗（數獨本來就有 10px 取消，這裡補齊）
+    if (!lpRef.current || !lpPtRef.current || !e || typeof e.clientX !== 'number') return;
+    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > 10) {
+      clearTimeout(lpRef.current);
+      lpRef.current = null;
+      lpPtRef.current = null;
+    }
   }
   function onCellUp() {
     if (lpRef.current) {
       clearTimeout(lpRef.current);
       lpRef.current = null;
     }
+    lpPtRef.current = null;
   }
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
@@ -19671,7 +19739,7 @@ function MinesGame() {
   // ---------- 渲染 ----------
   var gapPx = sizeId === 16 ? 2 : 3;
   // 盤面隨視窗放大（iPad/大螢幕不再縮成手機尺寸）：可用寬 = min(視窗, 720) − 根層 padding 24 − 卡片 padding/邊框 26
-  var cellPx = Math.max(sizeId === 16 ? 18 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w)));
+  var cellPx = Math.max(sizeId === 16 ? 22 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
   var colW = spec.w * cellPx + (spec.w - 1) * gapPx + 26; // 對局畫面所有欄位（標頭列/狀態列/進度/貢獻/PlatBar）與盤同寬，不再各寬各的
   function renderCell(i) {
     var st = cells[i],
@@ -19735,11 +19803,13 @@ function MinesGame() {
       onClick: function onClick() {
         return onCellAction(i);
       },
-      onPointerDown: function onPointerDown() {
-        return onCellDown(i);
+      onPointerDown: function onPointerDown(e) {
+        return onCellDown(i, e);
       },
+      onPointerMove: onCellMove,
       onPointerUp: onCellUp,
       onPointerLeave: onCellUp,
+      onPointerCancel: onCellUp,
       onContextMenu: function onContextMenu(e) {
         e.preventDefault();
         toggleFlag(i);
@@ -20511,8 +20581,17 @@ function MinesGame() {
   }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0"
-  }, renderBoard()), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
+    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0",
+    style: {
+      maxWidth: '100%',
+      overflowX: 'auto'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 'max-content',
+      margin: '0 auto'
+    }
+  }, renderBoard())), mpOn && mpRef.current.mode === 'coop' && ownArr && function () {
     var cc = players.map(function (p, ix) {
       return {
         p: p,
@@ -20757,7 +20836,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.28.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.29.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -21018,7 +21097,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     opts = opts || {};
     var SEG = 360 / PLAT_COLORS.length;
     var wrap = document.createElement('div'); wrap.className = 'fw-wrap';
-    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
+    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
     mount.appendChild(wrap);
     var wheel = wrap.querySelector('.fw-wheel'), rotor = wrap.querySelector('.fw-rotor'), hub = wrap.querySelector('.fw-hub');
     hub.style.fontSize = '30px'; hub.style.color = '#b45309';
@@ -21040,7 +21119,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     }
     function loop(ts) {
       if (mode !== 'idle' && mode !== 'rainbow') { rafId = null; return; }
-      if (lastTs) { rot += (ts - lastTs) / 1000 * (mode === 'rainbow' ? 90 : 12); applyRot(); }
+      if (lastTs) { rot += (ts - lastTs) / 1000 * (mode === 'rainbow' ? 90 : 12); applyRot(); if (mode === 'idle') followHub(); }
       lastTs = ts; rafId = requestAnimationFrame(loop);
     }
     function startLoop(m) { mode = m; lastTs = 0; if (!rafId) rafId = requestAnimationFrame(loop); }
@@ -21051,8 +21130,14 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       else if (color === 'rainbow') { hub.classList.add('plat-rainbow-anim'); hub.textContent = ''; }
       else { hub.style.background = color || '#ccc'; hub.textContent = ''; }
     }
+    // 車廂中心角＝ i*SEG（.cab 定位在分段起點角上，不在分段中央）——停車一律對齊車廂正中心，指針不壓線、不停在車廂頭
+    function cabinIdxAt(rotDeg) { var m = ((-(rotDeg) % 360) + 360) % 360; return Math.round(m / SEG) % PLAT_COLORS.length; }
+    function visualRot() { // spin 中 rotor 由 CSS transition 驅動，JS 的 rot 是終點值——讀實際矩陣角才能跟色
+      try { var t = getComputedStyle(rotor).transform; if (!t || t === 'none') return rot; var mm = t.match(/matrix\(([^)]+)\)/); if (!mm) return rot; var v = mm[1].split(','); return Math.atan2(parseFloat(v[1]), parseFloat(v[0])) * 180 / Math.PI; } catch (e) { return rot; }
+    }
+    function followHub() { paintHub(PLAT_COLORS[cabinIdxAt(visualRot())], ''); } // 旋轉時圓心跟著指針下的車廂變色（使用者定案：不要問號）
     function alignTo(idx) {
-      var wantMod = ((360 - (idx * SEG + SEG / 2)) % 360 + 360) % 360;
+      var wantMod = ((360 - idx * SEG) % 360 + 360) % 360;
       var curMod = ((rot % 360) + 360) % 360;
       rot += ((wantMod - curMod) + 360) % 360;
       rotor.classList.remove('spinning'); applyRot();
@@ -21066,19 +21151,27 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         if (mode === 'rainbow') api.rainbowOff();
         stopLoop();
         spinning = true;
-        var idx = Math.floor(Math.random() * PLAT_COLORS.length);
+        // 顏色不可重複（使用者定案）：房裡已被別人占用的顏色不進落點池，轉盤照跑、最後停在剩下的顏色上（20 人時最後一人就只剩最後一色）
+        var taken = (opts.getTaken ? (opts.getTaken() || []) : []);
+        var avail = [];
+        for (var ai = 0; ai < PLAT_COLORS.length; ai++) { if (taken.indexOf(PLAT_COLORS[ai]) < 0) avail.push(ai); }
+        if (!avail.length) { for (var aj = 0; aj < PLAT_COLORS.length; aj++) avail.push(aj); }
+        var idx = avail[Math.floor(Math.random() * avail.length)];
         var c = PLAT_COLORS[idx];
-        var wantMod = ((360 - (idx * SEG + SEG / 2)) % 360 + 360) % 360;
+        var wantMod = ((360 - idx * SEG) % 360 + 360) % 360;
         var curMod = ((rot % 360) + 360) % 360;
-        rot += 6 * 360 + (((wantMod - curMod) + 360) % 360); // 先加速衝 6 圈再緩停到目標車廂中心
+        rot += 6 * 360 + (((wantMod - curMod) + 360) % 360); // 先加速衝 6 圈再緩停到目標車廂正中心
         var gen = ++spinGen;
         rotor.classList.add('spinning'); applyRot();
+        var follow = function () { if (gen !== spinGen || !spinning) return; followHub(); requestAnimationFrame(follow); };
+        requestAnimationFrame(follow);
         setTimeout(function () {
           if (gen !== spinGen) return; // 被彩虹觸發作廢
           spinning = false; rotor.classList.remove('spinning');
           if (onDone) onDone(c);
         }, FERRIS_SPIN_MS + 60);
       },
+      pointerColor: function () { return PLAT_COLORS[cabinIdxAt(visualRot())]; },
       rainbowOn: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
         wheel.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
@@ -21092,7 +21185,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       setUndecided: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
         if (mode === 'rainbow') api.rainbowOff();
-        paintHub('', '？');
+        followHub(); // 不再顯示問號：未決定時也在轉，圓心直接跟著指針下的車廂變色
         startLoop('idle');
       },
       setDecided: function (color) {
@@ -21110,7 +21203,13 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   }
   // ---------- 大廳摩天輪（工廠實例 #1） ----------
   var lobWheel = null;
-  function getLobWheel() { if (!lobWheel) { var m = $('lob-wheel-wrap'); if (!m) return null; lobWheel = createFerris(m, { onPress: function () { spinColor(); } }); } return lobWheel; }
+  // 房裡其他人已占用的顏色（名稱與顏色都要不同——使用者定案）：選色落點與彩虹觸發都要避開
+  function takenColorsForPicker() {
+    var t = [];
+    if (Net.active && Net.roster) Net.roster.forEach(function (p) { if ((p.uid || p.pid) !== Net.myUid && p.color && t.indexOf(p.color) < 0) t.push(p.color); });
+    return t;
+  }
+  function getLobWheel() { if (!lobWheel) { var m = $('lob-wheel-wrap'); if (!m) return null; lobWheel = createFerris(m, { onPress: function () { spinColor(); }, getTaken: takenColorsForPicker }); } return lobWheel; }
   function settleLobbyColor(c) {
     Net.me.color = c; storeSet('plat_color', c);
     if (c === 'rainbow') storeSet('plat_rainbow', '1'); // 觸發即解鎖（房間編輯等舊路徑相容）
@@ -21124,7 +21223,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       dot.classList.remove('plat-rainbow-anim'); dot.style.background = ''; dot.textContent = '';
       dot.style.display = 'inline-flex'; dot.style.alignItems = 'center'; dot.style.justifyContent = 'center'; dot.style.fontWeight = '900'; dot.style.color = '#b45309'; dot.style.fontSize = '17px';
       if (w.isRainbow() || (Net.colorPicked && Net.me.color === 'rainbow')) dot.classList.add('plat-rainbow-anim');
-      else if (!Net.colorPicked) { dot.style.background = '#fff7e0'; dot.textContent = '？'; }
+      else if (!Net.colorPicked) { dot.style.background = w.pointerColor(); } // 未決定：跟摩天輪指針下的顏色一致，不再顯示問號
       else dot.style.background = Net.me.color || '#ccc';
     }
     if (w.isRainbow()) return;
@@ -21133,6 +21232,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   // 彩虹模式開關（快速連按選色鈕 5 次觸發；世代/回呼由工廠與 spinColor 的 colorSpinCb 接手）
   function triggerRainbow() {
     var w = getLobWheel(); if (!w || w.isRainbow()) return;
+    if (takenColorsForPicker().indexOf('rainbow') >= 0) { platToast('🌈 彩虹已被其他玩家使用，自動轉一般選色'); spinColor(); return; } // 顏色不可重複：彩虹被占用就不觸發
     var f = colorSpinCb; colorSpinCb = null;
     colorSpinning = false;
     w.rainbowOn();
@@ -21181,7 +21281,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     ov.style.display = 'flex';
     var mount = $('plat-pick-wheel'); mount.innerHTML = '';
     var presses = [];
-    var wheel = createFerris(mount, { onPress: function () { ovPress(); } });
+    var wheel = createFerris(mount, { onPress: function () { ovPress(); }, getTaken: takenColorsForPicker });
     wheel.setDecided(currentColor || PLAT_COLORS[0]);
     var ctx = pickCtx = { done: false };
     function finish(c) {
@@ -21199,7 +21299,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       var now = Date.now();
       presses = presses.filter(function (t) { return now - t <= 2800; });
       presses.push(now);
-      if (presses.length >= 5) { presses = []; wheel.rainbowOn(); finish('rainbow'); return; }
+      if (presses.length >= 5) { presses = []; if (takenColorsForPicker().indexOf('rainbow') >= 0) { platToast('🌈 彩虹已被其他玩家使用，自動轉一般選色'); ovSpin(); return; } wheel.rainbowOn(); finish('rainbow'); return; }
       ovSpin();
     }
     $('plat-pick-spin').onclick = ovPress;
@@ -21570,12 +21670,20 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     switch (d.kind) {
       case 'join': {
         if (!Net.isHost) return;
+        // 顏色不可重複（使用者定案：名稱與顏色都要不同）：來賓選的顏色已被占用 → 房主自動換第一個可用顏色（彩虹也算一色）；名稱重複在下方 reject 把關
+        var joinColor = d.color, colorSubbed = false;
+        if (joinColor) {
+          var takenC = {}; Net.roster.forEach(function (p) { if ((p.uid || p.pid) !== d.uid && p.pid !== pid && p.color) takenC[p.color] = 1; });
+          if (takenC[joinColor]) {
+            for (var ci2 = 0; ci2 < PLAT_COLORS.length; ci2++) { if (!takenC[PLAT_COLORS[ci2]]) { joinColor = PLAT_COLORS[ci2]; colorSubbed = true; break; } }
+          }
+        }
         // 同 uid 回座（離房後一鍵重連/斷線重連）：舊條目還在名單裡（舊連線尚未逾時清除）時先換綁新 pid，不要誤判暱稱已被占用
         if (d.uid) {
           var reJ = null; Net.roster.forEach(function (p) { if ((p.uid || p.pid) === d.uid && p.pid !== pid) reJ = p; });
           if (reJ) {
             var oldPidJ = reJ.pid;
-            reJ.pid = pid; reJ.name = d.name || reJ.name; reJ.color = d.color || reJ.color; reJ.offline = false;
+            reJ.pid = pid; reJ.name = d.name || reJ.name; reJ.color = joinColor || reJ.color; reJ.offline = false;
             delete Net.lastSeen[oldPidJ];
             var ocJ = Net.conns[oldPidJ]; if (ocJ) { delete Net.conns[oldPidJ]; try { ocJ.close(); } catch (e) {} }
           }
@@ -21584,8 +21692,9 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         var clash = Net.roster.some(function (p) { return p.pid !== pid && normName(p.name) === normName(safeName); });
         if (clash) { platSend(c, { kind: 'reject', reason: 'name_taken' }); return; }
         if (!Net.roster.some(function (p) { return p.pid === pid; })) {
-          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: safeName, color: d.color, host: false, _joinedAt: Date.now() });
+          Net.roster.push({ pid: pid, uid: d.uid || pid, ver: d.ver || '', name: safeName, color: joinColor, host: false, _joinedAt: Date.now() });
         }
+        if (colorSubbed) sysChat('🎨 ' + safeName + ' 選的顏色已被占用，自動換了一個顏色');
         Net.lastSeen[pid] = Date.now();
         tournRebind();
         platSend(c, { kind: 'roster', players: Net.roster, code: Net.code });
