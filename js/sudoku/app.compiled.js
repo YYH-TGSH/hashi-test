@@ -4035,7 +4035,8 @@ function SudokuGame() {
         connRef.current.send({
           type: 'JOIN',
           pName: myNameRef.current || "玩家",
-          uid: myId
+          uid: myId,
+          color: myColorRef.current
         });
       } catch (e) {}
     }, 2500);
@@ -4406,6 +4407,10 @@ function SudokuGame() {
     platHub = _useState172[0],
     setPlatHub = _useState172[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
+  var platSessRef = useRef(null); // 殼 launch 的原始 sess（hub 判斷與代表色 sess.color 的來源；exit 時清空）
+  var isShellColor = function isShellColor(c) {
+    return !!c && (c === 'rainbow' || COLORS.indexOf(c) >= 0);
+  }; // 殼代表色合法值：20 色之一或彩虹
   var hubStartTimerRef = useRef(null);
   var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
   var _useState173 = useState(null),
@@ -4479,6 +4484,19 @@ function SudokuGame() {
         tournRosterRef.current = sess.tourn && sess.tourn.roster || null;
         setPlatHub(!!sess.hub);
         platHubRef.current = !!sess.hub;
+        platSessRef.current = sess;
+        // 平台 hub：代表色以殼摩天輪選定的 sess.color 為準——先寫 myColorRef，並同步自己在 playersList 的條目；
+        // render 時 myColorRef 會由名單推導回寫（getPlayerColor），條目不先改色，JOIN/GHOST 送出前就會被蓋回預設色
+        if (sess.hub && isShellColor(sess.color)) {
+          myColorRef.current = sess.color;
+          setPlayersList(function (prev) {
+            return prev.map(function (p) {
+              return p.id === myId ? _objectSpread(_objectSpread({}, p), {}, {
+                color: sess.color
+              }) : p;
+            });
+          });
+        }
         setTournRoundInfo(sess.tourn ? {
           round: sess.tourn.round,
           total: sess.tourn.total,
@@ -4562,6 +4580,7 @@ function SudokuGame() {
         tournRosterRef.current = null;
         setPlatHub(false);
         platHubRef.current = false;
+        platSessRef.current = null;
         setTournRoundInfo(null);
         tournWaitSinceRef.current = null;
         if (hubStartTimerRef.current) {
@@ -4572,9 +4591,40 @@ function SudokuGame() {
       },
       migrate: function migrate(amHost, sess) {
         // 房主接管：以目前對局狀態原地重建連線（房主 open handler 有 isMigrating 續局邏輯）
+        platSessRef.current = sess;
+        if (sess && sess.hub && isShellColor(sess.color)) myColorRef.current = sess.color;
         setEngine('peerjs');
         engineRef.current = 'peerjs';
         setupPeerJS(sess.code, sess.name, !!amHost);
+      },
+      identity: function identity(d) {
+        // 殼端身分同步（進遊戲後改色）：self=我——只改本地名單條目與 myColorRef，不送協議訊息；我是房主時用既有 PLAYERS_UPDATE 管道廣播最新名單一次
+        // self=false=他人——以名字找人（與 JOIN 撞名檢查/五戰席位同款的完全比對），走既有 handlePlayerColorChange 管道
+        if (!d || !isShellColor(d.color)) return;
+        if (d.self) {
+          myColorRef.current = d.color;
+          var nList = (playersListRef.current || []).map(function (p) {
+            return p.id === myId ? _objectSpread(_objectSpread({}, p), {}, {
+              color: d.color
+            }) : p;
+          });
+          setPlayersList(nList);
+          if (isHostRef.current) connsRef.current.forEach(function (c) {
+            if (c.open) {
+              try {
+                c.send({
+                  type: 'PLAYERS_UPDATE',
+                  players: nList
+                });
+              } catch (e) {}
+            }
+          });
+        } else {
+          var p = (playersListRef.current || []).find(function (pl) {
+            return pl.name === d.name;
+          });
+          if (p) handlePlayerColorChange(p.id, d.color);
+        }
       }
     };
   }, []);
@@ -4649,6 +4699,16 @@ function SudokuGame() {
       return clearInterval(iv);
     };
   }, []);
+
+  // hub 模式專用：房主的心跳廣播（分層自動同步）會搶在來賓 JOIN 前把「只有房主」的名單推過來——
+  // 名單裡還沒有我時整表採用，會把殼釘好代表色的自我條目洗掉（下一個 render 就把 myColorRef 蓋回預設色、JOIN 帶錯色）。
+  // 故 hub 模式下來賓不採用「沒有我」的名單；正式 INIT 與 JOIN 後的更新必含我，不受影響。非 hub 回傳原名單。
+  var adoptHubPlayers = function adoptHubPlayers(players) {
+    if (players && platSessRef.current && platSessRef.current.hub && !players.some(function (p) {
+      return p.id === myId;
+    })) return playersListRef.current || players;
+    return players;
+  };
   var setupPeerJS = function setupPeerJS(rId, pName, isCreating) {
     // 冪等重設：重複 setup（接管/重入/launch 重播）先清掉舊 peer 與 conn refs，避免 SYNC 送進死連線或重複綁定
     if (joinRetryRef.current) {
@@ -4728,12 +4788,15 @@ function SudokuGame() {
             id: myId,
             color: getAvailableColor([])
           };
-          var newList = [_objectSpread(_objectSpread({}, me), {}, {
+          var myEntry = _objectSpread(_objectSpread({}, me), {}, {
             name: pName,
             isHost: true,
             isReady: false,
             isSpectator: false
-          })].concat(_toConsumableArray(others));
+          });
+          // 平台 hub：房主自己的代表色以殼 sess.color 為準（非 hub 照舊：沿用既有條目色，沒有條目才隨機分配）
+          if (platSessRef.current && platSessRef.current.hub && isShellColor(platSessRef.current.color)) myEntry.color = platSessRef.current.color;
+          var newList = [myEntry].concat(_toConsumableArray(others));
           // 五戰名單帶入：把還沒進遊戲的選手先種成灰色「未到」席位（真 JOIN 到達時以同名替換）
           if (tournRosterRef.current) {
             tournRosterRef.current.forEach(function (e) {
@@ -4838,7 +4901,7 @@ function SudokuGame() {
                     id: m.uid,
                     name: m.pName || "玩家",
                     isHost: false,
-                    color: getAvailableColor(prev),
+                    color: platHubRef.current && isShellColor(m.color) ? m.color : getAvailableColor(prev),
                     isReady: false,
                     isSpectator: isSpec
                   }]);
@@ -5057,7 +5120,8 @@ function SudokuGame() {
           c.send({
             type: 'JOIN',
             pName: pName,
-            uid: myId
+            uid: myId,
+            color: myColorRef.current
           });
           // JOIN 重送保險：開局瞬間訊息遺失（連線重建/房主端 handler 晚註冊）時，單次 JOIN 一掉就永遠卡在同步畫面。
           // 房主的 JOIN handler 冪等（已在名單者只更新並回最新 INIT 快照），所以在 waiting 階段每 3 秒重送直到開局。
@@ -5075,7 +5139,8 @@ function SudokuGame() {
                 c.send({
                   type: 'JOIN',
                   pName: pName,
-                  uid: myId
+                  uid: myId,
+                  color: myColorRef.current
                 });
               } catch (e) {}
             }
@@ -5095,7 +5160,7 @@ function SudokuGame() {
             // 強制立刻儲存一次，避開 syncState 的狀態更新延遲 (v3.8.15)
             saveLocalProgress(rId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells);
             syncState(m.data, false);
-            setPlayersList(m.players);
+            setPlayersList(adoptHubPlayers(m.players));
             setIsSpectator(m.isSpectator);
           } else if (m.type === 'SYNC') {
             if (m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面 */} else {
@@ -5114,7 +5179,7 @@ function SudokuGame() {
               }
             }
           } else if (m.type === 'PLAYERS_UPDATE') {
-            if (m.players) setPlayersList(m.players);
+            if (m.players) setPlayersList(adoptHubPlayers(m.players));
           } else if (m.type === 'GHOST_SOLVED') {
             setGhostHints(function (prev) {
               var newHints = _objectSpread({}, prev);
@@ -6007,6 +6072,15 @@ function SudokuGame() {
       key: idx,
       className: "shrink-0 flex flex-col gap-0.5 border-2 border-slate-800 rounded px-1.5 py-0.5 relative cursor-pointer hover:bg-slate-100 transition-colors ".concat(p.isSpectator ? 'opacity-60 bg-slate-100' : 'bg-white'),
       onClick: function onClick() {
+        if (platSessRef.current && platSessRef.current.hub) {
+          // 平台 hub：代表色由殼摩天輪決定，遊戲內不開色票——點自己請殼開摩天輪選色（回呼走既有改色管道）；點別人直接不開
+          if (isMe && typeof window.__PLAT_PICK_COLOR === 'function') {
+            window.__PLAT_PICK_COLOR(myCurrentColor, function (c) {
+              if (c) handlePlayerColorChange(myId, c);
+            });
+          }
+          return;
+        }
         if (isMe || isHostRef.current) {
           setEditName(p.name);
           setColorPickerTarget(p.id);

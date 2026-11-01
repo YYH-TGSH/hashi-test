@@ -1384,9 +1384,9 @@ function MinesGame() {
       var pend = list.findIndex(function (p) {
         return p.pending && normName(p.name) === normName(m.pName || '');
       });
-      var color = MP_COLORS[list.filter(function (p) {
+      var color = typeof m.color === 'string' && m.color ? m.color : MP_COLORS[list.filter(function (p) {
         return !p.pending;
-      }).length % MP_COLORS.length];
+      }).length % MP_COLORS.length]; // 來賓 JOIN 帶來的殼代表色優先（非空字串才用）；沒有才依座位配色（pending 席位仍沿用種子的殼名單色，不在此覆寫）
       var entry = {
         id: m.uid,
         name: m.pName || '玩家',
@@ -1568,13 +1568,15 @@ function MinesGame() {
       hostConnRef.current = c;
       c.on('open', function () {
         try {
-          c.send({
+          var jm = {
             type: 'JOIN',
             uid: myId,
             pName: sess.name
-          });
+          };
+          if (hubColorRef.current) jm.color = hubColorRef.current;
+          c.send(jm);
         } catch (e) {}
-      });
+      }); // hub 模式把殼代表色帶給房主，房主名單用對顏色、PLAYERS_UPDATE 回來全員一致
       c.on('data', function (m) {
         return onMpData(m, c);
       });
@@ -1606,12 +1608,12 @@ function MinesGame() {
       var list = [{
         id: myId,
         name: sess.name,
-        color: MP_COLORS[0],
+        color: sess.hub && hubColorRef.current ? hubColorRef.current : MP_COLORS[0],
         isHost: true,
         spectator: false,
         ready: false,
         offline: false
-      }];
+      }]; // hub 模式：房主代表色以殼帶入的為準；單機/獨立維持座位色
       if (sess.tourn && sess.tourn.roster) {
         sess.tourn.roster.forEach(function (e) {
           if (e && e.name && normName(e.name) !== normName(sess.name)) list.push({
@@ -1905,11 +1907,13 @@ function MinesGame() {
 
   // ---------- 平台 hooks ----------
   var sessRef = useRef(null);
+  var hubColorRef = useRef(null); // 殼帶入的代表色（大廳摩天輪選色；enter 時存下，hub 模式配色以它為準）
   useEffect(function () {
     if (typeof window === 'undefined' || !window.__PLAT_PLATFORM) return;
     window.__PLAT_HOOKS_mines = {
       enter: function enter(sess) {
         sessRef.current = sess || null;
+        hubColorRef.current = sess && typeof sess.color === 'string' && sess.color ? sess.color : null; // 只驗非空字串：地雷 MP_COLORS 與殼色票是不同集合，不拿來驗
         // 開新局先清掉上一局的結算暫存（站規：新局絕不能重播上一局的結算）
         cleanupMp();
         setHdrOpen(false);
@@ -1932,7 +1936,25 @@ function MinesGame() {
       exit: function exit() {
         cleanupMp();
         sessRef.current = null;
+        hubColorRef.current = null;
         setScreen('home');
+      },
+      identity: function identity(d) {
+        // 殼端身分同步（名條改色）：self 改自己那筆、非 self 以名字找 entry；房主改完廣播一次讓全員一致，來賓只改本地不送訊息
+        if (!d || typeof d.color !== 'string' || !d.color) return;
+        if (d.self) setPlayersBoth(playersRef.current.map(function (p) {
+          return p.id === myId ? Object.assign({}, p, {
+            color: d.color
+          }) : p;
+        }));else setPlayersBoth(playersRef.current.map(function (p) {
+          return normName(p.name) === normName(d.name || '') ? Object.assign({}, p, {
+            color: d.color
+          }) : p;
+        }));
+        if (mpRef.current.isHost) hostBroadcast({
+          type: 'PLAYERS_UPDATE',
+          players: playersRef.current
+        });
       },
       migrate: function migrate() {
         // 殼端房主接管：我升格成房主就接手主持（名單保留、來賓會重新 JOIN）

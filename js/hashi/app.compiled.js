@@ -1172,6 +1172,13 @@ function HashiGame() {
     );
   };
   var platAutoRef = useRef(null);
+  var platSessRef = useRef(null); // 平台 hub：殼 enter/migrate 最後帶入的 sess（hub 模式下代表色以 sess.color 為準、固定不亂配）
+  var hubPlatColor = function hubPlatColor() {
+    var s = platSessRef.current;
+    if (!s || !s.hub) return null;
+    var c = s.color;
+    return c === 'rainbow' || COLORS.indexOf(c) >= 0 ? c : null;
+  };
   var connRef = useRef(null);
   var connsRef = useRef([]);
   var zoomContainerRef = useRef(null);
@@ -3213,9 +3220,9 @@ function HashiGame() {
     if (clash) {
       setNickError("已經有人用這個名字了，換一個吧！");return;
     }
-    var entry = { id: myId, name: name, isHost: true, color: getAvailableColor(playersListRef.current.filter(function (p) {
+    var entry = { id: myId, name: name, isHost: true, color: hubPlatColor() || getAvailableColor(playersListRef.current.filter(function (p) {
         return p.id !== myId;
-      })) };
+      })) }; // hub 模式：房主代表色用殼帶入的 sess.color，不亂配
     setPlayersList(function (prev) {
       var nList = [entry].concat(prev.filter(function (p) {
         return p.id !== myId;
@@ -3253,7 +3260,12 @@ function HashiGame() {
       myJoinNameRef.current = name;
       guestJoinedRef.current = true;
       joinActiveRef.current = false;
-      connRef.current.send({ type: 'JOIN', pName: name, uid: myId, auto: auto });
+      var joinMsg = { type: 'JOIN', pName: name, uid: myId, auto: auto };
+      var hcJoin = hubPlatColor();
+      if (hcJoin) {
+        myColorRef.current = hcJoin;joinMsg.color = hcJoin;
+      } // hub 模式：render 會用名單覆寫 myColorRef，故在送出點補釘並把殼的代表色帶進 JOIN（房主以 m.color 為準）；非 hub 不帶色、維持原行為
+      connRef.current.send(joinMsg);
       setScreen('game');setIsHeaderCollapsed(true);setIsConnecting(false);
     } else {
       setIsConnecting(false);
@@ -3275,7 +3287,7 @@ function HashiGame() {
       var nm = myJoinNameRef.current || myNameRef.current;
       if (!nm) return;
       try {
-        connRef.current.send({ type: 'JOIN', pName: nm, uid: myId, color: myColorRef.current, auto: autoNameRef.current });
+        connRef.current.send({ type: 'JOIN', pName: nm, uid: myId, color: hubPlatColor() || myColorRef.current, auto: autoNameRef.current });
       } catch (e) {}
     }, 2500);
     return function () {
@@ -3367,6 +3379,9 @@ function HashiGame() {
     if (!PLAT_MODE) return;
     window.__PLAT_HOOKS_hashi = {
       enter: function enter(sess) {
+        platSessRef.current = sess; // hub 模式：代表色以殼 sess.color 為準（enter 在連線建立前執行，先把我的顏色釘住，重複呼叫以最後一次為準）
+        var hcEnter = hubPlatColor();
+        if (hcEnter) myColorRef.current = hcEnter;
         // 開新局先清掉上一局的結算暫存：raceState 若停在 finished＋舊 raceResult，結算 effect 會在新局一進去就重播舊結果（錦標賽結束後再開大亂鬥實機踩到）
         setRaceState('idle');raceStateRef.current = 'idle';
         setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
@@ -3446,11 +3461,14 @@ function HashiGame() {
         }
       },
       exit: function exit() {
-        setPlatTournLock(false);tournRosterRef.current = null;setPlatHub(false);platHubRef.current = false;setTournRoundInfo(null);tournWaitSinceRef.current = null;if (hubStartTimerRef.current) {
+        platSessRef.current = null;setPlatTournLock(false);tournRosterRef.current = null;setPlatHub(false);platHubRef.current = false;setTournRoundInfo(null);tournWaitSinceRef.current = null;if (hubStartTimerRef.current) {
           clearInterval(hubStartTimerRef.current);hubStartTimerRef.current = null;
         }handleGoHome();
       },
       migrate: function migrate(amHost, sess) {
+        platSessRef.current = sess; // 接管也以最後帶入的 sess 為準（hub 代表色同 enter）
+        var hcMig = hubPlatColor();
+        if (hcMig) myColorRef.current = hcMig;
         setEngine('peerjs');engineRef.current = 'peerjs';
         if (amHost) {
           promotingRef.current = true;
@@ -3463,6 +3481,33 @@ function HashiGame() {
           platAutoRef.current = { name: sess.name };
           setIsConnecting(true);
           setupPeerJS(sess.code, false);
+        }
+      },
+      identity: function identity(d) {
+        // 殼端身分同步（改名/改色）：殼已在它的名單同步好，這裡只把遊戲內名單對齊，不自創協議
+        if (!d) return;
+        if (d.self) {
+          if (d.color !== 'rainbow' && COLORS.indexOf(d.color) < 0) return;
+          myColorRef.current = d.color;
+          setPlayersList(function (prev) {
+            var nList = prev.map(function (p) {
+              return p.id === myId ? _extends({}, p, { color: d.color }) : p;
+            });
+            // 我是房主：本地套用後用既有廣播管道送一次最新名單，讓來賓端一致（來賓身分只本地套用、不送訊息）
+            if (isHostRef.current) connsRef.current.forEach(function (c) {
+              if (c.open) {
+                try {
+                  c.send({ type: 'PLAYERS_UPDATE', players: nList });
+                } catch (e) {}
+              }
+            });
+            return nList;
+          });
+        } else {
+          var p = (playersListRef.current || []).find(function (pl) {
+            return normName(pl.name) === normName(d.name);
+          });
+          if (p) handlePlayerColorChange(p.id, d.color); // 走原協議：房主直改廣播／來賓送 REQ_COLOR_CHANGE
         }
       }
     };
@@ -3553,7 +3598,7 @@ function HashiGame() {
             return [_extends({}, me, { isHost: true })].concat(_toConsumableArray(others));
           });
         } else {
-          var seedListH = [{ id: myId, name: "", isHost: true, color: getAvailableColor([]) }];
+          var seedListH = [{ id: myId, name: "", isHost: true, color: hubPlatColor() || getAvailableColor([]) }]; // hub 模式：種子名單的房主色也用 sess.color
           // 五戰名單帶入：還沒進遊戲的選手先種成灰色「未到」席位（真 JOIN 到達時以同名替換）
           if (tournRosterRef.current) {
             var selfNameH = platAutoRef.current ? platAutoRef.current.name : null;
@@ -3612,7 +3657,7 @@ function HashiGame() {
                     nList = prev.slice();
                     nList[pendIdxH] = { id: m.uid, name: m.pName, isHost: false, color: prev[pendIdxH].color, isReady: false, isSpectator: lateSpec };
                   } else {
-                    var newColor = m.color || getAvailableColor(prev);
+                    var newColor = m.color === 'rainbow' || COLORS.indexOf(m.color) >= 0 ? m.color : getAvailableColor(prev); // 來賓有帶合法代表色（hub 模式＝殼的摩天輪色）就以他的為準，否則維持房主隨機配色
                     nList = [].concat(_toConsumableArray(prev), [{ id: m.uid, name: m.pName, isHost: false, color: newColor, isReady: false, isSpectator: lateSpec }]);
                   }
                 }
@@ -3960,7 +4005,7 @@ function HashiGame() {
           } else if (m.type === 'JOIN_REJECTED' && m.reason === 'name_taken') {
             handleJoinRejected(m);
           } else if (m.type === 'REQ_REJOIN') {
-            connRef.current.send({ type: 'JOIN', pName: myNameRef.current, uid: myId, color: myColorRef.current, auto: autoNameRef.current });
+            connRef.current.send({ type: 'JOIN', pName: myNameRef.current, uid: myId, color: hubPlatColor() || myColorRef.current, auto: autoNameRef.current });
           }
         });
         c.on('close', function () {
@@ -5513,7 +5558,15 @@ function HashiGame() {
               'span',
               {
                 onClick: function onClick() {
-                  return setColorPickerTarget(function (prev) {
+                  var sHub = platSessRef.current;
+                  if (sHub && sHub.hub) {
+                    // hub 模式：代表色由殼的摩天輪決定、遊戲內不自選——點自己的名條改呼叫殼的選色（結果走原改色協議同步），點別人無動作、不開色票
+                    if (isMe && window.__PLAT_PICK_COLOR) window.__PLAT_PICK_COLOR(myCurrentColor, function (c) {
+                      if (c) handlePlayerColorChange(myId, c);
+                    });
+                    return;
+                  }
+                  setColorPickerTarget(function (prev) {
                     return prev === p.id ? null : p.id;
                   });
                 },
