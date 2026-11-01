@@ -1664,6 +1664,25 @@ function SudokuGame() {
       el.removeEventListener('wheel', handleWheel);
     };
   }, [screen, isHeaderCollapsed, interactionMode, svgW, svgH, zoomLevel, isSpectator]);
+
+  // 觸控筆同點連點防護：不認 touch-action 的舊版 iOS Safari 會把「同位置的快速第二下點按」配對成雙擊縮放手勢、
+  // 整下被仲裁吃掉（手指落點較飄移反而不會被配對——使用者實機回報：筆連點四下，第 2、4 下連水波紋都沒有）。
+  // 在棋盤 svg 本體以非被動 touchend preventDefault 關掉雙擊配對（FastClick 世代的標準解法）：
+  // 只掛 svg、不碰數字鍵（走 click）與頁面捲動（touchend 在捲動之後才發生，不擋捲動與縮放手勢）。
+  useEffect(function () {
+    if (screen !== 'game') return;
+    var svg = svgRef.current;
+    if (!svg) return;
+    var killDblTap = function killDblTap(e) {
+      if (e.cancelable) e.preventDefault();
+    };
+    svg.addEventListener('touchend', killDblTap, {
+      passive: false
+    });
+    return function () {
+      svg.removeEventListener('touchend', killDblTap);
+    };
+  }, [screen]);
   useEffect(function () {
     if (ripples.length === 0) return;
     var timer = setTimeout(function () {
@@ -2730,6 +2749,7 @@ function SudokuGame() {
   };
   var handlePointerDown = function handlePointerDown(e) {
     if (matchPhase !== 'playing' || isSpectator) return;
+    if (e.cancelable) e.preventDefault(); // 先宣示這次點按由遊戲處理：擋掉瀏覽器拿它去做手勢仲裁/滑鼠事件合成的起點（觸控筆同點連點時第二下被 claim 的主因之一）
     var pt = getSvgCoords(e.clientX, e.clientY);
     if (!pt) return;
     if (interactionMode === 2) {
@@ -2764,7 +2784,9 @@ function SudokuGame() {
         var seq = ++tapSeqRef.current;
         tapInfoRef.current = {
           cellId: cellId,
-          seq: seq
+          seq: seq,
+          x: pt.x,
+          y: pt.y
         };
         cellLongPressTimer.current = setTimeout(function () {
           clearCell(cellId);
@@ -2844,9 +2866,11 @@ function SudokuGame() {
 
     // 點按在 pointerup 直接處理（見 pointerdown 註解）：只認「放開時還在同一格、且這次點按沒觸發長按」。
     // 處理過就記 dedupe，跟隨其後的 click 不再重複觸發；長按放開也標記已消費，擋掉隨後的 click。
+    // pointercancel 也進來：點按被瀏覽器手勢仲裁 claim 走時只補發 cancel（觸控筆同點連點的第二下最常見）——
+    // 筆尖幾乎沒動（≤6 單位）才當點按補處理；捲動起手在被 claim 前早已移動超過這個量，不會被誤補成填數字。
     var tapInfo = tapInfoRef.current;
     tapInfoRef.current = null;
-    if (e.type === 'pointerup' && interactionMode < 2 && tapInfo) {
+    if ((e.type === 'pointerup' || e.type === 'pointercancel') && interactionMode < 2 && tapInfo) {
       if (longPressSeqRef.current === tapInfo.seq) {
         pointerTapDedupeRef.current = {
           cellId: tapInfo.cellId,
@@ -2857,7 +2881,8 @@ function SudokuGame() {
         if (upPt) {
           var ux = Math.floor((upPt.x - PADDING) / CELL_SIZE);
           var uy = Math.floor((upPt.y - PADDING) / CELL_SIZE);
-          if (ux + '-' + uy === tapInfo.cellId) {
+          var distOk = e.type === 'pointerup' || Math.hypot(upPt.x - tapInfo.x, upPt.y - tapInfo.y) <= 6;
+          if (distOk && ux + '-' + uy === tapInfo.cellId) {
             pointerTapDedupeRef.current = {
               cellId: tapInfo.cellId,
               t: Date.now()
