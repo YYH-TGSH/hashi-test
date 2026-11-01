@@ -1174,8 +1174,9 @@ function SudokuGame() {
       return Array(cSizeDef.size).fill(null);
     });
     activeCells.forEach(function (c) {
-      if (c.value) grid[c.y][c.x] = c;
-    });
+      if (c.value && c.y < cSizeDef.size && c.x < cSizeDef.size) grid[c.y][c.x] = c;
+    }); // 邊界守衛：外來/殘檔格子越界只略過，渲染永不因資料形狀崩潰
+
     for (var i = 0; i < cSizeDef.size; i++) {
       var rowSeen = {};
       var colSeen = {};
@@ -1336,7 +1337,7 @@ function SudokuGame() {
             return c.y === i;
           });
           if (rowCells.length === s && rowCells.every(function (c) {
-            return c.value === solution[c.y][c.x];
+            return c.value === (solution[c.y] || [])[c.x];
           })) {
             completedRegionsRef.current.add("R".concat(i));
             if (!rowCells.every(function (c) {
@@ -1349,7 +1350,7 @@ function SudokuGame() {
             return c.x === i;
           });
           if (colCells.length === s && colCells.every(function (c) {
-            return c.value === solution[c.y][c.x];
+            return c.value === (solution[c.y] || [])[c.x];
           })) {
             completedRegionsRef.current.add("C".concat(i));
             if (!colCells.every(function (c) {
@@ -1362,7 +1363,7 @@ function SudokuGame() {
             return c.boxId === i;
           });
           if (boxCells.length === s && boxCells.every(function (c) {
-            return c.value === solution[c.y][c.x];
+            return c.value === (solution[c.y] || [])[c.x];
           })) {
             completedRegionsRef.current.add("B".concat(i));
             if (!boxCells.every(function (c) {
@@ -1381,7 +1382,7 @@ function SudokuGame() {
           return c.value === _char2;
         });
         if (numCells.length === s && numCells.every(function (c) {
-          return c.value === solution[c.y][c.x];
+          return c.value === (solution[c.y] || [])[c.x];
         })) {
           completedRegionsRef.current.add("N".concat(_char2));
           if (!numCells.every(function (c) {
@@ -2032,7 +2033,7 @@ function SudokuGame() {
     if (!solution) return;
     // 找所有已填正確、非預填、非系統揭露的格子
     var correctCells = stateRef.current.localCells.filter(function (c) {
-      return !c.isGiven && !c.isSystemRevealed && c.value !== null && c.value === solution[c.y][c.x];
+      return !c.isGiven && !c.isSystemRevealed && c.value !== null && c.value === (solution[c.y] || [])[c.x];
     });
     if (correctCells.length === 0) {
       showToast("\uD83E\uDDF9 \u6A61\u76AE\u64E6\u6C92\u6709\u6548\u679C\uFF0C\u4F60\u6C92\u6709\u53EF\u88AB\u6E05\u9664\u7684\u683C\u5B50\uFF01");
@@ -2184,7 +2185,7 @@ function SudokuGame() {
       return !c.isGiven && !c.isSystemRevealed && c.value === null;
     });
     var incorrectCells = stateRef.current.localCells.filter(function (c) {
-      return !c.isGiven && !c.isSystemRevealed && c.value !== null && solutionGridRef.current && c.value !== solutionGridRef.current[c.y][c.x];
+      return !c.isGiven && !c.isSystemRevealed && c.value !== null && solutionGridRef.current && c.value !== (solutionGridRef.current[c.y] || [])[c.x];
     });
     var giftsToOpenCount = Math.min(myQueue.length, emptyCells.length + incorrectCells.length);
     if (giftsToOpenCount === 0) {
@@ -4667,6 +4668,36 @@ function SudokuGame() {
     setIsHost(!!isCreating);
     isHostRef.current = !!isCreating;
     var savedProg = loadLocalProgress(rId, myId);
+    if (savedProg && Array.isArray(savedProg.d) && savedProg.d.length) {
+      // 尺寸守衛：存檔盤面尺寸必須等於本局尺寸才准恢復。房號撞號／跨尺寸殘檔的格子一旦塞進
+      // localCells，conflictCellIds 會拿大格子寫入小 grid 當場崩潰（2026-11-01 主畫面 App 實機事故：
+      // Safari 儲存空間乾淨無事、主畫面 App 累積殘檔必爆）。不合就整筆清除，不留毒。
+      var targetSize = (SIZES.find(function (s) {
+        return s.id === stateRef.current.sizeId;
+      }) || SIZES[1]).size;
+      var maxDim = 0;
+      var _iterator7 = _createForOfIteratorHelper(savedProg.d),
+        _step7;
+      try {
+        for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+          var c = _step7.value;
+          if (c && typeof c.x === 'number' && typeof c.y === 'number') {
+            if (c.x + 1 > maxDim) maxDim = c.x + 1;
+            if (c.y + 1 > maxDim) maxDim = c.y + 1;
+          }
+        }
+      } catch (err) {
+        _iterator7.e(err);
+      } finally {
+        _iterator7.f();
+      }
+      if (maxDim !== targetSize) {
+        try {
+          localStorage.removeItem("sudoku_prog_".concat(rId, "_").concat(myId));
+        } catch (e) {}
+        savedProg = null;
+      }
+    }
     setConnectionStatus(isCreating ? "正在啟動通訊模組..." : "\u6B63\u5728\u5C0B\u627E\u623F\u9593 ".concat(rId, "..."));
     if (isCreating) {
       var p = new Peer('yyh-tgsh-' + rId + '-host');

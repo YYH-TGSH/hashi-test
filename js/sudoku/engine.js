@@ -25,7 +25,7 @@ const transpose = (matrix) => matrix[0].map((_, colIndex) => matrix.map(row => r
 function getSolutionGrid(puzzleCells, sizeDef) {
     const { size, boxW, boxH, chars } = sizeDef;
     const grid = Array(size).fill(null).map(() => Array(size).fill(null));
-    puzzleCells.forEach(c => { if (c.isGiven) grid[c.y][c.x] = chars.indexOf(c.value); });
+    puzzleCells.forEach(c => { if (c.isGiven && c.y < size && c.x < size) grid[c.y][c.x] = chars.indexOf(c.value); }); // 邊界守衛：匯入/殘檔格子越界不可寫爆 grid（2026-11-01）
 
     function getCandidates(y, x, g) {
         let used = Array(size).fill(false);
@@ -219,4 +219,11 @@ const saveLocalProgress = (rid, uid, name, isHost, data, sessionId, extra) => {
         localStorage.setItem('sudoku_last_session', JSON.stringify({ rid, uid, time: Date.now(), name, isHost, sid: sessionId }));
     } catch (e) { /* 儲存空間被瀏覽器封鎖時（如預覽環境）靜默略過，不可讓遊戲崩潰 */ }
 };
-const loadLocalProgress = (rid, uid) => { try { const s = localStorage.getItem(`sudoku_prog_${rid}_${uid}`); return s ? JSON.parse(s) : null; } catch (e) { return null; } };
+const loadLocalProgress = (rid, uid) => { try {
+    const s = localStorage.getItem(`sudoku_prog_${rid}_${uid}`); if (!s) return null;
+    const p = JSON.parse(s);
+    // 存檔衛生（2026-11-01）：超過 24 小時或形狀不對的殘檔直接清除。房號只有 4 碼、會撞號，
+    // 陳年殘檔被別場比賽撈到會污染新局（實機事故：16×16 殘檔毒死 9×9 新房的房主開局）。
+    if (!p || !Array.isArray(p.d) || !p.t || (Date.now() - p.t) > 24 * 3600 * 1000) { try { localStorage.removeItem(`sudoku_prog_${rid}_${uid}`); } catch (e) {} return null; }
+    return p;
+} catch (e) { return null; } };
