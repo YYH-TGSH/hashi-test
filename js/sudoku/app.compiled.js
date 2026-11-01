@@ -4700,6 +4700,13 @@ function SudokuGame() {
     };
   }, []);
 
+  // 世代守衛：代幣不符的 SYNC 原則上是上一局遲到包、應丟棄；但「新局開局包」（isGenerating 或 countdown 階段）
+  // 是房主在宣告新世代——同一條連線有序送達，舊開局包不可能越過新包遲到，此時必須放行（syncState 會認領新代幣）。
+  // 否則再來一局的第一包（倒數包、尚無盤面）會被來賓整包丟棄，來賓永遠停在舊結算、進不了新局。
+  var isStaleSync = function isStaleSync(data) {
+    return !!(data && data.matchToken && matchTokenRef.current && data.matchToken !== matchTokenRef.current && !(data.levelData && data.startTime) && data.isGenerating !== true && data.matchPhase !== 'countdown');
+  };
+
   // hub 模式專用：房主的心跳廣播（分層自動同步）會搶在來賓 JOIN 前把「只有房主」的名單推過來——
   // 名單裡還沒有我時整表採用，會把殼釘好代表色的自我條目洗掉（下一個 render 就把 myColorRef 蓋回預設色、JOIN 帶錯色）。
   // 故 hub 模式下來賓不採用「沒有我」的名單；正式 INIT 與 JOIN 後的更新必含我，不受影響。非 hub 回傳原名單。
@@ -4923,7 +4930,7 @@ function SudokuGame() {
               });
               if (!existingPlayer) showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40")); // 重送 JOIN 的冪等回應不再跳提示
             } else if (m.type === 'SYNC') {
-              if (!(m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime))) {
+              if (!isStaleSync(m.data)) {
                 syncState(m.data, false);
                 if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
               }
@@ -5163,7 +5170,7 @@ function SudokuGame() {
             setPlayersList(adoptHubPlayers(m.players));
             setIsSpectator(m.isSpectator);
           } else if (m.type === 'SYNC') {
-            if (m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面 */} else {
+            if (isStaleSync(m.data)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面（新局開局包不在此列，見 isStaleSync） */} else {
               syncState(m.data, false);
               if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
               // 客端收到同步後也立刻存檔備援 (v3.8.21)
@@ -6107,7 +6114,7 @@ function SudokuGame() {
     }, pct, "%")), /*#__PURE__*/React.createElement("div", {
       className: "w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300",
+      className: "h-full transition-all duration-300 relative overflow-hidden",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: isRainbow ? 'transparent' : p.color

@@ -7912,6 +7912,13 @@ function SudokuGame() {
     };
   }, []);
 
+  // 世代守衛：代幣不符的 SYNC 原則上是上一局遲到包、應丟棄；但「新局開局包」（isGenerating 或 countdown 階段）
+  // 是房主在宣告新世代——同一條連線有序送達，舊開局包不可能越過新包遲到，此時必須放行（syncState 會認領新代幣）。
+  // 否則再來一局的第一包（倒數包、尚無盤面）會被來賓整包丟棄，來賓永遠停在舊結算、進不了新局。
+  var isStaleSync = function isStaleSync(data) {
+    return !!(data && data.matchToken && matchTokenRef.current && data.matchToken !== matchTokenRef.current && !(data.levelData && data.startTime) && data.isGenerating !== true && data.matchPhase !== 'countdown');
+  };
+
   // hub 模式專用：房主的心跳廣播（分層自動同步）會搶在來賓 JOIN 前把「只有房主」的名單推過來——
   // 名單裡還沒有我時整表採用，會把殼釘好代表色的自我條目洗掉（下一個 render 就把 myColorRef 蓋回預設色、JOIN 帶錯色）。
   // 故 hub 模式下來賓不採用「沒有我」的名單；正式 INIT 與 JOIN 後的更新必含我，不受影響。非 hub 回傳原名單。
@@ -8135,7 +8142,7 @@ function SudokuGame() {
               });
               if (!existingPlayer) showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40")); // 重送 JOIN 的冪等回應不再跳提示
             } else if (m.type === 'SYNC') {
-              if (!(m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime))) {
+              if (!isStaleSync(m.data)) {
                 syncState(m.data, false);
                 if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
               }
@@ -8375,7 +8382,7 @@ function SudokuGame() {
             setPlayersList(adoptHubPlayers(m.players));
             setIsSpectator(m.isSpectator);
           } else if (m.type === 'SYNC') {
-            if (m.data && m.data.matchToken && matchTokenRef.current && m.data.matchToken !== matchTokenRef.current && !(m.data.levelData && m.data.startTime)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面 */} else {
+            if (isStaleSync(m.data)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面（新局開局包不在此列，見 isStaleSync） */} else {
               syncState(m.data, false);
               if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
               // 客端收到同步後也立刻存檔備援 (v3.8.21)
@@ -9319,7 +9326,7 @@ function SudokuGame() {
     }, pct, "%")), /*#__PURE__*/React.createElement("div", {
       className: "w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300",
+      className: "h-full transition-all duration-300 relative overflow-hidden",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: isRainbow ? 'transparent' : p.color
@@ -20409,7 +20416,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.22.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.22.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
