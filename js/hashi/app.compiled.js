@@ -957,112 +957,119 @@ function HashiGame() {
       fxFog = _useState158[0],
       setFxFog = _useState158[1];
 
-  var _useState159 = useState({}),
+  var _useState159 = useState([]),
       _useState160 = _slicedToArray(_useState159, 2),
-      fxPhantom = _useState160[0],
-      setFxPhantom = _useState160[1];
+      fxFogBoxes = _useState160[0],
+      setFxFogBoxes = _useState160[1]; // 迷霧方框：[{id,minX,minY,maxX,maxY,until}]（格坐標，命中島嶼的外接矩形）
 
-  var _useState161 = useState(Date.now()),
+
+  var _useState161 = useState([]),
       _useState162 = _slicedToArray(_useState161, 2),
-      fxNow = _useState162[0],
-      setFxNow = _useState162[1];
+      fxMarks = _useState162[0],
+      setFxMarks = _useState162[1]; // 短暫特效標記：[{id,gx,gy,icon,until}]（💥炸橋／✨禮物補橋，格坐標中心）
 
-  var _useState163 = useState(null),
+
+  var _useState163 = useState(Date.now()),
       _useState164 = _slicedToArray(_useState163, 2),
-      raceResult = _useState164[0],
-      setRaceResult = _useState164[1];
+      fxNow = _useState164[0],
+      setFxNow = _useState164[1];
 
-  var _useState165 = useState(false),
+  var _useState165 = useState(null),
       _useState166 = _slicedToArray(_useState165, 2),
-      raceWaiting = _useState166[0],
-      setRaceWaiting = _useState166[1];
-
-  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
+      raceResult = _useState166[0],
+      setRaceResult = _useState166[1];
 
   var _useState167 = useState(false),
       _useState168 = _slicedToArray(_useState167, 2),
-      resultsDismissedUi = _useState168[0],
-      setResultsDismissedUi = _useState168[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+      raceWaiting = _useState168[0],
+      setRaceWaiting = _useState168[1];
 
+  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
 
   var _useState169 = useState(false),
       _useState170 = _slicedToArray(_useState169, 2),
-      leaveArm = _useState170[0],
-      setLeaveArm = _useState170[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
+      resultsDismissedUi = _useState170[0],
+      setResultsDismissedUi = _useState170[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+
+
+  var _useState171 = useState(false),
+      _useState172 = _slicedToArray(_useState171, 2),
+      leaveArm = _useState172[0],
+      setLeaveArm = _useState172[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
 
 
   var leaveArmTimerRef = useRef(null);
 
-  var _useState171 = useState(false),
-      _useState172 = _slicedToArray(_useState171, 2),
-      showExitMenu = _useState172[0],
-      setShowExitMenu = _useState172[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
-
-
-  var _useState173 = useState(null),
+  var _useState173 = useState(false),
       _useState174 = _slicedToArray(_useState173, 2),
-      raceCountdown = _useState174[0],
-      setRaceCountdown = _useState174[1];
+      showExitMenu = _useState174[0],
+      setShowExitMenu = _useState174[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
+
+
+  var _useState175 = useState(null),
+      _useState176 = _slicedToArray(_useState175, 2),
+      raceCountdown = _useState176[0],
+      setRaceCountdown = _useState176[1];
 
   // ⭐ 星級評分
 
 
-  var _useState175 = useState(0),
-      _useState176 = _slicedToArray(_useState175, 2),
-      stars = _useState176[0],
-      setStars = _useState176[1];
-
-  var _useState177 = useState(false),
+  var _useState177 = useState(0),
       _useState178 = _slicedToArray(_useState177, 2),
-      isNewBest = _useState178[0],
-      setIsNewBest = _useState178[1];
+      stars = _useState178[0],
+      setStars = _useState178[1];
+
+  var _useState179 = useState(false),
+      _useState180 = _slicedToArray(_useState179, 2),
+      isNewBest = _useState180[0],
+      setIsNewBest = _useState180[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState179 = useState([]),
-      _useState180 = _slicedToArray(_useState179, 2),
-      bursts = _useState180[0],
-      setBursts = _useState180[1];
-
   var _useState181 = useState([]),
       _useState182 = _slicedToArray(_useState181, 2),
-      confetti = _useState182[0],
-      setConfetti = _useState182[1];
+      bursts = _useState182[0],
+      setBursts = _useState182[1];
+
+  var _useState183 = useState([]),
+      _useState184 = _slicedToArray(_useState183, 2),
+      confetti = _useState184[0],
+      setConfetti = _useState184[1];
 
   // 每日一題
 
 
-  var _useState183 = useState(false),
-      _useState184 = _slicedToArray(_useState183, 2),
-      isDailyMode = _useState184[0],
-      setIsDailyMode = _useState184[1];
-
-  var _useState185 = useState(""),
+  var _useState185 = useState(false),
       _useState186 = _slicedToArray(_useState185, 2),
-      dailyDateStr = _useState186[0],
-      setDailyDateStr = _useState186[1];
+      isDailyMode = _useState186[0],
+      setIsDailyMode = _useState186[1];
 
-  var _useState187 = useState(0),
+  var _useState187 = useState(""),
       _useState188 = _slicedToArray(_useState187, 2),
-      dailyStreak = _useState188[0],
-      setDailyStreak = _useState188[1];
+      dailyDateStr = _useState188[0],
+      setDailyDateStr = _useState188[1];
 
-  var _useState189 = useState(null),
+  var _useState189 = useState(0),
       _useState190 = _slicedToArray(_useState189, 2),
-      dailyDone = _useState190[0],
-      setDailyDone = _useState190[1];
+      dailyStreak = _useState190[0],
+      setDailyStreak = _useState190[1];
+
+  var _useState191 = useState(null),
+      _useState192 = _slicedToArray(_useState191, 2),
+      dailyDone = _useState192[0],
+      setDailyDone = _useState192[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState191 = useState(function () {
+  var _useState193 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState192 = _slicedToArray(_useState191, 2),
-      dailyMenuDate = _useState192[0],
-      setDailyMenuDate = _useState192[1];
+      _useState194 = _slicedToArray(_useState193, 2),
+      dailyMenuDate = _useState194[0],
+      setDailyMenuDate = _useState194[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1095,22 +1102,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState193 = useState(false),
-      _useState194 = _slicedToArray(_useState193, 2),
-      zoomOpen = _useState194[0],
-      setZoomOpen = _useState194[1];
-
   var _useState195 = useState(false),
       _useState196 = _slicedToArray(_useState195, 2),
-      drawSubOpen = _useState196[0],
-      setDrawSubOpen = _useState196[1];
+      zoomOpen = _useState196[0],
+      setZoomOpen = _useState196[1];
+
+  var _useState197 = useState(false),
+      _useState198 = _slicedToArray(_useState197, 2),
+      drawSubOpen = _useState198[0],
+      setDrawSubOpen = _useState198[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState197 = useState(0),
-      _useState198 = _slicedToArray(_useState197, 2),
-      dockTick = _useState198[0],
-      setDockTick = _useState198[1];
+  var _useState199 = useState(0),
+      _useState200 = _slicedToArray(_useState199, 2),
+      dockTick = _useState200[0],
+      setDockTick = _useState200[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -1209,6 +1216,7 @@ function HashiGame() {
   var lastProgressSentRef = useRef(0);
   var lastProgressValRef = useRef(-1);
   var myItemsRef = useRef([]);
+  var brawlAutoRef = useRef({}); // 集滿 3 自動發動進行中旗標（防重入）
   var raceProgressRef = useRef({});
   var hostMilestonesRef = useRef({});
   var brawlSettingsRef = useRef({ sizeId: 2, itemsEnabled: true, godNumbers: true });
@@ -1216,7 +1224,7 @@ function HashiGame() {
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
   var lastBrawlSentRef = useRef(0);
-  var fxRef = useRef({ fog: {}, phantom: {} });
+  var fxRef = useRef({ fog: {}, boxes: [], marks: [] });
   var prevIslandDoneRef = useRef({});
 
   var MAX_SAFE_DIMENSION = 8500;
@@ -2036,7 +2044,9 @@ function HashiGame() {
   };
 
   // ⚔️ 大亂鬥道具系統
-  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧水球', w: 2 }, { key: 'phantom', icon: '❓', name: '數字幻影', w: 2 }, { key: 'gift', icon: '🎁', name: '禮物', w: 2 }];
+  var BRAWL_ITEMS = [{ key: 'bomb', icon: '💣', name: '炸橋', w: 3 }, { key: 'fog', icon: '🌫️', name: '迷霧方框', w: 2 }, { key: 'gift', icon: '🎁', name: '禮物', w: 2 }];
+  // 道具列固定順序：禮物放正中間（使用者定案）
+  var BRAWL_BAR_ORDER = ['bomb', 'gift', 'fog'];
   var applyBrawlSettings = function applyBrawlSettings(settings, broadcast) {
     if (!settings) return;
     brawlSettingsRef.current = settings;
@@ -2109,17 +2119,26 @@ function HashiGame() {
     });
     if (!meta) return;
     if (myFinishTimeRef.current != null) return; // 已完賽不再獲得道具（盤面凍結）
-    if (m.item !== 'gift' && myItemsRef.current.filter(function (x) {
+    if (myItemsRef.current.filter(function (x) {
       return x === m.item;
-    }).length >= 3) {
-      showToast('🎒 ' + meta.name + ' 已有 3 個，里程碑道具流掉了');return;
-    } // 禮物無上限，其他三種各上限 3（使用者定案）
+    }).length >= 3) return; // 已有 3 個且自動發動排程中（理論上不會發生），多的不收
     var ni = myItemsRef.current.concat([m.item]);
     myItemsRef.current = ni;setMyItems(ni);
     showToast('🎁 里程碑道具：你獲得 ' + meta.icon + ' ' + meta.name + '！');
+    if (ni.filter(function (x) {
+      return x === m.item;
+    }).length >= 3) setTimeout(function () {
+      return autoFireBrawlItem(m.item);
+    }, 650); // 集滿 3 個 → 自動連續發動並歸零（禮物也同規，使用者定案）
     try {
       window.HASHI_SOUND.play('star');
     } catch (e) {}
+  };
+  // 短暫特效標記（💥炸橋／✨禮物補橋）：出現在盤面座標上、動畫播完自動消失，不進同步
+  var pushFxMark = function pushFxMark(gx, gy, icon, ms) {
+    var mk = { id: 'mk' + Date.now() + '-' + Math.floor(Math.random() * 100000), gx: gx, gy: gy, icon: icon, until: Date.now() + (ms || 800) };
+    var nm = (fxRef.current.marks || []).concat([mk]);
+    fxRef.current.marks = nm;setFxMarks(nm);
   };
   var applyGift = function applyGift() {
     var rld = stateRef.current.randomLevelData;
@@ -2167,6 +2186,9 @@ function HashiGame() {
       return samePair(b, pickB) ? _extends({}, b, { count: pickB.count, draftCount: 0, owner: myId, locked: true }) : b;
     });
     raceAwareSync({ bridges: nb });
+    var gf = islMap[pickB.from],
+        gt = islMap[pickB.to];
+    if (gf && gt) pushFxMark((gf.x + gt.x) / 2, (gf.y + gt.y) / 2, '✨', 900); // 補橋處閃光動畫（不閃現）
     showToast('🎁 禮物幫你把一對島的正確橋補滿並鎖定了！');
     try {
       window.HASHI_SOUND.play('bridge');
@@ -2192,6 +2214,12 @@ function HashiGame() {
         return b.id === victim.id ? _extends({}, b, { count: b.count - 1, owner: b.count - 1 > 0 || (b.draftCount || 0) > 0 ? b.owner : null }) : b;
       });
       raceAwareSync({ bridges: nb });
+      var islMapB = {};((stateRef.current.randomLevelData || {}).islands || []).forEach(function (i) {
+        islMapB[i.id] = i;
+      });
+      var bf = islMapB[victim.from],
+          bt = islMapB[victim.to];
+      if (bf && bt) pushFxMark((bf.x + bt.x) / 2, (bf.y + bt.y) / 2, '💥', 750); // 爆炸動畫蓋在被炸的橋上（不閃現消失）
       showToast('💣 ' + (m.fromName || '對手') + ' 炸掉了你一條橋！');
       try {
         window.HASHI_SOUND.play('remove');
@@ -2201,20 +2229,54 @@ function HashiGame() {
       if (!isls.length) return;
       var c = isls[Math.floor(Math.random() * isls.length)];
       var fog = _extends({}, fxRef.current.fog);
+      var hit = [];
       isls.forEach(function (i) {
-        if (Math.abs(i.x - c.x) <= 2 && Math.abs(i.y - c.y) <= 2) fog[i.id] = now + 10000;
+        if (Math.abs(i.x - c.x) <= 2 && Math.abs(i.y - c.y) <= 2) {
+          fog[i.id] = now + 10000;hit.push(i);
+        }
       });
       fxRef.current.fog = fog;setFxFog(fog);
-      showToast('🌫️ ' + (m.fromName || '對手') + ' 的迷霧水球罩住了一區島嶼！');
-    } else if (m.item === 'phantom') {
-      var pool = [].concat(_toConsumableArray((stateRef.current.randomLevelData || {}).islands || []));
-      var ph = _extends({}, fxRef.current.phantom);
-      for (var k = 0; k < 3 && pool.length; k++) {
-        var isl = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];ph[isl.id] = now + 8000;
+      if (hit.length) {
+        // 迷霧方框：整區外接矩形一次框起虛化，橋和數字全遮（渲染在盤面最上層，淡入進場、到期前淡出）
+        var box = { id: 'fog' + now + '-' + Math.floor(Math.random() * 100000), minX: Math.min.apply(null, hit.map(function (i) {
+            return i.x;
+          })), minY: Math.min.apply(null, hit.map(function (i) {
+            return i.y;
+          })), maxX: Math.max.apply(null, hit.map(function (i) {
+            return i.x;
+          })), maxY: Math.max.apply(null, hit.map(function (i) {
+            return i.y;
+          })), until: now + 10000 };
+        var nbx = (fxRef.current.boxes || []).concat([box]);
+        fxRef.current.boxes = nbx;setFxFogBoxes(nbx);
       }
-      fxRef.current.phantom = ph;setFxPhantom(ph);
-      showToast('❓ ' + (m.fromName || '對手') + ' 用了數字幻影！');
+      showToast('🌫️ ' + (m.fromName || '對手') + ' 用迷霧方框罩住了你的一區，連橋都看不到了！');
     }
+  };
+  // 發動一次道具效果（不扣背包）：禮物用在自己、攻擊型自動打進度最高的未完賽對手；回傳是否真的發動
+  var launchBrawlEffect = function launchBrawlEffect(key) {
+    var meta = BRAWL_ITEMS.find(function (x) {
+      return x.key === key;
+    });
+    if (!meta) return false;
+    if (key === 'gift') return applyGift();
+    var target = null,
+        best = -1,
+        tName = '';
+    playersListRef.current.forEach(function (p) {
+      if (p.id === myId) return;
+      if (raceResultsRef.current[p.id]) return; // 已完賽者盤面凍結，不可攻擊
+      if ((racersRef.current || []).length && racersRef.current.indexOf(p.id) < 0) return; // 觀戰者不在場上
+      var info = raceProgress[p.id];
+      var pr = info ? info.progress : 0;
+      if (pr > best) {
+        best = pr;target = p.id;tName = p.name;
+      }
+    });
+    if (!target) return false;
+    sendBrawlMsg({ type: 'BRAWL_ITEM', item: key, fromUid: myId, fromName: myNameRef.current || '對手', targetUid: target });
+    showToast(meta.icon + ' 已對 ' + (tName || '對手') + ' 使用 ' + meta.name + '！');
+    return true;
   };
   var useBrawlItem = function useBrawlItem(key) {
     if (raceStateRef.current !== 'racing') return;
@@ -2223,33 +2285,41 @@ function HashiGame() {
     }
     var idx = myItemsRef.current.indexOf(key);
     if (idx < 0) return;
+    if (!launchBrawlEffect(key)) {
+      if (key !== 'gift') showToast('⚠️ 沒有對手可以攻擊');return;
+    } // 發動失敗不消耗（禮物無可補時 applyGift 已自己提示）
+    var ni = myItemsRef.current.slice();ni.splice(idx, 1);
+    myItemsRef.current = ni;setMyItems(ni);
+  };
+  // 集滿 3 個同種道具 → 自動連續發動 3 次並歸零（使用者定案：防囤積到最後一次逆轉；未滿 3 仍可手動用）
+  var autoFireBrawlItem = function autoFireBrawlItem(key) {
+    if (brawlAutoRef.current[key]) return;
+    if (myItemsRef.current.filter(function (x) {
+      return x === key;
+    }).length < 3) return;
+    brawlAutoRef.current[key] = true;
+    var removed = 0;var ni = [];
+    myItemsRef.current.forEach(function (x) {
+      if (x === key && removed < 3) removed++;else ni.push(x);
+    });
+    myItemsRef.current = ni;setMyItems(ni); // 先歸零，效果再逐發送出——期間新獲得的同種從 0 重新累積
     var meta = BRAWL_ITEMS.find(function (x) {
       return x.key === key;
     });
-    if (key === 'gift') {
-      if (!applyGift()) return;
-    } else {
-      var target = null,
-          best = -1,
-          tName = '';
-      playersListRef.current.forEach(function (p) {
-        if (p.id === myId) return;
-        if (raceResultsRef.current[p.id]) return; // 已完賽者盤面凍結，不可攻擊
-        if ((racersRef.current || []).length && racersRef.current.indexOf(p.id) < 0) return; // 觀戰者不在場上
-        var info = raceProgress[p.id];
-        var pr = info ? info.progress : 0;
-        if (pr > best) {
-          best = pr;target = p.id;tName = p.name;
-        }
-      });
-      if (!target) {
-        showToast('⚠️ 沒有對手可以攻擊');return;
+    showToast('🎒 集滿 3 個 ' + (meta ? meta.icon + ' ' + meta.name : key) + '，自動連續發動！');
+    try {
+      window.HASHI_SOUND.play('star');
+    } catch (e) {}
+    var fired = 0;
+    var step = function step() {
+      if (fired >= 3) {
+        brawlAutoRef.current[key] = false;return;
       }
-      sendBrawlMsg({ type: 'BRAWL_ITEM', item: key, fromUid: myId, fromName: myNameRef.current || '對手', targetUid: target });
-      showToast(meta.icon + ' 已對 ' + (tName || '對手') + ' 使用 ' + meta.name + '！');
-    }
-    var ni = myItemsRef.current.slice();ni.splice(idx, 1);
-    myItemsRef.current = ni;setMyItems(ni);
+      fired++;
+      if (raceStateRef.current === 'racing' && myFinishTimeRef.current == null) launchBrawlEffect(key); // 每發重選目標／重算可補的橋；無目標或無可補時該發落空
+      setTimeout(step, 550);
+    };
+    setTimeout(step, 400);
   };
   // 👁️ 上帝視角盤面（唯讀）：modal 與觀戰面板共用；島數字受「上帝視角顯示數字」設定
   var renderGodBoard = function renderGodBoard(board) {
@@ -2378,9 +2448,9 @@ function HashiGame() {
       )
     );
   };
-  // 特效計時：到期自動清除
+  // 特效計時：到期自動清除（迷霧方框的淡出靠 fxNow 每 500ms 推進＋CSS transition 補間）
   useEffect(function () {
-    var hasFx = Object.keys(fxFog).length > 0 || Object.keys(fxPhantom).length > 0;
+    var hasFx = Object.keys(fxFog).length > 0 || fxFogBoxes.length > 0 || fxMarks.length > 0;
     if (!hasFx) return;
     var iv = setInterval(function () {
       var now = Date.now();setFxNow(now);
@@ -2392,14 +2462,21 @@ function HashiGame() {
       var nf = prune(fxRef.current.fog);if (nf !== fxRef.current.fog) {
         fxRef.current.fog = nf;setFxFog(nf);
       }
-      var np = prune(fxRef.current.phantom);if (np !== fxRef.current.phantom) {
-        fxRef.current.phantom = np;setFxPhantom(np);
+      var nb = (fxRef.current.boxes || []).filter(function (b) {
+        return b.until > now;
+      });if (nb.length !== (fxRef.current.boxes || []).length) {
+        fxRef.current.boxes = nb;setFxFogBoxes(nb);
+      }
+      var nm = (fxRef.current.marks || []).filter(function (mk) {
+        return mk.until > now;
+      });if (nm.length !== (fxRef.current.marks || []).length) {
+        fxRef.current.marks = nm;setFxMarks(nm);
       }
     }, 500);
     return function () {
       return clearInterval(iv);
     };
-  }, [fxFog, fxPhantom]);
+  }, [fxFog, fxFogBoxes, fxMarks]);
 
   // 🏁 競速進度推送：用最新的 bridges 直接計算並廣播（架橋當下同步呼叫，不依賴 effect 時序）
   var pushRaceProgress = function pushRaceProgress(bridgesArr) {
@@ -3336,31 +3413,31 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState199 = useState(false),
-      _useState200 = _slicedToArray(_useState199, 2),
-      platTournLock = _useState200[0],
-      setPlatTournLock = _useState200[1];
-
   var _useState201 = useState(false),
       _useState202 = _slicedToArray(_useState201, 2),
-      platHub = _useState202[0],
-      setPlatHub = _useState202[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+      platTournLock = _useState202[0],
+      setPlatTournLock = _useState202[1];
+
+  var _useState203 = useState(false),
+      _useState204 = _slicedToArray(_useState203, 2),
+      platHub = _useState204[0],
+      setPlatHub = _useState204[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
 
 
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
 
-  var _useState203 = useState(null),
-      _useState204 = _slicedToArray(_useState203, 2),
-      tournRoundInfo = _useState204[0],
-      setTournRoundInfo = _useState204[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState205 = useState(null),
+      _useState206 = _slicedToArray(_useState205, 2),
+      tournRoundInfo = _useState206[0],
+      setTournRoundInfo = _useState206[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
 
 
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
 
-  var _useState205 = useState(0),
-      _useState206 = _slicedToArray(_useState205, 2),
-      setTournTick = _useState206[1];
+  var _useState207 = useState(0),
+      _useState208 = _slicedToArray(_useState207, 2),
+      setTournTick = _useState208[1];
 
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
@@ -4066,7 +4143,7 @@ function HashiGame() {
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
-    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({}); // 道具特效也要清：回主畫面後 8-10 秒內開單機/合作局，上一局的霧/幻影會直接漏進新局（其他離場路徑都有清，獨漏這條，稽核修）
+    fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]); // 道具特效也要清：回主畫面後 8-10 秒內開單機/合作局，上一局的霧會直接漏進新局（其他離場路徑都有清，獨漏這條，稽核修）
     resetWinMeta();
   };
 
@@ -4129,7 +4206,7 @@ function HashiGame() {
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);
     setRaceProgress({});raceResultsRef.current = {};myFinishTimeRef.current = null;
     myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
+    fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     setRoomOpen(true);
   };
   var returnToLobby = function returnToLobby() {
@@ -4287,7 +4364,7 @@ function HashiGame() {
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
     myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};
     setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
+    fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     stateRef.current = _extends({}, stateRef.current, payload);
     var seed = {};
     playersListRef.current.forEach(function (p) {
@@ -4428,7 +4505,7 @@ function HashiGame() {
   var exitRaceToSolo = function exitRaceToSolo() {
     setRoomOpen(false);
     myItemsRef.current = [];setMyItems([]);setBrawlBoards({});setGodViewUid(null);
-    fxRef.current = { fog: {}, phantom: {} };setFxFog({});setFxPhantom({});
+    fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     setRaceState('idle');raceStateRef.current = 'idle';
     setRaceWaiting(false);setRaceResult(null);setRaceCountdown(null);setRaceProgress({});
     raceResultsRef.current = {};myFinishTimeRef.current = null;
@@ -5897,9 +5974,9 @@ function HashiGame() {
         inRace && (raceState === 'racing' || raceState === 'finished') && myItems.length > 0 && React.createElement(
           'div',
           { className: 'absolute bottom-20 left-1/2 -translate-x-1/2 z-[45] flex items-end gap-4' },
-          Object.keys(myItems.reduce(function (acc, k) {
-            acc[k] = (acc[k] || 0) + 1;return acc;
-          }, {})).map(function (k) {
+          BRAWL_BAR_ORDER.filter(function (k) {
+            return myItems.indexOf(k) >= 0;
+          }).map(function (k) {
             var meta = BRAWL_ITEMS.find(function (x) {
               return x.key === k;
             });
@@ -6206,17 +6283,7 @@ function HashiGame() {
                   React.createElement(
                     'text',
                     { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', className: 'text-xl font-black font-sans pointer-events-none select-none transition-colors duration-300', fill: textColor },
-                    fxPhantom[island.id] && fxPhantom[island.id] > fxNow ? '?' : island.req
-                  ),
-                  fxFog[island.id] && fxFog[island.id] > fxNow && React.createElement(
-                    'g',
-                    { className: 'pointer-events-none' },
-                    React.createElement('circle', { cx: cx, cy: cy, r: ISLAND_RADIUS + 7, fill: '#e2e8f0', fillOpacity: '0.96' }),
-                    React.createElement(
-                      'text',
-                      { x: cx, y: cy + 2, textAnchor: 'middle', dominantBaseline: 'central', fontSize: '16', className: 'pointer-events-none select-none' },
-                      '\uD83C\uDF2B\uFE0F'
-                    )
+                    island.req
                   ),
                   isDirectlyHovered && activeHints.map(function (b) {
                     if (!crossedBridgeIds.has(b.id)) return null;
@@ -6285,6 +6352,35 @@ function HashiGame() {
                 var color = player ? player.color : '#3b82f6';
                 var isRainbow = color === 'rainbow';
                 return React.createElement('circle', { key: r.id, cx: r.x, cy: r.y, r: '20', fill: 'none', stroke: isRainbow ? undefined : color, className: 'pointer-events-none ' + (isRainbow ? 'rainbow-stroke' : ''), style: { transformOrigin: r.x + 'px ' + r.y + 'px', animation: 'rippleAnim 0.8s ease-out forwards' } });
+              }),
+              fxFogBoxes.filter(function (b) {
+                return b.until > fxNow;
+              }).map(function (b) {
+                var bx = b.minX * SCALE + PADDING - SCALE * 0.54,
+                    by = b.minY * SCALE + PADDING - SCALE * 0.54;
+                var bw = (b.maxX - b.minX) * SCALE + SCALE * 1.08,
+                    bh = (b.maxY - b.minY) * SCALE + SCALE * 1.08;
+                var remain = b.until - fxNow;
+                var op = remain > 1600 ? 0.985 : Math.max(0.1, remain / 1600 * 0.985);
+                return React.createElement(
+                  'g',
+                  { key: b.id, className: 'pointer-events-none fog-box-in', style: { transformBox: 'fill-box', transformOrigin: 'center' } },
+                  React.createElement('rect', { x: bx, y: by, width: bw, height: bh, rx: '14', fill: '#dfe6ee', stroke: '#94a3b8', strokeWidth: '2.5', strokeDasharray: '7 5', style: { opacity: op, transition: 'opacity 0.5s ease' } }),
+                  React.createElement(
+                    'text',
+                    { x: bx + bw / 2, y: by + bh / 2, textAnchor: 'middle', dominantBaseline: 'central', fontSize: '26', className: 'select-none', style: { opacity: op, transition: 'opacity 0.5s ease' } },
+                    '\uD83C\uDF2B\uFE0F'
+                  )
+                );
+              }),
+              fxMarks.filter(function (mk) {
+                return mk.until > fxNow;
+              }).map(function (mk) {
+                return React.createElement(
+                  'text',
+                  { key: mk.id, x: mk.gx * SCALE + PADDING, y: mk.gy * SCALE + PADDING, textAnchor: 'middle', dominantBaseline: 'central', fontSize: '30', className: 'pointer-events-none select-none fx-mark-pop', style: { transformBox: 'fill-box', transformOrigin: 'center' } },
+                  mk.icon
+                );
               })
             )
           )
@@ -6595,26 +6691,15 @@ function HashiGame() {
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
-        inRace && raceState === 'racing' && (Object.keys(fxFog).some(function (id) {
+        inRace && raceState === 'racing' && Object.keys(fxFog).some(function (id) {
           return fxFog[id] > fxNow;
-        }) || Object.keys(fxPhantom).some(function (id) {
-          return fxPhantom[id] > fxNow;
-        })) && React.createElement(
+        }) && React.createElement(
           'div',
           { className: 'absolute top-2 left-2 z-[57] flex gap-1.5 pointer-events-none' },
-          Object.keys(fxFog).some(function (id) {
-            return fxFog[id] > fxNow;
-          }) && React.createElement(
+          React.createElement(
             'span',
             { className: 'px-2 py-1 bg-slate-200/95 border-2 border-slate-400 text-slate-600 rounded-lg font-black text-xs shadow' },
             '\uD83C\uDF2B\uFE0F \u8FF7\u9727\u4E2D'
-          ),
-          Object.keys(fxPhantom).some(function (id) {
-            return fxPhantom[id] > fxNow;
-          }) && React.createElement(
-            'span',
-            { className: 'px-2 py-1 bg-purple-100/95 border-2 border-purple-400 text-purple-700 rounded-lg font-black text-xs shadow' },
-            '\u2753 \u5E7B\u5F71\u4E2D'
           )
         ),
         inRace && raceState === 'finished' && raceResult && !(typeof window !== 'undefined' && window.PlatResults) && React.createElement(

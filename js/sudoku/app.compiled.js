@@ -1781,6 +1781,20 @@ function SudokuGame() {
       });else if (connRef.current) connRef.current.send(msg);
     }
   };
+
+  // 集滿 3 個未拆禮物 → 自動拆開（使用者定案：防囤禮物到最後一次全拆逆轉；拆禮物的使用方式本來就是一次全拆）
+  // 注意：禮物入列的實際路徑是訊息 dispatch 兩個分支內聯的 setUnopenedGifts，入列後都要呼叫本函式檢查
+  var maybeAutoOpenGift = function maybeAutoOpenGift(targetUid) {
+    if (targetUid !== myId || isSpectator) return;
+    if (stateRef.current.matchPhase !== 'playing') return;
+    var q = (stateRef.current.unopenedGifts[myId] || []).length + 1;
+    if (q >= 3) setTimeout(function () {
+      showToast('🎁 禮物集滿 3 個，自動拆開！');
+      try {
+        handleOpenGift();
+      } catch (e) {}
+    }, 900);
+  };
   var handleReceiveGiftRef = useRef();
   handleReceiveGiftRef.current = function (ev) {
     if (isSpectator) return;
@@ -1789,6 +1803,7 @@ function SudokuGame() {
       var currentQueue = prev[ev.targetUid] || [];
       return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, ev.targetUid, [].concat(_toConsumableArray(currentQueue), [ev.senderUid || 'system'])));
     });
+    maybeAutoOpenGift(ev.targetUid);
   };
   var triggerRipple = function triggerRipple(pt) {
     var msg = {
@@ -1959,18 +1974,59 @@ function SudokuGame() {
     }
   };
 
-  // 接收道具：各項道具上限 3 個
+  // 接收道具：各項道具上限 3 個；集滿 3 個 → 自動連續發動並歸零（使用者定案，防囤積逆轉）
+  var weaponAutoRef = useRef({});
+  var launchWeaponRef = useRef(null);
+  var autoFireWeapon = function autoFireWeapon(weaponType) {
+    if (weaponAutoRef.current[weaponType]) return;
+    if (stateRef.current.matchPhase !== 'playing' || isSpectator) return;
+    if ((stateRef.current.myWeapons || []).filter(function (w) {
+      return w === weaponType;
+    }).length < 3) return; // 觸發檢查時未滿 3（例如玩家搶先手動用掉）就不發動
+    weaponAutoRef.current[weaponType] = true;
+    setMyWeapons(function (prev) {
+      var next = _toConsumableArray(prev);
+      for (var i = 0; i < 3; i++) {
+        var ix = next.indexOf(weaponType);
+        if (ix === -1) break;
+        next.splice(ix, 1);
+      }
+      stateRef.current.myWeapons = next;
+      return next;
+    });
+    var weaponName = weaponType === 'balloon' ? '💧 水球' : '🧹 橡皮擦';
+    showToast("\uD83C\uDF92 \u96C6\u6EFF 3 \u500B ".concat(weaponName, "\uFF0C\u81EA\u52D5\u9023\u7E8C\u767C\u52D5\uFF01"));
+    var fired = 0;
+    var step = function step() {
+      if (fired >= 3) {
+        weaponAutoRef.current[weaponType] = false;
+        return;
+      }
+      fired++;
+      if (stateRef.current.matchPhase === 'playing' && launchWeaponRef.current) {
+        try {
+          launchWeaponRef.current(weaponType);
+        } catch (e) {}
+      } // 每發重新選目標；無對手時該發落空
+      setTimeout(step, 550);
+    };
+    setTimeout(step, 400);
+  };
   handleReceiveWeaponRef.current = function (ev) {
     if (ev.targetUid !== myId || isSpectator) return;
     if (stateRef.current.matchPhase !== 'playing') return; // 等待/倒數期收到的遲到道具不進背包（稽核修）
     setMyWeapons(function (prev) {
       if (prev.filter(function (w) {
         return w === ev.weaponType;
-      }).length >= 3) return prev; // 該項已達上限
+      }).length >= 3) return prev; // 該項已有 3 個（自動發動排程中），多的不收
       var weaponName = ev.weaponType === 'balloon' ? '💧 水球' : '🧹 橡皮擦';
       showToast("\uD83C\uDFAF \u7372\u5F97\u9053\u5177\uFF1A".concat(weaponName, "\uFF01\u9EDE\u64CA\u9053\u5177\u6309\u9215\u653B\u64CA\u5C0D\u624B\uFF01"));
       return [].concat(_toConsumableArray(prev), [ev.weaponType]);
     });
+    // 進包後檢查是否集滿 3（等 stateRef 同步後由 autoFireWeapon 覆核，未滿不發動）
+    setTimeout(function () {
+      return autoFireWeapon(ev.weaponType);
+    }, 700);
   };
 
   // 收到水球霧化攻擊：隨機霧化自己的一個宮格 10 秒
@@ -2082,12 +2138,8 @@ function SudokuGame() {
   };
 
   // 玩家主動使用道具：廣播攻擊
-  var handleUseWeapon = function handleUseWeapon(weaponType) {
-    if (stateRef.current.matchPhase !== 'playing') return; // 發射端同守衛：等待/倒數期不可攻擊（稽核修）
-    if (stateRef.current.myWeapons.length === 0) return;
-    var idx = stateRef.current.myWeapons.indexOf(weaponType);
-    if (idx === -1) return;
-
+  // 發射一次武器（不扣背包）：自動選擇攻擊目標（優先打比自己強的）；回傳是否發射。手動使用與集滿 3 自動連發共用
+  var launchWeapon = function launchWeapon(weaponType) {
     // 自動選擇攻擊目標（優先打比自己強的）
     var giftsData = stateRef.current.unopenedGifts || {};
     var hintsData = stateRef.current.ghostHints || {};
@@ -2096,10 +2148,7 @@ function SudokuGame() {
         return w.id === p.id;
       });
     });
-    if (validPlayers.length === 0) {
-      showToast("😅 目前沒有可以攻擊的對手");
-      return;
-    }
+    if (validPlayers.length === 0) return false;
 
     // 自己精確的進度（不檢查衝突，保持與進度條一致） (v3.13.4)
     var myAccurateCount = localCells.filter(function (c) {
@@ -2138,17 +2187,6 @@ function SudokuGame() {
         }
       }
     }
-
-    // 移除已使用的道具 (修正連續點擊問題：在更新回調中找 index)
-    setMyWeapons(function (prev) {
-      var next = _toConsumableArray(prev);
-      var realIdx = next.indexOf(weaponType);
-      if (realIdx !== -1) {
-        next.splice(realIdx, 1);
-        stateRef.current.myWeapons = next;
-      }
-      return next;
-    });
     var hitType = weaponType === 'balloon' ? 'WEAPON_HIT_FOG' : 'WEAPON_HIT_ERASE';
     var wMsg = {
       type: hitType,
@@ -2176,6 +2214,28 @@ function SudokuGame() {
     var targetName = tObj ? tObj.name : '對手';
     var emoji = weaponType === 'balloon' ? '💧' : '🧹';
     showToast("".concat(emoji, " \u5411 ").concat(targetName, " \u767C\u5C04\u4E86\u653B\u64CA\uFF01"));
+    return true;
+  };
+  launchWeaponRef.current = launchWeapon;
+
+  // 手動使用武器：發射成功才扣 1 個（無對手時不消耗、給提示，比照舊行為）
+  var handleUseWeapon = function handleUseWeapon(weaponType) {
+    if (stateRef.current.matchPhase !== 'playing') return; // 發射端同守衛：等待/倒數期不可攻擊（稽核修）
+    if (stateRef.current.myWeapons.indexOf(weaponType) === -1) return;
+    if (!launchWeapon(weaponType)) {
+      showToast("😅 目前沒有可以攻擊的對手");
+      return;
+    }
+    // 移除已使用的道具 (修正連續點擊問題：在更新回調中找 index)
+    setMyWeapons(function (prev) {
+      var next = _toConsumableArray(prev);
+      var realIdx = next.indexOf(weaponType);
+      if (realIdx !== -1) {
+        next.splice(realIdx, 1);
+        stateRef.current.myWeapons = next;
+      }
+      return next;
+    });
   };
   var handleOpenGift = function handleOpenGift() {
     if (interactionMode >= 2 || matchPhase !== 'playing' || isSpectator) return;
@@ -5043,6 +5103,7 @@ function SudokuGame() {
                 var q = prev[m.targetUid] || [];
                 return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, m.targetUid, [].concat(_toConsumableArray(q), [m.senderUid || 'system'])));
               });
+              maybeAutoOpenGift(m.targetUid);
               connsRef.current.forEach(function (conn) {
                 if (conn.open && conn !== c) conn.send(m);
               });
@@ -5232,6 +5293,7 @@ function SudokuGame() {
               var q = prev[m.targetUid] || [];
               return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, m.targetUid, [].concat(_toConsumableArray(q), [m.senderUid || 'system'])));
             });
+            maybeAutoOpenGift(m.targetUid);
           } else if (m.type === 'GIFT_OPENED') {
             if (m.uid !== myId) {
               setUnopenedGifts(function (prev) {
