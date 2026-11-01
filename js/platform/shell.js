@@ -22,7 +22,17 @@
         status('❌ 渲染錯誤本名: ' + (e && e.message ? e.message : e));
         if (e && e.stack) status('stack: ' + e.stack.split('\n').slice(0, 3).join(' | ').slice(0, 320));
       }
-      render() { return this.state.err ? null : this.props.children; }
+      render() {
+        if (!this.state.err) return this.props.children;
+        // v1.19.0：渲染錯誤不再吞成空白（舊版 return null＝整面深藍、無從診斷）——顯示錯誤本名＋重新整理鈕，
+        // 使用者截圖就能把病名帶回來。
+        var e = this.state.err;
+        return React.createElement('div', { style: { padding: '28px 16px', textAlign: 'center', color: '#fff' } },
+          React.createElement('div', { style: { fontSize: '40px' } }, '😵'),
+          React.createElement('div', { style: { fontWeight: 900, fontSize: '18px', margin: '10px 0 6px' } }, '遊戲畫面出錯了'),
+          React.createElement('div', { style: { fontSize: '13px', opacity: .85, wordBreak: 'break-all', maxWidth: '520px', margin: '0 auto' } }, String(e && e.message ? e.message : e)),
+          React.createElement('button', { onClick: function () { location.reload(); }, style: { marginTop: '14px', padding: '10px 22px', borderRadius: '12px', border: 'none', background: '#f59e0b', color: '#1e293b', fontWeight: 900, fontSize: '15px', cursor: 'pointer' } }, '🔄 重新整理'));
+      }
     };
   }
   function loadCode(name, cb) {
@@ -42,6 +52,25 @@
       });
     })();
   }
+  // 掛載失敗橫幅（v1.19.0）：遊戲 view 頂端亮出問題＋一顆「重新載入這款遊戲」鈕（走 __PLAT_REBOOT）
+  var GAME_TITLES = { sudoku: '🔢 數獨', hashi: '🌉 數橋', mines: '💣 踩地雷' };
+  function showBootErr(name) {
+    var view = document.getElementById('view-' + name); if (!view) return;
+    if (document.getElementById('plat-boot-err-' + name)) return;
+    var bar = document.createElement('div');
+    bar.id = 'plat-boot-err-' + name;
+    bar.style.cssText = 'position:relative;z-index:300;margin:10px;padding:14px 16px;border-radius:14px;background:#7f1d1d;color:#fff;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.35)';
+    bar.innerHTML = '<div style="font-weight:900;font-size:16px">⚠️ ' + (GAME_TITLES[name] || name) + ' 沒有成功載入</div>' +
+      '<div style="font-size:13px;opacity:.9;margin-top:4px">可能是網路不穩或快取問題，點下面按鈕重試一次。</div>';
+    var btn = document.createElement('button');
+    btn.textContent = '🔄 重新載入';
+    btn.style.cssText = 'margin-top:10px;padding:9px 22px;border-radius:10px;border:none;background:#f59e0b;color:#1e293b;font-weight:900;font-size:15px;cursor:pointer';
+    btn.onclick = function () { hideBootErr(name); if (window.__PLAT_REBOOT) window.__PLAT_REBOOT(name); };
+    bar.appendChild(btn);
+    view.insertBefore(bar, view.firstChild);
+    status('❌ 已亮出掛載失敗橫幅: ' + name);
+  }
+  function hideBootErr(name) { var b = document.getElementById('plat-boot-err-' + name); if (b) b.remove(); }
   function boot(name) {
     if (booted[name]) { status(name + ' 已啟動過（略過）'); return; }
     if (!(window.React && window.ReactDOM)) {
@@ -63,6 +92,15 @@
           var root = document.getElementById(name + '-root');
           var n = root ? root.childElementCount : -1;
           status((n > 0 ? '✅ ' : '❌ ') + name + ' 掛載子元素: ' + n);
+          if (n > 0) { hideBootErr(name); return; }
+          // 掛載閘門（v1.19.0）：1.2 秒沒掛上不算定罪（真機慢），再等 2 秒複查；仍是空殼就亮出可見橫幅＋重試鈕——
+          // 絕不重演「整面深藍空白、錯誤只寫在隱藏日誌」的啞巴失敗。
+          setTimeout(function () {
+            var r2 = document.getElementById(name + '-root');
+            var n2 = r2 ? r2.childElementCount : -1;
+            status('掛載複查 ' + name + ': ' + n2);
+            if (n2 > 0) hideBootErr(name); else showBootErr(name);
+          }, 2000);
         }, 1200);
       } catch (e) {
         booted[name] = false;
@@ -91,11 +129,12 @@
       var vel = document.getElementById('view-' + v); if (vel) vel.classList.toggle('active', v === name); // 防空：混版快取（新殼+舊頁面缺某款 view）不能讓整個切換死掉（v1.14.1 實機事故：房主開數獨整面空白）
     });
     document.body.setAttribute('data-view', name);
-    if (window.__PLAT_UPDATE_DOCK) window.__PLAT_UPDATE_DOCK(); // updateDock 在另一個 IIFE：舊版直接寫函數名永遠是 undefined、dock 在回主頁時不會收
-    if (name === 'lobby' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 進多人連線才探測房間存續（主畫面不放重連鈕）
+    // 先 boot 遊戲、再做裝飾更新：dock/rejoin 只是外觀與探測，萬一丟錯絕不能擋住遊戲載入（v1.19.0 靈魂拷問盤點）
     if (name === 'sudoku' || name === 'hashi' || name === 'mines') {
       try { boot(name); } catch (e) { status('❌ ' + name + ' 啟動例外: ' + (e && e.message ? e.message : e)); }
     }
+    try { if (window.__PLAT_UPDATE_DOCK) window.__PLAT_UPDATE_DOCK(); } catch (e) { status('dock 更新失敗（不擋遊戲）: ' + (e && e.message ? e.message : e)); } // updateDock 在另一個 IIFE：舊版直接寫函數名永遠是 undefined、dock 在回主頁時不會收
+    if (name === 'lobby' && window.__PLAT_REFRESH_REJOIN) window.__PLAT_REFRESH_REJOIN(); // 進多人連線才探測房間存續（主畫面不放重連鈕）
     window.scrollTo(0, 0);
   };
   status('殼就緒。點上面的遊戲按鈕開始。');
@@ -108,7 +147,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.18.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.19.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
