@@ -416,7 +416,8 @@ function SudokuGame() {
     _useState102 = _slicedToArray(_useState101, 2),
     finishViewMode = _useState102[0],
     setFinishViewMode = _useState102[1]; // 'my' | 'god'
-  var lastMilestoneRef = useRef(0); // 已跨越的 10% 里程碑數量（0~9）
+  var lastMilestoneRef = useRef(0); // 已跨越的 5% 里程碑數量（0~19，逐格補報不跳過）
+  var giftCreditRef = useRef(0); // 禮物計量額度：每完成一個行/列/宮/數字 +0.5，湊滿 1 才送出
 
   var processedEventsRef = useRef(new Set());
   var completedRegionsRef = useRef(new Set());
@@ -1015,6 +1016,8 @@ function SudokuGame() {
     setMyWeapons([]);
     setFoggedBoxes({});
     setFinishViewMode('my');
+    lastOneConvertedRef.current = false;
+    giftCreditRef.current = 0;
     lastMilestoneRef.current = 0;
     autoGodRef.current = false; // 每場重置自動上帝旗標：原本只有房主的 generateAndSync 會清，來賓第二場起完賽不再自動轉上帝（v1.13.0 功能對來賓半殘，稽核修）
   }, [startTime]);
@@ -1392,6 +1395,9 @@ function SudokuGame() {
       }
     });
     if (newComps > 0 && stateRef.current.brawlSettings.allowGifts !== false) {
+      // 禮物計量制（使用者定案）：每完成一個行/列/宮/數字累積 0.5 個禮物，湊滿 1 個才送出
+      // （36 次完成 × 0.5 ＝ 一場最多 18 個禮物）；暫時沒有較弱的對手可送時，額度存著下次再湊
+      giftCreditRef.current += newComps * 0.5;
       var _loop2 = function _loop2() {
         var winnersIds = stateRef.current.brawlWinners.map(function (w) {
           return w.id;
@@ -1408,8 +1414,8 @@ function SudokuGame() {
           var pScore = (ghostProgress[p.id] || 0) + (stateRef.current.unopenedGifts[p.id] ? stateRef.current.unopenedGifts[p.id].length : 0);
           return pScore < myEffectiveScore;
         });
-        if (weakerPlayers.length === 0) return 1; // continue
-        // 沒有比自己弱的人，不送
+        if (weakerPlayers.length === 0) return 1; // break
+        // 沒有比自己弱的人：這 1 個先存著（額度不扣），等有對象再送
 
         // 加權隨機：差距越大機率越高
         var weights = weakerPlayers.map(function (p) {
@@ -1445,14 +1451,15 @@ function SudokuGame() {
             return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, targetUid, [].concat(_toConsumableArray(q), [myId])));
           });
         }
+        giftCreditRef.current -= 1; // 送出 1 個，扣 1 額度（送出動作已完成；非連線模式不會進大亂鬥，這裡照扣避免迴圈卡死）
       };
-      for (var k = 0; k < newComps; k++) {
-        if (_loop2()) continue;
+      while (giftCreditRef.current >= 1) {
+        if (_loop2()) break;
       }
     }
   }, [localCells, isGenerating, cSizeDef.size, cSizeDef.chars, ghostHints, isSpectator, matchPhase, conflictCellIds, ghostProgress, playersList, brawlWinners]);
 
-  // === 里程碑偵測：自己每跨過 10% 就廣播給主機分配道具 ===
+  // === 里程碑偵測：自己每跨過 5% 就廣播給主機分配道具（逐格補報、不跳過） ===
   useEffect(function () {
     if (!isBrawlMode || isSpectator || matchPhase !== 'playing' || !isMultiplayer) return;
     if (totalEmpty === 0) return;
@@ -1462,26 +1469,28 @@ function SudokuGame() {
     var myGifts = (stateRef.current.unopenedGifts[myId] || []).length;
     var myEffectivePct = Math.min(99, Math.floor((myCorrect + myGifts) / totalEmpty * 100));
 
-    // 目前應達到的里程碑級別（每 10% 一個）
-    var currentMilestone = Math.floor(myEffectivePct / 10);
+    // 目前應達到的里程碑級別（每 5% 一個，使用者定案；原每 10%）
+    var currentMilestone = Math.floor(myEffectivePct / 5);
     if (currentMilestone > lastMilestoneRef.current) {
-      lastMilestoneRef.current = currentMilestone;
-      // 廣播給主機（主機自己也要處理）
-      var msg = {
-        type: 'MILESTONE_REACHED',
-        uid: myId,
-        completionPct: myEffectivePct,
-        id: Math.random().toString(36).substring(2, 10),
-        timestamp: Date.now()
-      };
-      if (engineRef.current === 'peerjs') {
-        if (isHostRef.current) {
-          // 自己是主機，直接本地處理
-          if (handleMilestoneRef.current) handleMilestoneRef.current(msg);
-        } else if (connRef.current) {
-          connRef.current.send(msg);
+      // 逐格補報（使用者定案：里程碑不跳過）：一次暴衝跨過好幾個 5% 時，每一格各送一則給主機、各觸發一次發放
+      for (var band = lastMilestoneRef.current + 1; band <= currentMilestone; band++) {
+        var msg = {
+          type: 'MILESTONE_REACHED',
+          uid: myId,
+          completionPct: Math.min(99, band * 5),
+          id: Math.random().toString(36).substring(2, 10),
+          timestamp: Date.now()
+        };
+        if (engineRef.current === 'peerjs') {
+          if (isHostRef.current) {
+            // 自己是主機，直接本地處理
+            if (handleMilestoneRef.current) handleMilestoneRef.current(msg);
+          } else if (connRef.current) {
+            connRef.current.send(msg);
+          }
         }
       }
+      lastMilestoneRef.current = currentMilestone;
     }
   }, [ghostProgress, myId, isSpectator, matchPhase, isMultiplayer, totalEmpty]);
   useEffect(function () {
@@ -1949,7 +1958,31 @@ function SudokuGame() {
 
     // 根據人數決定發放道具數量 (1~2 個)
     var weaponsToGive = brawlCandidates.length >= 3 ? 2 : 1;
-    var _loop3 = function _loop3() {
+
+    // 只剩最後一位：改發系統禮物給他（不發武器——沒有對手可打），拆開揭露正確格加速完賽
+    if (brawlCandidates.length === 1) {
+      var soleId = brawlCandidates[0].id;
+      var _loop3 = function _loop3() {
+        var gMsg = {
+          type: 'RECEIVE_GIFT',
+          targetUid: soleId,
+          senderUid: 'system',
+          id: Math.random().toString(36).substring(2, 10),
+          timestamp: Date.now()
+        };
+        if (engineRef.current === 'peerjs') {
+          connsRef.current.forEach(function (c) {
+            return c.send(gMsg);
+          });
+          if (soleId === myId && handleReceiveGiftRef.current) handleReceiveGiftRef.current(gMsg);
+        }
+      };
+      for (var i = 0; i < weaponsToGive; i++) {
+        _loop3();
+      }
+      return;
+    }
+    var _loop4 = function _loop4() {
       var random = Math.random() * totalWeight;
       var selectedId = null;
       var _iterator2 = _createForOfIteratorHelper(candidateWeights),
@@ -1998,8 +2031,8 @@ function SudokuGame() {
         if (isSpectator) showToast("\uD83D\uDEE1\uFE0F \u4E0A\u5E1D\u5075\u6E2C\u5230\u91CC\u7A0B\u7891\uFF1A\u767C\u9001\u6B66\u5668\u7D66 ".concat(targetName));
       }
     };
-    for (var i = 0; i < weaponsToGive; i++) {
-      _loop3();
+    for (var _i2 = 0; _i2 < weaponsToGive; _i2++) {
+      _loop4();
     }
   };
 
@@ -2041,9 +2074,33 @@ function SudokuGame() {
     };
     setTimeout(step, 400);
   };
+  // 最後一位規則（使用者定案）：只剩我一人未完賽時，武器沒有對手可打——庫存全轉禮物、飛來的武器也直接轉禮物、
+  // 房主里程碑改發系統禮物。禮物拆開直接揭露正確格，加速最後一位完賽，其他人不用乾等。
+  var lastOneConvertedRef = useRef(false);
+  var amLastPlayer = function amLastPlayer() {
+    if (isSpectator) return false;
+    if (stateRef.current.brawlWinners.some(function (w) {
+      return w.id === myId;
+    })) return false;
+    var remaining = playersListRef.current.filter(function (p) {
+      return !p.isSpectator && !stateRef.current.brawlWinners.some(function (w) {
+        return w.id === p.id;
+      });
+    });
+    return remaining.length === 1 && remaining[0].id === myId;
+  };
   handleReceiveWeaponRef.current = function (ev) {
     if (ev.targetUid !== myId || isSpectator) return;
     if (stateRef.current.matchPhase !== 'playing') return; // 等待/倒數期收到的遲到道具不進背包（稽核修）
+    if (amLastPlayer()) {
+      // 已是最後一位：武器入包前直接轉成系統禮物
+      setUnopenedGifts(function (prev) {
+        return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, myId, [].concat(_toConsumableArray(prev[myId] || []), ['system'])));
+      });
+      showToast('🏁 只剩你一人，獲得的武器自動轉換成 🎁 禮物！');
+      maybeAutoOpenGift(myId);
+      return;
+    }
     setMyWeapons(function (prev) {
       if (prev.filter(function (w) {
         return w === ev.weaponType;
@@ -2315,7 +2372,7 @@ function SudokuGame() {
     } else {
       showToast("\uD83C\uDF81 \u9023\u7E8C\u62C6\u958B ".concat(giftsToOpenCount, " \u500B\u7CFB\u7D71\u79AE\u7269\uFF01\u7372\u5F97 ").concat(giftsToOpenCount, " \u683C\u63D0\u793A\uFF01"));
     }
-    var _loop4 = function _loop4() {
+    var _loop5 = function _loop5() {
       var msg = {
         type: 'GIFT_OPENED',
         uid: myId,
@@ -2329,13 +2386,43 @@ function SudokuGame() {
       }
     };
     for (var i = 0; i < giftsToOpenCount; i++) {
-      _loop4();
+      _loop5();
     }
     setUnopenedGifts(function (prev) {
       var q = prev[myId] || [];
       return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, myId, q.slice(giftsToOpenCount)));
     });
   };
+
+  // 最後一位轉換：完賽名單一更新就檢查——只剩我時，手邊武器全數轉成系統禮物（湊滿 3 個照舊自動拆）
+  var maybeConvertLastOne = function maybeConvertLastOne() {
+    if (lastOneConvertedRef.current || !amLastPlayer()) return;
+    if (stateRef.current.matchPhase !== 'playing') return;
+    lastOneConvertedRef.current = true;
+    var weapons = stateRef.current.myWeapons || [];
+    if (!weapons.length) {
+      showToast('🏁 只剩你一人！接下來的里程碑將改發 🎁 禮物給你');
+      return;
+    }
+    setMyWeapons([]);
+    setUnopenedGifts(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, myId, [].concat(_toConsumableArray(prev[myId] || []), _toConsumableArray(weapons.map(function () {
+        return 'system';
+      })))));
+    });
+    showToast('🏁 只剩你一人！' + weapons.length + ' 件武器全部轉換成 🎁 禮物，加速完賽！');
+    setTimeout(function () {
+      if ((stateRef.current.unopenedGifts[myId] || []).length >= 3) {
+        showToast('🎁 禮物集滿 3 個，自動拆開！');
+        try {
+          handleOpenGift();
+        } catch (e) {}
+      }
+    }, 950);
+  };
+  useEffect(function () {
+    maybeConvertLastOne();
+  }, [brawlWinners]);
   var syncState = function syncState(partial) {
     var shouldBroadcast = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
     if (partial.matchToken) matchTokenRef.current = partial.matchToken;else if (isHostRef.current && partial.isGenerating === true) matchTokenRef.current = Math.random().toString(36).slice(2, 10); // 房主開新局鑄代幣
@@ -2566,13 +2653,13 @@ function SudokuGame() {
   var eraseAtPoint = function eraseAtPoint(cx, cy) {
     var offsets = [[0, 0], [15, 0], [-15, 0], [0, 15], [0, -15], [10, 10], [-10, -10], [10, -10], [-10, 10]];
     var hitIds = new Set();
-    for (var _i2 = 0, _offsets = offsets; _i2 < _offsets.length; _i2++) {
-      var off = _offsets[_i2];
+    for (var _i3 = 0, _offsets = offsets; _i3 < _offsets.length; _i3++) {
+      var off = _offsets[_i3];
       var els = document.elementsFromPoint(cx + off[0], cy + off[1]);
       var _iterator3 = _createForOfIteratorHelper(els),
         _step3;
       try {
-        var _loop5 = function _loop5() {
+        var _loop6 = function _loop6() {
           var el = _step3.value;
           if (el.classList.contains('doodle-stroke')) {
             var sid = el.getAttribute('data-stroke-id');
@@ -2583,7 +2670,7 @@ function SudokuGame() {
           }
         };
         for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-          _loop5();
+          _loop6();
         }
       } catch (err) {
         _iterator3.e(err);
@@ -2799,7 +2886,7 @@ function SudokuGame() {
   };
   var autoFillHiddenSingles = /*#__PURE__*/function () {
     var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(_char3) {
-      var changed, stateChanged, currentCells, isValid, fill, _loop6, y, _loop7, x, _loop8, b;
+      var changed, stateChanged, currentCells, isValid, fill, _loop7, y, _loop8, x, _loop9, b;
       return _regeneratorRuntime().wrap(function _callee2$(_context5) {
         while (1) switch (_context5.prev = _context5.next) {
           case 0:
@@ -2919,9 +3006,9 @@ function SudokuGame() {
             }();
           case 12:
             changed = false;
-            _loop6 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop6(y) {
+            _loop7 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop7(y) {
               var rowCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop6$(_context2) {
+              return _regeneratorRuntime().wrap(function _loop7$(_context2) {
                 while (1) switch (_context2.prev = _context2.next) {
                   case 0:
                     rowCells = currentCells.filter(function (c) {
@@ -2948,7 +3035,7 @@ function SudokuGame() {
                   case "end":
                     return _context2.stop();
                 }
-              }, _loop6);
+              }, _loop7);
             });
             y = 0;
           case 15:
@@ -2956,7 +3043,7 @@ function SudokuGame() {
               _context5.next = 22;
               break;
             }
-            return _context5.delegateYield(_loop6(y), "t0", 17);
+            return _context5.delegateYield(_loop7(y), "t0", 17);
           case 17:
             if (!_context5.t0) {
               _context5.next = 19;
@@ -2974,9 +3061,9 @@ function SudokuGame() {
             }
             return _context5.abrupt("continue", 44);
           case 24:
-            _loop7 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop7(x) {
+            _loop8 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop8(x) {
               var colCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop7$(_context3) {
+              return _regeneratorRuntime().wrap(function _loop8$(_context3) {
                 while (1) switch (_context3.prev = _context3.next) {
                   case 0:
                     colCells = currentCells.filter(function (c) {
@@ -3003,7 +3090,7 @@ function SudokuGame() {
                   case "end":
                     return _context3.stop();
                 }
-              }, _loop7);
+              }, _loop8);
             });
             x = 0;
           case 26:
@@ -3011,7 +3098,7 @@ function SudokuGame() {
               _context5.next = 33;
               break;
             }
-            return _context5.delegateYield(_loop7(x), "t1", 28);
+            return _context5.delegateYield(_loop8(x), "t1", 28);
           case 28:
             if (!_context5.t1) {
               _context5.next = 30;
@@ -3029,9 +3116,9 @@ function SudokuGame() {
             }
             return _context5.abrupt("continue", 44);
           case 35:
-            _loop8 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop8(b) {
+            _loop9 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop9(b) {
               var boxCells, validEmpties;
-              return _regeneratorRuntime().wrap(function _loop8$(_context4) {
+              return _regeneratorRuntime().wrap(function _loop9$(_context4) {
                 while (1) switch (_context4.prev = _context4.next) {
                   case 0:
                     boxCells = currentCells.filter(function (c) {
@@ -3058,7 +3145,7 @@ function SudokuGame() {
                   case "end":
                     return _context4.stop();
                 }
-              }, _loop8);
+              }, _loop9);
             });
             b = 0;
           case 37:
@@ -3066,7 +3153,7 @@ function SudokuGame() {
               _context5.next = 44;
               break;
             }
-            return _context5.delegateYield(_loop8(b), "t2", 39);
+            return _context5.delegateYield(_loop9(b), "t2", 39);
           case 39:
             if (!_context5.t2) {
               _context5.next = 41;
@@ -3112,7 +3199,7 @@ function SudokuGame() {
   }();
   var autoFillDrafts = /*#__PURE__*/function () {
     var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(_char4) {
-      var stateChanged, currentCells, isValid, _loop9, y;
+      var stateChanged, currentCells, isValid, _loop10, y;
       return _regeneratorRuntime().wrap(function _callee3$(_context8) {
         while (1) switch (_context8.prev = _context8.next) {
           case 0:
@@ -3154,16 +3241,16 @@ function SudokuGame() {
               }
               return true;
             };
-            _loop9 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop9(y) {
-              var rowChanged, newRowCells, _loop10, x;
-              return _regeneratorRuntime().wrap(function _loop9$(_context7) {
+            _loop10 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop10(y) {
+              var rowChanged, newRowCells, _loop11, x;
+              return _regeneratorRuntime().wrap(function _loop10$(_context7) {
                 while (1) switch (_context7.prev = _context7.next) {
                   case 0:
                     rowChanged = false;
                     newRowCells = _toConsumableArray(currentCells);
-                    _loop10 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop10(x) {
+                    _loop11 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop11(x) {
                       var cellIdx, cell;
-                      return _regeneratorRuntime().wrap(function _loop10$(_context6) {
+                      return _regeneratorRuntime().wrap(function _loop11$(_context6) {
                         while (1) switch (_context6.prev = _context6.next) {
                           case 0:
                             cellIdx = newRowCells.findIndex(function (c) {
@@ -3183,7 +3270,7 @@ function SudokuGame() {
                           case "end":
                             return _context6.stop();
                         }
-                      }, _loop10);
+                      }, _loop11);
                     });
                     x = 0;
                   case 4:
@@ -3191,7 +3278,7 @@ function SudokuGame() {
                       _context7.next = 9;
                       break;
                     }
-                    return _context7.delegateYield(_loop10(x), "t0", 6);
+                    return _context7.delegateYield(_loop11(x), "t0", 6);
                   case 6:
                     x++;
                     _context7.next = 4;
@@ -3215,7 +3302,7 @@ function SudokuGame() {
                   case "end":
                     return _context7.stop();
                 }
-              }, _loop9);
+              }, _loop10);
             });
             y = 0;
           case 12:
@@ -3223,7 +3310,7 @@ function SudokuGame() {
               _context8.next = 17;
               break;
             }
-            return _context8.delegateYield(_loop9(y), "t0", 14);
+            return _context8.delegateYield(_loop10(y), "t0", 14);
           case 14:
             y++;
             _context8.next = 12;
@@ -3254,7 +3341,7 @@ function SudokuGame() {
   }();
   var runAutoFillCycle = /*#__PURE__*/function () {
     var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(startChar) {
-      var changed, stateChanged, currentCells, totalFilled, chars, startIndex, isValid, isCharCompleted, fill, passChanged, _loop11, _ret, i;
+      var changed, stateChanged, currentCells, totalFilled, chars, startIndex, isValid, isCharCompleted, fill, passChanged, _loop12, _ret, i;
       return _regeneratorRuntime().wrap(function _callee5$(_context14) {
         while (1) switch (_context14.prev = _context14.next) {
           case 0:
@@ -3386,9 +3473,9 @@ function SudokuGame() {
             }();
           case 16:
             passChanged = false;
-            _loop11 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop11() {
-              var charIdx, _char5, _loop12, y, _loop13, x, _loop14, b;
-              return _regeneratorRuntime().wrap(function _loop11$(_context13) {
+            _loop12 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop12() {
+              var charIdx, _char5, _loop13, y, _loop14, x, _loop15, b;
+              return _regeneratorRuntime().wrap(function _loop12$(_context13) {
                 while (1) switch (_context13.prev = _context13.next) {
                   case 0:
                     charIdx = (startIndex + i) % chars.length;
@@ -3416,9 +3503,9 @@ function SudokuGame() {
                     });
                   case 9:
                     changed = false;
-                    _loop12 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop12(y) {
+                    _loop13 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop13(y) {
                       var rowCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop12$(_context10) {
+                      return _regeneratorRuntime().wrap(function _loop13$(_context10) {
                         while (1) switch (_context10.prev = _context10.next) {
                           case 0:
                             rowCells = currentCells.filter(function (c) {
@@ -3445,7 +3532,7 @@ function SudokuGame() {
                           case "end":
                             return _context10.stop();
                         }
-                      }, _loop12);
+                      }, _loop13);
                     });
                     y = 0;
                   case 12:
@@ -3453,7 +3540,7 @@ function SudokuGame() {
                       _context13.next = 19;
                       break;
                     }
-                    return _context13.delegateYield(_loop12(y), "t0", 14);
+                    return _context13.delegateYield(_loop13(y), "t0", 14);
                   case 14:
                     if (!_context13.t0) {
                       _context13.next = 16;
@@ -3472,9 +3559,9 @@ function SudokuGame() {
                     passChanged = true;
                     return _context13.abrupt("continue", 44);
                   case 22:
-                    _loop13 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop13(x) {
+                    _loop14 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop14(x) {
                       var colCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop13$(_context11) {
+                      return _regeneratorRuntime().wrap(function _loop14$(_context11) {
                         while (1) switch (_context11.prev = _context11.next) {
                           case 0:
                             colCells = currentCells.filter(function (c) {
@@ -3501,7 +3588,7 @@ function SudokuGame() {
                           case "end":
                             return _context11.stop();
                         }
-                      }, _loop13);
+                      }, _loop14);
                     });
                     x = 0;
                   case 24:
@@ -3509,7 +3596,7 @@ function SudokuGame() {
                       _context13.next = 31;
                       break;
                     }
-                    return _context13.delegateYield(_loop13(x), "t1", 26);
+                    return _context13.delegateYield(_loop14(x), "t1", 26);
                   case 26:
                     if (!_context13.t1) {
                       _context13.next = 28;
@@ -3528,9 +3615,9 @@ function SudokuGame() {
                     passChanged = true;
                     return _context13.abrupt("continue", 44);
                   case 34:
-                    _loop14 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop14(b) {
+                    _loop15 = /*#__PURE__*/_regeneratorRuntime().mark(function _loop15(b) {
                       var boxCells, validEmpties;
-                      return _regeneratorRuntime().wrap(function _loop14$(_context12) {
+                      return _regeneratorRuntime().wrap(function _loop15$(_context12) {
                         while (1) switch (_context12.prev = _context12.next) {
                           case 0:
                             boxCells = currentCells.filter(function (c) {
@@ -3557,7 +3644,7 @@ function SudokuGame() {
                           case "end":
                             return _context12.stop();
                         }
-                      }, _loop14);
+                      }, _loop15);
                     });
                     b = 0;
                   case 36:
@@ -3565,7 +3652,7 @@ function SudokuGame() {
                       _context13.next = 43;
                       break;
                     }
-                    return _context13.delegateYield(_loop14(b), "t2", 38);
+                    return _context13.delegateYield(_loop15(b), "t2", 38);
                   case 38:
                     if (!_context13.t2) {
                       _context13.next = 40;
@@ -3587,7 +3674,7 @@ function SudokuGame() {
                   case "end":
                     return _context13.stop();
                 }
-              }, _loop11);
+              }, _loop12);
             });
             i = 0;
           case 19:
@@ -3595,7 +3682,7 @@ function SudokuGame() {
               _context14.next = 29;
               break;
             }
-            return _context14.delegateYield(_loop11(), "t0", 21);
+            return _context14.delegateYield(_loop12(), "t0", 21);
           case 21:
             _ret = _context14.t0;
             if (!(_ret === 0)) {

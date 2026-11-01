@@ -1223,6 +1223,7 @@ function HashiGame() {
   var customDimsRef = useRef(null); // 房間頁帶入的自訂尺寸 {w,h}（關卡選自訂時生成題目用）
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
+  var hashiGiftCreditRef = useRef(0); // 島嶼禮物額度：完成進度每跨 5%（= 總島數的 1/20）+1，送給較弱的對手；沒對象時存著
   var lastBrawlSentRef = useRef(0);
   var fxRef = useRef({ fog: {}, boxes: [], marks: [] });
   var prevIslandDoneRef = useRef({});
@@ -2116,7 +2117,9 @@ function HashiGame() {
       return pl.id && !raceResultsRef.current[pl.id] && !(pl.id === myId && myFinishTimeRef.current != null) && (racerIds.length === 0 || racerIds.indexOf(pl.id) >= 0);
     });
     if (!cands.length) return;
-    var item = pickRandomItem();
+    var item = cands.length === 1 ? BRAWL_ITEMS.find(function (x) {
+      return x.key === 'gift';
+    }) : pickRandomItem(); // 只剩最後一位：沒有對手可打，里程碑只發禮物加速他完賽（使用者定案）
     var progs = cands.map(function (pl) {
       var info = raceProgressRef.current[pl.id];return info ? info.progress : 0;
     });
@@ -2125,23 +2128,57 @@ function HashiGame() {
     sendBrawlMsg(grant);
     if (sel.id === myId) applyBrawlGrant(grant);
   };
+  // 最後一位規則（使用者定案）：只剩我一人在場上（其他選手皆完賽或 DNF）時，攻擊道具沒有對手可用——
+  // 手邊庫存全轉禮物、之後收到的也直接轉禮物、房主發放也只發禮物，讓最後一位加速完賽，其他人不用乾等。
+  var lastOneRef = useRef(false);
+  var amLastRacer = function amLastRacer() {
+    if (raceStateRef.current !== 'racing' || myFinishTimeRef.current != null) return false;
+    var racers = racersRef.current || [];
+    if (racers.length < 2 || racers.indexOf(myId) < 0) return false;
+    return racers.every(function (uid) {
+      return uid === myId || raceResultsRef.current[uid];
+    });
+  };
+  var maybeConvertLastOne = function maybeConvertLastOne() {
+    if (lastOneRef.current || !amLastRacer()) return;
+    lastOneRef.current = true;
+    var cur = myItemsRef.current;
+    var conv = cur.filter(function (x) {
+      return x !== 'gift';
+    }).length;
+    if (conv > 0) {
+      var ni = cur.map(function () {
+        return 'gift';
+      });
+      myItemsRef.current = ni;setMyItems(ni);
+      showToast('🏁 只剩你一人！手邊 ' + conv + ' 個攻擊道具全部轉換成 🎁 禮物，加速完賽！');
+      if (ni.length >= 3) setTimeout(function () {
+        return autoFireBrawlItem('gift');
+      }, 650); // 禮物湊滿 3 個照舊自動連發（同規則一致）
+    } else {
+      showToast('🏁 只剩你一人！接下來的里程碑道具都會是 🎁 禮物');
+    }
+  };
   var applyBrawlGrant = function applyBrawlGrant(m) {
     if (!m || m.toUid !== myId) return;
-    var meta = BRAWL_ITEMS.find(function (x) {
+    if (!BRAWL_ITEMS.find(function (x) {
       return x.key === m.item;
-    });
-    if (!meta) return;
+    })) return;
     if (myFinishTimeRef.current != null) return; // 已完賽不再獲得道具（盤面凍結）
+    var effItem = m.item !== 'gift' && amLastRacer() ? 'gift' : m.item; // 已是最後一位：還在飛的攻擊道具入包時直接轉禮物
+    var meta = BRAWL_ITEMS.find(function (x) {
+      return x.key === effItem;
+    });
     if (myItemsRef.current.filter(function (x) {
-      return x === m.item;
+      return x === effItem;
     }).length >= 3) return; // 已有 3 個且自動發動排程中（理論上不會發生），多的不收
-    var ni = myItemsRef.current.concat([m.item]);
+    var ni = myItemsRef.current.concat([effItem]);
     myItemsRef.current = ni;setMyItems(ni);
     showToast('🎁 里程碑道具：你獲得 ' + meta.icon + ' ' + meta.name + '！');
     if (ni.filter(function (x) {
-      return x === m.item;
+      return x === effItem;
     }).length >= 3) setTimeout(function () {
-      return autoFireBrawlItem(m.item);
+      return autoFireBrawlItem(effItem);
     }, 650); // 集滿 3 個 → 自動連續發動並歸零（禮物也同規，使用者定案）
     try {
       window.HASHI_SOUND.play('star');
@@ -2512,10 +2549,27 @@ function HashiGame() {
     if (brawlSettingsRef.current.itemsEnabled) {
       for (var t = 5; t <= 100; t += 5) {
         if (p * 100 >= t && !milestonesRef.current[t]) {
-          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
+          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);hashiGiftCreditRef.current += 1;
         }
+      } // 里程碑每 5% 一格（5→100 共 20 格）；同時每跨一格＝完成總島數的 1/20，累積 1 個島嶼禮物額度（使用者定案）
+      // 島嶼禮物（使用者定案，比照數獨扶弱）：額度逐一送給比自己弱的未完賽對手（差距平方根加權抽一位）；沒有較弱對手時額度存著，等下次進度推送再試
+      while (hashiGiftCreditRef.current > 0) {
+        var weaker = playersListRef.current.filter(function (pl) {
+          if (!pl.id || pl.id === myId) return false;
+          if (raceResultsRef.current[pl.id]) return false; // 已完賽者不收
+          if ((racersRef.current || []).length && racersRef.current.indexOf(pl.id) < 0) return false; // 觀戰者不在場上
+          var info = raceProgressRef.current[pl.id];
+          return (info ? info.progress : 0) < p;
+        });
+        if (!weaker.length) break;
+        var ws = weaker.map(function (pl) {
+          var info = raceProgressRef.current[pl.id];return Math.sqrt(Math.max(0.01, p - (info ? info.progress : 0)));
+        });
+        var sel = platPickWeighted(weaker, ws);
+        sendBrawlMsg({ type: 'BRAWL_GRANT', toUid: sel.id, item: 'gift', fromUid: myId });
+        hashiGiftCreditRef.current -= 1;
       }
-    } // 里程碑改每 5% 一格（5→100 共 20 格，量級對齊數獨 9x9；使用者定案）
+    }
     var nowB = Date.now();
     if (nowB - lastBrawlSentRef.current > 700) {
       lastBrawlSentRef.current = nowB;
@@ -3899,6 +3953,11 @@ function HashiGame() {
               });
             } else if (m.type === 'BRAWL_MILESTONE') {
               handleBrawlMilestone(m);
+            } else if (m.type === 'BRAWL_GRANT') {
+              applyBrawlGrant(m); // 來賓產生的島嶼禮物：房主自己是收件人時入包（applyBrawlGrant 內部驗 toUid）
+              connsRef.current.forEach(function (conn) {
+                if (conn.peer !== c.peer && conn.open) conn.send(m);
+              }); // 轉發給其他來賓（收件人可能在別台；非收件人入包時會自行忽略）
             } else if (m.type === 'REQ_READY') {
               setPlayersList(function (prev) {
                 var nList = prev.map(function (pl) {
@@ -4373,7 +4432,7 @@ function HashiGame() {
     raceResultsRef.current = {};
     setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
-    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};
+    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};lastOneRef.current = false;hashiGiftCreditRef.current = 0;
     setBrawlBoards({});setGodViewUid(null);
     fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     stateRef.current = _extends({}, stateRef.current, payload);
@@ -4432,6 +4491,7 @@ function HashiGame() {
     raceResultsRef.current[uid] = { name: m.name || '對手', color: m.color, timeMs: m.timeMs };
     if (!maybeFinalize()) {
       if (myFinishTimeRef.current == null && raceStateRef.current === 'racing') showToast("🏁 " + (m.name || '對手') + " 已完成！加油！");
+      maybeConvertLastOne(); // 對手完賽後若只剩我 → 庫存攻擊道具轉禮物
     }
   };
 
@@ -4447,6 +4507,7 @@ function HashiGame() {
     });
     raceResultsRef.current[uid] = { name: pl ? pl.name : prog[uid] ? prog[uid].name : '玩家', color: pl ? pl.color : prog[uid] ? prog[uid].color : '#94a3b8', timeMs: null, dnf: true, progress: prog[uid] ? prog[uid].progress : 0 };
     maybeFinalize();
+    maybeConvertLastOne(); // 對手離場後若只剩我 → 同樣轉換（他若回座不追回，比照結算把 DNF 當出局）
   };
 
   // 數橋的結算：全員完賽或 DNF 才結算（沒有數獨那種「去第幾名」設定）；未完成者以進度排名
