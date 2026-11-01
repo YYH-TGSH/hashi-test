@@ -2067,16 +2067,23 @@ body[data-view="lobby"] {
 #plat-chat-send { background: #4ade80; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 16px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
 .plat-unread { background: #ef4444; color: #fff; border-radius: 9999px; font-size: 10px; padding: 1px 7px; font-weight: 900; }
 /* 大廳 */
-/* 代表色轉盤（v1.20.0：取代色點陣列——色點看起來能按其實不能按、顏色又看不真，使用者指示改轉盤；盤面 20 格全飽和原色） */
+/* 代表色摩天輪（v1.20.0 轉盤 → v1.21.0 使用者指示改摩天輪：20 台彩色車廂掛在輪圈上、轉動時車廂保持正立、最上方車廂＝選中色；
+   未決定時圓心與預覽點顯示「？」、指針對準兩台車廂之間；彩虹模式＝連按選色鈕 5 次觸發，摩天輪持續自轉＋全車廂彩虹漸層） */
 #lob-wheel-wrap { position: relative; width: 216px; height: 216px; margin: 6px auto 14px; }
-#lob-wheel { position: absolute; inset: 0; border-radius: 9999px; border: 3px solid #1e293b; overflow: hidden; box-shadow: 3px 3px 0 rgba(30,41,59,1); background: #f1f5f9; }
+#lob-wheel { position: absolute; inset: 0; border-radius: 9999px; border: 3px solid #1e293b; overflow: hidden; box-shadow: 3px 3px 0 rgba(30,41,59,1); background: radial-gradient(circle at 50% 42%, #f0f9ff 0%, #bae6fd 68%, #7dd3fc 100%); }
 #lob-wheel-rotor { position: absolute; inset: 0; will-change: transform; }
 #lob-wheel-rotor.spinning { transition: transform 2.1s cubic-bezier(.12,.75,.08,1); }
-.wseg { position: absolute; inset: 0; padding: 0; border: none; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#lob-wheel-rotor.spinning .cab { transition: transform 2.1s cubic-bezier(.12,.75,.08,1); }
+#lob-wheel-rotor.rainbow-spin { animation: fwspin 7s linear infinite; }
+@keyframes fwspin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.wseg { position: absolute; left: 50%; top: 50%; width: 0; height: 0; padding: 0; border: none; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cab-arm { position: absolute; left: -1.5px; top: -84px; width: 3px; height: 84px; background: rgba(30,41,59,.30); border-radius: 2px; }
+.cab { position: absolute; left: 0; top: -84px; width: 34px; height: 27px; border-radius: 9px 9px 11px 11px; border: 2.5px solid #1e293b; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 1px 2px 0 rgba(30,41,59,.30); }
+.cab::before { content: ''; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1e293b; }
+.cab::after { content: ''; position: absolute; left: 50%; top: 5px; transform: translateX(-50%); width: 14px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.55); }
+#lob-wheel.rainbow-mode .cab { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) !important; }
 #lob-wheel-pointer { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; font-size: 26px; line-height: 1; color: #1e293b; text-shadow: 0 2px 0 rgba(255,255,255,.85); pointer-events: none; }
-#lob-wheel-hub { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid #1e293b; background: #fff; z-index: 2; box-shadow: 2px 2px 0 rgba(30,41,59,.55); pointer-events: none; }
-#lob-rainbow-btn { width: 36px; height: 36px; border-radius: 9999px; border: 3px solid #1e293b; cursor: pointer; padding: 0; }
-#lob-rainbow-btn.sel { outline: 3px solid #1e293b; outline-offset: 2px; }
+#lob-wheel-hub { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid #1e293b; background: #fff; z-index: 2; box-shadow: 2px 2px 0 rgba(30,41,59,.55); pointer-events: none; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 #lob-roster li { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; font-weight: 900; color: #1e293b; }
 #lob-roster .dot { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid #1e293b; flex-shrink: 0; }
 /* 大廳步驟：拉霸機 + 遊戲平台卡片 */
@@ -2204,12 +2211,11 @@ body.plat-room-on[data-view="hashi"] {
             <button id="slot-spin" class="flex-1 py-2.5 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸</button>
             <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
           </div>
-          <label class="font-black text-slate-700 text-sm">代表色（轉盤決定）</label>
-          <div class="text-xs font-bold text-slate-400 mt-0.5">按確認進房時，沒轉過會跟暱稱一樣自動轉盤決定</div>
+          <label class="font-black text-slate-700 text-sm">代表色（摩天輪決定）</label>
+          <div class="text-xs font-bold text-slate-400 mt-0.5">按確認進房時，沒轉過會跟暱稱一樣自動用摩天輪決定</div>
           <div class="flex items-center gap-2 mt-1 mb-2">
             <span id="lob-color-dot" class="w-9 h-9 rounded-full border-[3px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] inline-block shrink-0"></span>
-            <button id="lob-color-spin" class="flex-1 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 轉盤選色</button>
-            <span id="lob-rainbow-slot" class="shrink-0"></span>
+            <button id="lob-color-spin" class="flex-1 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 摩天輪選色</button>
           </div>
           <div id="lob-wheel-wrap">
             <div id="lob-wheel-pointer">▼</div>
@@ -20245,7 +20251,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.20.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.21.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -20390,7 +20396,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     $('lob-step-nick').style.display = (s === 'nick') ? 'block' : 'none';
     var rm = $('lob-step-room'); if (rm) rm.style.display = (s === 'room') ? 'block' : 'none';
     if (s === 'entry') refreshRejoin();
-    if (s === 'nick') Net.colorPicked = false; // 每次回到暱稱步，代表色視為尚未決定：按確認進房時會自動拉霸
+    if (s === 'nick') { if (rainbowMode) exitRainbow(); Net.colorPicked = false; renderColors(); } // 每次回到暱稱步，代表色視為尚未決定（摩天輪顯示「？」）：按確認進房時會自動轉
     rejoinBusy(false);
   }
   function hubVisible() { var rm = $('lob-step-room'); return !!(rm && rm.style.display === 'block' && Net.active && !Net.inMatch); }
@@ -20495,30 +20501,58 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (hubVisible()) hubRender();
     renderTourn();
   }
-  // 代表色轉盤（v1.20.0）：盤面 20 格扇形 div（index 與舊色點一致，彩虹密碼 tapColorSeq 照舊餵 index）；
-  // 靜止時目前顏色對準頂端指針，hub 與預覽點顯示目前色；彩虹解鎖後在按鈕列給一顆真的可點選的彩虹鈕。
-  var wheelRot = 0; // 轉盤累積旋轉角（只增不減）
+  // 代表色摩天輪（v1.21.0）：20 台車廂（.wseg 定位鈕＋.cab 車廂本體）掛在輪圈上，index 與 PLAT_COLORS 一致；
+  // 車廂永遠保持正立：本體角度 = -(轉子角度 + 自身格角)，轉動時靠 .spinning 的 transition 同步跟隨。
+  // 三種狀態：未決定（colorPicked=false）→ 圓心與預覽點顯示「？」、指針對準兩台車廂之間，不暗示任何顏色；
+  // 已決定 → 目標車廂中心停在指針下、圓心顯示該色；彩虹模式（連按選色鈕 5 次）→ 持續自轉＋全車廂彩虹漸層、代表色直接 = rainbow。
+  var wheelRot = 0; // 摩天輪累積旋轉角（只增不減）
   var wheelBuilt = false;
-  function segPolygon(i) {
-    var seg = 360 / PLAT_COLORS.length, a0 = i * seg, a1 = a0 + seg, pts = ['50% 50%'];
-    for (var a = a0; a <= a1 + 0.01; a += seg / 3) { var r = a * Math.PI / 180; pts.push((50 + 54 * Math.sin(r)).toFixed(1) + '% ' + (50 - 54 * Math.cos(r)).toFixed(1) + '%'); }
-    return 'polygon(' + pts.join(',') + ')';
+  var rainbowMode = false;
+  function buildWheel() {
+    var rotor = $('lob-wheel-rotor'); if (!rotor || wheelBuilt) return;
+    wheelBuilt = true;
+    var seg = 360 / PLAT_COLORS.length;
+    PLAT_COLORS.forEach(function (c, i) {
+      var b = document.createElement('button');
+      b.className = 'wseg'; b.title = c;
+      b.style.transform = 'rotate(' + (i * seg) + 'deg)';
+      b.setAttribute('data-lob-color', String(i));
+      var arm = document.createElement('span'); arm.className = 'cab-arm';
+      var cab = document.createElement('span'); cab.className = 'cab'; cab.style.background = c;
+      b.appendChild(arm); b.appendChild(cab);
+      b.onclick = function () { spinColor(); }; // 點摩天輪本體也能轉
+      rotor.appendChild(b);
+    });
+  }
+  function setCabins() { // 依目前 wheelRot 把每台車廂轉回正立
+    var rotor = $('lob-wheel-rotor'); if (!rotor) return;
+    var seg = 360 / PLAT_COLORS.length;
+    for (var i = 0; i < rotor.children.length; i++) {
+      var cab = rotor.children[i].querySelector('.cab');
+      if (cab) cab.style.transform = 'translate(-50%,-50%) rotate(' + (-(wheelRot + i * seg)) + 'deg)';
+    }
+  }
+  function paintHubDot(bg, mark) {
+    var hub = $('lob-wheel-hub');
+    if (hub) { hub.style.background = bg; hub.textContent = mark || ''; hub.style.fontSize = '30px'; hub.style.color = '#b45309'; }
+    var dot = $('lob-color-dot');
+    if (dot) { dot.style.background = bg; dot.textContent = mark || ''; dot.style.fontSize = '17px'; dot.style.fontWeight = '900'; dot.style.color = '#b45309'; dot.style.display = 'inline-flex'; dot.style.alignItems = 'center'; dot.style.justifyContent = 'center'; }
   }
   function renderColors() {
+    buildWheel();
     var rotor = $('lob-wheel-rotor'); if (!rotor) return;
-    if (!wheelBuilt) {
-      wheelBuilt = true;
-      PLAT_COLORS.forEach(function (c, i) {
-        var b = document.createElement('button');
-        b.className = 'wseg'; b.style.background = c; b.style.clipPath = segPolygon(i); b.title = c;
-        b.setAttribute('data-lob-color', String(i));
-        b.onclick = function () { tapColorSeq(i); };
-        rotor.appendChild(b);
-      });
+    if (rainbowMode) { paintHubDot(RAINBOW_BG, ''); return; } // 自轉由 CSS animation 接管，圓心顯示彩虹
+    if (!Net.colorPicked) { // 未決定：顯示「？」＋指針對準車廂交界（mod seg == 0）
+      paintHubDot('#fff7e0', '？');
+      var segU = 360 / PLAT_COLORS.length;
+      var rem = ((wheelRot % segU) + segU) % segU;
+      if (rem !== 0) wheelRot += (segU - rem);
+      rotor.classList.remove('spinning');
+      rotor.style.transform = 'rotate(' + wheelRot + 'deg)';
+      setCabins();
+      return;
     }
-    var cur = (Net.me.color === 'rainbow') ? RAINBOW_BG : (Net.me.color || '#ccc');
-    var hub = $('lob-wheel-hub'); if (hub) hub.style.background = cur;
-    var dot = $('lob-color-dot'); if (dot) dot.style.background = cur;
+    paintHubDot((Net.me.color === 'rainbow') ? RAINBOW_BG : (Net.me.color || '#ccc'), '');
     var idx = PLAT_COLORS.indexOf(Net.me.color);
     if (idx >= 0) {
       var seg = 360 / PLAT_COLORS.length;
@@ -20527,46 +20561,74 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       if (Math.abs(curMod - wantMod) > 0.5) wheelRot += ((wantMod - curMod) + 360) % 360;
       rotor.classList.remove('spinning');
       rotor.style.transform = 'rotate(' + wheelRot + 'deg)';
-    }
-    var slot = $('lob-rainbow-slot'); if (!slot) return;
-    slot.innerHTML = '';
-    if (storeGet('plat_rainbow') === '1') {
-      var rb = document.createElement('button');
-      rb.id = 'lob-rainbow-btn'; rb.style.background = RAINBOW_BG; rb.title = 'rainbow';
-      if (Net.me.color === 'rainbow') rb.className = 'sel';
-      rb.onclick = function () { Net.me.color = 'rainbow'; storeSet('plat_color', 'rainbow'); renderColors(); };
-      slot.appendChild(rb);
+      setCabins();
     }
   }
-  var tapSeq = [];
-  function tapColorSeq(i) {
-    // 代表色預設不能點選（用拉霸決定）；點色塊只累計彩虹密碼
-    tapSeq.push(i); if (tapSeq.length > 4) tapSeq.shift();
-    if (tapSeq.join(',') === '0,4,15,19' && storeGet('plat_rainbow') !== '1') {
-      storeSet('plat_rainbow', '1'); renderColors(); lobbyMsg('🌈 解鎖隱藏代表色 rainbow！');
-    }
+  // 彩虹模式開關（v1.21.0 使用者指示：快速連按選色鈕 5 次觸發，取代舊的點格密碼與彩虹鈕）
+  var colorSpinGen = 0, colorSpinCb = null; // spin 世代令牌：彩虹觸發可作廢進行中的一般 spin 收尾，但它的 cb 仍須觸發
+  function triggerRainbow() {
+    if (rainbowMode) return;
+    rainbowMode = true;
+    colorSpinGen++;
+    var f = colorSpinCb; colorSpinCb = null;
+    colorSpinning = false;
+    Net.me.color = 'rainbow'; storeSet('plat_color', 'rainbow');
+    storeSet('plat_rainbow', '1'); // 觸發即解鎖：房間內編輯個人資料時也能再選回彩虹
+    Net.colorPicked = true;
+    var wheel = $('lob-wheel'); if (wheel) wheel.classList.add('rainbow-mode');
+    var rotor = $('lob-wheel-rotor'); if (rotor) { rotor.classList.remove('spinning'); rotor.classList.add('rainbow-spin'); }
+    renderColors();
+    lobbyMsg('🌈 彩虹模式！摩天輪轉起來了');
+    if (f) f();
+  }
+  function exitRainbow() {
+    rainbowMode = false;
+    var wheel = $('lob-wheel'); if (wheel) wheel.classList.remove('rainbow-mode');
+    var rotor = $('lob-wheel-rotor'); if (!rotor) return;
+    try { // 從 animation 目前的 computed 角度接回 wheelRot，退出瞬間不跳格
+      var m = /matrix\(([^)]+)\)/.exec(window.getComputedStyle(rotor).transform || '');
+      if (m) {
+        var p = m[1].split(',').map(Number);
+        var ang = Math.atan2(p[1], p[0]) * 180 / Math.PI; if (ang < 0) ang += 360;
+        var cand = Math.floor(wheelRot / 360) * 360 + ang;
+        if (cand < wheelRot - 180) cand += 360; else if (cand > wheelRot + 180) cand -= 360;
+        wheelRot = cand;
+      }
+    } catch (e) {}
+    rotor.classList.remove('rainbow-spin');
+    rotor.style.transform = 'rotate(' + wheelRot + 'deg)';
+  }
+  var colorPressTimes = [];
+  function onColorButton() {
+    var now = Date.now();
+    colorPressTimes = colorPressTimes.filter(function (t) { return now - t <= 2800; });
+    colorPressTimes.push(now);
+    if (colorPressTimes.length >= 5) { colorPressTimes = []; triggerRainbow(); return; }
+    spinColor();
   }
   var colorSpinning = false;
   function spinColor(cb) {
-    if (colorSpinning) return;
+    if (rainbowMode) exitRainbow(); // 彩虹中按鈕＝退出彩虹並正常轉一次
+    if (colorSpinning) { if (cb) colorSpinCb = cb; return; } // 按鈕不 disable：連按要計數觸發彩虹，重疊 spin 由此守衛擋下
     colorSpinning = true;
     spinSound(2100);
-    var btn = $('lob-color-spin'); if (btn) btn.disabled = true;
     var idx = Math.floor(Math.random() * PLAT_COLORS.length);
     var c = PLAT_COLORS[idx];
     var seg = 360 / PLAT_COLORS.length;
     var wantMod = ((360 - (idx * seg + seg / 2)) % 360 + 360) % 360;
     var curMod = ((wheelRot % 360) + 360) % 360;
-    wheelRot += 5 * 360 + (((wantMod - curMod) + 360) % 360); // 至少轉 5 圈，最後把目標格中心停在指針下
+    wheelRot += 5 * 360 + (((wantMod - curMod) + 360) % 360); // 至少轉 5 圈，最後把目標車廂中心停在指針下
+    var gen = ++colorSpinGen; colorSpinCb = cb || null;
     var rotor = $('lob-wheel-rotor');
     if (rotor) { rotor.classList.add('spinning'); rotor.style.transform = 'rotate(' + wheelRot + 'deg)'; }
+    setCabins();
     setTimeout(function () {
+      if (gen !== colorSpinGen) return; // 已被彩虹觸發作廢（cb 由 triggerRainbow 接手觸發，不會漏掉確認流程）
       Net.me.color = c; storeSet('plat_color', c);
       colorSpinning = false;
       Net.colorPicked = true; // 這次進房流程已決定代表色，確認時不要再自動轉一次
-      if (btn) btn.disabled = false;
       renderColors(); if (Net.active) renderLobby();
-      if (cb) cb();
+      var f = colorSpinCb; colorSpinCb = null; if (f) f();
     }, 2150);
   }
   function readIdentity() { return Net.me.name || ''; }
@@ -22633,7 +22695,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (rjBtn) { refreshRejoin(); rjBtn.onclick = doRejoin; }
     $('lob-back').onclick = function () { lobbyMsg(''); showStep('entry'); };
     $('slot-spin').onclick = function () { spinSlot(); };
-    var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { spinColor(); };
+    var csb = $('lob-color-spin'); if (csb) csb.onclick = function () { onColorButton(); };
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
       if (colorSpinning) return; // 拉霸進行中擋手動連點：否則會先建一次房、拉霸結束的回呼再補點一次，產生兩個 peer（完成回呼是在 colorSpinning 清除後才觸發，不受此守衛影響）
