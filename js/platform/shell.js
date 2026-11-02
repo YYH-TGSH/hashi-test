@@ -147,7 +147,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.29.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.30.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -628,7 +628,7 @@
     return {
       sudoku: { mode: 'coop', sizeId: 9, diffId: 'medium', winnersCount: 3, allowWeapons: true, allowGifts: true, allowYellowHint: false, showNumbersInGodMode: false, allowOthersToPlayAgain: true, allowQuickFill: false, allowTraversal: false, weaponStartTime: 60 },
       hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true, customW: 15, customH: 15 },
-      mines: { mode: 'coop', sizeId: 9 }
+      mines: { mode: 'coop', sizeId: 9, allowItems: true, itemStartTime: 60 }
     };
   }
   function ensureHub() {
@@ -648,7 +648,7 @@
     if (game === 'sudoku') { var wt = Number(c.weaponStartTime); if (isNaN(wt)) wt = 60; wt = Math.max(0, Math.min(600, wt));
       return { mode: c.mode, sizeId: Number(c.sizeId) || 9, diffId: c.diffId || 'medium',
       brawl: { winnersCount: Number(c.winnersCount) || 3, allowWeapons: c.allowWeapons !== false, allowGifts: c.allowGifts !== false, allowYellowHint: !!c.allowYellowHint, showNumbersInGodMode: !!c.showNumbersInGodMode, allowOthersToPlayAgain: c.allowOthersToPlayAgain !== false, allowQuickFill: !!c.allowQuickFill, allowTraversal: !!c.allowTraversal, hideAnswers: true, weaponStartTime: wt } }; }
-    if (game === 'mines') return { mode: c.mode, sizeId: Number(c.sizeId) || 9, brawl: {} };
+    if (game === 'mines') { var wt2 = Number(c.itemStartTime); if (isNaN(wt2)) wt2 = 60; wt2 = Math.max(0, Math.min(600, wt2)); return { mode: c.mode, sizeId: Number(c.sizeId) || 9, allowItems: c.allowItems !== false, itemStartTime: wt2, brawl: {} }; }
     return { mode: c.mode, sizeId: c.sizeId === 'custom' ? 'custom' : (Number(c.sizeId) || 2), customW: Math.max(5, Math.min(100, Number(c.customW) || 15)), customH: Math.max(5, Math.min(100, Number(c.customH) || 15)), brawl: { itemsEnabled: c.itemsEnabled !== false, godNumbers: c.godNumbers !== false } };
   }
   function hubRacers() { return Net.roster.slice(); } // 房間頁不分觀戰：進房的都是選手（觀戰是對局內的事）
@@ -728,7 +728,11 @@
       }
     } else if (game === 'mines') {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">盤面</span>' + hubSel('mines', 'sizeId', c.sizeId, HUB_MINES_SIZES) + '</div>';
-      if (c.mode === 'race') h += '<div class="text-xs font-bold text-slate-400">競速規則：同一個盤面各玩各的，最快排完的人贏；踩到雷直接出局，照當時進度排名。</div>';
+      if (c.mode === 'race') {
+        h += hubChk('mines', 'allowItems', c.allowItems, '開啟道具與禮物（❓問號干擾／⏪回填／🎁鎖定旗禮物）');
+        h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 text-sm shrink-0">道具延遲</span>' + hubSel('mines', 'itemStartTime', c.itemStartTime, [0, 30, 60, 90, 120, 180].map(function (n) { return { id: n, name: n + ' 秒' }; })) + '</div>';
+        h += '<div class="text-xs font-bold text-slate-400">競速規則：同一個盤面各玩各的，最快排完的人贏；踩到雷直接出局，照當時進度排名。</div>';
+      }
       else h += '<div class="text-xs font-bold text-slate-400">合作規則：共用同一個盤面一起排雷，踩到雷全隊失敗。</div>';
     } else {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">關卡</span>' + hubSel('hashi', 'sizeId', c.sizeId, HUB_LEVELS) + '</div>';
@@ -1387,7 +1391,7 @@
       brawl: { winnersCount: t.entrants.length, allowWeapons: t.sudoku.allowWeapons !== false, allowGifts: t.sudoku.allowGifts !== false, allowYellowHint: !!t.sudoku.allowYellowHint, showNumbersInGodMode: !!t.sudoku.showNumbersInGodMode, allowOthersToPlayAgain: true, allowQuickFill: !!t.sudoku.allowQuickFill, allowTraversal: !!t.sudoku.allowTraversal, hideAnswers: true, weaponStartTime: (t.sudoku.weaponStartTime == null ? 60 : t.sudoku.weaponStartTime) } };
     else if (t.curGame === 'hashi') settings = { mode: 'brawl', sizeId: t.hashi.sizeId,
       brawl: { itemsEnabled: t.hashi.itemsEnabled !== false, godNumbers: t.hashi.godNumbers !== false } };
-    else if (t.curGame === 'mines') settings = { mode: 'brawl', sizeId: t.mines.sizeId, brawl: {} };
+    else if (t.curGame === 'mines') settings = { mode: 'brawl', sizeId: t.mines.sizeId, allowItems: true, itemStartTime: 60, brawl: {} };
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
       roster: t.entrants.map(function (e) { return { uid: e.uid, name: e.name, color: e.color }; }),
       sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : (t.curGame === 'mines' ? t.mines.sizeId : t.hashi.sizeId), diffId: t.sudoku.diffId, roundSecs: t.roundSecs, settings: settings };
