@@ -18383,7 +18383,7 @@ function MinesGame() {
         setCells(xc);
         setMistLeft(allow - mistakesRef.current);
         SFX.boom();
-        itemSay('💥 踩到雷！這格記 ✗——容錯還剩 ' + (allow - mistakesRef.current) + ' 次');
+        itemSay('💥 踩到雷！這格記 ✗——愛心還剩 ' + (allow - mistakesRef.current + 1) + ' 顆');
         return {
           hit: -1,
           cells: xc,
@@ -18522,6 +18522,9 @@ function MinesGame() {
       lpFiredRef.current = false;
       return;
     } // 這次 click 是長按插旗的尾巴
+    var lc = lpCellRef.current;
+    lpCellRef.current = null;
+    if (lc && lc.idx !== idx && Date.now() - lc.t < 800) return; // 按壓起點不在這格：手指滑移/畫面微捲讓 click 落到鄰格（常見是旗那格）→ 整下忽略，旗不會被誤取消
     if (mpRef.current.on) {
       if (mpRef.current.phase !== 'playing' || iAmSpecRef.current || !cells) return;
       if (mpRef.current.mode === 'coop') {
@@ -18570,13 +18573,20 @@ function MinesGame() {
     doReveal(idx, cells, layout, nums);
   }
   var lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
+  var lpCellRef = useRef(null); // 本次按壓的起點格 {idx, t}：click 落點若漂移到別格就忽略（防滑移/捲動讓點數字誤動到旁邊的旗）
   function onCellDown(idx, e) {
     if (lpRef.current) clearTimeout(lpRef.current);
     lpFiredRef.current = false;
+    lpCellRef.current = {
+      idx: idx,
+      t: Date.now()
+    };
     lpPtRef.current = e && typeof e.clientX === 'number' ? {
       x: e.clientX,
       y: e.clientY
     } : null;
+    // 已定案的格（已開數字、容錯 ✗、禮物鎖定旗）不需要長按插旗計時器：不起計時器，按住數字想事情不會有任何副作用
+    if (!cells || cells[idx] === 'o' || cells[idx] === 'x' || cells[idx] === 'L') return;
     // 500ms 與數獨的長按清除一致（舊 380ms 太短：稍用力、稍慢的一般點按就被誤判成長按插旗——誤觸主因之一）
     lpRef.current = setTimeout(function () {
       lpRef.current = null;
@@ -21153,9 +21163,22 @@ function MinesGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0"
   }, "\uD83D\uDCA3 ", spec.mines - flagsUsed, mpOn && mpRef.current.mode === 'race' && Math.floor(spec.mines / 10) > 0 && /*#__PURE__*/React.createElement("span", {
-    className: "text-red-600",
-    title: "\u5BB9\u932F\u6B21\u6578\uFF1A\u8E29\u5230\u96F7\u8A18 \u2717 \u7E8C\u73A9\uFF0C\u7528\u5B8C\u518D\u8E29\u624D\u51FA\u5C40"
-  }, " \u2717 ", mistLeft)), /*#__PURE__*/React.createElement("div", {
+    className: "ml-1",
+    style: {
+      fontSize: 13
+    },
+    title: "\u611B\u5FC3\uFF1D\u9084\u80FD\u8E29\u932F\u7684\u547D\uFF08\u5BB9\u932F\u6B21\u6578\uFF0B1\uFF09\uFF1A\u8E29\u5230\u96F7\u5C11\u4E00\u9846\u3001\u8B8A\u7070\uFF0C\u6B78\u96F6\u5F8C\u518D\u8E29\u5C31\u51FA\u5C40"
+  }, Array.from({
+    length: Math.floor(spec.mines / 10) + 1
+  }).map(function (_, hi) {
+    return /*#__PURE__*/React.createElement("span", {
+      key: hi,
+      style: hi < mistLeft + 1 ? undefined : {
+        filter: 'grayscale(1)',
+        opacity: 0.35
+      }
+    }, "\u2764\uFE0F");
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     "data-mode": "dig",
@@ -21183,7 +21206,9 @@ function MinesGame() {
     }
   }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0"
-  }, "\u9032\u5EA6 ", Math.floor(progress * 100), "%", status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : '')), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
+  }, "\u9032\u5EA6 ", Math.floor(progress * 100), "%", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline"
+  }, status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
     onClick: function onClick() {
       return setShowExitMenu(false);
@@ -21518,7 +21543,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.31.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.31.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
