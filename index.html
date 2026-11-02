@@ -11733,7 +11733,8 @@ function HashiGame() {
   var customDimsRef = useRef(null); // 房間頁帶入的自訂尺寸 {w,h}（關卡選自訂時生成題目用）
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
-  var hashiGiftCreditRef = useRef(0); // 島嶼禮物額度：完成進度每跨 5%（= 總島數的 1/20）+1，送給較弱的對手；沒對象時存著
+  var hashiGiftCreditRef = useRef(0); // 島嶼禮物額度：正確完成島數每跨總數 1/20 +1，送給較弱的對手；沒對象時存著
+  var hashiGiftUnitsRef = useRef(0); // 已入帳的島嶼禮物單位（正確完成島數換算，只增不減——橋被拆掉重架不重複入帳）
   var lastBrawlSentRef = useRef(0);
   var fxRef = useRef({ fog: {}, boxes: [], marks: [] });
   var prevIslandDoneRef = useRef({});
@@ -13069,9 +13070,40 @@ function HashiGame() {
     if (brawlSettingsRef.current.itemsEnabled) {
       for (var t = 5; t <= 100; t += 5) {
         if (p * 100 >= t && !milestonesRef.current[t]) {
-          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);hashiGiftCreditRef.current += 1;
+          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
         }
-      } // 里程碑每 5% 一格（5→100 共 20 格）；同時每跨一格＝完成總島數的 1/20，累積 1 個島嶼禮物額度（使用者定案）
+      } // 里程碑每 5% 一格（5→100 共 20 格）
+      // 島嶼禮物額度（2026-11-02 使用者糾正，與里程碑脫鉤）：只有「對照解答、全實線」的島嶼完成才算——
+      // 草稿虛線不算進完成（舊版 counts 把 draftCount 也加進去，虛線湊滿就亮綠燈照送）；只湊滿數字（橋架錯對象、條數分配錯）也不算。
+      // 判定：該島牽涉的每一對（解答有的＋實線有的）其實線條數都必須與解答完全一致。額度以單位制只增不減（每完成總島數 1/20 入帳 1）。
+      var solPairs = {};
+      (rld && rld.solution || []).forEach(function (sb) {
+        solPairs[sb.from < sb.to ? sb.from + '|' + sb.to : sb.to + '|' + sb.from] = sb.count;
+      });
+      var solidPairs = {};
+      (bridgesArr || []).forEach(function (b) {
+        if ((b.count || 0) > 0) solidPairs[b.from < b.to ? b.from + '|' + b.to : b.to + '|' + b.from] = b.count;
+      });
+      var strictDone = 0;
+      islands.forEach(function (isl) {
+        var sid = String(isl.id),
+            rel = {};
+        Object.keys(solPairs).forEach(function (k) {
+          var ab = k.split('|');if (ab[0] === sid || ab[1] === sid) rel[k] = true;
+        });
+        Object.keys(solidPairs).forEach(function (k) {
+          var ab = k.split('|');if (ab[0] === sid || ab[1] === sid) rel[k] = true;
+        });
+        var ok = true;
+        Object.keys(rel).forEach(function (k) {
+          if ((solidPairs[k] || 0) !== (solPairs[k] || 0)) ok = false;
+        });
+        if (ok) strictDone++;
+      });
+      var giftUnits = Math.floor(strictDone * 20 / islands.length);
+      if (giftUnits > hashiGiftUnitsRef.current) {
+        hashiGiftCreditRef.current += giftUnits - hashiGiftUnitsRef.current;hashiGiftUnitsRef.current = giftUnits;
+      }
       // 島嶼禮物（使用者定案，比照數獨扶弱）：額度逐一送給比自己弱的未完賽對手（差距平方根加權抽一位）；沒有較弱對手時額度存著，等下次進度推送再試
       while (hashiGiftCreditRef.current > 0) {
         var weaker = playersListRef.current.filter(function (pl) {
@@ -14952,7 +14984,7 @@ function HashiGame() {
     raceResultsRef.current = {};
     setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
-    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};lastOneRef.current = false;hashiGiftCreditRef.current = 0;
+    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};lastOneRef.current = false;hashiGiftCreditRef.current = 0;hashiGiftUnitsRef.current = 0;
     setBrawlBoards({});setGodViewUid(null);
     fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     stateRef.current = _extends({}, stateRef.current, payload);
@@ -21402,7 +21434,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.30.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.30.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
