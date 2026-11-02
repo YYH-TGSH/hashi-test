@@ -2082,21 +2082,25 @@ body[data-view="lobby"] {
 @keyframes platHue { to { filter: hue-rotate(360deg); } }
 .plat-rainbow-anim { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); animation: platHue 2.2s linear infinite; }
 .fw-wrap { position: relative; width: 216px; height: 254px; margin: 6px auto 14px; }
-.fw-wheel { position: absolute; left: 0; top: 0; width: 216px; height: 216px; border-radius: 9999px; border: 3px solid #1e293b; overflow: hidden; box-shadow: 3px 3px 0 rgba(30,41,59,1); background: radial-gradient(circle at 50% 42%, #f0f9ff 0%, #bae6fd 68%, #7dd3fc 100%); }
+.fw-wheel { position: absolute; left: 16px; top: 16px; width: 184px; height: 184px; border-radius: 9999px; border: 4.5px solid #334155; box-shadow: inset 0 0 0 2px rgba(148,163,184,.65), 2px 2px 0 rgba(30,41,59,.35); background: transparent; }
 .fw-stand { position: absolute; inset: 0; pointer-events: none; }
 .fw-leg { position: absolute; left: 50%; top: 130px; width: 9px; height: 104px; margin-left: -4.5px; background: #fff; border: 3px solid #1e293b; border-radius: 6px; transform-origin: 50% 6px; }
 .fw-leg.l { transform: rotate(23deg); }
 .fw-leg.r { transform: rotate(-23deg); }
 .fw-base { position: absolute; left: 50%; top: 234px; transform: translateX(-50%); width: 172px; height: 13px; background: #fff; border: 3px solid #1e293b; border-radius: 8px; box-shadow: 2px 2px 0 rgba(30,41,59,.55); }
-.fw-rotor { position: absolute; inset: 0; will-change: transform; }
+.fw-rotor { position: absolute; left: 0; top: 0; width: 216px; height: 216px; z-index: 1; will-change: transform; }
+.fw-ring { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid rgba(100,116,139,.55); pointer-events: none; }
+.fw-ring.r1 { width: 112px; height: 112px; }
+.fw-ring.r2 { width: 152px; height: 152px; border-width: 2.5px; }
 .fw-rotor.spinning { transition: transform 2.8s cubic-bezier(.83,0,.17,1); }
 .fw-rotor.spinning .cab { transition: transform 2.8s cubic-bezier(.83,0,.17,1); }
 .wseg { position: absolute; left: 50%; top: 50%; width: 0; height: 0; padding: 0; border: none; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.cab-arm { position: absolute; left: -1.5px; top: -90px; width: 3px; height: 90px; background: rgba(30,41,59,.30); border-radius: 2px; }
-.cab { position: absolute; left: 0; top: -90px; width: 24px; height: 22px; border-radius: 8px 8px 10px 10px; border: 2.5px solid #1e293b; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 1px 2px 0 rgba(30,41,59,.30); }
-.cab::before { content: ''; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1e293b; }
+.cab-arm { position: absolute; left: -2px; top: -92px; width: 4px; height: 92px; background: #64748b; border-radius: 2px; }
+.wseg::after { content: ''; position: absolute; left: -4px; top: -96px; width: 8px; height: 8px; border-radius: 9999px; background: #1e293b; }
+.cab { position: absolute; left: 0; top: -84px; width: 24px; height: 22px; border-radius: 8px 8px 10px 10px; border: 2.5px solid #1e293b; box-shadow: inset 0 -6px 0 rgba(0,0,0,.12), 1px 2px 0 rgba(30,41,59,.30); transform-origin: 50% -8px; }
+.cab::before { content: ''; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 8px solid #1e293b; }
 .cab::after { content: ''; position: absolute; left: 50%; top: 4px; transform: translateX(-50%); width: 11px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.55); }
-.fw-wheel.rainbow-mode .cab { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) !important; animation: platHue 2.2s linear infinite; }
+.fw-wrap.rainbow-mode .cab { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) !important; animation: platHue 2.2s linear infinite; }
 .fw-pointer { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; font-size: 26px; line-height: 1; color: #1e293b; text-shadow: 0 2px 0 rgba(255,255,255,.85); pointer-events: none; }
 .fw-hub { position: absolute; left: 50%; top: 108px; width: 62px; height: 62px; transform: translate(-50%,-50%); border-radius: 9999px; border: 3px solid #1e293b; background: #fff; z-index: 2; box-shadow: 2px 2px 0 rgba(30,41,59,.55); pointer-events: none; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 #lob-roster li { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px 10px; font-weight: 900; color: #1e293b; }
@@ -2239,6 +2243,7 @@ body.plat-room-on[data-view="hashi"] {
         </div>
 
         <div id="lob-step-room" style="display:none">
+          <div id="hub-resume" style="display:none"></div>
           <div id="hub-room"></div>
         </div>
 
@@ -11983,6 +11988,25 @@ function HashiGame() {
     }
   }, [isWon]);
 
+  // ----- 競速回座存檔（不小心跳出/重整後接續：房主 RACE_RESUME 有快照，但本地存檔更新更快、且含道具/里程碑狀態） -----
+  var saveHashiResume = function saveHashiResume(bridgesArr) {
+    if (raceStateRef.current !== 'racing' && raceStateRef.current !== 'countdown') return;
+    try {
+      localStorage.setItem('hashi_resume_' + myId, JSON.stringify({ startAt: raceStartAtRef.current, bridges: bridgesArr || stateRef.current.bridges || [], items: myItemsRef.current, milestones: milestonesRef.current, giftCredit: hashiGiftCreditRef.current, giftUnits: hashiGiftUnitsRef.current, ts: Date.now() }));
+    } catch (e) {}
+  };
+  var loadHashiResume = function loadHashiResume(startAt) {
+    try {
+      var raw = localStorage.getItem('hashi_resume_' + myId);if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || p.startAt !== startAt || !Array.isArray(p.bridges)) return null; // 不是同一場（startAt 不符）不准還原
+      if (!p.ts || Date.now() - p.ts > 3 * 3600 * 1000) return null;
+      return p;
+    } catch (e) {
+      return null;
+    }
+  };
+
   // 🏁 競速進度分享：effect 版（安全網；主要推送走 raceAwareSync 內的 pushRaceProgress）
   useEffect(function () {
     pushRaceProgress(bridges);
@@ -13127,6 +13151,7 @@ function HashiGame() {
       lastBrawlSentRef.current = nowB;
       sendBrawlMsg({ type: 'BRAWL_STATE', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, progress: p, bridges: bridgesArr });
     }
+    saveHashiResume(bridgesArr);
     var now = Date.now();
     if (p === lastProgressValRef.current && now - lastProgressSentRef.current <= 1000) return; // 節流
     lastProgressValRef.current = p;
@@ -14633,6 +14658,15 @@ function HashiGame() {
           } else if (m.type === 'RACE_RESUME') {
             beginRace(m.data, m.startAt, m.racers, m.settings);
             if (m.bridges) setBridges(m.bridges);
+            var hRes = loadHashiResume(m.startAt); // 本地存檔優先（比房主快照新，且含道具/里程碑/禮物額度）
+            if (hRes) {
+              if (hRes.bridges && hRes.bridges.length) setBridges(hRes.bridges);
+              if (Array.isArray(hRes.items)) {
+                myItemsRef.current = hRes.items;setMyItems(hRes.items);
+              }
+              if (hRes.milestones) milestonesRef.current = hRes.milestones;
+              hashiGiftCreditRef.current = hRes.giftCredit || 0;hashiGiftUnitsRef.current = hRes.giftUnits || 0;
+            }
             if (m.progress) setRaceProgress(m.progress);
             if (m.results) {
               // 房主端的既有成績（完賽/DNF）一併帶回：beginRace 剛把本地成績清空，不補回來可能永遠湊不滿結算人數（稽核修）
@@ -18807,6 +18841,105 @@ function MinesGame() {
     }; // 上一場的權威盤面不可殘留到新場次（新 session 的 waiting 期若收到 ACT 會拿舊盤運算，稽核修）
   }
 
+  // ----- 競速回座存檔（不小心跳出/重整後回來接續；比照數獨 sudoku_prog 的在地保存＋形狀/種子/年齡驗證） -----
+  function minesResumeKey() {
+    return 'mines_resume_' + (mpRef.current.code || '') + '_' + myId;
+  }
+  function saveResume() {
+    if (!mpRef.current.on || mpRef.current.mode !== 'race' || iAmSpecRef.current || outcomeRef.current) return;
+    var a = stateArgsRef.current;
+    if (!a || !a[0] || !a[2] || !mpRef.current.seed) return;
+    try {
+      sSet(minesResumeKey(), JSON.stringify({
+        seed: mpRef.current.seed,
+        sizeId: mpRef.current.sizeId,
+        startAt: mpRef.current.startAt,
+        cells: a[0].join(''),
+        items: itemsRef.current,
+        giftCredit: giftCreditRef.current,
+        milestone: milestoneRef.current,
+        ts: Date.now()
+      }));
+    } catch (e) {}
+  }
+  function loadResume(seed, sizeId, total) {
+    try {
+      var raw = sGet(minesResumeKey());
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || p.seed !== seed || p.sizeId !== sizeId || !p.cells || p.cells.length !== total) return null; // 種子/尺寸/盤面長度不符＝別場的存檔，不准還原（陳年存檔鐵則）
+      if (!p.ts || Date.now() - p.ts > 3 * 3600 * 1000) return null;
+      return p;
+    } catch (e) {
+      return null;
+    }
+  }
+  function resumeRestore(m) {
+    // guestOnInit 回座：還原中斷前的盤面/犯錯/道具（本地存檔優先，房主 god 快照備援）
+    var sp = SIZES[m.sizeId] || SIZES[9],
+      total = sp.w * sp.h;
+    var L = makeLayout(sp.w, sp.h, sp.mines, m.seed),
+      N = computeNums(sp.w, sp.h, L);
+    var save = loadResume(m.seed, m.sizeId, total);
+    var cellsArr = null;
+    if (save) cellsArr = save.cells.split('');else if (m.god && m.god[myId] && typeof m.god[myId].cells === 'string' && m.god[myId].cells.length === total) cellsArr = m.god[myId].cells.split('');
+    if (!cellsArr) return; // 無存檔可用：維持 startMatchLocal 的新盤（至少回座繼續打）
+    if (save && save.items) {
+      itemsRef.current = {
+        question: save.items.question || 0,
+        backfill: save.items.backfill || 0,
+        gift: save.items.gift || 0
+      };
+      setMyItems(itemsRef.current);
+      giftCreditRef.current = save.giftCredit || 0;
+      milestoneRef.current = save.milestone || 0;
+    }
+    var mist = 0,
+      touched = false;
+    creditedMinesRef.current = {};
+    for (var i = 0; i < total; i++) {
+      if (cellsArr[i] === 'x') mist++;
+      if (cellsArr[i] !== 'h') touched = true;
+      if (cellsArr[i] === 'f' && L[i]) creditedMinesRef.current[i] = 1;
+    } // 已計額度的正確旗：還原後重插同雷不重複計
+    mistakesRef.current = mist;
+    setMistLeft(Math.max(0, Math.floor(sp.mines / 10) - mist));
+    if (touched) firstRef.current = false; // 已動過的盤不能再觸發首點保護（會把雷搬走、跟還原盤面打架）
+    setCells(cellsArr);
+    boardRef.current = {
+      layout: L,
+      nums: N,
+      cells: cellsArr,
+      owners: boardRef.current.owners
+    };
+    var myGod = m.god && m.god[myId];
+    if (myGod && (myGod.state === 'finished' || myGod.state === 'boom')) {
+      // 離開前已完賽/出局：回到等待結算狀態
+      outcomeRef.current = myGod.state;
+      setMyOutcome(myGod.state);
+      if (myGod.state === 'finished') {
+        setStatus('won');
+        statusRef.current = 'won';
+        godSet(myId, {
+          state: 'finished',
+          timeMs: myGod.timeMs,
+          progress: 1
+        });
+      } else {
+        setStatus('lost');
+        statusRef.current = 'lost';
+        godSet(myId, {
+          state: 'boom',
+          progress: myGod.progress || 0,
+          boomAt: myGod.boomAt || Date.now()
+        });
+      }
+      return;
+    }
+    raceSendState(cellsArr, N, L, true); // 立刻把還原盤面同步回去（房主 god/觀戰即時更新）
+    itemSay('↩ 已接續中斷前的對局進度');
+  }
+
   // ----- 競速：本地狀態送出（progress 小訊息 + god 用盤面快照節流） -----
   function raceSendState(cellsArr, numsArr, layoutArr, force) {
     var opened = openedSafeOf(cellsArr, layoutArr);
@@ -18854,6 +18987,7 @@ function MinesGame() {
       nums: sparse,
       progress: prog
     });
+    saveResume(); // 回座存檔跟著每次狀態送出更新（節流後實際寫入頻率與 MINE_STATE 同步）
     // 里程碑（每 5% 一段）：通報房主發放道具；被回填打回去再重跨不重報（milestoneRef 只增不減）
     if (mpRef.current.itemsAllow && mpRef.current.phase === 'playing' && !outcomeRef.current && !iAmSpecRef.current) {
       var band = Math.floor(prog * 20);
@@ -18954,6 +19088,7 @@ function MinesGame() {
   } // 房主：廣播＋本地處理（自己也可能是目標）；來賓：送房主中繼
   function processItemMsg(m) {
     if (m.type === 'MINE_GRANT' && m.toUid === myId) applyItemGrant(m.item);else if (m.type === 'MINE_GIFT' && m.toUid === myId) holdGift(m.fromName);else if (m.type === 'MINE_HIT' && m.toUid === myId) applyItemHit(m.kind, m.fromName);
+    saveResume(); // 道具庫存變動也刷新回座存檔（盤面沒變時 raceSendState 不會觸發）
   }
   function hostHandleMilestone(fromUid) {
     if (!mpRef.current.isHost || !itemsLive()) return;
@@ -19797,8 +19932,9 @@ function MinesGame() {
           own: m.coopSnap.own
         });
       } else {
-        // 比賽進行中回座：用同 seed 重建自己的盤（進度不還原，至少能繼續看/觀戰）
+        // 比賽進行中回座：同 seed 重建盤面＋還原中斷前進度（resumeRestore：本地存檔優先、房主 god 快照備援）
         startMatchLocal(m.seed, m.sizeId, m.startAt);
+        resumeRestore(m);
       }
     }
   }
@@ -21567,7 +21703,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '',
     armed: { game: (function () { try { var g = localStorage.getItem('plat_armed_game'); return (g === 'hashi' || g === 'sudoku' || g === 'mines') ? g : 'sudoku'; } catch (e) { return 'sudoku'; } })(), mode: 'coop' }, armedByGame: { sudoku: 'coop', hashi: 'coop', mines: 'coop' }, roomTab: 'sudoku',
     me: { name: '', color: PLAT_COLORS[2] },
-    roster: [], conns: {}, gamePeer: null, inMatch: null,
+    roster: [], conns: {}, gamePeer: null, inMatch: null, liveMatch: null, // liveMatch: 房主權威的「本房有對局進行中」快照 {game, mode, players:[uid], tourn}——回房間頁的選手靠它看到回到對局鈕
     lastSeen: {}, hostSeen: 0, _lastPing: 0, _hostWarned: false,
     presence: { pingMs: 10000, offlineMs: 25000, removeMs: 60000 }, // 在線心跳：10s ping、25s 標離線、60s 移除（比賽中只標離線不移除）
     videoOn: false, localStream: null, micMuted: true, speakerOn: false,
@@ -21804,7 +21940,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     opts = opts || {};
     var SEG = 360 / PLAT_COLORS.length;
     var wrap = document.createElement('div'); wrap.className = 'fw-wrap';
-    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
+    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"></div><div class="fw-rotor"><span class="fw-ring r1"></span><span class="fw-ring r2"></span></div><div class="fw-hub"></div>';
     mount.appendChild(wrap);
     var wheel = wrap.querySelector('.fw-wheel'), rotor = wrap.querySelector('.fw-rotor'), hub = wrap.querySelector('.fw-hub');
     hub.style.fontSize = '30px'; hub.style.color = '#b45309';
@@ -21822,7 +21958,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     var rot = 0, mode = 'rest', rafId = null, lastTs = 0, spinGen = 0, spinning = false;
     function applyRot() {
       rotor.style.transform = 'rotate(' + rot + 'deg)';
-      for (var i = 0; i < cabs.length; i++) cabs[i].style.transform = 'translate(-50%,-50%) rotate(' + (-(rot + i * SEG)) + 'deg)';
+      for (var i = 0; i < cabs.length; i++) cabs[i].style.transform = 'translate(-50%, 0) rotate(' + (-(rot + i * SEG)) + 'deg)'; // 車廂繞「最頂端尖尖的指點（吊掛點，transform-origin 在車廂上方 8px）」保持正立——吊著轉，不是繞車廂中心轉（實體物理）
     }
     function loop(ts) {
       if (mode !== 'idle' && mode !== 'rainbow') { rafId = null; return; }
@@ -21837,7 +21973,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       else if (color === 'rainbow') { hub.classList.add('plat-rainbow-anim'); hub.textContent = ''; }
       else { hub.style.background = color || '#ccc'; hub.textContent = ''; }
     }
-    // 車廂中心角＝ i*SEG（.cab 定位在分段起點角上，不在分段中央）——停車一律對齊車廂正中心，指針不壓線、不停在車廂頭
+    // 車廂指點（吊掛點）角＝ i*SEG（.cab 的指點定位在分段起點角上）——停車一律對齊車廂的指點（最頂端尖尖）到指針下，指針指著尖尖、不壓線
     function cabinIdxAt(rotDeg) { var m = ((-(rotDeg) % 360) + 360) % 360; return Math.round(m / SEG) % PLAT_COLORS.length; }
     function visualRot() { // spin 中 rotor 由 CSS transition 驅動，JS 的 rot 是終點值——讀實際矩陣角才能跟色
       try { var t = getComputedStyle(rotor).transform; if (!t || t === 'none') return rot; var mm = t.match(/matrix\(([^)]+)\)/); if (!mm) return rot; var v = mm[1].split(','); return Math.atan2(parseFloat(v[1]), parseFloat(v[0])) * 180 / Math.PI; } catch (e) { return rot; }
@@ -21881,12 +22017,12 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       pointerColor: function () { return PLAT_COLORS[cabinIdxAt(visualRot())]; },
       rainbowOn: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
-        wheel.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
+        wrap.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
         paintHub('rainbow', '');
         startLoop('rainbow');
       },
       rainbowOff: function () {
-        wheel.classList.remove('rainbow-mode'); rotor.classList.remove('is-rainbow');
+        wrap.classList.remove('rainbow-mode'); rotor.classList.remove('is-rainbow');
         stopLoop(); applyRot();
       },
       setUndecided: function () {
@@ -22178,6 +22314,28 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     hubRenderSettings();
     syncTournForm();
   }
+  // ---------- 對局進行中・回座（不小心跳出又回來接續）：房主在 doLaunch 記 liveMatch 並廣播；不在對局中的選手在房間頁看到「回到對局」鈕，點了請房主對他重發 launch（resume） ----------
+  function setLiveMatch(ml) {
+    Net.liveMatch = ml;
+    if (Net.isHost) platBroadcast({ kind: 'match-live', ml: ml });
+    renderResumeBanner();
+  }
+  function renderResumeBanner() {
+    var el = $('hub-resume'); if (!el) return;
+    var ml = Net.liveMatch;
+    if (!Net.active || Net.inMatch || !ml) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    var names = { sudoku: '數獨', hashi: '數橋', mines: '踩地雷' };
+    var gn = names[ml.game] || ml.game;
+    var mine = !!(ml.players && ml.players.indexOf(Net.myUid) >= 0);
+    el.style.display = 'block';
+    if (mine) {
+      el.innerHTML = '<div class="lob-game-card" style="margin-bottom:10px"><div class="p-3 flex items-center gap-2"><span class="font-black text-slate-700 text-sm">🎮 ' + gn + (ml.tourn ? '錦標賽' : '對局') + '進行中——你還在這場比賽裡</span><button id="hub-resume-btn" class="ml-auto shrink-0 bg-emerald-500 text-white border-[3px] border-slate-800 rounded-xl px-3 py-2 font-black text-sm shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">↩ 回到對局</button></div></div>';
+      var b = $('hub-resume-btn');
+      if (b) b.onclick = function () { b.disabled = true; b.textContent = '連接中…'; platToHost({ kind: 'relaunch-me' }); setTimeout(function () { renderResumeBanner(); }, 3000); };
+    } else {
+      el.innerHTML = '<div class="text-center text-xs font-bold text-slate-400" style="margin-bottom:8px">⏳ ' + gn + '對局進行中，等他們打完…</div>';
+    }
+  }
   // ---------- 房間頁改暱稱/代表色（v1.12.0）：房主可改任何人、玩家可改自己；房主端驗證後寫回名單並廣播，被改的人由 roster 同步回 Net.me ----------
   function notifyGameIdentity(self, name, color) { // 名單身份（顏色）變更 → 通知進行中的遊戲跟著改（遊戲以 hooks.identity 接收）
     if (!Net.inMatch || !color) return;
@@ -22303,6 +22461,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     showStep('room');
     if (typeof updateDock === 'function') updateDock();
     hubRender();
+    renderResumeBanner();
     renderTourn();
     window.scrollTo(0, 0);
   }
@@ -22418,7 +22577,8 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         // 進房同步房主目前選的遊戲/分頁：不送的話來賓只拿到三款設定、roomTab 停在預設數獨（房主在踩地雷、來賓看數獨）
         if (Net.roomTab === 'tourn' || Net.tourn) platSend(c, { kind: 'tab', tab: 'tourn' }); else platSend(c, { kind: 'arm', game: Net.armed.game });
         if (Net.tourn) { platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() }); var tsm = tournStateMsg(); if (tsm) platSend(c, tsm); }
-        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined });
+        if (Net.liveMatch) platSend(c, { kind: 'match-live', ml: Net.liveMatch });
+        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined, resume: !!(Net.liveMatch && d.uid && Net.liveMatch.players.indexOf(d.uid) >= 0) });
         renderLobby();
         if (Net.videoOn) callPeer(pid);
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
@@ -22483,9 +22643,19 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         if (['sudoku', 'hashi', 'mines'].indexOf(d.game) < 0) break; // 未知 game（跨版/損毀訊息）不可把畫面切成整面空白
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
-          var dupLaunch = Net.inMatch === d.game && (!d.tourn || (Net.tourn && Net.tourn.round === d.tourn.round));
-          if (!dupLaunch) doLaunch(d.game, d.mode, d.tourn, d.cfg);
+          var dupLaunch = Net.inMatch === d.game && !d.resume && (!d.tourn || (Net.tourn && Net.tourn.round === d.tourn.round));
+          if (!dupLaunch) doLaunch(d.game, d.mode, d.tourn, d.cfg, d.resume);
         }
+        break;
+      }
+      case 'match-live': { Net.liveMatch = d.ml || null; renderResumeBanner(); break; }
+      case 'relaunch-me': { // 房間頁選手請求回座：房主驗證他是本場選手後，對他單獨重發 launch（resume）
+        if (!Net.isHost || !Net.inMatch || !Net.liveMatch) break;
+        var rme = null; Net.roster.forEach(function (p) { if (p.pid === pid) rme = p; });
+        var rUid = rme ? (rme.uid || rme.pid) : null;
+        if (!rUid || Net.liveMatch.players.indexOf(rUid) < 0) break;
+        var rc9 = Net.conns[pid]; if (!rc9) break;
+        platSend(rc9, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined, resume: true });
         break;
       }
       case 'return': if (!Net.isHost) doReturnToLobby(); break;
@@ -22706,9 +22876,10 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (!Net.active || Net.inMatch || Net.tourn) return;
     showHubRoom();
   }
-  function doLaunch(game, mode, tournSess, hubCfg) {
+  function doLaunch(game, mode, tournSess, hubCfg, resumeFlag) {
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide(); if (!(typeof POD !== 'undefined' && POD.shownAt && Date.now() - POD.shownAt < 6000)) podHide(); // 剛播的頒獎台不擋：來賓先收 tourn-score 播台、隨後才被 return 帶回，立刻 podHide 會讓玩家永遠看不到小局結算
     Net.inMatch = game; Net.matchMode = mode || 'coop';
+    if (Net.isHost && !resumeFlag) setLiveMatch({ game: game, mode: mode || 'coop', players: Net.roster.map(function (p) { return p.uid || p.pid; }), tourn: !!tournSess }); // 房主權威快照：本場選手名單（回座鈕的判定依據）；resume 重入不重快照
     if (tournSess) { Net.armed.game = game; Net.roomTab = game; } else { Net.armed = { game: game, mode: mode || 'coop' }; Net.roomTab = game; } // 賽程局開局也要切到該局遊戲的分頁：全員落進該局等待室（名單/準備/開始），不要停在錦標賽面板（局間回來由 doReturnToLobby 再切回 tourn）
     Net.armedByGame[game] = mode || 'coop';
     try { localStorage.setItem('plat_armed_game', game); } catch (e) {}
@@ -22725,7 +22896,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
       window.__PLAT_CREATING_GAME = game; // enter 內建立的 VirtualPeer 蓋上本遊戲戳記（背景遊戲訊息靠它在 routeData 被丟棄）
-      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, color: Net.me.color, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true }); } catch (e) { console.error('[plat] enter ' + game + ' failed', e); platToast('⚠️ 遊戲啟動失敗，請回房間頁再試一次'); }
+      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, color: Net.me.color, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true, resume: !!resumeFlag }); } catch (e) { console.error('[plat] enter ' + game + ' failed', e); platToast('⚠️ 遊戲啟動失敗，請回房間頁再試一次'); }
       window.__PLAT_CREATING_GAME = null;
       if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game, uid: Net.myUid }); }
     });
@@ -22733,6 +22904,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
   function doReturnToLobby() {
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null; Net.restored = false; // 回房間頁＝本局結束：接管旗標一律清，launch 重播沒來也不許殘留到下一局
+    if (Net.isHost && Net.liveMatch) setLiveMatch(null); // 房主回房間頁＝本場散場（他是錨點）；來賓自己回頁不清——那是房間裡還在進行的比賽
     if (g) exitGameHook(g);
     // 注意：這裡不 podHide——頒獎台是回大廳的儀式，來賓先收到 tourn-score 播台、隨後才被 return 帶回大廳，藏掉就永遠看不到
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
