@@ -163,7 +163,7 @@ function computeNums(w, h, L) {
 // 第一次點擊保護（2026-10-29 使用者定案）：點的格子＋周圍 8 格整圈都不能有雷——把保護圈內的雷
 // 依編號序移到圈外「最低編號的非雷格」（圈內格不可當落點）。確定性：全員同 seed＋同首點 → 同結果；競速時各人只影響自己的盤
 // 回傳 { layout: 新盤面, moves: [[from, to], ...] }（moves 空陣列＝本來就安全、盤面不變）
-function makeFirstSafe(L, w, h, clickIdx) {
+function makeFirstSafe(L, w, h, clickIdx, cells) {
   var zone = {};
   zone[clickIdx] = true;
   neighborsOf(w, h, clickIdx).forEach(function (i) {
@@ -176,6 +176,7 @@ function makeFirstSafe(L, w, h, clickIdx) {
   }).sort(function (a, b) {
     return a - b;
   }).forEach(function (from) {
+    if (cells && cells[from] === 'L') return; // 禮物鎖定旗標住的雷不搬家：搬走會讓旗子孤兒化標在安全格上——鄰格數字全亂、該格永遠開不了（使用者實機截圖回報）
     NL[from] = false;
     var placed = false;
     for (var i = 0; i < NL.length; i++) {
@@ -397,14 +398,16 @@ function MinesGame() {
   // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
   var _useState35 = useState({
       question: 0,
-      backfill: 0
+      backfill: 0,
+      gift: 0
     }),
     _useState36 = _slicedToArray(_useState35, 2),
     myItems = _useState36[0],
     setMyItems = _useState36[1];
   var itemsRef = useRef({
     question: 0,
-    backfill: 0
+    backfill: 0,
+    gift: 0
   });
   var _useState37 = useState({}),
     _useState38 = _slicedToArray(_useState37, 2),
@@ -421,6 +424,7 @@ function MinesGame() {
   var milestoneRef = useRef(0); // 已通報的里程碑段數（每 5% 一段，只增不減——被回填打回去也不重報）
   var lastOneDoneRef = useRef(false); // 最後一位轉換只做一次
   var autoItemIvRef = useRef(null);
+  var autoGiftIvRef = useRef(null);
   function itemSay(msg) {
     setItemToast(msg);
     if (itemToastTimerRef.current) clearTimeout(itemToastTimerRef.current);
@@ -431,11 +435,13 @@ function MinesGame() {
   function resetItems() {
     itemsRef.current = {
       question: 0,
-      backfill: 0
+      backfill: 0,
+      gift: 0
     };
     setMyItems({
       question: 0,
-      backfill: 0
+      backfill: 0,
+      gift: 0
     });
     questionFxRef.current = {};
     setQuestionFx({});
@@ -446,6 +452,10 @@ function MinesGame() {
     if (autoItemIvRef.current) {
       clearInterval(autoItemIvRef.current);
       autoItemIvRef.current = null;
+    }
+    if (autoGiftIvRef.current) {
+      clearInterval(autoGiftIvRef.current);
+      autoGiftIvRef.current = null;
     }
   }
   var progress = totalSafe ? openedSafe / totalSafe : 0;
@@ -463,7 +473,8 @@ function MinesGame() {
     screen: screen,
     items: {
       question: myItems.question,
-      backfill: myItems.backfill
+      backfill: myItems.backfill,
+      gift: myItems.gift
     },
     giftCredit: giftCreditRef.current,
     qfx: questionFx,
@@ -531,7 +542,7 @@ function MinesGame() {
       N = baseNums,
       C = baseCells;
     if (firstRef.current) {
-      var fs = makeFirstSafe(L, sp.w, sp.h, from);
+      var fs = makeFirstSafe(L, sp.w, sp.h, from, baseCells);
       if (fs.moves.length) {
         L = fs.layout;
         N = computeNums(sp.w, sp.h, L);
@@ -1096,7 +1107,7 @@ function MinesGame() {
     } else mpSend(m);
   } // 房主：廣播＋本地處理（自己也可能是目標）；來賓：送房主中繼
   function processItemMsg(m) {
-    if (m.type === 'MINE_GRANT' && m.toUid === myId) applyItemGrant(m.item);else if (m.type === 'MINE_GIFT' && m.toUid === myId) applyGiftEffect(m.fromName);else if (m.type === 'MINE_HIT' && m.toUid === myId) applyItemHit(m.kind, m.fromName);
+    if (m.type === 'MINE_GRANT' && m.toUid === myId) applyItemGrant(m.item);else if (m.type === 'MINE_GIFT' && m.toUid === myId) holdGift(m.fromName);else if (m.type === 'MINE_HIT' && m.toUid === myId) applyItemHit(m.kind, m.fromName);
   }
   function hostHandleMilestone(fromUid) {
     if (!mpRef.current.isHost || !itemsLive()) return;
@@ -1126,30 +1137,72 @@ function MinesGame() {
   function applyItemGrant(item) {
     if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
     if (item === 'gift') {
-      applyGiftEffect('');
+      holdGift('');
       return;
     }
     if (amLastOne()) {
-      applyGiftEffect('');
-      itemSay('🏁 只剩你一人，里程碑道具自動轉成禮物！');
+      holdGift('');
+      itemSay('🏁 只剩你一人，里程碑道具自動轉成禮物（在禮物鈕裡）！');
       return;
     }
-    var ni = {
-      question: itemsRef.current.question,
-      backfill: itemsRef.current.backfill
-    };
+    var ni = Object.assign({}, itemsRef.current);
     ni[item] = (ni[item] || 0) + 1;
     itemsRef.current = ni;
     setMyItems(ni);
     itemSay(item === 'question' ? '🎁 里程碑道具：❓ 問號干擾 ×' + ni[item] : '🎁 里程碑道具：⏪ 回填 ×' + ni[item]);
     maybeAutoFire();
   }
+  function giftCandidates() {
+    var B = boardRef.current;
+    if (!B || !B.cells || !B.layout) return [];
+    var cand = [];
+    for (var i = 0; i < B.cells.length; i++) if (B.layout[i] && B.cells[i] === 'h') cand.push(i);
+    return cand;
+  }
+  function holdGift(fromName) {
+    // 禮物持有制：進禮物鈕、玩家自己按才發動（使用者 2026-11-02 指示，比照數獨禮物鈕）
+    var ni = Object.assign({}, itemsRef.current);
+    ni.gift = (ni.gift || 0) + 1;
+    itemsRef.current = ni;
+    setMyItems(ni);
+    itemSay(fromName ? '🎁 ' + fromName + ' 送你一個禮物！點 🎁 按鈕使用' : '🎁 收到一個禮物！點 🎁 按鈕使用');
+    maybeAutoGift();
+  }
+  function useGift() {
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
+    if ((itemsRef.current.gift || 0) <= 0) return;
+    if (!giftCandidates().length) {
+      itemSay('🎁 所有地雷都已標記，禮物先留著');
+      return;
+    }
+    var ni = Object.assign({}, itemsRef.current);
+    ni.gift -= 1;
+    itemsRef.current = ni;
+    setMyItems(ni);
+    applyGiftEffect('');
+  }
+  function maybeAutoGift() {
+    // 禮物集滿 3 自動使用（觸發後一路用到歸零，比照數獨/數橋「滿 3 自動連發歸零」；停止條件是歸零，不是掉回 2）
+    if (autoGiftIvRef.current) return;
+    if ((itemsRef.current.gift || 0) < 3) return;
+    autoGiftIvRef.current = setInterval(function () {
+      if ((itemsRef.current.gift || 0) < 1 || outcomeRef.current || !itemsLive() || !giftCandidates().length) {
+        clearInterval(autoGiftIvRef.current);
+        autoGiftIvRef.current = null;
+        return;
+      }
+      var ni = Object.assign({}, itemsRef.current);
+      ni.gift -= 1;
+      itemsRef.current = ni;
+      setMyItems(ni);
+      applyGiftEffect('');
+    }, 550);
+  }
   function applyGiftEffect(fromName) {
     // 禮物效果：隨機一顆未標記的真雷 → 自動插旗並鎖死（'L'）
     var B = boardRef.current;
     if (!B || !B.cells || !B.layout) return;
-    var cand = [];
-    for (var i = 0; i < B.cells.length; i++) if (B.layout[i] && B.cells[i] === 'h') cand.push(i);
+    var cand = giftCandidates();
     if (!cand.length) {
       itemSay('🎁 禮物：所有地雷都已標記，禮物落空');
       return;
@@ -1182,7 +1235,7 @@ function MinesGame() {
         fromName: (myPlayer() || {}).name || '',
         toUid: tgt.id
       });
-      itemSay('🎁 你送了一個禮物給 ' + tgt.name + '（幫他標記一顆地雷）');
+      // 不提示送出：跳「你送了禮物」等於間接告訴送禮者他剛才那支旗插對了（使用者 2026-11-02 指示）——額度消耗與送禮都靜默進行
     }
   }
   function fireItem(kind) {
@@ -1198,10 +1251,7 @@ function MinesGame() {
     var tgt = pickWeightedMine(tgts, function (p) {
       return Math.pow(progOfMine(p.id), 2) + 0.1;
     }); // 攻擊權重（打強者）定版公式
-    var ni = {
-      question: itemsRef.current.question,
-      backfill: itemsRef.current.backfill
-    };
+    var ni = Object.assign({}, itemsRef.current);
     ni[kind] -= 1;
     itemsRef.current = ni;
     setMyItems(ni);
@@ -1217,11 +1267,12 @@ function MinesGame() {
     itemSay(kind === 'question' ? '❓ 已對 ' + tgt.name + ' 發動問號干擾！' : '⏪ 已對 ' + tgt.name + ' 發動回填！');
   }
   function maybeAutoFire() {
-    // 集滿 3 自動連發（每 550ms 一發、每發重新挑目標；沒有目標就停下等下次）
+    // 集滿 3 自動連發（每 550ms 一發、每發重新挑目標；觸發的那種一路打到歸零——定版「滿 3 連發歸零」；沒有目標就停下）
     if (autoItemIvRef.current) return;
-    if (itemsRef.current.question < 3 && itemsRef.current.backfill < 3) return;
+    var startKind = itemsRef.current.question >= 3 ? 'question' : itemsRef.current.backfill >= 3 ? 'backfill' : null;
+    if (!startKind) return;
     autoItemIvRef.current = setInterval(function () {
-      var kind = itemsRef.current.question >= 3 ? 'question' : itemsRef.current.backfill >= 3 ? 'backfill' : null;
+      var kind = (itemsRef.current[startKind] || 0) > 0 ? startKind : itemsRef.current.question >= 3 ? 'question' : itemsRef.current.backfill >= 3 ? 'backfill' : null;
       var hasTgt = unfinishedRacers().some(function (p) {
         return p.id !== myId;
       });
@@ -1240,23 +1291,21 @@ function MinesGame() {
     lastOneDoneRef.current = true;
     var held = (itemsRef.current.question || 0) + (itemsRef.current.backfill || 0);
     if (held > 0) {
-      itemsRef.current = {
-        question: 0,
-        backfill: 0
-      };
-      setMyItems({
-        question: 0,
-        backfill: 0
-      });
-      for (var i = 0; i < held; i++) applyGiftEffect('');
-      itemSay('🏁 只剩你一人，未用的道具全部轉成禮物！');
+      var ni = Object.assign({}, itemsRef.current);
+      ni.question = 0;
+      ni.backfill = 0;
+      ni.gift = (ni.gift || 0) + held;
+      itemsRef.current = ni;
+      setMyItems(ni);
+      itemSay('🏁 只剩你一人，未用的道具全部轉成禮物（在禮物鈕裡）！');
+      maybeAutoGift();
     }
   }
   function applyItemHit(kind, fromName) {
     if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
     if (amLastOne()) {
-      applyGiftEffect('');
-      itemSay('🏁 只剩你一人，' + (fromName || '對手') + ' 的攻擊自動轉成禮物！');
+      holdGift('');
+      itemSay('🏁 只剩你一人，' + (fromName || '對手') + ' 的攻擊自動轉成禮物（在禮物鈕裡）！');
       return;
     }
     var B = boardRef.current;
@@ -3311,6 +3360,15 @@ function MinesGame() {
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] font-black text-slate-400 mr-auto leading-tight"
   }, "\u91CC\u7A0B\u7891\u9053\u5177", /*#__PURE__*/React.createElement("br", null), "\u96C6\u6EFF 3 \u81EA\u52D5\u767C\u52D5"), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return useGift();
+    },
+    disabled: myItems.gift <= 0,
+    className: "relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl",
+    title: "\u79AE\u7269\uFF1A\u5E6B\u81EA\u5DF1\u628A\u4E00\u9846\u5730\u96F7\u6A19\u4E0A\u65D7\u5B50\u4E26\u9396\u5B9A\uFF08\u81EA\u5DF1\u6309\u624D\u767C\u52D5\uFF09"
+  }, "\uD83C\uDF81", myItems.gift > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"
+  }, myItems.gift)), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return fireItem('question');
     },
