@@ -84,6 +84,8 @@ window.HASHI_SOLVER = (function () {
     const val = new Array(m).fill(-1);
     let count = 0;
     let first = null;
+    let nodes = 0;
+    const NODE_BUDGET = 120000; // 節點預算（稽核 D-03）：極端題面不讓 solver 無限遞迴凍結主執行緒；超預算視為「未驗證」回 count:-1，生成器會換一題重抽
 
     function connected() {
       const seenV = new Array(n).fill(false);
@@ -127,6 +129,7 @@ window.HASHI_SOLVER = (function () {
     }
 
     function dfs(done) {
+      if (++nodes > NODE_BUDGET) throw new Error('solver-budget');
       if (count >= limit) return true;
       if (done === m) {
         if (need.every(x => x === 0) && connected()) {
@@ -165,7 +168,7 @@ window.HASHI_SOLVER = (function () {
       return false;
     }
 
-    dfs(0);
+    try { dfs(0); } catch (e) { if (e && e.message === 'solver-budget') return { count: -1, first: null, aborted: true }; throw e; }
     return { count: count, first: first };
   }
 

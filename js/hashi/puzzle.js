@@ -114,7 +114,8 @@ window.HASHI_PUZZLE = (function () {
         }
     }
   
-    potentialBridges.sort((a, b) => a.len - b.len + (rng() - 0.5));
+    const _rk = new Map(); potentialBridges.forEach(b => _rk.set(b, rng()));
+    potentialBridges.sort((a, b) => (a.len - b.len) || (_rk.get(a) - _rk.get(b))); // 先以長度排序、同長度以預抽的隨機序號打破平手（稽核 D-04：原寫法把隨機擾動混進比較器，排序結果不一致且有偏）
   
     let uf = new Map();
     islands.forEach(i => uf.set(i.id, i.id));

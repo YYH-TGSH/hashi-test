@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="數獨×數橋">
+  <title>數獨 × 數橋 遊戲平台</title>
+  <link rel="icon" href="platform-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="platform-icon.png">
+
+  <script>
+    // 儲存安全網：某些環境（App 預覽 webview 等）會封鎖 localStorage，存取直接丟 SecurityError。
+    // 先探測；被擋就換上記憶體版，讓兩款遊戲照常運作（該次開啟期間有效）。正式網站（https）不會觸發。
+    (function () {
+      function makeShim() {
+        var mem = {};
+        var s = {
+          getItem: function (k) { k = String(k); return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+          setItem: function (k, v) { mem[String(k)] = String(v); },
+          removeItem: function (k) { delete mem[String(k)]; },
+          clear: function () { mem = {}; },
+          key: function (i) { var ks = Object.keys(mem); return i < ks.length ? ks[i] : null; }
+        };
+        Object.defineProperty(s, 'length', { get: function () { return Object.keys(mem).length; } });
+        return s;
+      }
+      try {
+        var t = '__plat_ls_probe__';
+        window.localStorage.setItem(t, '1');
+        window.localStorage.removeItem(t);
+      } catch (e) {
+        try { Object.defineProperty(window, 'localStorage', { value: makeShim(), configurable: true }); } catch (e2) {}
+        try { Object.defineProperty(window, 'sessionStorage', { value: makeShim(), configurable: true }); } catch (e3) {}
+        window.__PLAT_STORAGE_SHIMMED = true;
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/regenerator-runtime@0.14.1/runtime.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <style>
+<!--PLATFORM_CSS-->
+  </style>
+</head>
+<body data-view="home">
+
+
+  <!--STATUS_PANEL-->
+
+  <div id="view-home" class="plat-view active">
+    <div class="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div class="flex-1 flex flex-col justify-center w-full max-w-md items-center">
+        <div class="bg-white border-4 border-slate-800 p-8 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
+          <h1 class="font-black text-slate-800 mb-8 flex justify-center gap-2">
+            <span class="inline-block bg-[#ffcc00] px-3 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">數</span>
+            <span class="inline-block bg-[#ffcc00] px-3 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">獨</span>
+            <span class="inline-block self-center font-black text-2xl text-slate-400">×</span>
+            <span class="inline-block bg-[#4ade80] px-3 py-2 border-4 border-slate-800 rounded-xl transform rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">數</span>
+            <span class="inline-block bg-[#4ade80] px-3 py-2 border-4 border-slate-800 rounded-xl transform -rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] text-4xl">橋</span>
+          </h1>
+          <div class="flex flex-col gap-5">
+            <button onclick="PLAT_show('sudoku')" class="w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">🔢 數獨 Sudoku</button>
+            <button onclick="PLAT_show('hashi')" class="w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌉 數橋 Hashi</button>
+            <button onclick="PLAT_show('mines')" class="w-full py-5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">💣 踩地雷 Minesweeper</button>
+            <button onclick="PLAT_show('lobby')" class="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">👥 多人連線（先進大廳）</button>
+          </div>
+        </div>
+      </div>
+      <div class="shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. (整合版 <span id="plat-ver">v1.1.1</span>)</div>
+    </div>
+  </div>
+
+
+  <div id="view-lobby" class="plat-view">
+    <div class="min-h-screen w-full flex flex-col items-center p-4">
+      <div class="w-full max-w-2xl bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 mt-6">
+        <h2 class="font-black text-2xl text-slate-800 inline-block border-b-4 border-[#4ade80] pb-1 mb-5">🌐 多人連線</h2>
+
+        <div id="lob-step-entry">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button id="lob-go-create" class="bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left">
+              <div class="font-black text-2xl mb-1">🏠 建立房間</div>
+              <div class="text-xs font-bold opacity-90 leading-relaxed">你是房主！代碼固定不變，朋友用同一組代碼加入</div>
+            </button>
+            <button id="lob-go-join" class="bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left">
+              <div class="font-black text-2xl mb-1">🚪 加入房間</div>
+              <div class="text-xs font-bold opacity-80 leading-relaxed">輸入朋友給你的 4 位數代碼</div>
+            </button>
+          </div>
+          <button id="lob-rejoin" style="display:none" class="w-full mt-4 py-3 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">↩ 回到房間 <span id="lob-rejoin-code"></span></button>
+          <p class="mt-4 text-sm font-bold text-slate-400 text-center">跟朋友約好，一個人建立房間、其他人輸入房號加入</p>
+          <button onclick="PLAT_show('home')" class="w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline text-center">取消返回主選單</button>
+        </div>
+
+        <div id="lob-step-nick" style="display:none">
+          <div id="lob-joinrow" style="display:none">
+            <label class="font-black text-slate-700 text-sm">房號（朋友給你的 4 位數）</label>
+            <input id="lob-code" maxlength="4" inputmode="numeric" placeholder="0000" class="w-full mt-1 mb-3 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-black text-2xl text-center tracking-[0.5em]">
+          </div>
+          <label class="font-black text-slate-700 text-sm">你的暱稱（拉霸機選一個，或自己輸入）</label>
+          <div id="slot-display">🎰</div>
+          <div class="flex gap-2 mb-3">
+            <button id="slot-spin" class="flex-1 py-2.5 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸</button>
+            <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
+          </div>
+          <label class="font-black text-slate-700 text-sm">代表色（摩天輪決定）</label>
+          <div class="text-xs font-bold text-slate-400 mt-0.5">按確認進房時，沒轉過會跟暱稱一樣自動用摩天輪決定</div>
+          <div class="flex items-center gap-2 mt-1 mb-2">
+            <span id="lob-color-dot" class="w-9 h-9 rounded-full border-[3px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] inline-block shrink-0"></span>
+            <button id="lob-color-spin" class="flex-1 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 摩天輪選色</button>
+          </div>
+          <div id="lob-wheel-wrap"></div>
+          <button id="lob-confirm" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">✅ 確認，進房間</button>
+          <button id="lob-back" class="w-full mt-3 font-bold text-slate-400 underline">← 返回</button>
+          <div id="lob-msg" class="mt-3 text-sm font-bold text-rose-500 min-h-[20px]"></div>
+        </div>
+
+        <div id="lob-step-room" style="display:none">
+          <div id="hub-resume" style="display:none"></div>
+          <div id="hub-room"></div>
+        </div>
+
+        <div id="lob-panel-tourn" style="display:none">
+          
+          
+          <div id="lob-tourn-setup" style="display:none">
+            <div class="lob-game-card">
+              <div class="lob-game-title" style="background:#f59e0b">🏆 錦標賽</div>
+              <div class="p-2.5 flex flex-col gap-2 text-sm font-bold text-slate-600">
+                <label class="flex items-center gap-2">出局順序
+                  <select id="t-order" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800">
+                    <option value="alt-s">數獨先（輪替）</option>
+                    <option value="alt-h">數橋先（輪替）</option>
+                    <option value="alt-m">地雷先（輪替）</option>
+                    <option value="random">隨機</option>
+                  </select>
+                </label>
+                <label class="flex items-center gap-2">局數
+                  <select id="t-rounds" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800">
+                    <option value="3">3 局</option>
+                    <option value="5" selected>5 局</option>
+                    <option value="7">7 局</option>
+                    <option value="10">10 局</option>
+                  </select>
+                </label>
+                <div class="text-xs text-slate-400 font-bold">三款的設定用下方的值（錦標賽以時間結束，不使用「去第幾名」）。</div>
+                <div class="border-2 border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
+                  <div class="font-black text-slate-700">🔢 數獨大亂鬥設定</div>
+                  <label class="flex items-center gap-2">尺寸
+                    <select id="ts-size" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800">
+                      <option value="4">4x4 幼幼班</option>
+                      <option value="9" selected>9x9 標準</option>
+                      <option value="16">16x16 史詩</option>
+                    </select>
+                  </label>
+                  <label class="flex items-center gap-2">難度
+                    <select id="ts-diff" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800">
+                      <option value="easy">🟢 簡單</option>
+                      <option value="medium" selected>🟡 普通</option>
+                      <option value="hard">🔴 困難</option>
+                    </select>
+                  </label>
+                  <label class="flex items-center justify-between">開啟陷害道具（水球/橡皮擦） <input type="checkbox" id="ts-weapons" class="w-5 h-5 accent-amber-500" checked></label>
+                  <label class="flex items-center gap-2">陷害道具延遲（秒） <input type="number" id="ts-wtime" min="0" max="600" value="60" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800"></label>
+                  <label class="flex items-center justify-between">開啟快速填答 <input type="checkbox" id="ts-quick" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">開啟循環模式 <input type="checkbox" id="ts-trav" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">開啟獲得與贈送禮物功能 <input type="checkbox" id="ts-gifts" class="w-5 h-5 accent-amber-500" checked></label>
+                  <label class="flex items-center justify-between">開啟底塊提示 <input type="checkbox" id="ts-yellow" class="w-5 h-5 accent-amber-500"></label>
+                  <label class="flex items-center justify-between">上帝視角顯示數字 <input type="checkbox" id="ts-god" class="w-5 h-5 accent-amber-500"></label>
+                </div>
+                <div class="border-2 border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
+                  <div class="font-black text-slate-700">🌉 數橋大亂鬥設定</div>
+                  <label class="flex items-center gap-2">關卡
+                    <select id="th-size" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800">
+                      <option value="1">5x5 幼幼班</option>
+                      <option value="2" selected>10x10 標準</option>
+                      <option value="3">10x20 手機直式</option>
+                      <option value="4">15x15 魔王</option>
+                      <option value="5">20x20 史詩</option>
+                    </select>
+                  </label>
+                  <label class="flex items-center justify-between">里程碑道具發放 <input type="checkbox" id="th-items" class="w-5 h-5 accent-amber-500" checked></label>
+                  <label class="flex items-center justify-between">上帝視角顯示數字 <input type="checkbox" id="th-god" class="w-5 h-5 accent-amber-500" checked></label>
+                </div>
+                <div class="border-2 border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
+                  <div class="font-black text-slate-700">💣 踩地雷競速設定</div>
+                  <label class="flex items-center gap-2">盤面
+                    <select id="tm-size" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1 font-black text-slate-800">
+                      <option value="9" selected>9×9・10 雷</option>
+                      <option value="16">16×16・40 雷</option>
+                    </select>
+                  </label>
+                  <div class="text-xs text-slate-400 font-bold">純競速（無道具）：最快排完的人贏，踩到雷出局照當時進度排名。</div>
+                </div>
+                <label class="flex items-center gap-2">每局時間
+                  <select id="t-secs" class="flex-1 bg-white border-2 border-slate-800 rounded-lg px-2 py-1.5 font-black text-slate-800">
+                    <option value="180">3 分鐘</option>
+                    <option value="300" selected>5 分鐘</option>
+                    <option value="480">8 分鐘</option>
+                    <option value="600">10 分鐘</option>
+                    <option value="0">無限</option>
+                  </select>
+                </label>
+                <button id="t-start" class="w-full py-2.5 bg-[#f59e0b] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏆 開賽（全員進第 1 局）</button>
+                <div class="text-xs text-slate-400 font-bold">名次計分 10/7/5/3/2；未完成以進度 % 定名次；同分先比冠軍局數，再同分加賽數橋。</div>
+              </div>
+            </div>
+          </div>
+            <div id="lob-tourn-note" class="font-bold text-slate-500 text-center py-2" style="display:none">🏆 錦標賽由房主在這個分頁設定並開賽</div>
+            <div id="lob-tourn" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div id="plat-errbar" style="display:none"><span id="plat-errbar-text"></span><button id="plat-errbar-reload">重新載入</button><button id="plat-errbar-x">✕</button></div>
+  <div id="plat-speak" style="display:none">
+    <span>🔊 <b id="plat-speak-name"></b> 發言中，開啟音效？</span>
+    <button id="plat-speak-yes">開啟</button>
+    <button id="plat-speak-no">✕</button>
+  </div>
+
+  <div id="plat-videos" style="display:none"></div>
+
+  <div id="plat-chat" style="display:none">
+    <div id="plat-chat-panel">
+      <div id="plat-chat-head">
+        <span>💬 聊天室 <span id="plat-chat-unread" class="plat-unread" style="display:none"></span></span>
+        <span><button id="plat-chat-min">🔽</button><button id="plat-chat-close">✕</button></span>
+      </div>
+      <div id="plat-chat-body">
+        <div id="plat-chat-list"></div>
+        <div id="plat-chat-inputrow">
+          <input id="plat-chat-input" placeholder="輸入訊息…" maxlength="200">
+          <button id="plat-chat-send">送出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-sudoku" class="plat-view">
+    <div id="sudoku-root"></div>
+  </div>
+
+  <div id="view-hashi" class="plat-view">
+    <div id="hashi-root"></div>
+  </div>
+
+  <div id="view-mines" class="plat-view">
+    <div id="mines-root"></div>
+  </div>
+
+  <div id="plat-pick" style="display:none" class="fixed inset-0 z-[120] items-center justify-center p-4">
+    <div class="absolute inset-0" style="background:rgba(15,23,42,.45)"></div>
+    <div class="relative bg-white border-4 border-slate-800 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,1)] p-4 w-[300px] max-w-full text-center">
+      <div class="flex items-center justify-between mb-1">
+        <div class="font-black text-slate-800 text-lg">🎡 代表色摩天輪</div>
+        <button id="plat-pick-close" class="font-black text-slate-400 text-xl leading-none px-1">✕</button>
+      </div>
+      <div class="text-xs font-bold text-slate-400 mb-1">轉到哪台車廂，就是你的代表色（連按 5 次有驚喜）</div>
+      <div id="plat-pick-wheel"></div>
+      <button id="plat-pick-spin" class="w-full py-2.5 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 轉！</button>
+    </div>
+  </div>
+
+<!--CLASSIC_SCRIPTS-->
+
+  <script type="text/plain" id="code-sudoku">
+<!--CODE_SUDOKU-->
+  </script>
+
+  <script type="text/plain" id="code-hashi">
+<!--CODE_HASHI-->
+  </script>
+
+  <script type="text/plain" id="code-mines">
+<!--CODE_MINES-->
+  </script>
+
+  <script>
+<!--SHELL_JS-->
+  </script>
+</body>
+</html>

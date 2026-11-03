@@ -1,0 +1,21 @@
+const { loadPage, sleep, waitFor, click } = require('./harness');
+(async () => {
+  const { w, D, errors } = loadPage('/home/hatch/workspace/platform/platform-v1-test.html');
+  await waitFor(() => typeof w.PLAT_show === 'function' && !!w.PlatRoom, 600000, 'shell');
+  D.querySelector('#lob-name').value = '房主甲';
+  D.querySelector('#lob-name').dispatchEvent(new w.Event('input', { bubbles: true }));
+  click(w, D.querySelector('#lob-go-create')); await sleep(400);
+  click(w, D.querySelector('#lob-confirm'));
+  await waitFor(() => D.querySelectorAll('#lob-roster li').length >= 1, 60000, 'room');
+  console.log('lobby code=', D.querySelector('#lob-room-code').textContent);
+  click(w, D.querySelector('[data-launch="sudoku-brawl"]'));
+  await sleep(15000);
+  const txt = D.querySelector('#view-sudoku').textContent || '';
+  console.log('has 遊戲大廳:', txt.includes('遊戲大廳'), '| has 單機挑戰設定:', txt.includes('單機挑戰設定'), '| has 準備好了:', txt.includes('準備好了'), '| has 對局設定:', txt.includes('對局設定'));
+  console.log('pr attached:', w.PlatRoom.isAttached(), '| pr regions:', D.querySelectorAll('[data-pr-region]').length, '| pr slot:', !!D.querySelector('[data-pr-slot]'));
+  console.log('Net inMatch:', w.__PLAT_NET.inMatch, 'matchMode:', w.__PLAT_NET.matchMode);
+  const status = D.querySelector('#plat-status-body');
+  console.log('STATUS tail:', status ? (status.textContent || '').slice(-300) : 'none');
+  console.log('errors:', errors.slice(0, 3));
+  w.close();
+})().catch((e) => { console.error('FATAL', e); process.exitCode = 1; });

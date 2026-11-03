@@ -2,9 +2,21 @@
 (function () {
   var booted = { sudoku: false, hashi: false, mines: false };
   var statusEl = null;
+  var platLogBuf = []; window.__PLAT_LOG = platLogBuf; // 環形錯誤簿（稽核 I-01：正式站沒有診斷面板，至少留記憶體紀錄可查）
+  function showErrBar(msg) { // 正式站可見錯誤橫幅：❌ 級 status 不再寫進不存在的面板就消失，使用者截圖能帶回病名
+    try {
+      var bar = document.getElementById('plat-errbar'); if (!bar) return;
+      var tx = document.getElementById('plat-errbar-text'); if (tx) tx.textContent = msg;
+      bar.style.display = 'flex';
+      var x = document.getElementById('plat-errbar-x'); if (x && !x._wired) { x._wired = 1; x.onclick = function () { bar.style.display = 'none'; }; }
+      var rl = document.getElementById('plat-errbar-reload'); if (rl && !rl._wired) { rl._wired = 1; rl.onclick = function () { location.reload(); }; }
+    } catch (e) {}
+  }
   function status(msg) {
+    platLogBuf.push({ t: Date.now(), msg: String(msg) }); if (platLogBuf.length > 80) platLogBuf.shift();
     if (!statusEl) statusEl = document.getElementById('plat-status-body');
     if (statusEl) { var d = document.createElement('div'); d.textContent = msg; statusEl.appendChild(d); }
+    if (String(msg).indexOf('❌') >= 0) showErrBar(String(msg));
   }
   window.__PLAT_status = status;
   window.addEventListener('error', function (e) {
@@ -147,7 +159,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.30.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.34.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -160,7 +172,12 @@
   function storeGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
   function storeSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
   function normName(s) { return (s || '').trim().toLowerCase(); }
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } // 補齊引號跳脫（稽核 B-02：esc 也用在 value="..." 屬性上下文，未跳脫的引號可突破屬性）；與 pbEsc 規格統一為五字元
+  function platSafeColor(c) { // 顏色白名單（稽核 B-03）：只放行 PLAT_COLORS、rainbow 與 #rrggbb，其餘一律中性灰——防自報顏色拼進 style 字串時突破屬性/注入 CSS
+    if (c === 'rainbow') return 'rainbow';
+    if (typeof c === 'string' && (PLAT_COLORS.indexOf(c) >= 0 || /^#[0-9a-fA-F]{6}$/.test(c))) return c;
+    return '#94a3b8';
+  }
 
   function myUid() { // 殼層持久身份：斷線重連/接管後仍是同一個人（賽程積分綁這個，不綁連線 pid）
     var u = storeGet('plat_uid');
@@ -168,10 +185,10 @@
     return u;
   }
   var Net = {
-    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '',
+    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '', timeOffset: 0, // 來賓端估計的「房主時鐘 − 本地時鐘」毫秒差（D-05），房主恆 0
     armed: { game: (function () { try { var g = localStorage.getItem('plat_armed_game'); return (g === 'hashi' || g === 'sudoku' || g === 'mines') ? g : 'sudoku'; } catch (e) { return 'sudoku'; } })(), mode: 'coop' }, armedByGame: { sudoku: 'coop', hashi: 'coop', mines: 'coop' }, roomTab: 'sudoku',
     me: { name: '', color: PLAT_COLORS[2] },
-    roster: [], conns: {}, gamePeer: null, inMatch: null,
+    roster: [], conns: {}, gamePeer: null, inMatch: null, liveMatch: null, // liveMatch: 房主權威的「本房有對局進行中」快照 {game, mode, players:[uid], tourn}——回房間頁的選手靠它看到回到對局鈕
     lastSeen: {}, hostSeen: 0, _lastPing: 0, _hostWarned: false,
     presence: { pingMs: 10000, offlineMs: 25000, removeMs: 60000 }, // 在線心跳：10s ping、25s 標離線、60s 移除（比賽中只標離線不移除）
     videoOn: false, localStream: null, micMuted: true, speakerOn: false,
@@ -228,7 +245,7 @@
 
   // ---------- 訊息傳送 ----------
   Net.myUid = myUid();
-  function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; try { conn.send(m); } catch (e) {} }
+  function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; if (m.kind === 'roster') m.now = Date.now(); /* 房主時間戳：來賓據此校正時鐘偏移（D-05） */ try { conn.send(m); } catch (e) {} }
   function platBroadcast(obj, exceptPid) {
     for (var pid in Net.conns) { if (pid !== exceptPid) platSend(Net.conns[pid], obj); }
   }
@@ -237,7 +254,7 @@
   function platToast(msg) {
     var el = $('plat-toast');
     if (!el) {
-      el = document.createElement('div'); el.id = 'plat-toast';
+      el = document.createElement('div'); el.id = 'plat-toast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); // 狀態播報（稽核 F-01 快修：toast 是全平台的狀態通知通道）
       el.style.cssText = 'position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:100001;background:rgba(15,23,42,.93);color:#fff;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px;border:2px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;transition:opacity .3s;display:none';
       document.body.appendChild(el);
     }
@@ -262,6 +279,7 @@
       d.appendChild(document.createTextNode(m.text || ''));
     }
     list.appendChild(d);
+    while (list.children.length > 120) list.removeChild(list.firstChild); // 保留上限（B-06：防刷屏讓 DOM 無界累積）
     list.scrollTop = list.scrollHeight;
     if (!m.sys && !m.mine && (!Net.chatOpen || Net.chatMin)) { Net.unread++; renderUnread(); }
   }
@@ -278,7 +296,7 @@
   }
   function closeChat() { Net.chatOpen = false; $('plat-chat').style.display = 'none'; }
   function sendChat() {
-    var inp = $('plat-chat-input'); var text = (inp.value || '').trim(); if (!text || !Net.active) return;
+    var inp = $('plat-chat-input'); var text = (inp.value || '').trim().slice(0, 200); if (!text || !Net.active) return; // 送出端也截斷（B-06，不只靠 HTML maxlength）
     inp.value = '';
     var m = { kind: 'chat', pid: Net.myPid, name: Net.me.name, color: Net.me.color, text: text };
     appendChat({ name: m.name, color: m.color, text: text, mine: true });
@@ -408,7 +426,7 @@
     opts = opts || {};
     var SEG = 360 / PLAT_COLORS.length;
     var wrap = document.createElement('div'); wrap.className = 'fw-wrap';
-    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"><div class="fw-rotor"></div></div><div class="fw-hub"></div>';
+    wrap.innerHTML = '<div class="fw-pointer">▼</div><div class="fw-stand"><span class="fw-leg l"></span><span class="fw-leg r"></span><span class="fw-base"></span></div><div class="fw-wheel"></div><div class="fw-rotor"><span class="fw-ring r1"></span><span class="fw-ring r2"></span></div><div class="fw-hub"></div>';
     mount.appendChild(wrap);
     var wheel = wrap.querySelector('.fw-wheel'), rotor = wrap.querySelector('.fw-rotor'), hub = wrap.querySelector('.fw-hub');
     hub.style.fontSize = '30px'; hub.style.color = '#b45309';
@@ -426,7 +444,7 @@
     var rot = 0, mode = 'rest', rafId = null, lastTs = 0, spinGen = 0, spinning = false;
     function applyRot() {
       rotor.style.transform = 'rotate(' + rot + 'deg)';
-      for (var i = 0; i < cabs.length; i++) cabs[i].style.transform = 'translate(-50%,-50%) rotate(' + (-(rot + i * SEG)) + 'deg)';
+      for (var i = 0; i < cabs.length; i++) cabs[i].style.transform = 'translate(-50%, 0) rotate(' + (-(rot + i * SEG)) + 'deg)'; // 車廂繞「最頂端尖尖的指點（吊掛點，transform-origin 在車廂上方 8px）」保持正立——吊著轉，不是繞車廂中心轉（實體物理）
     }
     function loop(ts) {
       if (mode !== 'idle' && mode !== 'rainbow') { rafId = null; return; }
@@ -441,7 +459,7 @@
       else if (color === 'rainbow') { hub.classList.add('plat-rainbow-anim'); hub.textContent = ''; }
       else { hub.style.background = color || '#ccc'; hub.textContent = ''; }
     }
-    // 車廂中心角＝ i*SEG（.cab 定位在分段起點角上，不在分段中央）——停車一律對齊車廂正中心，指針不壓線、不停在車廂頭
+    // 車廂指點（吊掛點）角＝ i*SEG（.cab 的指點定位在分段起點角上）——停車一律對齊車廂的指點（最頂端尖尖）到指針下，指針指著尖尖、不壓線
     function cabinIdxAt(rotDeg) { var m = ((-(rotDeg) % 360) + 360) % 360; return Math.round(m / SEG) % PLAT_COLORS.length; }
     function visualRot() { // spin 中 rotor 由 CSS transition 驅動，JS 的 rot 是終點值——讀實際矩陣角才能跟色
       try { var t = getComputedStyle(rotor).transform; if (!t || t === 'none') return rot; var mm = t.match(/matrix\(([^)]+)\)/); if (!mm) return rot; var v = mm[1].split(','); return Math.atan2(parseFloat(v[1]), parseFloat(v[0])) * 180 / Math.PI; } catch (e) { return rot; }
@@ -485,12 +503,12 @@
       pointerColor: function () { return PLAT_COLORS[cabinIdxAt(visualRot())]; },
       rainbowOn: function () {
         spinGen++; spinning = false; rotor.classList.remove('spinning');
-        wheel.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
+        wrap.classList.add('rainbow-mode'); rotor.classList.add('is-rainbow');
         paintHub('rainbow', '');
         startLoop('rainbow');
       },
       rainbowOff: function () {
-        wheel.classList.remove('rainbow-mode'); rotor.classList.remove('is-rainbow');
+        wrap.classList.remove('rainbow-mode'); rotor.classList.remove('is-rainbow');
         stopLoop(); applyRot();
       },
       setUndecided: function () {
@@ -534,7 +552,7 @@
       dot.classList.remove('plat-rainbow-anim'); dot.style.background = ''; dot.textContent = '';
       dot.style.display = 'inline-flex'; dot.style.alignItems = 'center'; dot.style.justifyContent = 'center'; dot.style.fontWeight = '900'; dot.style.color = '#b45309'; dot.style.fontSize = '17px';
       if (w.isRainbow() || (Net.colorPicked && Net.me.color === 'rainbow')) dot.classList.add('plat-rainbow-anim');
-      else if (!Net.colorPicked) { dot.style.background = w.pointerColor(); } // 未決定：跟摩天輪指針下的顏色一致，不再顯示問號
+      else if (!Net.colorPicked) { dot.style.background = '#e2e8f0'; dot.textContent = '?'; } // 未決定：色票顯示「？」（使用者定案：每次打開暱稱步都應是問號，不要拿指針下的顏色冒充已決定——renderColors 不是逐格呼叫，色票會凍在某一色看起來像已選定）
       else dot.style.background = Net.me.color || '#ccc';
     }
     if (w.isRainbow()) return;
@@ -782,6 +800,28 @@
     hubRenderSettings();
     syncTournForm();
   }
+  // ---------- 對局進行中・回座（不小心跳出又回來接續）：房主在 doLaunch 記 liveMatch 並廣播；不在對局中的選手在房間頁看到「回到對局」鈕，點了請房主對他重發 launch（resume） ----------
+  function setLiveMatch(ml) {
+    Net.liveMatch = ml;
+    if (Net.isHost) platBroadcast({ kind: 'match-live', ml: ml });
+    renderResumeBanner();
+  }
+  function renderResumeBanner() {
+    var el = $('hub-resume'); if (!el) return;
+    var ml = Net.liveMatch;
+    if (!Net.active || Net.inMatch || !ml) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    var names = { sudoku: '數獨', hashi: '數橋', mines: '踩地雷' };
+    var gn = names[ml.game] || ml.game;
+    var mine = !!(ml.players && ml.players.indexOf(Net.myUid) >= 0);
+    el.style.display = 'block';
+    if (mine) {
+      el.innerHTML = '<div class="lob-game-card" style="margin-bottom:10px"><div class="p-3 flex items-center gap-2"><span class="font-black text-slate-700 text-sm">🎮 ' + gn + (ml.tourn ? '錦標賽' : '對局') + '進行中——你還在這場比賽裡</span><button id="hub-resume-btn" class="ml-auto shrink-0 bg-emerald-500 text-white border-[3px] border-slate-800 rounded-xl px-3 py-2 font-black text-sm shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">↩ 回到對局</button></div></div>';
+      var b = $('hub-resume-btn');
+      if (b) b.onclick = function () { b.disabled = true; b.textContent = '連接中…'; platToHost({ kind: 'relaunch-me' }); setTimeout(function () { renderResumeBanner(); }, 3000); };
+    } else {
+      el.innerHTML = '<div class="text-center text-xs font-bold text-slate-400" style="margin-bottom:8px">⏳ ' + gn + '對局進行中，等他們打完…</div>';
+    }
+  }
   // ---------- 房間頁改暱稱/代表色（v1.12.0）：房主可改任何人、玩家可改自己；房主端驗證後寫回名單並廣播，被改的人由 roster 同步回 Net.me ----------
   function notifyGameIdentity(self, name, color) { // 名單身份（顏色）變更 → 通知進行中的遊戲跟著改（遊戲以 hooks.identity 接收）
     if (!Net.inMatch || !color) return;
@@ -797,7 +837,7 @@
     }
   }
   function hubApplyIdentity(entry, name, color) {
-    name = (name || '').trim().slice(0, 12);
+    name = (name || '').replace(/[<>&"']/g, '').trim().slice(0, 12); // 與 join 同規格：去 HTML 字元（B-02 統一消毒）
     if (!name) return '⚠️ 暱稱不能空白';
     var dup = Net.roster.some(function (p) { return p !== entry && normName(p.name) === normName(name); });
     if (dup) return '⚠️ 這個暱稱已經有人用了';
@@ -868,7 +908,18 @@
       if (sb3) { hubIdSave(sb3.getAttribute('data-id-save')); return; }
       if (t.closest('[data-id-cancel]')) { H3._idEdit = null; H3._idName = null; H3._idKey = ''; hubRender(); }
     });
-    setInterval(function () { if (hubVisible()) hubRender(); }, 1000); // 開始閘門的 60 秒倒數 + 名單保鮮
+    var _hubFp = '';
+    setInterval(function () { // 開始閘門的 60 秒倒數 + 名單保鮮；狀態指紋沒變就跳過全量重繪（稽核 E-03：原本每秒整頁重建＋逐欄寫回表單，指紋含名單/準備/設定/錦標賽進度/等待秒數桶，任一變動仍會在 1 秒內刷新）
+      if (!hubVisible()) return;
+      var H = ensureHub();
+      var waited = H.enteredAt ? (Date.now() - H.enteredAt) : 0;
+      var waitBucket = H.enteredAt ? Math.ceil(Math.max(0, (window.PLAT_START_WAIT_MS || 60000) - waited) / 1000) : -1;
+      var fp = '';
+      try { fp = JSON.stringify([Net.roster, H.ready, H.spec, H.cfg, H._idEdit, Net.roomTab, Net.armed && Net.armed.game, waitBucket, Net.tourn && [Net.tourn.phase, Net.tourn.round, Net.tourn.settled, Net.tourn.acks && Object.keys(Net.tourn.acks).length, Net.tourn.totals]]); } catch (e) { fp = ''; }
+      if (fp && fp === _hubFp) return;
+      _hubFp = fp;
+      hubRender();
+    }, 1000);
   }
   function hubOnAction(name) {
     var H = ensureHub();
@@ -907,6 +958,7 @@
     showStep('room');
     if (typeof updateDock === 'function') updateDock();
     hubRender();
+    renderResumeBanner();
     renderTourn();
     window.scrollTo(0, 0);
   }
@@ -982,6 +1034,9 @@
   }, 5000);
   function onPlatData(c, d) {
     var pid = c.peer;
+    // 寄件者驗證（稽核 A-01/A-02）：房主權威訊息只認「房主連線」送來的；寄件者身分一律以連線 pid 查名單，不信任訊息自報的 pid/uid/name（identity 分支的既有範式，全面套用）
+    var fromHost = !Net.isHost && pid === Net.hostPid;
+    var senderEntry = null; Net.roster.forEach(function (p) { if (p.pid === pid) senderEntry = p; });
     switch (d.kind) {
       case 'join': {
         if (!Net.isHost) return;
@@ -992,6 +1047,10 @@
           if (takenC[joinColor]) {
             for (var ci2 = 0; ci2 < PLAT_COLORS.length; ci2++) { if (!takenC[PLAT_COLORS[ci2]]) { joinColor = PLAT_COLORS[ci2]; colorSubbed = true; break; } }
           }
+        }
+        if (joinColor && joinColor !== 'rainbow' && PLAT_COLORS.indexOf(joinColor) < 0) { // 顏色白名單（B-03）：只接受摩天輪色票盤的顏色，自報的任意字串不進名單（名單顏色會被拼進 style 字串）
+          for (var ci3 = 0; ci3 < PLAT_COLORS.length; ci3++) { if (!takenC[PLAT_COLORS[ci3]]) { joinColor = PLAT_COLORS[ci3]; colorSubbed = true; break; } }
+          if (!colorSubbed) joinColor = PLAT_COLORS[0];
         }
         // 同 uid 回座（離房後一鍵重連/斷線重連）：舊條目還在名單裡（舊連線尚未逾時清除）時先換綁新 pid，不要誤判暱稱已被占用
         if (d.uid) {
@@ -1022,13 +1081,23 @@
         // 進房同步房主目前選的遊戲/分頁：不送的話來賓只拿到三款設定、roomTab 停在預設數獨（房主在踩地雷、來賓看數獨）
         if (Net.roomTab === 'tourn' || Net.tourn) platSend(c, { kind: 'tab', tab: 'tourn' }); else platSend(c, { kind: 'arm', game: Net.armed.game });
         if (Net.tourn) { platSend(c, { kind: 'tourn-setup', cfg: tournPublicCfg() }); var tsm = tournStateMsg(); if (tsm) platSend(c, tsm); }
-        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined });
+        if (Net.liveMatch) platSend(c, { kind: 'match-live', ml: Net.liveMatch });
+        if (Net.inMatch) platSend(c, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined, resume: !!(Net.liveMatch && d.uid && Net.liveMatch.players.indexOf(d.uid) >= 0) });
         renderLobby();
         if (Net.videoOn) callPeer(pid);
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
         break;
       }
-      case 'roster': { var prevRoster = Net.roster || []; Net.roster = d.players || []; if (d.code) Net.code = d.code; Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); hubSyncMeFromRoster(); renderLobby();
+      case 'roster': {
+        if (!fromHost) break;
+        var prevRoster = Net.roster || [];
+        Net.roster = d.players || [];
+        // 採用端再消毒一次（B-02/B-03 縱深防禦：不完全信任送來的名單內容）
+        Net.roster.forEach(function (p) { p.color = platSafeColor(p.color); if (p.name) p.name = String(p.name).replace(/[<>&"']/g, '').slice(0, 12); });
+        // 時鐘偏移估計（D-05）：房主 roster 附帶其時間戳，平滑後供遊戲校正倒數/完賽時間；只在 roster 更新（低頻）取樣，避免抖動
+        if (typeof d.now === 'number') { var off = d.now - Date.now(); if (isFinite(off) && Math.abs(off) < 3600000) Net.timeOffset = Net.timeOffset ? Math.round(Net.timeOffset * 0.6 + off * 0.4) : off; }
+        if (d.code) Net.code = d.code;
+        Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); hubSyncMeFromRoster(); renderLobby();
         Net.roster.forEach(function (p) { var o = null; prevRoster.forEach(function (q) { if ((q.uid || q.pid) === (p.uid || p.pid)) o = q; }); if (o && o.color !== p.color) notifyGameIdentity((p.uid || p.pid) === Net.myUid, p.name, p.color); });
       }
         if (!Net.isHost && !Net.inMatch && !Net.tourn) { var fbT = setTimeout(function () { if (Net.active && !Net.inMatch && !Net.tourn) maybeAutoEnterRoom(); }, 1500); }
@@ -1041,73 +1110,99 @@
         if (pp && pp.offline) { pp.offline = false; platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }); renderLobby(); }
         break;
       }
-      case 'pong': Net.hostSeen = Date.now(); Net._hostWarned = false; break;
-      case 'reject': lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
+      case 'pong': if (!fromHost) break; Net.hostSeen = Date.now(); Net._hostWarned = false; break;
+      case 'reject': if (!fromHost) break; lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
       case 'leave': {
         if (!Net.isHost) return;
         var gone2 = null;
-        Net.roster = Net.roster.filter(function (p) { if (p.pid === d.pid) { gone2 = p; return false; } return true; });
+        Net.roster = Net.roster.filter(function (p) { if (p.pid === pid) { gone2 = p; return false; } return true; }); // 以連線 pid 為準：送 leave 只能送走自己，不能指定別人（A-02）
         if (gone2) sysChat('👋 ' + (gone2.name || '玩家') + ' 離開了房間');
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         renderLobby();
         break;
       }
-      case 'bye': endSession('房主已解散房間'); break;
+      case 'bye': if (!fromHost) break; endSession('房主已解散房間'); break;
       case 'chat': {
-        appendChat({ name: d.name, color: d.color, text: d.text });
-        if (Net.isHost) platBroadcast({ kind: 'chat', pid: d.pid, name: d.name, color: d.color, text: d.text }, pid);
+        if (!Net.isHost && !fromHost) break; // 聊天一律經房主轉播，來賓只收房主連線送來的
+        var ctext = String(d.text == null ? '' : d.text).slice(0, 500); // 接收端長度上限（B-06：不只靠送出端 maxlength）
+        if (!ctext) break;
+        if (Net.isHost) {
+          if (!senderEntry) break;
+          var nowC = Date.now(); var winC = (Net._chatWin || (Net._chatWin = {}))[pid] || ((Net._chatWin || {})[pid] = []);
+          while (winC.length && nowC - winC[0] > 3000) winC.shift();
+          if (winC.length >= 6) break; // 每人 3 秒 6 則上限，超過丟棄（B-06 防刷屏）
+          winC.push(nowC);
+          appendChat({ name: senderEntry.name, color: senderEntry.color, text: ctext });
+          platBroadcast({ kind: 'chat', pid: pid, name: senderEntry.name, color: senderEntry.color, text: ctext }, pid); // 身分由房主以名單蓋章，不用自報值
+        } else {
+          appendChat({ name: d.name, color: d.color, text: ctext });
+        }
         break;
       }
       case 'mic': {
-        Net.remoteMic[d.pid] = d.muted;
-        onRemoteMic(d);
-        if (Net.isHost) platBroadcast({ kind: 'mic', pid: d.pid, name: d.name, muted: d.muted }, pid);
+        if (!Net.isHost && !fromHost) break;
+        if (Net.isHost && !senderEntry) break;
+        var midP = Net.isHost ? pid : d.pid; // 房主端以連線 pid 為準；來賓端用房主蓋章的原寄件者 pid
+        Net.remoteMic[midP] = d.muted;
+        onRemoteMic({ pid: midP, name: Net.isHost ? senderEntry.name : d.name, muted: d.muted });
+        if (Net.isHost) platBroadcast({ kind: 'mic', pid: midP, name: senderEntry.name, muted: d.muted }, pid);
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); platPreload(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
-      case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
+      case 'arm': if (fromHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); platPreload(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
+      case 'tab': if (fromHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
       case 'ready': case 'spec': {
         if (!Net.isHost) return;
         var H9 = ensureHub(), map9 = d.kind === 'ready' ? H9.ready : H9.spec;
-        map9[d.uid || pid] = d.kind === 'ready' ? !!d.ready : !!d.spec;
+        map9[senderEntry ? (senderEntry.uid || senderEntry.pid) : pid] = d.kind === 'ready' ? !!d.ready : !!d.spec; // 以連線 pid 查到的身分為準，不用自報 uid（A-02）
         hubStateBroadcast(); renderLobby();
         break;
       }
-      case 'hubstate': { var H10 = ensureHub(); H10.ready = d.ready || {}; H10.spec = d.spec || {}; renderLobby(); break; }
-      case 'hubcfg': { var H11 = ensureHub(); if (d.game && d.cfg) H11.cfg[d.game] = d.cfg; if (hubVisible()) hubRender(); break; }
+      case 'hubstate': { if (!fromHost) break; var H10 = ensureHub(); H10.ready = d.ready || {}; H10.spec = d.spec || {}; renderLobby(); break; }
+      case 'hubcfg': { if (!fromHost) break; var H11 = ensureHub(); if (d.game && d.cfg) H11.cfg[d.game] = d.cfg; if (hubVisible()) hubRender(); break; }
       case 'identity': { // 房間頁改暱稱/代表色：來賓只能改自己（以寄件者 pid 為準，不信任訊息裡的 uid），房主驗證後套用到名單並廣播
         if (!Net.isHost) break;
         var ie2 = null; Net.roster.forEach(function (p) { if (p.pid === pid) ie2 = p; });
         if (ie2) { var ierr2 = hubApplyIdentity(ie2, d.name, d.color); if (ierr2) { var ic2 = Net.conns[pid]; if (ic2) platSend(ic2, { kind: 'identity-denied', msg: ierr2 }); } }
         break;
       }
-      case 'identity-denied': lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
+      case 'identity-denied': if (!fromHost) break; lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
       case 'launch': {
+        if (!fromHost) break; // 開局只能由房主發起（接管重播走 restored 分支，寄件者仍是新房主連線）
         if (['sudoku', 'hashi', 'mines'].indexOf(d.game) < 0) break; // 未知 game（跨版/損毀訊息）不可把畫面切成整面空白
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
-          var dupLaunch = Net.inMatch === d.game && (!d.tourn || (Net.tourn && Net.tourn.round === d.tourn.round));
-          if (!dupLaunch) doLaunch(d.game, d.mode, d.tourn, d.cfg);
+          var dupLaunch = Net.inMatch === d.game && !d.resume && (!d.tourn || (Net.tourn && Net.tourn.round === d.tourn.round));
+          if (!dupLaunch) doLaunch(d.game, d.mode, d.tourn, d.cfg, d.resume);
         }
         break;
       }
-      case 'return': if (!Net.isHost) doReturnToLobby(); break;
-      case 'host-leaving': if (!Net.isHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）
-      case 'tourn-setup': if (d.cfg && d.cfg.entrants) { Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + (d.cfg.totalRounds || 5) + ' 局'); renderTourn(); } break; // cfg 缺失/缺 entrants 時 tournNewState 會丟例外讓 Net.tourn 半成品，先擋下
+      case 'match-live': { if (!fromHost) break; Net.liveMatch = d.ml || null; renderResumeBanner(); break; }
+      case 'relaunch-me': { // 房間頁選手請求回座：房主驗證他是本場選手後，對他單獨重發 launch（resume）
+        if (!Net.isHost || !Net.inMatch || !Net.liveMatch) break;
+        var rme = null; Net.roster.forEach(function (p) { if (p.pid === pid) rme = p; });
+        var rUid = rme ? (rme.uid || rme.pid) : null;
+        if (!rUid || Net.liveMatch.players.indexOf(rUid) < 0) break;
+        var rc9 = Net.conns[pid]; if (!rc9) break;
+        platSend(rc9, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined, resume: true });
+        break;
+      }
+      case 'return': if (fromHost) doReturnToLobby(); break;
+      case 'host-leaving': if (fromHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）；只認房主連線送來的，防假冒觸發選舉
+      case 'tourn-setup': if (!fromHost) break; if (d.cfg && d.cfg.entrants) { Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + (d.cfg.totalRounds || 5) + ' 局'); renderTourn(); } break; // cfg 缺失/缺 entrants 時 tournNewState 會丟例外讓 Net.tourn 半成品，先擋下
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
           var ta = Net.tourn, all2 = (ta.acks = ta.acks || {});
-          var ackKey = d.uid || pid;
+          var ackKey = senderEntry ? (senderEntry.uid || senderEntry.pid) : pid; // 以連線 pid 查到的身分為準（A-02）
           var rec = all2[ackKey] || (all2[ackKey] = {});
           rec[d.what] = d.round; if (d.game) rec.enteredGame = d.game;
           renderTourn();
         }
         break;
       }
-      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; if (d.tiedPids) tst.tiedPids = d.tiedPids; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
-      case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
-      case 'tourn-abort': tournClear(); renderLobby(); break;
+      case 'tourn-score': { if (!fromHost) break; var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; if (d.tiedPids) tst.tiedPids = d.tiedPids; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
+      case 'tourn-end': { if (!fromHost) break; var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
+      case 'tourn-abort': if (!fromHost) break; tournClear(); renderLobby(); break;
     }
   }
   // ---------- 房主斷線接管（未收到 bye 的意外斷線才走這裡；主動解散已在 endSession 處理） ----------
@@ -1131,7 +1226,7 @@
       var peer = new RealPeer('yyh-tgsh-' + code + '-host');
       Net.peer = peer;
       peer.on('open', function (id) {
-        Net.hostPid = id; Net.isHost = true; Net.migrating = false;
+        Net.hostPid = id; Net.isHost = true; Net.migrating = false; Net.timeOffset = 0; // 升格房主後自己就是時間基準
         sysChat('👑 你已接管成為新房主，朋友們正在重連…');
         renderLobby(); updateDock();
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
@@ -1219,7 +1314,7 @@
     var p = new RealPeer('yyh-tgsh-' + code + '-host');
     Net.peer = p;
     p.on('open', function (id) {
-      Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true;
+      Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true; Net.timeOffset = 0;
       Net.roster = [{ pid: id, uid: Net.myUid, ver: PLAT_VERSION, name: Net.me.name, color: Net.me.color, host: true }];
       lobbyMsg(''); renderLobby(); updateDock();
       sysChat('🏠 房間已建立，房號 ' + code + '（把房號告訴朋友）');
@@ -1249,7 +1344,7 @@
     if (!name) { lobbyMsg('⚠️ 請先輸入暱稱'); return; }
     var code = ($('lob-code').value || '').trim();
     if (code.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
-    Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host';
+    Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host'; Net.timeOffset = 0; // 換房重新估計時鐘偏移
     storeSet('plat_room', code); storeSet('plat_room_role', 'guest');
     lobbyMsg('正在連線到房間 ' + code + '…');
     var p = new RealPeer();
@@ -1310,9 +1405,10 @@
     if (!Net.active || Net.inMatch || Net.tourn) return;
     showHubRoom();
   }
-  function doLaunch(game, mode, tournSess, hubCfg) {
+  function doLaunch(game, mode, tournSess, hubCfg, resumeFlag) {
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide(); if (!(typeof POD !== 'undefined' && POD.shownAt && Date.now() - POD.shownAt < 6000)) podHide(); // 剛播的頒獎台不擋：來賓先收 tourn-score 播台、隨後才被 return 帶回，立刻 podHide 會讓玩家永遠看不到小局結算
     Net.inMatch = game; Net.matchMode = mode || 'coop';
+    if (Net.isHost && !resumeFlag) setLiveMatch({ game: game, mode: mode || 'coop', players: Net.roster.map(function (p) { return p.uid || p.pid; }), tourn: !!tournSess }); // 房主權威快照：本場選手名單（回座鈕的判定依據）；resume 重入不重快照
     if (tournSess) { Net.armed.game = game; Net.roomTab = game; } else { Net.armed = { game: game, mode: mode || 'coop' }; Net.roomTab = game; } // 賽程局開局也要切到該局遊戲的分頁：全員落進該局等待室（名單/準備/開始），不要停在錦標賽面板（局間回來由 doReturnToLobby 再切回 tourn）
     Net.armedByGame[game] = mode || 'coop';
     try { localStorage.setItem('plat_armed_game', game); } catch (e) {}
@@ -1329,7 +1425,7 @@
     waitForHook(game, function (hk) {
       if (Net.inMatch !== game) return;
       window.__PLAT_CREATING_GAME = game; // enter 內建立的 VirtualPeer 蓋上本遊戲戳記（背景遊戲訊息靠它在 routeData 被丟棄）
-      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, color: Net.me.color, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true }); } catch (e) { console.error('[plat] enter ' + game + ' failed', e); platToast('⚠️ 遊戲啟動失敗，請回房間頁再試一次'); }
+      try { hk.enter({ code: Net.code, isHost: Net.isHost, name: Net.me.name, color: Net.me.color, mode: mode || 'coop', tourn: tournSess || null, settings: hubCfg || (tournSess && tournSess.settings) || null, hub: true, resume: !!resumeFlag }); } catch (e) { console.error('[plat] enter ' + game + ' failed', e); platToast('⚠️ 遊戲啟動失敗，請回房間頁再試一次'); }
       window.__PLAT_CREATING_GAME = null;
       if (tournSess) { if (Net.isHost) tournSelfAck('entered', tournSess.round, game); else platToHost({ kind: 'tourn-ack', what: 'entered', round: tournSess.round, game: game, uid: Net.myUid }); }
     });
@@ -1337,6 +1433,7 @@
   function exitGameHook(g) { var hk = window['__PLAT_HOOKS_' + g]; if (hk && hk.exit) { try { hk.exit(); } catch (e) {} } }
   function doReturnToLobby() {
     var g = Net.inMatch; Net.inMatch = null; Net.matchMode = null; Net.restored = false; // 回房間頁＝本局結束：接管旗標一律清，launch 重播沒來也不許殘留到下一局
+    if (Net.isHost && Net.liveMatch) setLiveMatch(null); // 房主回房間頁＝本場散場（他是錨點）；來賓自己回頁不清——那是房間裡還在進行的比賽
     if (g) exitGameHook(g);
     // 注意：這裡不 podHide——頒獎台是回大廳的儀式，來賓先收到 tourn-score 播台、隨後才被 return 帶回大廳，藏掉就永遠看不到
     if (window.PlatCountdown) window.PlatCountdown.hide(); if (window.PlatResults) window.PlatResults.hide();
@@ -1767,7 +1864,7 @@
         t.history[r].placements.forEach(function (x) { if (x.uid ? x.uid === e.uid : x.pid === e.pid) pl = x; });
         cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
       }
-      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + (e.color || '#ccc') + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
     });
     html += '</tbody></table>';
     var last = t.history[t.history.length - 1];
@@ -2009,7 +2106,7 @@
     if (ro) {
       var h = '';
       (st.players || []).forEach(function (pl) {
-        var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : (pl.color || '#ccc');
+        var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : platSafeColor(pl.color);
         h += '<div class="bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.pending ? ' style="opacity:.55"' : '') + '>';
         h += '<div class="flex items-center gap-2"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer"' : '') + '>';
         h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner' + (pl.color === 'rainbow' ? ' plat-rainbow-anim' : '') + '" style="' + (pl.color === 'rainbow' ? '' : 'background:' + bg + ';') + (pl.pending ? 'filter:grayscale(1)' : '') + '"></span>';
@@ -2158,7 +2255,7 @@
     (s.entries || []).forEach(function (e, i) {
       var medal = medals[i] || ((i + 1) + '.');
       var rowStyle = i === 0 ? 'background:' + ac + '2e;border-color:#1e293b' : 'background:#f8fafc;border-color:#cbd5e1';
-      var stripe = e.color === 'rainbow' ? '' : 'background:' + (e.color || '#94a3b8');
+      var stripe = e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color);
       h += '<div class="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl text-left" style="border-width:3px;border-style:solid;' + rowStyle + '">'
         + '<span class="shrink-0 text-center" style="font-size:1.4rem;width:2rem">' + medal + '</span>'
         + '<span class="shrink-0 rounded-full' + (e.color === 'rainbow' ? ' plat-rainbow-anim' : '') + '" style="width:4px;align-self:stretch;' + stripe + '"></span>'
@@ -2523,6 +2620,9 @@
     call.on('error', function () {});
   }
   function handleCall(call) {
+    // 來電白名單（B-05）：只接名單內成員的視訊來電——Peer ID 格式可預測，不擋的話知道 ID 的人可直接呼叫建立媒體連線
+    var okCall = false; Net.roster.forEach(function (p) { if (p.pid === call.peer) okCall = true; });
+    if (!okCall) { try { call.close(); } catch (e) {} status('📵 已拒絕名單外來電：' + call.peer); return; }
     try { call.answer(Net.localStream || undefined); } catch (e) { try { call.answer(); } catch (e2) {} }
     wireCall(call, call.peer);
   }
@@ -2706,7 +2806,7 @@
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
       if (colorSpinning) return; // 拉霸進行中擋手動連點：否則會先建一次房、拉霸結束的回呼再補點一次，產生兩個 peer（完成回呼是在 colorSpinning 清除後才觸發，不受此守衛影響）
-      var name = (nameInp.value || '').trim();
+      var name = (nameInp.value || '').replace(/[<>&"']/g, '').trim().slice(0, 12);
       if (!name) {
         if (slotTimer) return;
         lobbyMsg('🎰 名字空白，幫你拉霸選一個…');

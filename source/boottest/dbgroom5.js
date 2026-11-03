@@ -1,0 +1,20 @@
+const { loadPage, sleep, waitFor, click } = require('./harness');
+(async () => {
+  const { w, D, errors } = loadPage('/home/hatch/workspace/platform/platform-v1-test.html');
+  await waitFor(() => typeof w.PLAT_show === 'function' && !!w.PlatRoom, 600000, 'shell');
+  const calls = [];
+  const oa = w.PlatRoom.attach, od = w.PlatRoom.detach, ou = w.PlatRoom.update;
+  w.PlatRoom.attach = function (el, cfg) { calls.push('attach'); return oa(el, cfg); };
+  w.PlatRoom.detach = function (el) { calls.push('detach'); return od(el); };
+  w.PlatRoom.update = function (st) { calls.push('update'); return ou(st); };
+  D.querySelector('#lob-name').value = '房主甲';
+  D.querySelector('#lob-name').dispatchEvent(new w.Event('input', { bubbles: true }));
+  click(w, D.querySelector('#lob-go-create')); await sleep(400);
+  click(w, D.querySelector('#lob-confirm'));
+  await waitFor(() => D.querySelectorAll('#lob-roster li').length >= 1, 60000, 'room');
+  click(w, D.querySelector('[data-launch="sudoku-brawl"]'));
+  await sleep(12000);
+  console.log('PlatRoom calls:', JSON.stringify(calls));
+  console.log('isAttached:', w.PlatRoom.isAttached());
+  w.close();
+})().catch((e) => { console.error('FATAL', e); process.exitCode = 1; });

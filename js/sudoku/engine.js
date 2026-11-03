@@ -103,15 +103,18 @@ function countSolutions(grid, size, boxW, boxH, limit = 2, budget = null) {
     return aborted ? -1 : count;
 }
 
-async function generateSudokuAsync(sizeId, diffId, onProgress) {
+function shuffleRng(arr, rng) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; } // Fisher-Yates（稽核 D-04：取代有偏的 sort 隨機比較器；rng 可注入種子版，跨引擎結果一致）
+async function generateSudokuAsync(sizeId, diffId, onProgress, rng) {
+    rng = rng || Math.random; // 每日題傳入種子 rng（稽核 D-02：不再覆寫全域 Math.random，避免非同步生成期間污染其他呼叫端）
     const sizeDef = SIZES.find(s => s.id === sizeId);
     const diffDef = DIFFICULTIES.find(d => d.id === diffId);
     const targetRange = diffDef.targets[sizeId];
-    const targetClues = Math.floor(Math.random() * (targetRange[1] - targetRange[0] + 1)) + targetRange[0];
+    const targetClues = Math.floor(rng() * (targetRange[1] - targetRange[0] + 1)) + targetRange[0];
     const targetMax = targetRange[1];
     const { size, boxW, boxH, chars } = sizeDef;
 
     let bestResult = null;
+    let grid = null; // 宣告在迴圈外：結尾兜底 bestResult=grid 要引用最後一次嘗試的盤（原本宣告在迴圈內，原生 ES 作用域下會 ReferenceError、只靠 Babel 轉 var 偶然可達）
     let minCluesAchieved = Infinity;
     const maxAttempts = size === 16 ? 8 : 40;
     const generationStartTime = Date.now();
@@ -122,22 +125,22 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
         // 16×16 單次嘗試上限 8 秒：挖到高原期（怎麼挖都破壞唯一解）就換新盤重挖，別把全域 30 秒磨在一張盤上
         const attemptDeadline = Date.now() + 8000;
 
-        let grid = (size === 4 ? BASE_4 : size === 9 ? BASE_9 : BASE_16).map(row => [...row]);
-        const charPool = [...chars]; charPool.sort(() => Math.random() - 0.5);
+        grid = (size === 4 ? BASE_4 : size === 9 ? BASE_9 : BASE_16).map(row => [...row]);
+        const charPool = [...chars]; shuffleRng(charPool, rng);
         grid = grid.map(row => row.map(val => charPool[val]));
 
-        for (let i = 0; i < size; i += boxH) { const block = grid.slice(i, i + boxH); block.sort(() => Math.random() - 0.5); grid.splice(i, boxH, ...block); }
+        for (let i = 0; i < size; i += boxH) { const block = grid.slice(i, i + boxH); shuffleRng(block, rng); grid.splice(i, boxH, ...block); }
         grid = transpose(grid);
-        for (let i = 0; i < size; i += boxW) { const block = grid.slice(i, i + boxW); block.sort(() => Math.random() - 0.5); grid.splice(i, boxW, ...block); }
+        for (let i = 0; i < size; i += boxW) { const block = grid.slice(i, i + boxW); shuffleRng(block, rng); grid.splice(i, boxW, ...block); }
         grid = transpose(grid);
-        const bands = []; for (let i = 0; i < size; i += boxH) bands.push(grid.slice(i, i + boxH)); bands.sort(() => Math.random() - 0.5); grid = bands.flat();
+        const bands = []; for (let i = 0; i < size; i += boxH) bands.push(grid.slice(i, i + boxH)); shuffleRng(bands, rng); grid = bands.flat();
         grid = transpose(grid);
-        const stacks = []; for (let i = 0; i < size; i += boxW) stacks.push(grid.slice(i, i + boxW)); stacks.sort(() => Math.random() - 0.5); grid = transpose(stacks.flat());
+        const stacks = []; for (let i = 0; i < size; i += boxW) stacks.push(grid.slice(i, i + boxW)); shuffleRng(stacks, rng); grid = transpose(stacks.flat());
 
         let puzzle = grid.map(r => [...r]);
         const positions = [];
         for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) positions.push({ x, y });
-        positions.sort(() => Math.random() - 0.5);
+        shuffleRng(positions, rng);
 
         let currentClues = size * size; let failCount = 0; const maxCheckHoles = positions.length;
         const testGrid = puzzle.map(r => [...r]);
@@ -201,16 +204,25 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
 function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function hashDateStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 async function generateDailySudoku(dateStr, onProgress) {
-    const origRandom = Math.random;
-    Math.random = mulberry32(hashDateStr('sudoku-daily-' + dateStr));
-    try { return await generateSudokuAsync(9, 'medium', onProgress); }
-    finally { Math.random = origRandom; }
+    // 種子 rng 以參數注入（照數橋 puzzle.js 的正確寫法）：生成期間不再覆寫全域 Math.random，其他程式（uid/道具/特效）的隨機不再被種子污染、每日題也不受操作時序影響
+    return generateSudokuAsync(9, 'medium', onProgress, mulberry32(hashDateStr('sudoku-daily-' + dateStr)));
 }
 
 function formatTime(secs) { return String(Math.floor(secs / 60)).padStart(2, '0') + ":" + String(secs % 60).padStart(2, '0'); }
 
 // 本地進度恢復系統核心函數 (v3.8.0)
+// 存檔清掃（稽核 G-01）：讀寫時順手掃掉全部過期/損毀的 sudoku_prog_*（原本只清「下次同房號被讀到」的那筆，沒再進的房間會永久殘留無界成長）；每頁只掃一次
+let _progSwept = false;
+function sweepSudokuProg() {
+    if (_progSwept) return; _progSwept = true;
+    try {
+        const dead = [];
+        for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf('sudoku_prog_') === 0) dead.push(k); }
+        dead.forEach(k => { let kill = false; try { const p = JSON.parse(localStorage.getItem(k)); if (!p || !p.t || (Date.now() - p.t) > 24 * 3600 * 1000) kill = true; } catch (e) { kill = true; } if (kill) { try { localStorage.removeItem(k); } catch (e) {} } });
+    } catch (e) {}
+}
 const saveLocalProgress = (rid, uid, name, isHost, data, sessionId, extra) => {
+    sweepSudokuProg();
     if (!rid || !uid) return;
     try {
         const payload = { d: data, t: Date.now(), sid: sessionId };
@@ -219,7 +231,7 @@ const saveLocalProgress = (rid, uid, name, isHost, data, sessionId, extra) => {
         localStorage.setItem('sudoku_last_session', JSON.stringify({ rid, uid, time: Date.now(), name, isHost, sid: sessionId }));
     } catch (e) { /* 儲存空間被瀏覽器封鎖時（如預覽環境）靜默略過，不可讓遊戲崩潰 */ }
 };
-const loadLocalProgress = (rid, uid) => { try {
+const loadLocalProgress = (rid, uid) => { sweepSudokuProg(); try {
     const s = localStorage.getItem(`sudoku_prog_${rid}_${uid}`); if (!s) return null;
     const p = JSON.parse(s);
     // 存檔衛生（2026-11-01）：超過 24 小時或形狀不對的殘檔直接清除。房號只有 4 碼、會撞號，

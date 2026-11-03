@@ -2,6 +2,8 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -111,14 +113,39 @@ function normName(n) {
 
 // (moved to js/puzzle.js: getDailySeed)
 
-function readDailyRecord(dateStr) {
+// 每日紀錄收斂為單一 map key（稽核 G-01：原「一天一 key」無界成長）：第一次讀取時把全部舊 key 摺進 hashi_daily_map 並刪除舊 key，之後只讀寫 map（帶 schema 版本 v:1，G-02）
+var _dailyMapCache = null;
+function dailyMap() {
+  if (_dailyMapCache) return _dailyMapCache;
+  var m = null;
   try {
-    var raw = localStorage.getItem('hashi_daily_' + dateStr);
-    var p = raw ? JSON.parse(raw) : null;
-    return p && typeof p.time === 'number' && isFinite(p.time) ? p : null; // 形狀不符（舊版/損毀資料）視同無紀錄：recordDailyWin 直接讀 prev.time 算 Math.min，NaN 會一路污染最佳時間（稽核修）
-  } catch (e) {
-    return null;
-  }
+    var raw = localStorage.getItem('hashi_daily_map');var p = raw ? JSON.parse(raw) : null;if (p && p.v === 1 && p.days && _typeof(p.days) === 'object') m = p;
+  } catch (e) {}
+  if (!m) m = { v: 1, days: {} };
+  try {
+    var legacy = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);if (k && /^hashi_daily_\d{4}-\d{2}-\d{2}$/.test(k)) legacy.push(k);
+    }
+    legacy.forEach(function (k) {
+      var ds = k.slice('hashi_daily_'.length);if (!m.days[ds]) {
+        try {
+          var _p = JSON.parse(localStorage.getItem(k));if (_p && typeof _p.time === 'number' && isFinite(_p.time)) m.days[ds] = { time: _p.time };
+        } catch (e) {}
+      }try {
+        localStorage.removeItem(k);
+      } catch (e) {}
+    });
+    if (legacy.length) try {
+      localStorage.setItem('hashi_daily_map', JSON.stringify(m));
+    } catch (e) {}
+  } catch (e) {}
+  _dailyMapCache = m;
+  return m;
+}
+function readDailyRecord(dateStr) {
+  var p = dailyMap().days[dateStr];
+  return p && typeof p.time === 'number' && isFinite(p.time) ? p : null; // 形狀不符（舊版/損毀資料）視同無紀錄：recordDailyWin 直接讀 prev.time 算 Math.min，NaN 會一路污染最佳時間（稽核修）
 }
 function readDailyStreak() {
   try {
@@ -188,7 +215,10 @@ function HashiGame() {
           localStorage.setItem(K + '_claim', JSON.stringify({ tab: tab, ts: Date.now() }));
         } catch (e) {}
       };
-      beat();setInterval(beat, 3000);
+      beat(); // interval id 存到 window 並先清舊的（稽核 D-06：平台 REBOOT 會重跑遊戲程式碼，原寫法 id 直接丟棄、舊 interval 永遠清不掉會疊加）
+      var _ct = window.__platClaimTimers || (window.__platClaimTimers = {});
+      if (_ct[K]) clearInterval(_ct[K]);
+      _ct[K] = setInterval(beat, 3000);
       var u = localStorage.getItem(K);
       if (!u) {
         u = Math.random().toString(36).substring(2, 12);localStorage.setItem(K, u);
@@ -199,6 +229,13 @@ function HashiGame() {
     }
   }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
+  var platTimeOffset = function platTimeOffset() {
+    try {
+      return window.__PLAT_NET && window.__PLAT_NET.timeOffset || 0;
+    } catch (e) {
+      return 0;
+    }
+  }; // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
   var myNameRef = useRef("");
   var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
   var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
@@ -1223,7 +1260,8 @@ function HashiGame() {
   var customDimsRef = useRef(null); // 房間頁帶入的自訂尺寸 {w,h}（關卡選自訂時生成題目用）
   var racersRef = useRef([]);
   var milestonesRef = useRef({});
-  var hashiGiftCreditRef = useRef(0); // 島嶼禮物額度：完成進度每跨 5%（= 總島數的 1/20）+1，送給較弱的對手；沒對象時存著
+  var hashiGiftCreditRef = useRef(0); // 島嶼禮物額度：正確完成島數每跨總數 1/20 +1，送給較弱的對手；沒對象時存著
+  var hashiGiftUnitsRef = useRef(0); // 已入帳的島嶼禮物單位（正確完成島數換算，只增不減——橋被拆掉重架不重複入帳）
   var lastBrawlSentRef = useRef(0);
   var fxRef = useRef({ fog: {}, boxes: [], marks: [] });
   var prevIslandDoneRef = useRef({});
@@ -1472,16 +1510,36 @@ function HashiGame() {
     }
   }, [isWon]);
 
+  // ----- 競速回座存檔（不小心跳出/重整後接續：房主 RACE_RESUME 有快照，但本地存檔更新更快、且含道具/里程碑狀態） -----
+  var saveHashiResume = function saveHashiResume(bridgesArr) {
+    if (raceStateRef.current !== 'racing' && raceStateRef.current !== 'countdown') return;
+    try {
+      localStorage.setItem('hashi_resume_' + myId, JSON.stringify({ startAt: raceStartAtRef.current, bridges: bridgesArr || stateRef.current.bridges || [], items: myItemsRef.current, milestones: milestonesRef.current, giftCredit: hashiGiftCreditRef.current, giftUnits: hashiGiftUnitsRef.current, ts: Date.now() }));
+    } catch (e) {}
+  };
+  var loadHashiResume = function loadHashiResume(startAt) {
+    try {
+      var raw = localStorage.getItem('hashi_resume_' + myId);if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || p.startAt !== startAt || !Array.isArray(p.bridges)) return null; // 不是同一場（startAt 不符）不准還原
+      if (!p.ts || Date.now() - p.ts > 3 * 3600 * 1000) return null;
+      return p;
+    } catch (e) {
+      return null;
+    }
+  };
+
   // 🏁 競速進度分享：effect 版（安全網；主要推送走 raceAwareSync 內的 pushRaceProgress）
   useEffect(function () {
     pushRaceProgress(bridges);
   }, [islandCurrentCounts, raceState, randomLevelData]);
 
+  var toastTimerRef = useRef(null);
   var showToast = function showToast(m) {
-    setToastMsg(m);setTimeout(function () {
+    setToastMsg(m);if (toastTimerRef.current) clearTimeout(toastTimerRef.current);toastTimerRef.current = setTimeout(function () {
       return setToastMsg("");
     }, 4000);
-  };
+  }; // 計時器存 ref（稽核 D-06：原寫法連續兩則 toast 時，前一則的計時器會提早清掉後一則——數獨已修過的同型 bug）
 
   var getSvgCoords = function getSvgCoords(clientX, clientY) {
     var svg = svgRef.current;
@@ -2559,9 +2617,40 @@ function HashiGame() {
     if (brawlSettingsRef.current.itemsEnabled) {
       for (var t = 5; t <= 100; t += 5) {
         if (p * 100 >= t && !milestonesRef.current[t]) {
-          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);hashiGiftCreditRef.current += 1;
+          milestonesRef.current[t] = true;var mm = { type: 'BRAWL_MILESTONE', uid: myId, threshold: t };if (isHostRef.current) handleBrawlMilestone(mm);else sendBrawlMsg(mm);
         }
-      } // 里程碑每 5% 一格（5→100 共 20 格）；同時每跨一格＝完成總島數的 1/20，累積 1 個島嶼禮物額度（使用者定案）
+      } // 里程碑每 5% 一格（5→100 共 20 格）
+      // 島嶼禮物額度（2026-11-02 使用者糾正，與里程碑脫鉤）：只有「對照解答、全實線」的島嶼完成才算——
+      // 草稿虛線不算進完成（舊版 counts 把 draftCount 也加進去，虛線湊滿就亮綠燈照送）；只湊滿數字（橋架錯對象、條數分配錯）也不算。
+      // 判定：該島牽涉的每一對（解答有的＋實線有的）其實線條數都必須與解答完全一致。額度以單位制只增不減（每完成總島數 1/20 入帳 1）。
+      var solPairs = {};
+      (rld && rld.solution || []).forEach(function (sb) {
+        solPairs[sb.from < sb.to ? sb.from + '|' + sb.to : sb.to + '|' + sb.from] = sb.count;
+      });
+      var solidPairs = {};
+      (bridgesArr || []).forEach(function (b) {
+        if ((b.count || 0) > 0) solidPairs[b.from < b.to ? b.from + '|' + b.to : b.to + '|' + b.from] = b.count;
+      });
+      var strictDone = 0;
+      islands.forEach(function (isl) {
+        var sid = String(isl.id),
+            rel = {};
+        Object.keys(solPairs).forEach(function (k) {
+          var ab = k.split('|');if (ab[0] === sid || ab[1] === sid) rel[k] = true;
+        });
+        Object.keys(solidPairs).forEach(function (k) {
+          var ab = k.split('|');if (ab[0] === sid || ab[1] === sid) rel[k] = true;
+        });
+        var ok = true;
+        Object.keys(rel).forEach(function (k) {
+          if ((solidPairs[k] || 0) !== (solPairs[k] || 0)) ok = false;
+        });
+        if (ok) strictDone++;
+      });
+      var giftUnits = Math.floor(strictDone * 20 / islands.length);
+      if (giftUnits > hashiGiftUnitsRef.current) {
+        hashiGiftCreditRef.current += giftUnits - hashiGiftUnitsRef.current;hashiGiftUnitsRef.current = giftUnits;
+      }
       // 島嶼禮物（使用者定案，比照數獨扶弱）：額度逐一送給比自己弱的未完賽對手（差距平方根加權抽一位）；沒有較弱對手時額度存著，等下次進度推送再試
       while (hashiGiftCreditRef.current > 0) {
         var weaker = playersListRef.current.filter(function (pl) {
@@ -2585,6 +2674,7 @@ function HashiGame() {
       lastBrawlSentRef.current = nowB;
       sendBrawlMsg({ type: 'BRAWL_STATE', uid: myId, name: myNameRef.current || '你', color: myColorRef.current, progress: p, bridges: bridgesArr });
     }
+    saveHashiResume(bridgesArr);
     var now = Date.now();
     if (p === lastProgressValRef.current && now - lastProgressSentRef.current <= 1000) return; // 節流
     lastProgressValRef.current = p;
@@ -3127,7 +3217,7 @@ function HashiGame() {
     try {
       var prev = readDailyRecord(d);
       var best = prev ? Math.min(prev.time, secs) : secs;
-      localStorage.setItem('hashi_daily_' + d, JSON.stringify({ time: best }));
+      var dm = dailyMap();dm.days[d] = { time: best };localStorage.setItem('hashi_daily_map', JSON.stringify(dm));
     } catch (e) {}
     // 連擊只算「今天」：補玩以前日期的題目只記成績，不影響連擊
     try {
@@ -4091,6 +4181,15 @@ function HashiGame() {
           } else if (m.type === 'RACE_RESUME') {
             beginRace(m.data, m.startAt, m.racers, m.settings);
             if (m.bridges) setBridges(m.bridges);
+            var hRes = loadHashiResume(m.startAt); // 本地存檔優先（比房主快照新，且含道具/里程碑/禮物額度）
+            if (hRes) {
+              if (hRes.bridges && hRes.bridges.length) setBridges(hRes.bridges);
+              if (Array.isArray(hRes.items)) {
+                myItemsRef.current = hRes.items;setMyItems(hRes.items);
+              }
+              if (hRes.milestones) milestonesRef.current = hRes.milestones;
+              hashiGiftCreditRef.current = hRes.giftCredit || 0;hashiGiftUnitsRef.current = hRes.giftUnits || 0;
+            }
             if (m.progress) setRaceProgress(m.progress);
             if (m.results) {
               // 房主端的既有成績（完賽/DNF）一併帶回：beginRace 剛把本地成績清空，不補回來可能永遠湊不滿結算人數（稽核修）
@@ -4442,7 +4541,7 @@ function HashiGame() {
     raceResultsRef.current = {};
     setRaceResult(null);setRaceWaiting(false);setRaceCountdown(null);
     lastProgressValRef.current = -1;lastProgressSentRef.current = 0;
-    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};lastOneRef.current = false;hashiGiftCreditRef.current = 0;
+    myItemsRef.current = [];setMyItems([]);milestonesRef.current = {};hostMilestonesRef.current = {};lastOneRef.current = false;hashiGiftCreditRef.current = 0;hashiGiftUnitsRef.current = 0;
     setBrawlBoards({});setGodViewUid(null);
     fxRef.current = { fog: {}, boxes: [], marks: [] };setFxFog({});setFxFogBoxes([]);setFxMarks([]);
     stateRef.current = _extends({}, stateRef.current, payload);
@@ -4458,7 +4557,7 @@ function HashiGame() {
       return k + 1;
     });scheduleFitZoom();
     setRaceState('countdown');raceStateRef.current = 'countdown';
-    var now = Date.now();
+    var now = Date.now() + platTimeOffset(); // startAt 是房主時鐘的絕對時刻：以校正後時間排倒數（D-05）
     [3, 2, 1].forEach(function (n) {
       var delay = Math.max(0, startAt - n * 1000 - now);
       setTimeout(function () {
@@ -4686,8 +4785,8 @@ function HashiGame() {
         var secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
         if (raceStateRef.current === 'racing') {
           // 🏁 競速完賽：記錄個人成績並通知對手，不播標準勝利音效
-          var timeMs = Math.max(0, Date.now() - raceStartAtRef.current);
-          recordBest(secs);
+          var timeMs = Math.max(0, Date.now() + platTimeOffset() - raceStartAtRef.current); // 以房主時鐘校正後計算（D-05：各裝置時鐘差不再系統性偏袒時鐘慢的一方）
+          recordBest(Math.max(0, Math.floor(timeMs / 1000)));
           onRaceSelfFinish(timeMs);
         } else {
           window.HASHI_SOUND.play('win');

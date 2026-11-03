@@ -59,6 +59,13 @@ function GameTimer(_ref) {
     }
   }, "\u23F1 ", formatTime(secs));
 }
+function platTimeOffset() {
+  try {
+    return window.__PLAT_NET && window.__PLAT_NET.timeOffset || 0;
+  } catch (e) {
+    return 0;
+  }
+} // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
 function SudokuGame() {
   var _SIZES$find, _DIFFICULTIES$find;
   var playerIdRef = useRef(function () {
@@ -94,8 +101,10 @@ function SudokuGame() {
           }));
         } catch (e) {}
       };
-      beat();
-      setInterval(beat, 3000);
+      beat(); // interval id 存到 window 並先清舊的（稽核 D-06：平台 REBOOT 重跑程式碼時舊 interval 不會疊加）
+      var _ct = window.__platClaimTimers || (window.__platClaimTimers = {});
+      if (_ct[K]) clearInterval(_ct[K]);
+      _ct[K] = setInterval(beat, 3000);
       var u = localStorage.getItem(K);
       if (!u) {
         u = Math.random().toString(36).substring(2, 12);
@@ -772,7 +781,7 @@ function SudokuGame() {
   useEffect(function () {
     if (matchPhase === 'countdown' && countdownTarget) {
       var checkTime = function checkTime() {
-        var remaining = Math.ceil((countdownTarget - Date.now()) / 1000);
+        var remaining = Math.ceil((countdownTarget - (Date.now() + platTimeOffset())) / 1000); // countdownTarget 是房主時鐘的絕對時刻（D-05 時鐘校正）
         if (remaining > 0) {
           setCountdownValue(remaining);
         } else {
@@ -781,12 +790,13 @@ function SudokuGame() {
             try {
               window.SUDOKU_SOUND.play('go');
             } catch (e) {}
+            var localStart = countdownTarget - platTimeOffset(); // 換算回本地時鐘：下游計時/完賽/武器延遲全用本地版
             setMatchPhase('playing');
-            setStartTime(countdownTarget);
-            setMatchStartTime(countdownTarget);
+            setStartTime(localStart);
+            setMatchStartTime(localStart);
             stateRef.current.matchPhase = 'playing';
             stateRef.current.matchEndTime = null;
-            stateRef.current.startTime = countdownTarget;
+            stateRef.current.startTime = localStart;
           }
         }
       };
@@ -1247,27 +1257,6 @@ function SudokuGame() {
     }
     return completed;
   }, [activeCells, cSizeDef, conflictCellIds]);
-  useEffect(function () {
-    if (selectedChar && completedChars.has(selectedChar)) setSelectedChar(null);
-  }, [completedChars, selectedChar]);
-  useEffect(function () {
-    if (screen !== 'game' || isSpectator) return;
-    var handleKeyDown = function handleKeyDown(e) {
-      if (interactionMode >= 2 || isAutoFillingRef.current || matchPhase !== 'playing') return;
-      var key = e.key.toUpperCase();
-      var origIdx = cSizeDef.chars.indexOf(key);
-      if (origIdx !== -1) {
-        var mappedKey = keyMapping[origIdx];
-        if (!completedChars.has(mappedKey)) setSelectedChar(function (prev) {
-          return prev === mappedKey ? null : mappedKey;
-        });
-      } else if (e.key === 'q' || e.key === 'Q') toggleInteractionMode();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return function () {
-      return window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [screen, cSizeDef.chars, interactionMode, completedChars, matchPhase, isSpectator, keyMapping]);
   var highlightZones = useMemo(function () {
     var zones = new Set();
     if (selectedChar === null || interactionMode >= 2) return zones;

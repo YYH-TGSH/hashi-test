@@ -2167,6 +2167,13 @@ body.plat-room-on[data-view="hashi"] {
 .hub-locked select, .hub-locked input[type="number"] { background-color: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
 .hub-locked input[type="checkbox"] { accent-color: #cbd5e1; }
 .hub-locked [data-hub-mode] { opacity: .45; }
+
+/* 正式站錯誤橫幅（稽核 I-01）：❌ 級錯誤可見化，附重新載入；平常隱藏 */
+#plat-errbar { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 99999; max-width: min(92vw, 560px); align-items: center; gap: 8px; background: #fef2f2; color: #991b1b; border: 2.5px solid #dc2626; border-radius: 12px; padding: 8px 10px; font-size: 13px; font-weight: 800; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+#plat-errbar-text { flex: 1; word-break: break-word; }
+#plat-errbar button { flex-shrink: 0; border: 2px solid #991b1b; background: #fff; color: #991b1b; border-radius: 8px; padding: 3px 8px; font-weight: 900; cursor: pointer; }
+/* 鍵盤焦點可見（稽核 F-03 快修：原本全站無 :focus-visible，鍵盤/開關操作看不到焦點） */
+:focus-visible { outline: 3px solid #f59e0b !important; outline-offset: 2px; }
   </style>
 </head>
 <body data-view="home">
@@ -2340,6 +2347,7 @@ body.plat-room-on[data-view="hashi"] {
       </div>
     </div>
 
+  <div id="plat-errbar" style="display:none"><span id="plat-errbar-text"></span><button id="plat-errbar-reload">重新載入</button><button id="plat-errbar-x">✕</button></div>
   <div id="plat-speak" style="display:none">
     <span>🔊 <b id="plat-speak-name"></b> 發言中，開啟音效？</span>
     <button id="plat-speak-yes">開啟</button>
@@ -2558,6 +2566,8 @@ window.HASHI_SOLVER = (function () {
     const val = new Array(m).fill(-1);
     let count = 0;
     let first = null;
+    let nodes = 0;
+    const NODE_BUDGET = 120000; // 節點預算（稽核 D-03）：極端題面不讓 solver 無限遞迴凍結主執行緒；超預算視為「未驗證」回 count:-1，生成器會換一題重抽
 
     function connected() {
       const seenV = new Array(n).fill(false);
@@ -2601,6 +2611,7 @@ window.HASHI_SOLVER = (function () {
     }
 
     function dfs(done) {
+      if (++nodes > NODE_BUDGET) throw new Error('solver-budget');
       if (count >= limit) return true;
       if (done === m) {
         if (need.every(x => x === 0) && connected()) {
@@ -2639,7 +2650,7 @@ window.HASHI_SOLVER = (function () {
       return false;
     }
 
-    dfs(0);
+    try { dfs(0); } catch (e) { if (e && e.message === 'solver-budget') return { count: -1, first: null, aborted: true }; throw e; }
     return { count: count, first: first };
   }
 
@@ -2773,7 +2784,8 @@ window.HASHI_PUZZLE = (function () {
         }
     }
   
-    potentialBridges.sort((a, b) => a.len - b.len + (rng() - 0.5));
+    const _rk = new Map(); potentialBridges.forEach(b => _rk.set(b, rng()));
+    potentialBridges.sort((a, b) => (a.len - b.len) || (_rk.get(a) - _rk.get(b))); // 先以長度排序、同長度以預抽的隨機序號打破平手（稽核 D-04：原寫法把隨機擾動混進比較器，排序結果不一致且有偏）
   
     let uf = new Map();
     islands.forEach(i => uf.set(i.id, i.id));
@@ -3103,15 +3115,18 @@ function countSolutions(grid, size, boxW, boxH, limit = 2, budget = null) {
     return aborted ? -1 : count;
 }
 
-async function generateSudokuAsync(sizeId, diffId, onProgress) {
+function shuffleRng(arr, rng) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; } // Fisher-Yates（稽核 D-04：取代有偏的 sort 隨機比較器；rng 可注入種子版，跨引擎結果一致）
+async function generateSudokuAsync(sizeId, diffId, onProgress, rng) {
+    rng = rng || Math.random; // 每日題傳入種子 rng（稽核 D-02：不再覆寫全域 Math.random，避免非同步生成期間污染其他呼叫端）
     const sizeDef = SIZES.find(s => s.id === sizeId);
     const diffDef = DIFFICULTIES.find(d => d.id === diffId);
     const targetRange = diffDef.targets[sizeId];
-    const targetClues = Math.floor(Math.random() * (targetRange[1] - targetRange[0] + 1)) + targetRange[0];
+    const targetClues = Math.floor(rng() * (targetRange[1] - targetRange[0] + 1)) + targetRange[0];
     const targetMax = targetRange[1];
     const { size, boxW, boxH, chars } = sizeDef;
 
     let bestResult = null;
+    let grid = null; // 宣告在迴圈外：結尾兜底 bestResult=grid 要引用最後一次嘗試的盤（原本宣告在迴圈內，原生 ES 作用域下會 ReferenceError、只靠 Babel 轉 var 偶然可達）
     let minCluesAchieved = Infinity;
     const maxAttempts = size === 16 ? 8 : 40;
     const generationStartTime = Date.now();
@@ -3122,22 +3137,22 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
         // 16×16 單次嘗試上限 8 秒：挖到高原期（怎麼挖都破壞唯一解）就換新盤重挖，別把全域 30 秒磨在一張盤上
         const attemptDeadline = Date.now() + 8000;
 
-        let grid = (size === 4 ? BASE_4 : size === 9 ? BASE_9 : BASE_16).map(row => [...row]);
-        const charPool = [...chars]; charPool.sort(() => Math.random() - 0.5);
+        grid = (size === 4 ? BASE_4 : size === 9 ? BASE_9 : BASE_16).map(row => [...row]);
+        const charPool = [...chars]; shuffleRng(charPool, rng);
         grid = grid.map(row => row.map(val => charPool[val]));
 
-        for (let i = 0; i < size; i += boxH) { const block = grid.slice(i, i + boxH); block.sort(() => Math.random() - 0.5); grid.splice(i, boxH, ...block); }
+        for (let i = 0; i < size; i += boxH) { const block = grid.slice(i, i + boxH); shuffleRng(block, rng); grid.splice(i, boxH, ...block); }
         grid = transpose(grid);
-        for (let i = 0; i < size; i += boxW) { const block = grid.slice(i, i + boxW); block.sort(() => Math.random() - 0.5); grid.splice(i, boxW, ...block); }
+        for (let i = 0; i < size; i += boxW) { const block = grid.slice(i, i + boxW); shuffleRng(block, rng); grid.splice(i, boxW, ...block); }
         grid = transpose(grid);
-        const bands = []; for (let i = 0; i < size; i += boxH) bands.push(grid.slice(i, i + boxH)); bands.sort(() => Math.random() - 0.5); grid = bands.flat();
+        const bands = []; for (let i = 0; i < size; i += boxH) bands.push(grid.slice(i, i + boxH)); shuffleRng(bands, rng); grid = bands.flat();
         grid = transpose(grid);
-        const stacks = []; for (let i = 0; i < size; i += boxW) stacks.push(grid.slice(i, i + boxW)); stacks.sort(() => Math.random() - 0.5); grid = transpose(stacks.flat());
+        const stacks = []; for (let i = 0; i < size; i += boxW) stacks.push(grid.slice(i, i + boxW)); shuffleRng(stacks, rng); grid = transpose(stacks.flat());
 
         let puzzle = grid.map(r => [...r]);
         const positions = [];
         for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) positions.push({ x, y });
-        positions.sort(() => Math.random() - 0.5);
+        shuffleRng(positions, rng);
 
         let currentClues = size * size; let failCount = 0; const maxCheckHoles = positions.length;
         const testGrid = puzzle.map(r => [...r]);
@@ -3201,16 +3216,25 @@ async function generateSudokuAsync(sizeId, diffId, onProgress) {
 function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function hashDateStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 async function generateDailySudoku(dateStr, onProgress) {
-    const origRandom = Math.random;
-    Math.random = mulberry32(hashDateStr('sudoku-daily-' + dateStr));
-    try { return await generateSudokuAsync(9, 'medium', onProgress); }
-    finally { Math.random = origRandom; }
+    // 種子 rng 以參數注入（照數橋 puzzle.js 的正確寫法）：生成期間不再覆寫全域 Math.random，其他程式（uid/道具/特效）的隨機不再被種子污染、每日題也不受操作時序影響
+    return generateSudokuAsync(9, 'medium', onProgress, mulberry32(hashDateStr('sudoku-daily-' + dateStr)));
 }
 
 function formatTime(secs) { return String(Math.floor(secs / 60)).padStart(2, '0') + ":" + String(secs % 60).padStart(2, '0'); }
 
 // 本地進度恢復系統核心函數 (v3.8.0)
+// 存檔清掃（稽核 G-01）：讀寫時順手掃掉全部過期/損毀的 sudoku_prog_*（原本只清「下次同房號被讀到」的那筆，沒再進的房間會永久殘留無界成長）；每頁只掃一次
+let _progSwept = false;
+function sweepSudokuProg() {
+    if (_progSwept) return; _progSwept = true;
+    try {
+        const dead = [];
+        for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf('sudoku_prog_') === 0) dead.push(k); }
+        dead.forEach(k => { let kill = false; try { const p = JSON.parse(localStorage.getItem(k)); if (!p || !p.t || (Date.now() - p.t) > 24 * 3600 * 1000) kill = true; } catch (e) { kill = true; } if (kill) { try { localStorage.removeItem(k); } catch (e) {} } });
+    } catch (e) {}
+}
 const saveLocalProgress = (rid, uid, name, isHost, data, sessionId, extra) => {
+    sweepSudokuProg();
     if (!rid || !uid) return;
     try {
         const payload = { d: data, t: Date.now(), sid: sessionId };
@@ -3219,7 +3243,7 @@ const saveLocalProgress = (rid, uid, name, isHost, data, sessionId, extra) => {
         localStorage.setItem('sudoku_last_session', JSON.stringify({ rid, uid, time: Date.now(), name, isHost, sid: sessionId }));
     } catch (e) { /* 儲存空間被瀏覽器封鎖時（如預覽環境）靜默略過，不可讓遊戲崩潰 */ }
 };
-const loadLocalProgress = (rid, uid) => { try {
+const loadLocalProgress = (rid, uid) => { sweepSudokuProg(); try {
     const s = localStorage.getItem(`sudoku_prog_${rid}_${uid}`); if (!s) return null;
     const p = JSON.parse(s);
     // 存檔衛生（2026-11-01）：超過 24 小時或形狀不對的殘檔直接清除。房號只有 4 碼、會撞號，
@@ -3291,6 +3315,13 @@ function GameTimer(_ref) {
     }
   }, "\u23F1 ", formatTime(secs));
 }
+function platTimeOffset() {
+  try {
+    return window.__PLAT_NET && window.__PLAT_NET.timeOffset || 0;
+  } catch (e) {
+    return 0;
+  }
+} // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
 function SudokuGame() {
   var _SIZES$find, _DIFFICULTIES$find;
   var playerIdRef = useRef(function () {
@@ -3326,8 +3357,10 @@ function SudokuGame() {
           }));
         } catch (e) {}
       };
-      beat();
-      setInterval(beat, 3000);
+      beat(); // interval id 存到 window 並先清舊的（稽核 D-06：平台 REBOOT 重跑程式碼時舊 interval 不會疊加）
+      var _ct = window.__platClaimTimers || (window.__platClaimTimers = {});
+      if (_ct[K]) clearInterval(_ct[K]);
+      _ct[K] = setInterval(beat, 3000);
       var u = localStorage.getItem(K);
       if (!u) {
         u = Math.random().toString(36).substring(2, 12);
@@ -4004,7 +4037,7 @@ function SudokuGame() {
   useEffect(function () {
     if (matchPhase === 'countdown' && countdownTarget) {
       var checkTime = function checkTime() {
-        var remaining = Math.ceil((countdownTarget - Date.now()) / 1000);
+        var remaining = Math.ceil((countdownTarget - (Date.now() + platTimeOffset())) / 1000); // countdownTarget 是房主時鐘的絕對時刻（D-05 時鐘校正）
         if (remaining > 0) {
           setCountdownValue(remaining);
         } else {
@@ -4013,12 +4046,13 @@ function SudokuGame() {
             try {
               window.SUDOKU_SOUND.play('go');
             } catch (e) {}
+            var localStart = countdownTarget - platTimeOffset(); // 換算回本地時鐘：下游計時/完賽/武器延遲全用本地版
             setMatchPhase('playing');
-            setStartTime(countdownTarget);
-            setMatchStartTime(countdownTarget);
+            setStartTime(localStart);
+            setMatchStartTime(localStart);
             stateRef.current.matchPhase = 'playing';
             stateRef.current.matchEndTime = null;
-            stateRef.current.startTime = countdownTarget;
+            stateRef.current.startTime = localStart;
           }
         }
       };
@@ -4479,27 +4513,6 @@ function SudokuGame() {
     }
     return completed;
   }, [activeCells, cSizeDef, conflictCellIds]);
-  useEffect(function () {
-    if (selectedChar && completedChars.has(selectedChar)) setSelectedChar(null);
-  }, [completedChars, selectedChar]);
-  useEffect(function () {
-    if (screen !== 'game' || isSpectator) return;
-    var handleKeyDown = function handleKeyDown(e) {
-      if (interactionMode >= 2 || isAutoFillingRef.current || matchPhase !== 'playing') return;
-      var key = e.key.toUpperCase();
-      var origIdx = cSizeDef.chars.indexOf(key);
-      if (origIdx !== -1) {
-        var mappedKey = keyMapping[origIdx];
-        if (!completedChars.has(mappedKey)) setSelectedChar(function (prev) {
-          return prev === mappedKey ? null : mappedKey;
-        });
-      } else if (e.key === 'q' || e.key === 'Q') toggleInteractionMode();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return function () {
-      return window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [screen, cSizeDef.chars, interactionMode, completedChars, matchPhase, isSpectator, keyMapping]);
   var highlightZones = useMemo(function () {
     var zones = new Set();
     if (selectedChar === null || interactionMode >= 2) return zones;
@@ -10517,6 +10530,8 @@ renderApp();
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -10626,14 +10641,39 @@ function normName(n) {
 
 // (moved to js/puzzle.js: getDailySeed)
 
-function readDailyRecord(dateStr) {
+// 每日紀錄收斂為單一 map key（稽核 G-01：原「一天一 key」無界成長）：第一次讀取時把全部舊 key 摺進 hashi_daily_map 並刪除舊 key，之後只讀寫 map（帶 schema 版本 v:1，G-02）
+var _dailyMapCache = null;
+function dailyMap() {
+  if (_dailyMapCache) return _dailyMapCache;
+  var m = null;
   try {
-    var raw = localStorage.getItem('hashi_daily_' + dateStr);
-    var p = raw ? JSON.parse(raw) : null;
-    return p && typeof p.time === 'number' && isFinite(p.time) ? p : null; // 形狀不符（舊版/損毀資料）視同無紀錄：recordDailyWin 直接讀 prev.time 算 Math.min，NaN 會一路污染最佳時間（稽核修）
-  } catch (e) {
-    return null;
-  }
+    var raw = localStorage.getItem('hashi_daily_map');var p = raw ? JSON.parse(raw) : null;if (p && p.v === 1 && p.days && _typeof(p.days) === 'object') m = p;
+  } catch (e) {}
+  if (!m) m = { v: 1, days: {} };
+  try {
+    var legacy = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);if (k && /^hashi_daily_\d{4}-\d{2}-\d{2}$/.test(k)) legacy.push(k);
+    }
+    legacy.forEach(function (k) {
+      var ds = k.slice('hashi_daily_'.length);if (!m.days[ds]) {
+        try {
+          var _p = JSON.parse(localStorage.getItem(k));if (_p && typeof _p.time === 'number' && isFinite(_p.time)) m.days[ds] = { time: _p.time };
+        } catch (e) {}
+      }try {
+        localStorage.removeItem(k);
+      } catch (e) {}
+    });
+    if (legacy.length) try {
+      localStorage.setItem('hashi_daily_map', JSON.stringify(m));
+    } catch (e) {}
+  } catch (e) {}
+  _dailyMapCache = m;
+  return m;
+}
+function readDailyRecord(dateStr) {
+  var p = dailyMap().days[dateStr];
+  return p && typeof p.time === 'number' && isFinite(p.time) ? p : null; // 形狀不符（舊版/損毀資料）視同無紀錄：recordDailyWin 直接讀 prev.time 算 Math.min，NaN 會一路污染最佳時間（稽核修）
 }
 function readDailyStreak() {
   try {
@@ -10703,7 +10743,10 @@ function HashiGame() {
           localStorage.setItem(K + '_claim', JSON.stringify({ tab: tab, ts: Date.now() }));
         } catch (e) {}
       };
-      beat();setInterval(beat, 3000);
+      beat(); // interval id 存到 window 並先清舊的（稽核 D-06：平台 REBOOT 會重跑遊戲程式碼，原寫法 id 直接丟棄、舊 interval 永遠清不掉會疊加）
+      var _ct = window.__platClaimTimers || (window.__platClaimTimers = {});
+      if (_ct[K]) clearInterval(_ct[K]);
+      _ct[K] = setInterval(beat, 3000);
       var u = localStorage.getItem(K);
       if (!u) {
         u = Math.random().toString(36).substring(2, 12);localStorage.setItem(K, u);
@@ -10714,6 +10757,13 @@ function HashiGame() {
     }
   }()); // 持久 uid：同裝置重連同房間＝同座位（重連回座）；同瀏覽器多分頁僅第一個分頁用正規 uid
   var myId = playerIdRef.current;
+  var platTimeOffset = function platTimeOffset() {
+    try {
+      return window.__PLAT_NET && window.__PLAT_NET.timeOffset || 0;
+    } catch (e) {
+      return 0;
+    }
+  }; // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
   var myNameRef = useRef("");
   var lastSeenRef = useRef({}); // 在線心跳：uid → 最後收到其訊息的時間（房主端判定離線用）
   var hostSeenRef = useRef(0); // 來賓端：最後收到房主訊息的時間
@@ -12012,11 +12062,12 @@ function HashiGame() {
     pushRaceProgress(bridges);
   }, [islandCurrentCounts, raceState, randomLevelData]);
 
+  var toastTimerRef = useRef(null);
   var showToast = function showToast(m) {
-    setToastMsg(m);setTimeout(function () {
+    setToastMsg(m);if (toastTimerRef.current) clearTimeout(toastTimerRef.current);toastTimerRef.current = setTimeout(function () {
       return setToastMsg("");
     }, 4000);
-  };
+  }; // 計時器存 ref（稽核 D-06：原寫法連續兩則 toast 時，前一則的計時器會提早清掉後一則——數獨已修過的同型 bug）
 
   var getSvgCoords = function getSvgCoords(clientX, clientY) {
     var svg = svgRef.current;
@@ -13694,7 +13745,7 @@ function HashiGame() {
     try {
       var prev = readDailyRecord(d);
       var best = prev ? Math.min(prev.time, secs) : secs;
-      localStorage.setItem('hashi_daily_' + d, JSON.stringify({ time: best }));
+      var dm = dailyMap();dm.days[d] = { time: best };localStorage.setItem('hashi_daily_map', JSON.stringify(dm));
     } catch (e) {}
     // 連擊只算「今天」：補玩以前日期的題目只記成績，不影響連擊
     try {
@@ -15034,7 +15085,7 @@ function HashiGame() {
       return k + 1;
     });scheduleFitZoom();
     setRaceState('countdown');raceStateRef.current = 'countdown';
-    var now = Date.now();
+    var now = Date.now() + platTimeOffset(); // startAt 是房主時鐘的絕對時刻：以校正後時間排倒數（D-05）
     [3, 2, 1].forEach(function (n) {
       var delay = Math.max(0, startAt - n * 1000 - now);
       setTimeout(function () {
@@ -15262,8 +15313,8 @@ function HashiGame() {
         var secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
         if (raceStateRef.current === 'racing') {
           // 🏁 競速完賽：記錄個人成績並通知對手，不播標準勝利音效
-          var timeMs = Math.max(0, Date.now() - raceStartAtRef.current);
-          recordBest(secs);
+          var timeMs = Math.max(0, Date.now() + platTimeOffset() - raceStartAtRef.current); // 以房主時鐘校正後計算（D-05：各裝置時鐘差不再系統性偏袒時鐘慢的一方）
+          recordBest(Math.max(0, Math.floor(timeMs / 1000)));
           onRaceSelfFinish(timeMs);
         } else {
           window.HASHI_SOUND.play('win');
@@ -17854,6 +17905,13 @@ var _React = React,
   useCallback = _React.useCallback;
 
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
+function platTimeOffset() {
+  try {
+    return window.__PLAT_NET && window.__PLAT_NET.timeOffset || 0;
+  } catch (e) {
+    return 0;
+  }
+} // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
 function sGet(k) {
   try {
     return window.localStorage.getItem(k);
@@ -19635,6 +19693,7 @@ function MinesGame() {
     lastProgRef.current = -1;
   }
   function startMatchLocal(seed, szId, startAt) {
+    startAt = startAt - platTimeOffset(); // 房主給的絕對開賽時刻換算回本地時鐘（D-05）：下游倒數/計時/完賽/回座存檔全用本地版，房主 offset=0 不受影響
     mpRef.current.seed = seed;
     mpRef.current.sizeId = szId;
     mpRef.current.startAt = startAt;
@@ -21534,9 +21593,21 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
 (function () {
   var booted = { sudoku: false, hashi: false, mines: false };
   var statusEl = null;
+  var platLogBuf = []; window.__PLAT_LOG = platLogBuf; // 環形錯誤簿（稽核 I-01：正式站沒有診斷面板，至少留記憶體紀錄可查）
+  function showErrBar(msg) { // 正式站可見錯誤橫幅：❌ 級 status 不再寫進不存在的面板就消失，使用者截圖能帶回病名
+    try {
+      var bar = document.getElementById('plat-errbar'); if (!bar) return;
+      var tx = document.getElementById('plat-errbar-text'); if (tx) tx.textContent = msg;
+      bar.style.display = 'flex';
+      var x = document.getElementById('plat-errbar-x'); if (x && !x._wired) { x._wired = 1; x.onclick = function () { bar.style.display = 'none'; }; }
+      var rl = document.getElementById('plat-errbar-reload'); if (rl && !rl._wired) { rl._wired = 1; rl.onclick = function () { location.reload(); }; }
+    } catch (e) {}
+  }
   function status(msg) {
+    platLogBuf.push({ t: Date.now(), msg: String(msg) }); if (platLogBuf.length > 80) platLogBuf.shift();
     if (!statusEl) statusEl = document.getElementById('plat-status-body');
     if (statusEl) { var d = document.createElement('div'); d.textContent = msg; statusEl.appendChild(d); }
+    if (String(msg).indexOf('❌') >= 0) showErrBar(String(msg));
   }
   window.__PLAT_status = status;
   window.addEventListener('error', function (e) {
@@ -21679,7 +21750,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.33.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.34.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -21692,7 +21763,12 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   function storeGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
   function storeSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
   function normName(s) { return (s || '').trim().toLowerCase(); }
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } // 補齊引號跳脫（稽核 B-02：esc 也用在 value="..." 屬性上下文，未跳脫的引號可突破屬性）；與 pbEsc 規格統一為五字元
+  function platSafeColor(c) { // 顏色白名單（稽核 B-03）：只放行 PLAT_COLORS、rainbow 與 #rrggbb，其餘一律中性灰——防自報顏色拼進 style 字串時突破屬性/注入 CSS
+    if (c === 'rainbow') return 'rainbow';
+    if (typeof c === 'string' && (PLAT_COLORS.indexOf(c) >= 0 || /^#[0-9a-fA-F]{6}$/.test(c))) return c;
+    return '#94a3b8';
+  }
 
   function myUid() { // 殼層持久身份：斷線重連/接管後仍是同一個人（賽程積分綁這個，不綁連線 pid）
     var u = storeGet('plat_uid');
@@ -21700,7 +21776,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     return u;
   }
   var Net = {
-    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '',
+    active: false, isHost: false, code: '', peer: null, myPid: '', hostPid: '', myUid: '', timeOffset: 0, // 來賓端估計的「房主時鐘 − 本地時鐘」毫秒差（D-05），房主恆 0
     armed: { game: (function () { try { var g = localStorage.getItem('plat_armed_game'); return (g === 'hashi' || g === 'sudoku' || g === 'mines') ? g : 'sudoku'; } catch (e) { return 'sudoku'; } })(), mode: 'coop' }, armedByGame: { sudoku: 'coop', hashi: 'coop', mines: 'coop' }, roomTab: 'sudoku',
     me: { name: '', color: PLAT_COLORS[2] },
     roster: [], conns: {}, gamePeer: null, inMatch: null, liveMatch: null, // liveMatch: 房主權威的「本房有對局進行中」快照 {game, mode, players:[uid], tourn}——回房間頁的選手靠它看到回到對局鈕
@@ -21760,7 +21836,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
 
   // ---------- 訊息傳送 ----------
   Net.myUid = myUid();
-  function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; try { conn.send(m); } catch (e) {} }
+  function platSend(conn, obj) { if (!conn) return; var m = { __plat: 1 }; for (var k in obj) m[k] = obj[k]; if (m.kind === 'roster') m.now = Date.now(); /* 房主時間戳：來賓據此校正時鐘偏移（D-05） */ try { conn.send(m); } catch (e) {} }
   function platBroadcast(obj, exceptPid) {
     for (var pid in Net.conns) { if (pid !== exceptPid) platSend(Net.conns[pid], obj); }
   }
@@ -21769,7 +21845,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   function platToast(msg) {
     var el = $('plat-toast');
     if (!el) {
-      el = document.createElement('div'); el.id = 'plat-toast';
+      el = document.createElement('div'); el.id = 'plat-toast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); // 狀態播報（稽核 F-01 快修：toast 是全平台的狀態通知通道）
       el.style.cssText = 'position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:100001;background:rgba(15,23,42,.93);color:#fff;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px;border:2px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;transition:opacity .3s;display:none';
       document.body.appendChild(el);
     }
@@ -21794,6 +21870,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       d.appendChild(document.createTextNode(m.text || ''));
     }
     list.appendChild(d);
+    while (list.children.length > 120) list.removeChild(list.firstChild); // 保留上限（B-06：防刷屏讓 DOM 無界累積）
     list.scrollTop = list.scrollHeight;
     if (!m.sys && !m.mine && (!Net.chatOpen || Net.chatMin)) { Net.unread++; renderUnread(); }
   }
@@ -21810,7 +21887,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   }
   function closeChat() { Net.chatOpen = false; $('plat-chat').style.display = 'none'; }
   function sendChat() {
-    var inp = $('plat-chat-input'); var text = (inp.value || '').trim(); if (!text || !Net.active) return;
+    var inp = $('plat-chat-input'); var text = (inp.value || '').trim().slice(0, 200); if (!text || !Net.active) return; // 送出端也截斷（B-06，不只靠 HTML maxlength）
     inp.value = '';
     var m = { kind: 'chat', pid: Net.myPid, name: Net.me.name, color: Net.me.color, text: text };
     appendChat({ name: m.name, color: m.color, text: text, mine: true });
@@ -22351,7 +22428,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     }
   }
   function hubApplyIdentity(entry, name, color) {
-    name = (name || '').trim().slice(0, 12);
+    name = (name || '').replace(/[<>&"']/g, '').trim().slice(0, 12); // 與 join 同規格：去 HTML 字元（B-02 統一消毒）
     if (!name) return '⚠️ 暱稱不能空白';
     var dup = Net.roster.some(function (p) { return p !== entry && normName(p.name) === normName(name); });
     if (dup) return '⚠️ 這個暱稱已經有人用了';
@@ -22422,7 +22499,18 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       if (sb3) { hubIdSave(sb3.getAttribute('data-id-save')); return; }
       if (t.closest('[data-id-cancel]')) { H3._idEdit = null; H3._idName = null; H3._idKey = ''; hubRender(); }
     });
-    setInterval(function () { if (hubVisible()) hubRender(); }, 1000); // 開始閘門的 60 秒倒數 + 名單保鮮
+    var _hubFp = '';
+    setInterval(function () { // 開始閘門的 60 秒倒數 + 名單保鮮；狀態指紋沒變就跳過全量重繪（稽核 E-03：原本每秒整頁重建＋逐欄寫回表單，指紋含名單/準備/設定/錦標賽進度/等待秒數桶，任一變動仍會在 1 秒內刷新）
+      if (!hubVisible()) return;
+      var H = ensureHub();
+      var waited = H.enteredAt ? (Date.now() - H.enteredAt) : 0;
+      var waitBucket = H.enteredAt ? Math.ceil(Math.max(0, (window.PLAT_START_WAIT_MS || 60000) - waited) / 1000) : -1;
+      var fp = '';
+      try { fp = JSON.stringify([Net.roster, H.ready, H.spec, H.cfg, H._idEdit, Net.roomTab, Net.armed && Net.armed.game, waitBucket, Net.tourn && [Net.tourn.phase, Net.tourn.round, Net.tourn.settled, Net.tourn.acks && Object.keys(Net.tourn.acks).length, Net.tourn.totals]]); } catch (e) { fp = ''; }
+      if (fp && fp === _hubFp) return;
+      _hubFp = fp;
+      hubRender();
+    }, 1000);
   }
   function hubOnAction(name) {
     var H = ensureHub();
@@ -22537,6 +22625,9 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   }, 5000);
   function onPlatData(c, d) {
     var pid = c.peer;
+    // 寄件者驗證（稽核 A-01/A-02）：房主權威訊息只認「房主連線」送來的；寄件者身分一律以連線 pid 查名單，不信任訊息自報的 pid/uid/name（identity 分支的既有範式，全面套用）
+    var fromHost = !Net.isHost && pid === Net.hostPid;
+    var senderEntry = null; Net.roster.forEach(function (p) { if (p.pid === pid) senderEntry = p; });
     switch (d.kind) {
       case 'join': {
         if (!Net.isHost) return;
@@ -22547,6 +22638,10 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
           if (takenC[joinColor]) {
             for (var ci2 = 0; ci2 < PLAT_COLORS.length; ci2++) { if (!takenC[PLAT_COLORS[ci2]]) { joinColor = PLAT_COLORS[ci2]; colorSubbed = true; break; } }
           }
+        }
+        if (joinColor && joinColor !== 'rainbow' && PLAT_COLORS.indexOf(joinColor) < 0) { // 顏色白名單（B-03）：只接受摩天輪色票盤的顏色，自報的任意字串不進名單（名單顏色會被拼進 style 字串）
+          for (var ci3 = 0; ci3 < PLAT_COLORS.length; ci3++) { if (!takenC[PLAT_COLORS[ci3]]) { joinColor = PLAT_COLORS[ci3]; colorSubbed = true; break; } }
+          if (!colorSubbed) joinColor = PLAT_COLORS[0];
         }
         // 同 uid 回座（離房後一鍵重連/斷線重連）：舊條目還在名單裡（舊連線尚未逾時清除）時先換綁新 pid，不要誤判暱稱已被占用
         if (d.uid) {
@@ -22584,7 +22679,16 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         if (Net.videoOn || Object.keys(Net.remoteStreams).length) platSend(c, { kind: 'mic', pid: Net.myPid, name: Net.me.name, muted: Net.micMuted });
         break;
       }
-      case 'roster': { var prevRoster = Net.roster || []; Net.roster = d.players || []; if (d.code) Net.code = d.code; Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); hubSyncMeFromRoster(); renderLobby();
+      case 'roster': {
+        if (!fromHost) break;
+        var prevRoster = Net.roster || [];
+        Net.roster = d.players || [];
+        // 採用端再消毒一次（B-02/B-03 縱深防禦：不完全信任送來的名單內容）
+        Net.roster.forEach(function (p) { p.color = platSafeColor(p.color); if (p.name) p.name = String(p.name).replace(/[<>&"']/g, '').slice(0, 12); });
+        // 時鐘偏移估計（D-05）：房主 roster 附帶其時間戳，平滑後供遊戲校正倒數/完賽時間；只在 roster 更新（低頻）取樣，避免抖動
+        if (typeof d.now === 'number') { var off = d.now - Date.now(); if (isFinite(off) && Math.abs(off) < 3600000) Net.timeOffset = Net.timeOffset ? Math.round(Net.timeOffset * 0.6 + off * 0.4) : off; }
+        if (d.code) Net.code = d.code;
+        Net.hostSeen = Date.now(); Net._hostWarned = false; tournRebind(); hubSyncMeFromRoster(); renderLobby();
         Net.roster.forEach(function (p) { var o = null; prevRoster.forEach(function (q) { if ((q.uid || q.pid) === (p.uid || p.pid)) o = q; }); if (o && o.color !== p.color) notifyGameIdentity((p.uid || p.pid) === Net.myUid, p.name, p.color); });
       }
         if (!Net.isHost && !Net.inMatch && !Net.tourn) { var fbT = setTimeout(function () { if (Net.active && !Net.inMatch && !Net.tourn) maybeAutoEnterRoom(); }, 1500); }
@@ -22597,49 +22701,65 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         if (pp && pp.offline) { pp.offline = false; platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code }); renderLobby(); }
         break;
       }
-      case 'pong': Net.hostSeen = Date.now(); Net._hostWarned = false; break;
-      case 'reject': lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
+      case 'pong': if (!fromHost) break; Net.hostSeen = Date.now(); Net._hostWarned = false; break;
+      case 'reject': if (!fromHost) break; lobbyMsg('⚠️ 暱稱已被使用，換一個名字再試'); teardownPeer(); showIdle(); break;
       case 'leave': {
         if (!Net.isHost) return;
         var gone2 = null;
-        Net.roster = Net.roster.filter(function (p) { if (p.pid === d.pid) { gone2 = p; return false; } return true; });
+        Net.roster = Net.roster.filter(function (p) { if (p.pid === pid) { gone2 = p; return false; } return true; }); // 以連線 pid 為準：送 leave 只能送走自己，不能指定別人（A-02）
         if (gone2) sysChat('👋 ' + (gone2.name || '玩家') + ' 離開了房間');
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
         renderLobby();
         break;
       }
-      case 'bye': endSession('房主已解散房間'); break;
+      case 'bye': if (!fromHost) break; endSession('房主已解散房間'); break;
       case 'chat': {
-        appendChat({ name: d.name, color: d.color, text: d.text });
-        if (Net.isHost) platBroadcast({ kind: 'chat', pid: d.pid, name: d.name, color: d.color, text: d.text }, pid);
+        if (!Net.isHost && !fromHost) break; // 聊天一律經房主轉播，來賓只收房主連線送來的
+        var ctext = String(d.text == null ? '' : d.text).slice(0, 500); // 接收端長度上限（B-06：不只靠送出端 maxlength）
+        if (!ctext) break;
+        if (Net.isHost) {
+          if (!senderEntry) break;
+          var nowC = Date.now(); var winC = (Net._chatWin || (Net._chatWin = {}))[pid] || ((Net._chatWin || {})[pid] = []);
+          while (winC.length && nowC - winC[0] > 3000) winC.shift();
+          if (winC.length >= 6) break; // 每人 3 秒 6 則上限，超過丟棄（B-06 防刷屏）
+          winC.push(nowC);
+          appendChat({ name: senderEntry.name, color: senderEntry.color, text: ctext });
+          platBroadcast({ kind: 'chat', pid: pid, name: senderEntry.name, color: senderEntry.color, text: ctext }, pid); // 身分由房主以名單蓋章，不用自報值
+        } else {
+          appendChat({ name: d.name, color: d.color, text: ctext });
+        }
         break;
       }
       case 'mic': {
-        Net.remoteMic[d.pid] = d.muted;
-        onRemoteMic(d);
-        if (Net.isHost) platBroadcast({ kind: 'mic', pid: d.pid, name: d.name, muted: d.muted }, pid);
+        if (!Net.isHost && !fromHost) break;
+        if (Net.isHost && !senderEntry) break;
+        var midP = Net.isHost ? pid : d.pid; // 房主端以連線 pid 為準；來賓端用房主蓋章的原寄件者 pid
+        Net.remoteMic[midP] = d.muted;
+        onRemoteMic({ pid: midP, name: Net.isHost ? senderEntry.name : d.name, muted: d.muted });
+        if (Net.isHost) platBroadcast({ kind: 'mic', pid: midP, name: senderEntry.name, muted: d.muted }, pid);
         renderVideos();
         break;
       }
-      case 'arm': if (!Net.isHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); platPreload(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
-      case 'tab': if (!Net.isHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
+      case 'arm': if (fromHost && ['sudoku', 'hashi', 'mines'].indexOf(d.game) >= 0) { Net.armed.game = d.game; Net.roomTab = d.game; renderRoomTabs(); prRenderRegions(); if (hubVisible()) hubRender(); platPreload(); } break; // 未知 game 不寫入 armed，否則房主按開始時 hubLaunchCfg 會讀到 undefined 設定丟例外
+      case 'tab': if (fromHost) { Net.roomTab = d.tab; renderTourn(); renderRoomTabs(); if (hubVisible()) hubRender(); } break;
       case 'ready': case 'spec': {
         if (!Net.isHost) return;
         var H9 = ensureHub(), map9 = d.kind === 'ready' ? H9.ready : H9.spec;
-        map9[d.uid || pid] = d.kind === 'ready' ? !!d.ready : !!d.spec;
+        map9[senderEntry ? (senderEntry.uid || senderEntry.pid) : pid] = d.kind === 'ready' ? !!d.ready : !!d.spec; // 以連線 pid 查到的身分為準，不用自報 uid（A-02）
         hubStateBroadcast(); renderLobby();
         break;
       }
-      case 'hubstate': { var H10 = ensureHub(); H10.ready = d.ready || {}; H10.spec = d.spec || {}; renderLobby(); break; }
-      case 'hubcfg': { var H11 = ensureHub(); if (d.game && d.cfg) H11.cfg[d.game] = d.cfg; if (hubVisible()) hubRender(); break; }
+      case 'hubstate': { if (!fromHost) break; var H10 = ensureHub(); H10.ready = d.ready || {}; H10.spec = d.spec || {}; renderLobby(); break; }
+      case 'hubcfg': { if (!fromHost) break; var H11 = ensureHub(); if (d.game && d.cfg) H11.cfg[d.game] = d.cfg; if (hubVisible()) hubRender(); break; }
       case 'identity': { // 房間頁改暱稱/代表色：來賓只能改自己（以寄件者 pid 為準，不信任訊息裡的 uid），房主驗證後套用到名單並廣播
         if (!Net.isHost) break;
         var ie2 = null; Net.roster.forEach(function (p) { if (p.pid === pid) ie2 = p; });
         if (ie2) { var ierr2 = hubApplyIdentity(ie2, d.name, d.color); if (ierr2) { var ic2 = Net.conns[pid]; if (ic2) platSend(ic2, { kind: 'identity-denied', msg: ierr2 }); } }
         break;
       }
-      case 'identity-denied': lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
+      case 'identity-denied': if (!fromHost) break; lobbyMsg(d.msg || '⚠️ 修改失敗'); break;
       case 'launch': {
+        if (!fromHost) break; // 開局只能由房主發起（接管重播走 restored 分支，寄件者仍是新房主連線）
         if (['sudoku', 'hashi', 'mines'].indexOf(d.game) < 0) break; // 未知 game（跨版/損毀訊息）不可把畫面切成整面空白
         if (Net.restored) { Net.restored = false; Net.inMatch = d.game; Net.matchMode = d.mode || 'coop'; window.PLAT_show(d.game); renderLobby(); }
         else if (!Net.isHost) {
@@ -22648,7 +22768,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         }
         break;
       }
-      case 'match-live': { Net.liveMatch = d.ml || null; renderResumeBanner(); break; }
+      case 'match-live': { if (!fromHost) break; Net.liveMatch = d.ml || null; renderResumeBanner(); break; }
       case 'relaunch-me': { // 房間頁選手請求回座：房主驗證他是本場選手後，對他單獨重發 launch（resume）
         if (!Net.isHost || !Net.inMatch || !Net.liveMatch) break;
         var rme = null; Net.roster.forEach(function (p) { if (p.pid === pid) rme = p; });
@@ -22658,22 +22778,22 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         platSend(rc9, { kind: 'launch', game: Net.inMatch, mode: Net.matchMode || 'coop', cfg: (Net.lastLaunch && Net.lastLaunch.game === Net.inMatch) ? Net.lastLaunch.cfg : undefined, tourn: (Net.tourn && (Net.tourn.phase === 'playing' || Net.tourn.phase === 'playoff')) ? tournSess() : undefined, resume: true });
         break;
       }
-      case 'return': if (!Net.isHost) doReturnToLobby(); break;
-      case 'host-leaving': if (!Net.isHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）
-      case 'tourn-setup': if (d.cfg && d.cfg.entrants) { Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + (d.cfg.totalRounds || 5) + ' 局'); renderTourn(); } break; // cfg 缺失/缺 entrants 時 tournNewState 會丟例外讓 Net.tourn 半成品，先擋下
+      case 'return': if (fromHost) doReturnToLobby(); break;
+      case 'host-leaving': if (fromHost) onHostConnLost(); break; // 房主主動退房：其餘人接管選舉（第一位非房主升格、同房號）；只認房主連線送來的，防假冒觸發選舉
+      case 'tourn-setup': if (!fromHost) break; if (d.cfg && d.cfg.entrants) { Net.tourn = tournNewState(d.cfg, 'playing'); sysChat('🏆 錦標賽開始！共 ' + (d.cfg.totalRounds || 5) + ' 局'); renderTourn(); } break; // cfg 缺失/缺 entrants 時 tournNewState 會丟例外讓 Net.tourn 半成品，先擋下
       case 'tourn-ack': {
         if (Net.isHost && Net.tourn) {
           var ta = Net.tourn, all2 = (ta.acks = ta.acks || {});
-          var ackKey = d.uid || pid;
+          var ackKey = senderEntry ? (senderEntry.uid || senderEntry.pid) : pid; // 以連線 pid 查到的身分為準（A-02）
           var rec = all2[ackKey] || (all2[ackKey] = {});
           rec[d.what] = d.round; if (d.game) rec.enteredGame = d.game;
           renderTourn();
         }
         break;
       }
-      case 'tourn-score': { var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; if (d.tiedPids) tst.tiedPids = d.tiedPids; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
-      case 'tourn-end': { var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
-      case 'tourn-abort': tournClear(); renderLobby(); break;
+      case 'tourn-score': { if (!fromHost) break; var tst = Net.tourn; if (tst) { tst.totals = d.totals || tst.totals; tst.wins = d.wins || tst.wins; tst.history = d.history || tst.history; tst.round = d.round || tst.round; tst.phase = d.phase || 'standings'; if (d.game) tst.curGame = d.game; if (d.progress) tst.progress = d.progress; if (d.finishOrder) tst.finishOrder = d.finishOrder; if (d.boom) tst.boom = d.boom; if (d.tiedPids) tst.tiedPids = d.tiedPids; tst.settled = (tst.phase !== 'playing' && tst.phase !== 'playoff'); if (!Net.isHost && !Net.inMatch && (tst.phase === 'standings' || tst.phase === 'playoff-pending')) platToHost({ kind: 'tourn-ack', what: 'lobby', round: tst.round, uid: Net.myUid }); } renderTourn(); break; }
+      case 'tourn-end': { if (!fromHost) break; var ten = Net.tourn; if (ten) { ten.phase = 'ended'; ten.champion = d.champion; ten.endNote = d.note || ''; ten.totals = d.totals || ten.totals; ten.wins = d.wins || ten.wins; ten.history = d.history || ten.history; } if (Net.inMatch) doReturnToLobby(); if (d.champion) sysChat('🏆 總冠軍：' + d.champion.name + '！'); renderTourn(); break; }
+      case 'tourn-abort': if (!fromHost) break; tournClear(); renderLobby(); break;
     }
   }
   // ---------- 房主斷線接管（未收到 bye 的意外斷線才走這裡；主動解散已在 endSession 處理） ----------
@@ -22697,7 +22817,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       var peer = new RealPeer('yyh-tgsh-' + code + '-host');
       Net.peer = peer;
       peer.on('open', function (id) {
-        Net.hostPid = id; Net.isHost = true; Net.migrating = false;
+        Net.hostPid = id; Net.isHost = true; Net.migrating = false; Net.timeOffset = 0; // 升格房主後自己就是時間基準
         sysChat('👑 你已接管成為新房主，朋友們正在重連…');
         renderLobby(); updateDock();
         platBroadcast({ kind: 'roster', players: Net.roster, code: Net.code });
@@ -22785,7 +22905,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     var p = new RealPeer('yyh-tgsh-' + code + '-host');
     Net.peer = p;
     p.on('open', function (id) {
-      Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true;
+      Net.myPid = id; Net.hostPid = id; Net.isHost = true; Net.active = true; Net.timeOffset = 0;
       Net.roster = [{ pid: id, uid: Net.myUid, ver: PLAT_VERSION, name: Net.me.name, color: Net.me.color, host: true }];
       lobbyMsg(''); renderLobby(); updateDock();
       sysChat('🏠 房間已建立，房號 ' + code + '（把房號告訴朋友）');
@@ -22815,7 +22935,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (!name) { lobbyMsg('⚠️ 請先輸入暱稱'); return; }
     var code = ($('lob-code').value || '').trim();
     if (code.length !== 4) { lobbyMsg('⚠️ 請輸入 4 位數房號'); return; }
-    Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host';
+    Net.code = code; Net.hostPid = 'yyh-tgsh-' + code + '-host'; Net.timeOffset = 0; // 換房重新估計時鐘偏移
     storeSet('plat_room', code); storeSet('plat_room_role', 'guest');
     lobbyMsg('正在連線到房間 ' + code + '…');
     var p = new RealPeer();
@@ -23335,7 +23455,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         t.history[r].placements.forEach(function (x) { if (x.uid ? x.uid === e.uid : x.pid === e.pid) pl = x; });
         cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
       }
-      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + (e.color || '#ccc') + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
     });
     html += '</tbody></table>';
     var last = t.history[t.history.length - 1];
@@ -23577,7 +23697,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (ro) {
       var h = '';
       (st.players || []).forEach(function (pl) {
-        var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : (pl.color || '#ccc');
+        var bg = pl.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : platSafeColor(pl.color);
         h += '<div class="bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800"' + (pl.pending ? ' style="opacity:.55"' : '') + '>';
         h += '<div class="flex items-center gap-2"' + (pl.clickable ? ' data-pr="player-click" data-key="' + pbEsc(pl.key) + '" style="cursor:pointer"' : '') + '>';
         h += '<span class="relative shrink-0"><span class="w-4 h-4 rounded-full inline-block border-2 border-slate-800 shadow-inner' + (pl.color === 'rainbow' ? ' plat-rainbow-anim' : '') + '" style="' + (pl.color === 'rainbow' ? '' : 'background:' + bg + ';') + (pl.pending ? 'filter:grayscale(1)' : '') + '"></span>';
@@ -23726,7 +23846,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     (s.entries || []).forEach(function (e, i) {
       var medal = medals[i] || ((i + 1) + '.');
       var rowStyle = i === 0 ? 'background:' + ac + '2e;border-color:#1e293b' : 'background:#f8fafc;border-color:#cbd5e1';
-      var stripe = e.color === 'rainbow' ? '' : 'background:' + (e.color || '#94a3b8');
+      var stripe = e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color);
       h += '<div class="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl text-left" style="border-width:3px;border-style:solid;' + rowStyle + '">'
         + '<span class="shrink-0 text-center" style="font-size:1.4rem;width:2rem">' + medal + '</span>'
         + '<span class="shrink-0 rounded-full' + (e.color === 'rainbow' ? ' plat-rainbow-anim' : '') + '" style="width:4px;align-self:stretch;' + stripe + '"></span>'
@@ -24091,6 +24211,9 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     call.on('error', function () {});
   }
   function handleCall(call) {
+    // 來電白名單（B-05）：只接名單內成員的視訊來電——Peer ID 格式可預測，不擋的話知道 ID 的人可直接呼叫建立媒體連線
+    var okCall = false; Net.roster.forEach(function (p) { if (p.pid === call.peer) okCall = true; });
+    if (!okCall) { try { call.close(); } catch (e) {} status('📵 已拒絕名單外來電：' + call.peer); return; }
     try { call.answer(Net.localStream || undefined); } catch (e) { try { call.answer(); } catch (e2) {} }
     wireCall(call, call.peer);
   }
@@ -24274,7 +24397,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     nameInp.addEventListener('input', function () { slotName = nameInp.value; $('slot-display').textContent = nameInp.value || '🎰'; });
     $('lob-confirm').onclick = function () {
       if (colorSpinning) return; // 拉霸進行中擋手動連點：否則會先建一次房、拉霸結束的回呼再補點一次，產生兩個 peer（完成回呼是在 colorSpinning 清除後才觸發，不受此守衛影響）
-      var name = (nameInp.value || '').trim();
+      var name = (nameInp.value || '').replace(/[<>&"']/g, '').trim().slice(0, 12);
       if (!name) {
         if (slotTimer) return;
         lobbyMsg('🎰 名字空白，幫你拉霸選一個…');

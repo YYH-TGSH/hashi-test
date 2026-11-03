@@ -1,0 +1,1497 @@
+// 踩地雷 Minesweeper（平台第三款遊戲）
+// 架構比照數獨/數橋：React 單一 app、平台模式走殼的 Peer 連線（PlatPeer shim）與共用元件（PlatBar/PlatRoom/PlatResults/PlatCountdown）。
+// 規則（使用者 2026-10-28 拍板）：多人競速踩到雷直接出局、照當時進度%排名；盤面 9×9・10雷（預設）/16×16・40雷；
+// 第一版不做大亂鬥道具（純競速）；第一次點擊永遠不踩雷；觀戰只看已挖開/插旗狀態、不洩漏雷位。
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
+function platTimeOffset() { try { return (window.__PLAT_NET && window.__PLAT_NET.timeOffset) || 0; } catch (e) { return 0; } } // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
+function sGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+function sSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function fmtTime(sec) { sec = Math.max(0, Math.floor(sec || 0)); var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
+function todayStr(d) { d = d || new Date(); var m = d.getMonth() + 1, day = d.getDate(); return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day; }
+// ---------- 每日一題（日期種子，全員同題；規則比照數獨/數橋） ----------
+function dailySeed(dateStr) { return hashStr('mines-daily-' + dateStr); }
+function readDailyRecords() { try { return JSON.parse(sGet('mines_daily_records') || '{}') || {}; } catch (e) { return {}; } }
+function readDailyStreak() { try { return JSON.parse(sGet('mines_daily_streak') || 'null') || { last: '', count: 0 }; } catch (e) { return { last: '', count: 0 }; } }
+function shiftDate(dateStr, days) { var p = dateStr.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); d.setDate(d.getDate() + days); return todayStr(d); }
+var DAILY_MIN = '2026-01-01';
+
+// ---------- 盤面引擎（純函式，可獨立驗證） ----------
+var SIZES = {
+  9: { id: 9, w: 9, h: 9, mines: 10, name: '9×9・10 雷', short: '9×9' },
+  16: { id: 16, w: 16, h: 16, mines: 40, name: '16×16・40 雷', short: '16×16' }
+};
+function neighborsOf(w, h, i) {
+  var x = i % w, y = Math.floor(i / w), out = [];
+  for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+    if (!dx && !dy) continue;
+    var nx = x + dx, ny = y + dy;
+    if (nx >= 0 && nx < w && ny >= 0 && ny < h) out.push(ny * w + nx);
+  }
+  return out;
+}
+// 以 seed 決定性生成雷位（同 seed 全員同一盤）
+function makeLayout(w, h, mines, seed) {
+  var rnd = mulberry32(seed), n = w * h, idx = [], i, j, t;
+  for (i = 0; i < n; i++) idx.push(i);
+  for (i = n - 1; i > 0; i--) { j = Math.floor(rnd() * (i + 1)); t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+  var L = new Array(n).fill(false);
+  for (i = 0; i < mines; i++) L[idx[i]] = true;
+  return L;
+}
+function computeNums(w, h, L) {
+  var N = new Array(w * h).fill(0), i;
+  for (i = 0; i < w * h; i++) {
+    if (L[i]) { N[i] = -1; continue; }
+    var nb = neighborsOf(w, h, i), c = 0;
+    for (var k = 0; k < nb.length; k++) if (L[nb[k]]) c++;
+    N[i] = c;
+  }
+  return N;
+}
+// 第一次點擊保護（2026-10-29 使用者定案）：點的格子＋周圍 8 格整圈都不能有雷——把保護圈內的雷
+// 依編號序移到圈外「最低編號的非雷格」（圈內格不可當落點）。確定性：全員同 seed＋同首點 → 同結果；競速時各人只影響自己的盤
+// 回傳 { layout: 新盤面, moves: [[from, to], ...] }（moves 空陣列＝本來就安全、盤面不變）
+function makeFirstSafe(L, w, h, clickIdx, cells) {
+  var zone = {}; zone[clickIdx] = true;
+  neighborsOf(w, h, clickIdx).forEach(function (i) { zone[i] = true; });
+  var NL = L.slice(), moves = [];
+  Object.keys(zone).map(Number).filter(function (i) { return NL[i]; }).sort(function (a, b) { return a - b; }).forEach(function (from) {
+    if (cells && cells[from] === 'L') return; // 禮物鎖定旗標住的雷不搬家：搬走會讓旗子孤兒化標在安全格上——鄰格數字全亂、該格永遠開不了（使用者實機截圖回報）
+    NL[from] = false;
+    var placed = false;
+    for (var i = 0; i < NL.length; i++) { if (!zone[i] && !NL[i]) { NL[i] = true; moves.push([from, i]); placed = true; break; } }
+    if (!placed) NL[from] = true; // 圈外無空格（本遊戲的雷密度不會發生）：退回原位，不吃掉雷
+  });
+  return { layout: NL, moves: moves };
+}
+// 從 from 挖開：回傳 {cells: 新狀態陣列, hit: 踩到的雷 index 或 -1, opened: 本次新開的安全格數}
+// cells 狀態：'h' 未開 / 'o' 已開 / 'f' 插旗
+function revealFrom(w, h, L, N, cells, from) {
+  var NC = cells.slice(), opened = 0;
+  if (NC[from] !== 'h') return { cells: NC, hit: -1, opened: 0 };
+  if (L[from]) { NC[from] = 'o'; return { cells: NC, hit: from, opened: 0 }; }
+  var stack = [from];
+  while (stack.length) {
+    var i = stack.pop();
+    if (NC[i] !== 'h' || L[i]) continue;
+    NC[i] = 'o'; opened++;
+    if (N[i] === 0) { var nb = neighborsOf(w, h, i); for (var k = 0; k < nb.length; k++) if (NC[nb[k]] === 'h') stack.push(nb[k]); }
+  }
+  return { cells: NC, hit: -1, opened: opened };
+}
+function countOpened(cells) { var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'o') c++; return c; }
+function countFlags(cells) { var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'f' || cells[i] === 'L' || cells[i] === 'x') c++; return c; } // 'L'＝禮物鎖定旗、'x'＝容錯踩雷格（皆計入旗數/剩餘雷數扣減）
+
+// ---------- 極簡音效（WebAudio，靜音鍵 mines_muted） ----------
+var _ac = null;
+function beep(freq, dur, type, vol, slideTo) {
+  if (sGet('mines_muted') === '1') return;
+  try {
+    _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (_ac.state === 'suspended') _ac.resume();
+    var o = _ac.createOscillator(), g = _ac.createGain(), t = _ac.currentTime;
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(vol || 0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(_ac.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+var SFX = {
+  dig: function () { beep(520, 0.05, 'sine', 0.06); },
+  flag: function () { beep(880, 0.06, 'triangle', 0.07); },
+  boom: function () { beep(180, 0.5, 'sawtooth', 0.12, 40); },
+  win: function () { [523, 659, 784, 1046].forEach(function (f, i) { setTimeout(function () { beep(f, 0.16, 'triangle', 0.08); }, i * 110); }); },
+  click: function () { beep(700, 0.04, 'sine', 0.05); }
+};
+
+var NUM_COLORS = { 1: '#2563eb', 2: '#16a34a', 3: '#dc2626', 4: '#1e3a8a', 5: '#7f1d1d', 6: '#0d9488', 7: '#111827', 8: '#6b7280' };
+var ACCENT = '#f97316';
+var MP_COLORS = ['#E3002B', '#F35B00', '#b58900', '#D7157A', '#007A61', '#87D300', '#00538A', '#008CC1', '#935CB9', '#7A0026'];
+function myGameId() { var u = sGet('plat_uid_mines'); if (!u) { u = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9); sSet('plat_uid_mines', u); } return u; }
+function normName(s) { return (s || '').trim().toLowerCase(); }
+
+function MinesGame() {
+  var isPlat = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
+  // ---------- 畫面/單機狀態 ----------
+  const [screen, setScreen] = useState('home'); // home | game
+  const [showHelp, setShowHelp] = useState(false);
+  const [muted, setMuted] = useState(sGet('mines_muted') === '1');
+  const [sizeId, setSizeId] = useState(9);
+  const [layout, setLayout] = useState(null);       // bool[] 雷位（目前這一局）
+  const [nums, setNums] = useState(null);           // int[] 鄰雷數（-1=雷）
+  const [cells, setCells] = useState(null);         // 'h'|'o'|'f'
+  const [ownArr, setOwnArr] = useState(null);       // 合作專用：每格由哪位玩家開啟（players 索引，-1=未開）→ 染玩家色算貢獻
+  const [vpW, setVpW] = useState(() => (typeof window !== 'undefined' && window.innerWidth) || 390); // 視窗寬（盤面響應式放大用）
+  const [curSeed, setCurSeed] = useState(0);
+  const [status, setStatus] = useState('ready');    // ready | playing | won | lost
+  const [hitIdx, setHitIdx] = useState(-1);
+  const [inputMode, setInputMode] = useState('dig'); // dig | flag
+  const [startedAt, setStartedAt] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [dailyDate, setDailyDate] = useState(null);  // 非 null = 每日一題模式（日期字串）
+  const [dailySel, setDailySel] = useState(todayStr()); // 主畫面每日一題目前選取日期
+  const firstRef = useRef(true);                    // 本局是否還沒挖第一下（首點保護/計時起點）
+  const statusRef = useRef('ready'); statusRef.current = status;
+  const lpRef = useRef(null);                       // 長按計時器（長按插旗）
+  const lpPtRef = useRef(null);                     // 長按起點座標（移動超過 10px 取消長按：滑動/捲動不是長按）
+
+  const spec = SIZES[sizeId] || SIZES[9];
+  const totalSafe = spec.w * spec.h - spec.mines;
+  const openedSafe = useMemo(() => { if (!cells) return 0; var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'o' && (!layout || !layout[i])) c++; return c; }, [cells, layout]); // layout 為 null（合作來賓看不到雷位）時直接數已開格：'o' 恆為安全格，進度才不會恆 0%
+  const flagsUsed = useMemo(() => cells ? countFlags(cells) : 0, [cells]);
+  // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
+  const [myItems, setMyItems] = useState({ question: 0, backfill: 0, gift: 0 });
+  const itemsRef = useRef({ question: 0, backfill: 0, gift: 0 });
+  const [questionFx, setQuestionFx] = useState({}); // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
+  const questionFxRef = useRef({});
+  const [itemToast, setItemToast] = useState(null);
+  const itemToastTimerRef = useRef(null);
+  const [mistLeft, setMistLeft] = useState(0);   // 競速容錯剩餘次數（顯示用）
+  const mistakesRef = useRef(0);                // 競速已用掉的容錯次數
+  const [zoom, setZoom] = useState(1);          // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const giftCreditRef = useRef(0);        // 禮物額度（正確插旗 +0.5，滿 1 送弱者）
+  const creditedMinesRef = useRef({});    // 已計入額度的雷格（防拔插重刷）
+  const milestoneRef = useRef(0);         // 已通報的里程碑段數（每 5% 一段，只增不減——被回填打回去也不重報）
+  const lastOneDoneRef = useRef(false);   // 最後一位轉換只做一次
+  const autoItemIvRef = useRef(null);
+  const autoGiftIvRef = useRef(null);
+  function itemSay(msg) { setItemToast(msg); if (itemToastTimerRef.current) clearTimeout(itemToastTimerRef.current); itemToastTimerRef.current = setTimeout(() => setItemToast(null), 3400); }
+  function resetItems() { itemsRef.current = { question: 0, backfill: 0, gift: 0 }; setMyItems({ question: 0, backfill: 0, gift: 0 }); questionFxRef.current = {}; setQuestionFx({}); giftCreditRef.current = 0; creditedMinesRef.current = {}; milestoneRef.current = 0; lastOneDoneRef.current = false; if (autoItemIvRef.current) { clearInterval(autoItemIvRef.current); autoItemIvRef.current = null; } if (autoGiftIvRef.current) { clearInterval(autoGiftIvRef.current); autoGiftIvRef.current = null; } }
+  const progress = totalSafe ? openedSafe / totalSafe : 0;
+  const dbgRef = useRef(null); // 唯讀狀態快照（測試/除錯用，掛在 hooks.debug）
+  dbgRef.current = { layout: layout, cells: cells, nums: nums, owners: ownArr, status: status, sizeId: sizeId, progress: progress, openedSafe: openedSafe, seed: curSeed, screen: screen, items: { question: myItems.question, backfill: myItems.backfill, gift: myItems.gift }, giftCredit: giftCreditRef.current, qfx: questionFx, milestones: milestoneRef.current, mistakes: mistakesRef.current, mistLeft: mistLeft, zoom: zoom };
+
+  useEffect(() => { if (typeof window === 'undefined') return; const f = () => setVpW(window.innerWidth || 390); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
+  // ---------- 計時 ----------
+  useEffect(() => {
+    if (!startedAt) return;
+    if (status !== 'playing' && !(mpRef.current.on && mpPhase === 'playing')) return; // 多人：首點前 status 還停在 ready，計時靠 mpPhase 驅動
+    var iv = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 250);
+    return () => clearInterval(iv);
+  }, [status, startedAt, mpPhase]);
+  useEffect(() => { if (screen !== 'mp') return; var iv = setInterval(() => setWaitTick(t => t + 1), 1000); return () => clearInterval(iv); }, [screen]);
+
+  // ---------- 開局 ----------
+  function newGame(szId, seed, daily) {
+    setHdrOpen(true); // 單機/每日開始：標頭規則面板展開（比照數獨）
+    var sp = SIZES[szId] || SIZES[9];
+    var sd = (seed != null) ? seed : (Math.random() * 4294967296) >>> 0;
+    var L = makeLayout(sp.w, sp.h, sp.mines, sd);
+    setSizeId(sp.id); setCurSeed(sd); setLayout(L); setNums(computeNums(sp.w, sp.h, L));
+    setCells(new Array(sp.w * sp.h).fill('h'));
+    setStatus('ready'); statusRef.current = 'ready';
+    setHitIdx(-1); setInputMode('dig'); setStartedAt(null); setElapsed(0);
+    setDailyDate(daily || null);
+    firstRef.current = true;
+    setScreen('game');
+  }
+
+  // 挖一格（含首點保護、和弦、勝負判定）——單機與多人共用核心
+  function doReveal(from, baseCells, baseLayout, baseNums) {
+    var sp = baseCells.length === 256 ? SIZES[16] : SIZES[9]; // 從盤面大小推，不吃 state 更新時序
+    var L = baseLayout, N = baseNums, C = baseCells;
+    if (firstRef.current) {
+      var fs = makeFirstSafe(L, sp.w, sp.h, from, baseCells);
+      if (fs.moves.length) { L = fs.layout; N = computeNums(sp.w, sp.h, L); setLayout(L); setNums(N); }
+      firstRef.current = false;
+      if (!mpRef.current.on) { setStartedAt(Date.now()); startedAtRef.current = Date.now(); } // 多人：計時起點是 MINE_START 的 startAt（setupBoardFromSeed 已設定）
+      setStatus('playing'); statusRef.current = 'playing';
+    }
+    var r = revealFrom(sp.w, sp.h, L, N, C, from);
+    if (r.hit >= 0) {
+      // 競速容錯（使用者定案：容錯次數＝雷數 10%，10 雷 1 次、40 雷 4 次）：額度內踩雷不算出局——
+      // 照樣引爆，但那格改記 'x'（✗、確認是雷），玩家續玩；和弦與旗數都把 'x' 當已知雷。單機/合作不適用。
+      var allow = mistakeAllowance();
+      if (allow > 0 && !outcomeRef.current && mistakesRef.current < allow) {
+        mistakesRef.current += 1;
+        var xc = r.cells.slice(); xc[r.hit] = 'x';
+        setCells(xc); setMistLeft(allow - mistakesRef.current); SFX.boom();
+        itemSay('💥 踩到雷！這格記 ✗——愛心還剩 ' + (allow - mistakesRef.current + 1) + ' 顆');
+        return { hit: -1, cells: xc, layout: L, nums: N, forgiven: r.hit };
+      }
+      setCells(r.cells); setHitIdx(r.hit); setStatus('lost'); statusRef.current = 'lost'; SFX.boom();
+      return { hit: r.hit, cells: r.cells, layout: L, nums: N };
+    }
+    if (r.opened > 0) SFX.dig();
+    setCells(r.cells);
+    var opened = 0; for (var i = 0; i < r.cells.length; i++) if (r.cells[i] === 'o' && !L[i]) opened++;
+    if (opened >= sp.w * sp.h - sp.mines) {
+      setStatus('won'); statusRef.current = 'won'; SFX.win();
+      if (!mpRef.current.on) onSoloWin(); // 多人場不寫單機最佳紀錄（競速由 afterRaceAction 處理）
+    }
+    return { hit: -1, cells: r.cells, layout: L, nums: N };
+  }
+
+  function onSoloWin() {
+    var t = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : elapsed;
+    if (dailyDate) {
+      // 每日一題：完成才寫該日最佳；連勝只有今天的題目會動（回補不影響）
+      var rec = readDailyRecords();
+      if (rec[dailyDate] == null || t < rec[dailyDate]) { rec[dailyDate] = t; sSet('mines_daily_records', JSON.stringify(rec)); }
+      if (dailyDate === todayStr()) {
+        var st = readDailyStreak();
+        if (st.last === dailyDate) { /* 同日重玩不重複計 */ }
+        else if (st.last === shiftDate(dailyDate, -1)) sSet('mines_daily_streak', JSON.stringify({ last: dailyDate, count: (st.count || 0) + 1 }));
+        else sSet('mines_daily_streak', JSON.stringify({ last: dailyDate, count: 1 }));
+      }
+      return;
+    }
+    var key = 'mines_best_' + sizeId;
+    var prev = parseInt(sGet(key) || '0', 10);
+    if (!prev || t < prev) sSet(key, String(t));
+  }
+  function startDaily(ds) { newGame(9, dailySeed(ds), ds); }
+
+  function chord(idx) {
+    if (!layout || !cells || nums[idx] <= 0) return;
+    var sp = cells.length === 256 ? SIZES[16] : SIZES[9], nb = neighborsOf(sp.w, sp.h, idx), f = 0, i;
+    for (i = 0; i < nb.length; i++) if (cells[nb[i]] === 'f' || cells[nb[i]] === 'L' || cells[nb[i]] === 'x') f++; // 鎖定旗與容錯 ✗ 也算已知雷（和弦判定）
+    if (f !== nums[idx]) return;
+    var C = cells, L = layout, N = nums, last = { cells: C, layout: L, nums: N };
+    for (i = 0; i < nb.length; i++) {
+      var t = nb[i];
+      if (C[t] !== 'h') continue;
+      var r = doReveal(t, C, L, N);
+      C = r.cells; L = r.layout; N = r.nums; last = r;
+      if (r.hit >= 0) return last;
+      if (statusRef.current === 'won') return last;
+    }
+    return last;
+  }
+
+  function mpSendAct(kind, idx) { // 合作動作：房主自己走定序佇列，來賓送給房主
+    if (mpRef.current.isHost) { var pl = myPlayer(); processCoopAct(kind, idx, myId, pl ? pl.name : ''); }
+    else mpSend({ type: 'MINE_ACT', uid: myId, kind: kind, idx: idx });
+  }
+  function toggleFlag(idx) {
+    if (mpRef.current.on) {
+      if (mpRef.current.phase !== 'playing' || iAmSpecRef.current) return;
+      if (mpRef.current.mode === 'coop') { if (status !== 'won' && status !== 'lost') mpSendAct('flag', idx); return; }
+      if (!cells || outcomeRef.current || cells[idx] === 'o' || cells[idx] === 'L' || cells[idx] === 'x') return; // 'L' 禮物鎖定旗不可拔、'x' 容錯踩雷格已定案不可動
+      var NC2 = cells.slice();
+      NC2[idx] = NC2[idx] === 'f' ? 'h' : 'f';
+      if (NC2[idx] === 'f' && layout && layout[idx] && mpRef.current.itemsAllow && !creditedMinesRef.current[idx]) { creditedMinesRef.current[idx] = 1; giftCreditRef.current += 0.5; trySendGift(); } // 正確插旗 +0.5 禮物額度（同一顆雷只計一次）
+      setCells(NC2); SFX.flag();
+      raceSendState(NC2, nums, layout, false);
+      return;
+    }
+    if (!cells || (status !== 'ready' && status !== 'playing')) return;
+    if (cells[idx] === 'o') return;
+    var NC = cells.slice();
+    NC[idx] = NC[idx] === 'f' ? 'h' : 'f';
+    setCells(NC); SFX.flag();
+  }
+
+  function onCellAction(idx) {
+    if (lpFiredRef.current) { lpFiredRef.current = false; return; } // 這次 click 是長按插旗的尾巴
+    var lc = lpCellRef.current; lpCellRef.current = null;
+    if (lc && lc.idx !== idx && Date.now() - lc.t < 800) return; // 按壓起點不在這格：手指滑移/畫面微捲讓 click 落到鄰格（常見是旗那格）→ 整下忽略，旗不會被誤取消
+    if (mpRef.current.on) {
+      if (mpRef.current.phase !== 'playing' || iAmSpecRef.current || !cells) return;
+      if (mpRef.current.mode === 'coop') {
+        if (status === 'won' || status === 'lost') return;
+        if (inputMode === 'flag' && cells[idx] !== 'o') { mpSendAct('flag', idx); return; } // 插旗模式點已開的數字格：照樣和弦揭露（使用者 2026-10-30 指示，三路徑同規）
+        if (cells[idx] === 'f') return;
+        if (cells[idx] === 'o') { // 合作和弦：把鄰格挖開拆成單格動作依序送出（房主定序，踩雷後後續的會被擋下）
+          if (!nums || nums[idx] <= 0) return;
+          var sp2 = cells.length === 256 ? SIZES[16] : SIZES[9], nb2 = neighborsOf(sp2.w, sp2.h, idx), f2 = 0, j2;
+          for (j2 = 0; j2 < nb2.length; j2++) if (cells[nb2[j2]] === 'f') f2++;
+          if (f2 !== nums[idx]) return;
+          for (j2 = 0; j2 < nb2.length; j2++) if (cells[nb2[j2]] === 'h') mpSendAct('reveal', nb2[j2]);
+          return;
+        }
+        mpSendAct('reveal', idx); return;
+      }
+      // 競速：本地盤面 + 廣播
+      if (outcomeRef.current || status === 'won' || status === 'lost') return;
+      if (inputMode === 'flag' && cells[idx] !== 'o') { toggleFlag(idx); return; } // 插旗模式點已開格 → 下方 chord 揭露
+      if (cells[idx] === 'f' || cells[idx] === 'L') return;
+      var res = (cells[idx] === 'o') ? chord(idx) : doReveal(idx, cells, layout, nums);
+      if (res) afterRaceAction(res.cells, res.nums, res.layout);
+      return;
+    }
+    if (!cells || status === 'won' || status === 'lost') return;
+    if (inputMode === 'flag' && cells[idx] !== 'o') { toggleFlag(idx); return; } // 插旗模式點已開格 → 下方 chord 揭露
+    if (cells[idx] === 'f' || cells[idx] === 'L') return;
+    if (cells[idx] === 'o') { chord(idx); return; }
+    doReveal(idx, cells, layout, nums);
+  }
+  const lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
+  const lpCellRef = useRef(null);   // 本次按壓的起點格 {idx, t}：click 落點若漂移到別格就忽略（防滑移/捲動讓點數字誤動到旁邊的旗）
+  function onCellDown(idx, e) {
+    if (lpRef.current) clearTimeout(lpRef.current);
+    lpFiredRef.current = false;
+    lpCellRef.current = { idx: idx, t: Date.now() };
+    lpPtRef.current = (e && typeof e.clientX === 'number') ? { x: e.clientX, y: e.clientY } : null;
+    // 已定案的格（已開數字、容錯 ✗、禮物鎖定旗）不需要長按插旗計時器：不起計時器，按住數字想事情不會有任何副作用
+    if (!cells || cells[idx] === 'o' || cells[idx] === 'x' || cells[idx] === 'L') return;
+    // 500ms 與數獨的長按清除一致（舊 380ms 太短：稍用力、稍慢的一般點按就被誤判成長按插旗——誤觸主因之一）
+    lpRef.current = setTimeout(() => { lpRef.current = null; lpPtRef.current = null; lpFiredRef.current = true; toggleFlag(idx); }, 500);
+  }
+  function onCellMove(e) {
+    // 防誤觸：按住後移動超過 10px（手滑、想捲動頁面）就取消長按判定——舊版完全沒取消，
+    // 使用者按住格子往下滑想捲頁面，長按照樣計時、在起點格默默插旗（數獨本來就有 10px 取消，這裡補齊）
+    if (!lpRef.current || !lpPtRef.current || !e || typeof e.clientX !== 'number') return;
+    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > 10) { clearTimeout(lpRef.current); lpRef.current = null; lpPtRef.current = null; }
+  }
+  function onCellUp() { if (lpRef.current) { clearTimeout(lpRef.current); lpRef.current = null; } lpPtRef.current = null; }
+
+  // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
+  const myId = myGameId();
+  const [mpOn, setMpOn] = useState(false);
+  const [mpPhase, setMpPhase] = useState('off'); // off|waiting|countdown|playing|done
+  const [players, setPlayers] = useState([]);
+  const [myReadySt, setMyReadySt] = useState(false);
+  const [godBoards, setGodBoards] = useState({});
+  const [godUid, setGodUid] = useState(null);
+  const [raceFinal, setRaceFinal] = useState(null);
+  const [myOutcome, setMyOutcome] = useState(null); // 'finished'|'boom'
+  const [leaveArm, setLeaveArm] = useState(false);
+  const [showExitMenu, setShowExitMenu] = useState(false); // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  const [hdrOpen, setHdrOpen] = useState(false); // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  const [coopBoomBy, setCoopBoomBy] = useState('');
+  const [cdNum, setCdNum] = useState(null);
+  const [waitTick, setWaitTick] = useState(0);
+  const mpRef = useRef({ on: false, isHost: false, mode: 'coop', tourn: false, hub: false, code: '', sizeId: 9, seed: 0, startAt: 0, phase: 'off' });
+  const playersRef = useRef([]);
+  const peerRef = useRef(null), connsRef = useRef([]), hostConnRef = useRef(null);
+  const godRef = useRef({}), outcomeRef = useRef(null), finalRef = useRef(null);
+  const boardRef = useRef({ layout: null, nums: null, cells: null, owners: null });
+  const waitSinceRef = useRef(0), autoIvRef = useRef(null), cdIvRef = useRef(null);
+  const stateAtRef = useRef(0), lastProgRef = useRef(-1), dismissRef = useRef(null);
+  const stateArgsRef = useRef(null), stateTrailRef = useRef(null); // MINE_STATE 節流的尾隨補送（純插旗不改 progress，沒補送對手永遠看不到最後一支旗）
+  const startedAtRef = useRef(null), myReadyRef = useRef(false), leaveArmTimerRef = useRef(null);
+  const iAmSpecRef = useRef(false);
+  function setPlayersBoth(p) { playersRef.current = p; setPlayers(p); }
+  function myPlayer() { return playersRef.current.find(p => p.id === myId) || null; }
+  function iAmSpec() { var p = myPlayer(); return !!(p && p.spectator); }
+
+  function hostBroadcast(msg, exceptConn) { connsRef.current.forEach(c => { if (c !== exceptConn && c.open) { try { c.send(msg); } catch (e) {} } }); }
+  function mpSend(msg) { // 來賓→房主；房主→全場
+    if (mpRef.current.isHost) hostBroadcast(msg);
+    else if (hostConnRef.current && hostConnRef.current.open) { try { hostConnRef.current.send(msg); } catch (e) {} }
+  }
+  function godSet(uid, patch) {
+    var cur = godRef.current[uid] || { progress: 0, state: 'playing', cells: '', nums: {} };
+    godRef.current = Object.assign({}, godRef.current, { [uid]: Object.assign({}, cur, patch) });
+    setGodBoards(godRef.current);
+  }
+  function openedSafeOf(cellsArr, layoutArr) { var c = 0; if (!cellsArr || !layoutArr) return 0; for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o' && !layoutArr[i]) c++; return c; }
+
+  function cleanupMp() {
+    if (autoIvRef.current) { clearInterval(autoIvRef.current); autoIvRef.current = null; }
+    if (cdIvRef.current) { clearInterval(cdIvRef.current); cdIvRef.current = null; }
+    if (peerRef.current) { try { peerRef.current.destroy(); } catch (e) {} peerRef.current = null; }
+    connsRef.current = []; hostConnRef.current = null;
+    mpRef.current = { on: false, isHost: false, mode: 'coop', tourn: false, tournInfo: null, hub: false, code: '', sizeId: 9, seed: 0, startAt: 0, phase: 'off' };
+    setMpOn(false); setMpPhase('off'); setPlayersBoth([]); setMyReadySt(false); myReadyRef.current = false;
+    setGodBoards({}); godRef.current = {}; setRaceFinal(null); finalRef.current = null;
+    setMyOutcome(null); outcomeRef.current = null; setCdNum(null); iAmSpecRef.current = false;
+    resetItems(); setItemToast(null);
+    boardRef.current = { layout: null, nums: null, cells: null, owners: null }; // 上一場的權威盤面不可殘留到新場次（新 session 的 waiting 期若收到 ACT 會拿舊盤運算，稽核修）
+  }
+
+  // ----- 競速回座存檔（不小心跳出/重整後回來接續；比照數獨 sudoku_prog 的在地保存＋形狀/種子/年齡驗證） -----
+  function minesResumeKey() { return 'mines_resume_' + (mpRef.current.code || '') + '_' + myId; }
+  function saveResume() {
+    if (!mpRef.current.on || mpRef.current.mode !== 'race' || iAmSpecRef.current || outcomeRef.current) return;
+    var a = stateArgsRef.current; if (!a || !a[0] || !a[2] || !mpRef.current.seed) return;
+    try { sSet(minesResumeKey(), JSON.stringify({ seed: mpRef.current.seed, sizeId: mpRef.current.sizeId, startAt: mpRef.current.startAt, cells: a[0].join(''), items: itemsRef.current, giftCredit: giftCreditRef.current, milestone: milestoneRef.current, ts: Date.now() })); } catch (e) {}
+  }
+  function loadResume(seed, sizeId, total) {
+    try {
+      var raw = sGet(minesResumeKey()); if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || p.seed !== seed || p.sizeId !== sizeId || !p.cells || p.cells.length !== total) return null; // 種子/尺寸/盤面長度不符＝別場的存檔，不准還原（陳年存檔鐵則）
+      if (!p.ts || Date.now() - p.ts > 3 * 3600 * 1000) return null;
+      return p;
+    } catch (e) { return null; }
+  }
+  function resumeRestore(m) { // guestOnInit 回座：還原中斷前的盤面/犯錯/道具（本地存檔優先，房主 god 快照備援）
+    var sp = SIZES[m.sizeId] || SIZES[9], total = sp.w * sp.h;
+    var L = makeLayout(sp.w, sp.h, sp.mines, m.seed), N = computeNums(sp.w, sp.h, L);
+    var save = loadResume(m.seed, m.sizeId, total);
+    var cellsArr = null;
+    if (save) cellsArr = save.cells.split('');
+    else if (m.god && m.god[myId] && typeof m.god[myId].cells === 'string' && m.god[myId].cells.length === total) cellsArr = m.god[myId].cells.split('');
+    if (!cellsArr) return; // 無存檔可用：維持 startMatchLocal 的新盤（至少回座繼續打）
+    if (save && save.items) { itemsRef.current = { question: save.items.question || 0, backfill: save.items.backfill || 0, gift: save.items.gift || 0 }; setMyItems(itemsRef.current); giftCreditRef.current = save.giftCredit || 0; milestoneRef.current = save.milestone || 0; }
+    var mist = 0, touched = false;
+    creditedMinesRef.current = {};
+    for (var i = 0; i < total; i++) { if (cellsArr[i] === 'x') mist++; if (cellsArr[i] !== 'h') touched = true; if (cellsArr[i] === 'f' && L[i]) creditedMinesRef.current[i] = 1; } // 已計額度的正確旗：還原後重插同雷不重複計
+    mistakesRef.current = mist;
+    setMistLeft(Math.max(0, Math.floor(sp.mines / 10) - mist));
+    if (touched) firstRef.current = false; // 已動過的盤不能再觸發首點保護（會把雷搬走、跟還原盤面打架）
+    setCells(cellsArr);
+    boardRef.current = { layout: L, nums: N, cells: cellsArr, owners: boardRef.current.owners };
+    var myGod = m.god && m.god[myId];
+    if (myGod && (myGod.state === 'finished' || myGod.state === 'boom')) { // 離開前已完賽/出局：回到等待結算狀態
+      outcomeRef.current = myGod.state; setMyOutcome(myGod.state);
+      if (myGod.state === 'finished') { setStatus('won'); statusRef.current = 'won'; godSet(myId, { state: 'finished', timeMs: myGod.timeMs, progress: 1 }); }
+      else { setStatus('lost'); statusRef.current = 'lost'; godSet(myId, { state: 'boom', progress: myGod.progress || 0, boomAt: myGod.boomAt || Date.now() }); }
+      return;
+    }
+    raceSendState(cellsArr, N, L, true); // 立刻把還原盤面同步回去（房主 god/觀戰即時更新）
+    itemSay('↩ 已接續中斷前的對局進度');
+  }
+
+  // ----- 競速：本地狀態送出（progress 小訊息 + god 用盤面快照節流） -----
+  function raceSendState(cellsArr, numsArr, layoutArr, force) {
+    var opened = openedSafeOf(cellsArr, layoutArr);
+    var total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
+    var prog = total ? opened / total : 0;
+    godSet(myId, { progress: prog });
+    var pi = Math.floor(prog * 100);
+    if (pi !== lastProgRef.current) { lastProgRef.current = pi; mpSend({ type: 'MINE_PROGRESS', uid: myId, progress: prog }); }
+    stateArgsRef.current = [cellsArr, numsArr, layoutArr];
+    boardRef.current = { layout: layoutArr, nums: numsArr, cells: cellsArr, owners: boardRef.current.owners }; // 競速本地盤面鏡像（道具效果/禮物在本機盤面運算，靠它拿最新盤面）
+    var now = Date.now();
+    if (!force && now - stateAtRef.current < 250) {
+      if (!stateTrailRef.current) stateTrailRef.current = setTimeout(() => { stateTrailRef.current = null; if (stateArgsRef.current) raceSendState(stateArgsRef.current[0], stateArgsRef.current[1], stateArgsRef.current[2], true); }, 270);
+      return;
+    }
+    stateAtRef.current = now;
+    var sparse = {};
+    for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') sparse[i] = numsArr[i];
+    mpSend({ type: 'MINE_STATE', uid: myId, cells: cellsArr.join(''), nums: sparse, progress: prog });
+    godSet(myId, { cells: cellsArr.join(''), nums: sparse, progress: prog });
+    saveResume(); // 回座存檔跟著每次狀態送出更新（節流後實際寫入頻率與 MINE_STATE 同步）
+    // 里程碑（每 5% 一段）：通報房主發放道具；被回填打回去再重跨不重報（milestoneRef 只增不減）
+    if (mpRef.current.itemsAllow && mpRef.current.phase === 'playing' && !outcomeRef.current && !iAmSpecRef.current) {
+      var band = Math.floor(prog * 20);
+      if (band > milestoneRef.current) { milestoneRef.current = band; if (mpRef.current.isHost) hostHandleMilestone(myId); else mpSend({ type: 'MINE_MILESTONE', uid: myId }); }
+    }
+  }
+  function afterRaceAction(cellsArr, numsArr, layoutArr) {
+    if (!mpRef.current.on || mpRef.current.mode !== 'race') return;
+    if (outcomeRef.current) return;
+    if (statusRef.current === 'won') {
+      outcomeRef.current = 'finished'; setMyOutcome('finished');
+      var tms = Date.now() - mpRef.current.startAt;
+      raceSendState(cellsArr, numsArr, layoutArr, true);
+      godSet(myId, { state: 'finished', timeMs: tms, progress: 1 });
+      mpSend({ type: 'MINE_FINISH', uid: myId, timeMs: tms });
+      checkRaceEnd();
+    } else if (statusRef.current === 'lost') {
+      outcomeRef.current = 'boom'; setMyOutcome('boom');
+      var opened = openedSafeOf(cellsArr, layoutArr), total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
+      var prog = total ? opened / total : 0;
+      raceSendState(cellsArr, numsArr, layoutArr, true);
+      godSet(myId, { state: 'boom', progress: prog, boomAt: Date.now() });
+      mpSend({ type: 'MINE_BOOM', uid: myId, progress: prog });
+      checkRaceEnd();
+    } else {
+      raceSendState(cellsArr, numsArr, layoutArr, false);
+    }
+  }
+  // ----- 競速道具/禮物核心（v1.30） -----
+  function progOfMine(uid) { var g = godRef.current[uid]; return g ? (g.progress || 0) : 0; }
+  function unfinishedRacers() { return playersRef.current.filter(p => { if (p.spectator || p.pending) return false; if (p.id === myId) return !outcomeRef.current; var g = godRef.current[p.id]; return !g || g.state === 'playing'; }); }
+  function amLastOne() { var u = unfinishedRacers(); return u.length === 1 && u[0].id === myId && playersRef.current.filter(p => !p.spectator && !p.pending).length > 1; }
+  function pickWeightedMine(list, wfn) { var tot = 0, ws = list.map(p => { var w = Math.max(0.0001, wfn(p)); tot += w; return w; }); var r = Math.random() * tot; for (var i = 0; i < list.length; i++) { r -= ws[i]; if (r <= 0) return list[i]; } return list[list.length - 1]; }
+  function itemsLive() { return mpRef.current.on && mpRef.current.mode === 'race' && mpRef.current.itemsAllow; }
+  function mistakeAllowance() { return (mpRef.current.on && mpRef.current.mode === 'race') ? Math.floor((SIZES[mpRef.current.sizeId] || SIZES[9]).mines / 10) : 0; } // 競速容錯＝雷數 10%（10 雷→1、40 雷→4）；單機/合作回 0
+  function sendItemMsg(m) { if (mpRef.current.isHost) { hostBroadcast(m); processItemMsg(m); } else mpSend(m); } // 房主：廣播＋本地處理（自己也可能是目標）；來賓：送房主中繼
+  function processItemMsg(m) {
+    if (m.type === 'MINE_GRANT' && m.toUid === myId) applyItemGrant(m.item);
+    else if (m.type === 'MINE_GIFT' && m.toUid === myId) holdGift(m.fromName);
+    else if (m.type === 'MINE_HIT' && m.toUid === myId) applyItemHit(m.kind, m.fromName);
+    saveResume(); // 道具庫存變動也刷新回座存檔（盤面沒變時 raceSendState 不會觸發）
+  }
+  function hostHandleMilestone(fromUid) {
+    if (!mpRef.current.isHost || !itemsLive()) return;
+    if (Date.now() - (mpRef.current.startAt || 0) < (mpRef.current.itemDelay || 0) * 1000) return; // 道具延遲（比照數獨 weaponStartTime：延遲內跨的里程碑不發）
+    var pool = unfinishedRacers(); if (!pool.length) return;
+    if (pool.length === 1) { sendItemMsg({ type: 'MINE_GRANT', uid: myId, toUid: pool[0].id, item: 'gift' }); return; } // 只剩一人：里程碑直接發禮物
+    var rec = pickWeightedMine(pool, p => Math.pow(1 - progOfMine(p.id), 2) + 0.1); // 發放權重（扶弱）定版公式
+    var item = Math.random() < 0.5 ? 'question' : 'backfill';
+    sendItemMsg({ type: 'MINE_GRANT', uid: myId, toUid: rec.id, item: item });
+  }
+  function applyItemGrant(item) {
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
+    if (item === 'gift') { holdGift(''); return; }
+    if (amLastOne()) { holdGift(''); itemSay('🏁 只剩你一人，里程碑道具自動轉成禮物（在禮物鈕裡）！'); return; }
+    var ni = Object.assign({}, itemsRef.current); ni[item] = (ni[item] || 0) + 1; itemsRef.current = ni; setMyItems(ni);
+    itemSay(item === 'question' ? '🎁 里程碑道具：❓ 問號干擾 ×' + ni[item] : '🎁 里程碑道具：⏪ 回填 ×' + ni[item]);
+    maybeAutoFire();
+  }
+  function giftCandidates() { var B = boardRef.current; if (!B || !B.cells || !B.layout) return []; var cand = []; for (var i = 0; i < B.cells.length; i++) if (B.layout[i] && B.cells[i] === 'h') cand.push(i); return cand; }
+  function holdGift(fromName) { // 禮物持有制：進禮物鈕、玩家自己按才發動（使用者 2026-11-02 指示，比照數獨禮物鈕）
+    var ni = Object.assign({}, itemsRef.current); ni.gift = (ni.gift || 0) + 1; itemsRef.current = ni; setMyItems(ni);
+    itemSay(fromName ? '🎁 ' + fromName + ' 送你一個禮物！點 🎁 按鈕使用' : '🎁 收到一個禮物！點 🎁 按鈕使用');
+    maybeAutoGift();
+  }
+  function useGift() {
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
+    if ((itemsRef.current.gift || 0) <= 0) return;
+    if (!giftCandidates().length) { itemSay('🎁 所有地雷都已標記，禮物先留著'); return; }
+    var ni = Object.assign({}, itemsRef.current); ni.gift -= 1; itemsRef.current = ni; setMyItems(ni);
+    applyGiftEffect('');
+  }
+  function maybeAutoGift() { // 禮物集滿 3 自動使用（觸發後一路用到歸零，比照數獨/數橋「滿 3 自動連發歸零」；停止條件是歸零，不是掉回 2）
+    if (autoGiftIvRef.current) return;
+    if ((itemsRef.current.gift || 0) < 3) return;
+    autoGiftIvRef.current = setInterval(() => {
+      if ((itemsRef.current.gift || 0) < 1 || outcomeRef.current || !itemsLive() || !giftCandidates().length) { clearInterval(autoGiftIvRef.current); autoGiftIvRef.current = null; return; }
+      var ni = Object.assign({}, itemsRef.current); ni.gift -= 1; itemsRef.current = ni; setMyItems(ni);
+      applyGiftEffect('');
+    }, 550);
+  }
+  function applyGiftEffect(fromName) { // 禮物效果：隨機一顆未標記的真雷 → 自動插旗並鎖死（'L'）
+    var B = boardRef.current; if (!B || !B.cells || !B.layout) return;
+    var cand = giftCandidates();
+    if (!cand.length) { itemSay('🎁 禮物：所有地雷都已標記，禮物落空'); return; }
+    var idx = cand[Math.floor(Math.random() * cand.length)];
+    var NC = B.cells.slice(); NC[idx] = 'L'; setCells(NC); SFX.flag();
+    raceSendState(NC, B.nums, B.layout, true);
+    itemSay('🎁 ' + (fromName ? fromName + ' 送的禮物' : '禮物') + '：一顆地雷已被標記並鎖定！');
+  }
+  function trySendGift() { // 禮物額度滿 1：送給比自己弱的未完賽對手（sqrt 差距加權，比照數獨）；沒有對象就存著
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current || mpRef.current.phase !== 'playing') return;
+    while (giftCreditRef.current >= 1) {
+      var myP = progOfMine(myId);
+      var weaker = unfinishedRacers().filter(p => p.id !== myId && progOfMine(p.id) < myP);
+      if (!weaker.length) return;
+      var tgt = pickWeightedMine(weaker, p => Math.sqrt((myP - progOfMine(p.id)) * 100 + 1));
+      giftCreditRef.current -= 1;
+      sendItemMsg({ type: 'MINE_GIFT', uid: myId, fromUid: myId, fromName: (myPlayer() || {}).name || '', toUid: tgt.id });
+      // 不提示送出：跳「你送了禮物」等於間接告訴送禮者他剛才那支旗插對了（使用者 2026-11-02 指示）——額度消耗與送禮都靜默進行
+    }
+  }
+  function fireItem(kind) {
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
+    if ((itemsRef.current[kind] || 0) <= 0) return;
+    var tgts = unfinishedRacers().filter(p => p.id !== myId);
+    if (!tgts.length) { itemSay('目前沒有可攻擊的對手'); return; }
+    var tgt = pickWeightedMine(tgts, p => Math.pow(progOfMine(p.id), 2) + 0.1); // 攻擊權重（打強者）定版公式
+    var ni = Object.assign({}, itemsRef.current); ni[kind] -= 1; itemsRef.current = ni; setMyItems(ni);
+    sendItemMsg({ type: 'MINE_HIT', uid: myId, fromUid: myId, fromName: (myPlayer() || {}).name || '', toUid: tgt.id, kind: kind });
+    SFX.click();
+    itemSay(kind === 'question' ? '❓ 已對 ' + tgt.name + ' 發動問號干擾！' : '⏪ 已對 ' + tgt.name + ' 發動回填！');
+  }
+  function maybeAutoFire() { // 集滿 3 自動連發（每 550ms 一發、每發重新挑目標；觸發的那種一路打到歸零——定版「滿 3 連發歸零」；沒有目標就停下）
+    if (autoItemIvRef.current) return;
+    var startKind = itemsRef.current.question >= 3 ? 'question' : (itemsRef.current.backfill >= 3 ? 'backfill' : null);
+    if (!startKind) return;
+    autoItemIvRef.current = setInterval(() => {
+      var kind = (itemsRef.current[startKind] || 0) > 0 ? startKind : (itemsRef.current.question >= 3 ? 'question' : (itemsRef.current.backfill >= 3 ? 'backfill' : null));
+      var hasTgt = unfinishedRacers().some(p => p.id !== myId);
+      if (!kind || !hasTgt || outcomeRef.current || !itemsLive()) { clearInterval(autoItemIvRef.current); autoItemIvRef.current = null; return; }
+      fireItem(kind);
+    }, 550);
+  }
+  function tryConvertLastOne() { // 剛變成最後一位：手上未用的攻擊道具全部轉禮物（逐個發動）
+    if (lastOneDoneRef.current || !itemsLive()) return;
+    if (!amLastOne()) return;
+    lastOneDoneRef.current = true;
+    var held = (itemsRef.current.question || 0) + (itemsRef.current.backfill || 0);
+    if (held > 0) { var ni = Object.assign({}, itemsRef.current); ni.question = 0; ni.backfill = 0; ni.gift = (ni.gift || 0) + held; itemsRef.current = ni; setMyItems(ni); itemSay('🏁 只剩你一人，未用的道具全部轉成禮物（在禮物鈕裡）！'); maybeAutoGift(); }
+  }
+  function applyItemHit(kind, fromName) {
+    if (!itemsLive() || outcomeRef.current || iAmSpecRef.current) return;
+    if (amLastOne()) { holdGift(''); itemSay('🏁 只剩你一人，' + (fromName || '對手') + ' 的攻擊自動轉成禮物（在禮物鈕裡）！'); return; }
+    var B = boardRef.current; if (!B || !B.cells || !B.layout || !B.nums) return;
+    var sp = SIZES[mpRef.current.sizeId] || SIZES[9];
+    if (kind === 'question') {
+      // 未確定的數字：已開、數字 >0、且周圍還有「未打開也未標記」的格子
+      var cand = [];
+      for (var i = 0; i < B.cells.length; i++) { if (B.cells[i] !== 'o' || !(B.nums[i] > 0)) continue; var nb = neighborsOf(sp.w, sp.h, i), und = false; for (var j = 0; j < nb.length; j++) if (B.cells[nb[j]] === 'h') { und = true; break; } if (und) cand.push(i); }
+      if (!cand.length) { itemSay('❓ ' + (fromName || '對手') + ' 的問號干擾落空了（沒有未確定的數字）'); return; }
+      var c0 = cand[Math.floor(Math.random() * cand.length)], cx = c0 % sp.w, cy = Math.floor(c0 / sp.w);
+      var cluster = cand.filter(i2 => Math.max(Math.abs((i2 % sp.w) - cx), Math.abs(Math.floor(i2 / sp.w) - cy)) <= 2); // 中心鄰近（切比雪夫距離 ≤2）
+      for (var s = cluster.length - 1; s > 0; s--) { var r2 = Math.floor(Math.random() * (s + 1)); var tmp = cluster[s]; cluster[s] = cluster[r2]; cluster[r2] = tmp; }
+      var n = cluster.length <= 3 ? cluster.length : 3 + Math.floor(Math.random() * (Math.min(6, cluster.length) - 3 + 1)); // 範圍 3–6 格
+      var fx = Object.assign({}, questionFxRef.current), exp = Date.now() + 10000;
+      cluster.slice(0, n).forEach(i3 => { fx[i3] = exp; });
+      questionFxRef.current = fx; setQuestionFx(fx);
+      SFX.boom();
+      itemSay('❓ ' + (fromName || '對手') + ' 把你 ' + n + ' 個數字變成了問號（10 秒）！');
+    } else {
+      // 回填：隨機已開格為中心 3×3；碰到連鎖空格 → 整片相連空格＋其邊界數字一併蓋回
+      var opened = []; for (var k = 0; k < B.cells.length; k++) if (B.cells[k] === 'o') opened.push(k);
+      if (!opened.length) { itemSay('⏪ ' + (fromName || '對手') + ' 的回填落空了（還沒有打開的格子）'); return; }
+      var ctr = opened[Math.floor(Math.random() * opened.length)], ox = ctr % sp.w, oy = Math.floor(ctr / sp.w);
+      var cover = {}, zeros = [], bq = [];
+      for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var nx = ox + dx, ny = oy + dy; if (nx < 0 || ny < 0 || nx >= sp.w || ny >= sp.h) continue; var ii = ny * sp.w + nx; if (B.cells[ii] === 'o' && !cover[ii]) { cover[ii] = 1; if (B.nums[ii] === 0) { zeros.push(ii); bq.push(ii); } } }
+      while (bq.length) { var z = bq.pop(), znb = neighborsOf(sp.w, sp.h, z); for (var a = 0; a < znb.length; a++) { var w2 = znb[a]; if (B.cells[w2] === 'o' && B.nums[w2] === 0 && !cover[w2]) { cover[w2] = 1; zeros.push(w2); bq.push(w2); } } }
+      zeros.forEach(z2 => { neighborsOf(sp.w, sp.h, z2).forEach(w3 => { if (B.cells[w3] === 'o') cover[w3] = 1; }); }); // 連鎖空格的邊界數字也一起蓋回
+      var NC = B.cells.slice(), cnt = 0; for (var key in cover) { NC[key] = 'h'; cnt++; }
+      var fx2 = Object.assign({}, questionFxRef.current), fxChanged = false; for (var key2 in cover) if (fx2[key2]) { delete fx2[key2]; fxChanged = true; }
+      if (fxChanged) { questionFxRef.current = fx2; setQuestionFx(fx2); }
+      setCells(NC); SFX.boom();
+      raceSendState(NC, B.nums, B.layout, true);
+      itemSay('⏪ ' + (fromName || '對手') + ' 回填了你 ' + cnt + ' 格！');
+    }
+  }
+
+  function checkRaceEnd() {
+    if (finalRef.current || !mpRef.current.on || mpRef.current.mode !== 'race') return;
+    var racers = playersRef.current.filter(p => !p.spectator && !p.pending);
+    if (!racers.length) return;
+    var allDone = racers.every(p => { if (p.offline) return true; var g = godRef.current[p.id]; return g && (g.state === 'finished' || g.state === 'boom'); });
+    if (!allDone) return;
+    var fins = [], booms = [], rest = [];
+    racers.forEach(p => {
+      var g = godRef.current[p.id] || { progress: 0, state: 'playing' };
+      var e = { key: p.id, name: p.name, color: p.color, isMe: p.id === myId, uid: p.id, g: g, offline: !!p.offline };
+      if (g.state === 'finished') fins.push(e); else if (g.state === 'boom') booms.push(e); else rest.push(e);
+    });
+    fins.sort((a, b) => (a.g.timeMs || 0) - (b.g.timeMs || 0));
+    booms.sort((a, b) => ((b.g.progress || 0) - (a.g.progress || 0)) || ((a.g.boomAt || 0) - (b.g.boomAt || 0)));
+    rest.sort((a, b) => (b.g.progress || 0) - (a.g.progress || 0));
+    var entries = fins.concat(booms, rest).map(e => ({
+      key: e.key, name: e.name, color: e.color, isMe: e.isMe,
+      right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : (e.g.state === 'boom' ? ('💥 ' + Math.floor((e.g.progress || 0) * 100) + '%') : ('未完成・' + Math.floor((e.g.progress || 0) * 100) + '%'))
+    }));
+    var fin = { entries: entries, winnerUid: fins.length ? fins[0].key : null };
+    finalRef.current = fin; setRaceFinal(fin);
+    mpRef.current.phase = 'done'; setMpPhase('done');
+  }
+
+  // ----- 合作：房主權威定序（MINE_DO 帶權威盤面，全員照抄，保證一致） -----
+  function encOwners(O) { return O ? O.map(o => o < 0 ? '-' : o.toString(36)).join('') : undefined; }
+  function decOwners(s) { return s ? s.split('').map(ch => ch === '-' ? -1 : parseInt(ch, 36)) : null; }
+  function coopSparse(cellsArr, numsArr) { var s = {}; for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') s[i] = numsArr[i]; return s; }
+  function processCoopAct(kind, idx, byUid, byName) {
+    if (statusRef.current === 'won' || statusRef.current === 'lost') return; // 本局結束後的動作一律擋下（和弦拆送的後續格靠這裡截斷）
+    var B = boardRef.current; if (!B.layout || !B.cells) return;
+    var sp = SIZES[mpRef.current.sizeId] || SIZES[9];
+    var L = B.layout, N = B.nums, C = B.cells.slice(), hit = -1, stAfter = 'playing';
+    var OWN = B.owners ? B.owners.slice() : new Array(C.length).fill(-1);
+    if (kind === 'flag') {
+      if (C[idx] === 'h') C[idx] = 'f'; else if (C[idx] === 'f') C[idx] = 'h'; else return;
+    } else {
+      if (C[idx] !== 'h') return;
+      var reloc = null;
+      if (firstRef.current) {
+        var fs2 = makeFirstSafe(L, sp.w, sp.h, idx);
+        if (fs2.moves.length) { L = fs2.layout; N = computeNums(sp.w, sp.h, L); reloc = fs2.moves; }
+        firstRef.current = false;
+      }
+      var r = revealFrom(sp.w, sp.h, L, N, C, idx);
+      var prevC = C; C = r.cells; hit = r.hit;
+      if (hit >= 0) stAfter = 'lost';
+      else if (openedSafeOf(C, L) >= sp.w * sp.h - sp.mines) stAfter = 'won';
+      var aIdx = playersRef.current.findIndex(p => p.id === byUid); // 貢獻歸屬：這次動作新開的格（含洪泛展開＋踩到的雷）都算動作玩家開啟
+      if (aIdx >= 0) { for (var oi = 0; oi < C.length; oi++) if (prevC[oi] !== 'o' && C[oi] === 'o') OWN[oi] = aIdx; }
+    }
+    boardRef.current = { layout: L, nums: N, cells: C, owners: OWN };
+    var msg = { type: 'MINE_DO', kind: kind, idx: idx, uid: byUid, byName: byName || '', cells: C.join(''), sparse: coopSparse(C, N), hit: hit, statusAfter: stAfter, reloc: reloc || undefined, own: kind === 'flag' ? undefined : encOwners(OWN),
+      mines: stAfter === 'lost' ? L.map((v, i) => v ? i : -1).filter(v => v >= 0) : undefined };
+    hostBroadcast(msg);
+    adoptCoopDo(msg);
+  }
+  function adoptCoopDo(m) {
+    var arr = (m.cells || '').split('');
+    // boardRef 必須跟著 MINE_DO 同步：來賓的 boardRef 原本整場停在開局快照，房主中途離開、來賓接任後 processCoopAct 會拿舊盤面定序、把全場進度洗掉（稽核修・高）
+    var bL = boardRef.current.layout, bN = boardRef.current.nums;
+    if (m.reloc && bL) { var NL2 = bL.slice(); var pairs = (typeof m.reloc[0] === 'number') ? [m.reloc] : m.reloc; pairs.forEach(function (pr) { NL2[pr[0]] = false; NL2[pr[1]] = true; }); bL = NL2; var spR = SIZES[mpRef.current.sizeId] || SIZES[9]; bN = computeNums(spR.w, spR.h, bL); if (mpRef.current.isHost) { setLayout(bL); setNums(bN); } }
+    if (m.statusAfter === 'lost' && m.mines) { var LL = new Array(arr.length).fill(false); m.mines.forEach(i => { LL[i] = true; }); bL = LL; }
+    var OA = m.own ? decOwners(m.own) : boardRef.current.owners;
+    boardRef.current = { layout: bL, nums: bN, cells: arr.slice(), owners: OA };
+    if (m.own) setOwnArr(OA);
+    setCells(arr);
+    setNums(prev => { var N = prev ? prev.slice() : new Array(arr.length).fill(0); for (var k in m.sparse) N[+k] = m.sparse[k]; return N; });
+    if (m.hit >= 0) setHitIdx(m.hit);
+    if (m.statusAfter === 'lost') {
+      if (m.mines) { var L = new Array(arr.length).fill(false); m.mines.forEach(i => { L[i] = true; }); setLayout(L); }
+      setStatus('lost'); statusRef.current = 'lost'; setCoopBoomBy(m.byName || ''); SFX.boom();
+      mpRef.current.phase = 'done'; setMpPhase('done');
+    } else if (m.statusAfter === 'won') {
+      setStatus('won'); statusRef.current = 'won'; SFX.win();
+      mpRef.current.phase = 'done'; setMpPhase('done');
+    } else { setStatus('playing'); statusRef.current = 'playing'; if (m.kind === 'reveal') SFX.dig(); else SFX.flag(); }
+  }
+
+  // ----- 開局 -----
+  function setupBoardFromSeed(seed, szId, startAt) {
+    var sp = SIZES[szId] || SIZES[9];
+    var L = makeLayout(sp.w, sp.h, sp.mines, seed);
+    var N = computeNums(sp.w, sp.h, L);
+    var C = new Array(sp.w * sp.h).fill('h');
+    setSizeId(sp.id); setCurSeed(seed); setLayout(L); setNums(N); setCells(C);
+    var OW0 = new Array(sp.w * sp.h).fill(-1); setOwnArr(OW0);
+    boardRef.current = { layout: L, nums: N, cells: C, owners: OW0 };
+    setStatus('ready'); statusRef.current = 'ready'; setHitIdx(-1); setInputMode('dig');
+    setStartedAt(startAt); startedAtRef.current = startAt; setElapsed(0);
+    firstRef.current = true; lastProgRef.current = -1;
+  }
+  function startMatchLocal(seed, szId, startAt) {
+    startAt = startAt - platTimeOffset(); // 房主給的絕對開賽時刻換算回本地時鐘（D-05）：下游倒數/計時/完賽/回座存檔全用本地版，房主 offset=0 不受影響
+    mpRef.current.seed = seed; mpRef.current.sizeId = szId; mpRef.current.startAt = startAt; mpRef.current.phase = 'countdown';
+    setRaceFinal(null); finalRef.current = null; setMyOutcome(null); outcomeRef.current = null;
+    setGodBoards({}); godRef.current = {}; dismissRef.current = null; setGodUid(null); setCoopBoomBy('');
+    resetItems();
+    mistakesRef.current = 0; setMistLeft(Math.floor((SIZES[szId] || SIZES[9]).mines / 10)); // 容錯額度＝雷數 10%
+    setMyReadySt(false); myReadyRef.current = false;
+    var spec2 = iAmSpec();
+    iAmSpecRef.current = spec2;
+    if (!spec2) setupBoardFromSeed(seed, szId, startAt);
+    else { setCells(null); setLayout(null); setNums(null); }
+    setMpPhase('countdown'); setScreen('game');
+    if (cdIvRef.current) clearInterval(cdIvRef.current);
+    cdIvRef.current = setInterval(() => {
+      var rem = startAt - Date.now();
+      if (rem <= 0) {
+        clearInterval(cdIvRef.current); cdIvRef.current = null;
+        setCdNum('GO!'); setTimeout(() => setCdNum(null), 650);
+        mpRef.current.phase = 'playing'; setMpPhase('playing');
+      } else setCdNum(Math.ceil(rem / 1000));
+    }, 100);
+  }
+  function startMatch() { // 房主
+    if (!mpRef.current.isHost) return;
+    if (mpRef.current.phase !== 'waiting' && mpRef.current.phase !== 'done') return;
+    if (autoIvRef.current) { clearInterval(autoIvRef.current); autoIvRef.current = null; }
+    var seed = (Math.random() * 4294967296) >>> 0, startAt = Date.now() + 3500;
+    var szId = mpRef.current.sizeId;
+    setPlayersBoth(playersRef.current.filter(p => !p.pending).map(p => Object.assign({}, p, { ready: false }))); // 開賽清未到席位（比照數獨；殼端結算另有「未到不擋結算」規則）
+    hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current });
+    hostBroadcast({ type: 'MINE_START', seed: seed, sizeId: szId, startAt: startAt });
+    startMatchLocal(seed, szId, startAt);
+  }
+
+  // ----- 訊息分派 -----
+  function onMpData(m, conn) {
+    if (!m || !m.type) return;
+    var H = mpRef.current.isHost;
+    // 房主端驗寄件者：連線在 JOIN 時已綁 conn.__uid，之後帶 uid 的訊息必須相符，冒名把對手打成出局/完賽一律丟棄（稽核修）
+    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH', 'MINE_MILESTONE', 'MINE_GRANT', 'MINE_GIFT', 'MINE_HIT'].indexOf(m.type) >= 0) return;
+    switch (m.type) {
+      case 'JOIN': if (H) hostOnJoin(m, conn); break;
+      case 'INIT': if (!H) guestOnInit(m); break;
+      case 'PLAYERS_UPDATE': if (!H) { setPlayersBoth(m.players || []); var mp2 = myPlayer(); if (mp2) iAmSpecRef.current = !!mp2.spectator; } break;
+      case 'READY': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { ready: !!m.ready }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
+      case 'SPEC': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { spectator: !!m.spectator }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
+      case 'MINE_START': if (!H) startMatchLocal(m.seed, m.sizeId, m.startAt); break;
+      case 'MINE_PROGRESS': godSet(m.uid, { progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); break;
+      case 'MINE_STATE': godSet(m.uid, { cells: m.cells, nums: m.nums || {}, progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); break;
+      case 'MINE_FINISH': godSet(m.uid, { state: 'finished', timeMs: m.timeMs, progress: 1 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
+      case 'MINE_BOOM': godSet(m.uid, { state: 'boom', progress: m.progress || 0, boomAt: Date.now() }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
+      case 'MINE_MILESTONE': if (H) hostHandleMilestone(m.uid); break;
+      case 'MINE_GRANT': if (!H) processItemMsg(m); break; // 房主發出時已在 sendItemMsg 內本地處理；來賓鍛造的 GRANT 房主不受理
+      case 'MINE_GIFT': if (H) hostBroadcast(m, conn); processItemMsg(m); break;
+      case 'MINE_HIT': if (H) hostBroadcast(m, conn); processItemMsg(m); break;
+      case 'MINE_ACT': if (H && mpRef.current.mode === 'coop') { var pl = playersRef.current.find(p => p.id === m.uid); if (pl && !pl.spectator && mpRef.current.phase === 'playing') processCoopAct(m.kind, m.idx, m.uid, pl.name); } break; // 觀戰者/倒數期間的 ACT 不受理：adoptCoopDo 會把全員 status 設成 playing 偷跑盤面（稽核修）
+      case 'MINE_DO': if (!H && mpRef.current.mode === 'coop') adoptCoopDo(m); break;
+      case 'REQ_LOBBY': if (H) { if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit'); } break;
+      case 'REQ_REMATCH': if (H) startMatch(); break;
+      case 'HOST_LEFT': if (!H) onHostLeft(m); break;
+    }
+  }
+  function hostOnJoin(m, conn) {
+    conn.__uid = m.uid;
+    var phase = mpRef.current.phase;
+    var lateSpec = (phase === 'countdown' || phase === 'playing') && mpRef.current.mode === 'race' || (phase === 'playing' && mpRef.current.mode === 'coop');
+    var list = playersRef.current.slice();
+    var ex = list.find(p => p.id === m.uid);
+    if (ex) { list = list.map(p => p.id === m.uid ? Object.assign({}, p, { name: m.pName, offline: false }) : p); }
+    else {
+      var pend = list.findIndex(p => p.pending && normName(p.name) === normName(m.pName || ''));
+      var color = (typeof m.color === 'string' && m.color) ? m.color : MP_COLORS[list.filter(p => !p.pending).length % MP_COLORS.length]; // 來賓 JOIN 帶來的殼代表色優先（非空字串才用）；沒有才依座位配色（pending 席位仍沿用種子的殼名單色，不在此覆寫）
+      var entry = { id: m.uid, name: m.pName || '玩家', color: pend >= 0 ? list[pend].color : color, isHost: false, spectator: lateSpec, ready: false, offline: false };
+      if (pend >= 0) list[pend] = entry; else list.push(entry);
+    }
+    setPlayersBoth(list);
+    hostBroadcast({ type: 'PLAYERS_UPDATE', players: list }, conn);
+    var myEntry = list.find(p => p.id === m.uid);
+    try { conn.send({ type: 'INIT', players: list, mode: mpRef.current.mode, sizeId: mpRef.current.sizeId, phase: phase, seed: (myEntry && myEntry.spectator) ? undefined : mpRef.current.seed, startAt: mpRef.current.startAt, god: godRef.current, youSpec: !!(myEntry && myEntry.spectator),
+      coopSnap: (mpRef.current.mode === 'coop' && boardRef.current.cells) ? { cells: boardRef.current.cells.join(''), sparse: coopSparse(boardRef.current.cells, boardRef.current.nums), status: statusRef.current, own: encOwners(boardRef.current.owners) } : null }); } catch (e) {}
+  }
+  function guestOnInit(m) {
+    setPlayersBoth(m.players || []);
+    mpRef.current.mode = m.mode || mpRef.current.mode;
+    mpRef.current.sizeId = m.sizeId || mpRef.current.sizeId;
+    setSizeId(m.sizeId || 9);
+    iAmSpecRef.current = !!m.youSpec;
+    if (m.god) { godRef.current = m.god; setGodBoards(m.god); }
+    if (m.phase === 'countdown' || m.phase === 'playing') {
+      mpRef.current.seed = m.seed; mpRef.current.startAt = m.startAt;
+      if (m.youSpec) {
+        setCells(null); setLayout(null); setNums(null);
+        mpRef.current.phase = m.phase; setMpPhase(m.phase); setScreen('game');
+        if (m.phase === 'countdown' && m.startAt) { // 倒數中進場的觀戰者：MINE_START 已廣播完不會重送，自己排程在 startAt 切成 playing，否則整場卡在空白畫面（稽核修）
+          var specDelay = Math.max(0, m.startAt - Date.now()) + 60;
+          setTimeout(() => { if (mpRef.current.phase === 'countdown' && iAmSpecRef.current) { mpRef.current.phase = 'playing'; setMpPhase('playing'); } }, specDelay);
+        }
+        if (m.coopSnap) adoptCoopDo({ cells: m.coopSnap.cells, sparse: m.coopSnap.sparse, hit: -1, statusAfter: m.coopSnap.status === 'won' ? 'won' : (m.coopSnap.status === 'lost' ? 'lost' : 'playing'), kind: 'reveal', own: m.coopSnap.own });
+      } else {
+        // 比賽進行中回座：同 seed 重建盤面＋還原中斷前進度（resumeRestore：本地存檔優先、房主 god 快照備援）
+        startMatchLocal(m.seed, m.sizeId, m.startAt);
+        resumeRestore(m);
+      }
+    }
+  }
+  function onHostLeft(m) {
+    // 房主個人離開：名單第一位「在線的非觀戰選手」接手當房主（全端同一份名單、同一個篩法，結論一致；原寫法挑到離線者會無人接任、挑到觀戰者會帶觀戰旗標主持，稽核修）
+    var racers = playersRef.current.filter(p => !p.isHost && !p.offline && !p.spectator && !p.pending);
+    if (!racers.length) racers = playersRef.current.filter(p => !p.isHost && !p.offline && !p.pending);
+    if (racers.length && racers[0].id === myId) becomeHost(true);
+  }
+  function onConnClose(conn) { // 房主端：某來賓連線斷了
+    if (!mpRef.current.isHost) return;
+    var uid = conn.__uid; if (!uid) return;
+    setPlayersBoth(playersRef.current.map(p => p.id === uid ? Object.assign({}, p, { offline: true }) : p));
+    hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current });
+    godSet(uid, {}); // 確保有條目
+    checkRaceEnd();
+  }
+  function onHostConnClose() { // 來賓端：房主連線斷了 → 等殼接管/房主端重組後重新加入
+    if (!mpRef.current.on || mpRef.current.isHost) return;
+    setTimeout(() => { if (mpRef.current.on && !mpRef.current.isHost && sessRef.current) guestSetup(sessRef.current); }, 1500);
+  }
+
+  // ----- 連線建立 -----
+  function becomeHost(promoting) {
+    mpRef.current.isHost = true;
+    if (peerRef.current) { try { peerRef.current.destroy(); } catch (e) {} peerRef.current = null; }
+    connsRef.current = []; hostConnRef.current = null;
+    var code = mpRef.current.code;
+    var p = new Peer(code + '-host');
+    peerRef.current = p;
+    p.on('connection', c => {
+      connsRef.current.push(c);
+      c.on('data', m => onMpData(m, c));
+      c.on('close', () => onConnClose(c));
+    });
+    p.on('open', () => {
+      if (promoting) {
+        var oldHost = playersRef.current.find(pl => pl.isHost && pl.id !== myId);
+        setPlayersBoth(playersRef.current.map(pl => pl.id === myId ? Object.assign({}, pl, { isHost: true, offline: false }) : Object.assign({}, pl, { isHost: false, offline: (oldHost && pl.id === oldHost.id) ? true : pl.offline })));
+        hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current });
+        if (boardRef.current.layout && mpRef.current.mode === 'coop') { setLayout(boardRef.current.layout); if (boardRef.current.nums) setNums(boardRef.current.nums); } // 接任房主補上自己的 layout state（boardRef 已由 MINE_DO 同步成真盤面）
+        checkRaceEnd(); // 已離開的原房主標了 offline：若其他人都完賽/出局，本局可能就此可結算（原房主不標 offline 會永遠卡住結算，稽核修）
+      }
+    });
+  }
+  function guestSetup(sess) {
+    if (peerRef.current) { try { peerRef.current.destroy(); } catch (e) {} peerRef.current = null; }
+    var p = new Peer();
+    peerRef.current = p;
+    p.on('open', () => {
+      var c = p.connect(sess.code + '-host');
+      hostConnRef.current = c;
+      c.on('open', () => { try { var jm = { type: 'JOIN', uid: myId, pName: sess.name }; if (hubColorRef.current) jm.color = hubColorRef.current; c.send(jm); } catch (e) {} }); // hub 模式把殼代表色帶給房主，房主名單用對顏色、PLAYERS_UPDATE 回來全員一致
+      c.on('data', m => onMpData(m, c));
+      c.on('close', () => onHostConnClose());
+    });
+  }
+  function setupMp(sess) {
+    var st = sess.settings || {};
+    var itemDelayS = Number(st.itemStartTime); if (isNaN(itemDelayS)) itemDelayS = 60; itemDelayS = Math.max(0, Math.min(600, itemDelayS));
+    mpRef.current = { on: true, isHost: !!sess.isHost, mode: sess.mode === 'coop' ? 'coop' : 'race', tourn: !!sess.tourn, tournInfo: sess.tourn || null, hub: !!sess.hub, code: sess.code, sizeId: Number(st.sizeId) || 9, seed: 0, startAt: 0, phase: 'waiting', itemsAllow: st.allowItems !== false, itemDelay: itemDelayS };
+    setMpOn(true); setMpPhase('waiting'); waitSinceRef.current = Date.now();
+    setScreen('mp');
+    if (sess.isHost) {
+      var list = [{ id: myId, name: sess.name, color: (sess.hub && hubColorRef.current) ? hubColorRef.current : MP_COLORS[0], isHost: true, spectator: false, ready: false, offline: false }]; // hub 模式：房主代表色以殼帶入的為準；單機/獨立維持座位色
+      if (sess.tourn && sess.tourn.roster) {
+        sess.tourn.roster.forEach(e => { if (e && e.name && normName(e.name) !== normName(sess.name)) list.push({ id: 'pending:' + e.name, name: e.name, color: e.color || MP_COLORS[list.length % MP_COLORS.length], isHost: false, spectator: false, ready: false, offline: false, pending: true }); });
+      }
+      setPlayersBoth(list);
+      becomeHost(false);
+      if (sess.hub && !sess.tourn) { // 房間框架一般對局：全員到齊自動開局
+        if (autoIvRef.current) clearInterval(autoIvRef.current);
+        autoIvRef.current = setInterval(() => {
+          if (!mpRef.current.on || !mpRef.current.isHost || mpRef.current.phase !== 'waiting') return;
+          var N = window.__PLAT_NET; if (!N || !N.roster || N.roster.length < 2) return;
+          var joined = playersRef.current.filter(p => !p.pending);
+          var okAll = N.roster.every(r => joined.some(p => normName(p.name) === normName(r.name)));
+          if (okAll) startMatch();
+        }, 800);
+      }
+    } else {
+      setPlayersBoth([]);
+      guestSetup(sess);
+    }
+  }
+  function requestLobby() {
+    // 平台房間框架：回等待室＝回殼的房間頁（比照數獨 handleBackToLobby/數橋 requestLobby：不分房主來賓一律通知殼，房主由殼廣播 return 帶全員、來賓只回自己）
+    if (typeof window !== 'undefined' && window.__PLAT_PLATFORM) { if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit'); return; }
+    if (mpRef.current.isHost) { if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit'); }
+    else mpSend({ type: 'REQ_LOBBY', uid: myId });
+  }
+  function leaveMatch() { // 個人離開（其他人繼續）：先通知殼離房（endSession 清 inMatch/名單並切回多人入口），再做遊戲層清理——舊版只做本地清理、沒通知殼，殼還以為在對局中，人會卡在地雷頁、之後按多人連線又被 inMatch 劫回地雷頁
+    if (typeof window !== 'undefined' && window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('player-leave');
+    if (mpRef.current.isHost) mpSend({ type: 'HOST_LEFT', uid: myId });
+    cleanupMp();
+    setScreen('home');
+  }
+  function toggleMyReady() {
+    var v = !myReadyRef.current; myReadyRef.current = v; setMyReadySt(v);
+    if (mpRef.current.isHost) { setPlayersBoth(playersRef.current.map(p => p.id === myId ? Object.assign({}, p, { ready: v }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); }
+    else mpSend({ type: 'READY', uid: myId, ready: v });
+  }
+
+  // ---------- 平台底部列（PlatBar）：挖開/插旗模式切換（與遊戲內切換鈕同步） ----------
+  const platBarRef = useRef(null);
+  const platBarCfgRef = useRef(null);
+  platBarCfgRef.current = {
+    accent: ACCENT,
+    onAction: (name) => { if (name === 'mode-press') { setInputMode(m => (m === 'dig' ? 'flag' : 'dig')); SFX.click(); } }
+  };
+  const platBarCfgStable = useRef(null);
+  if (!platBarCfgStable.current) platBarCfgStable.current = { accent: ACCENT, onAction: (n, p) => { if (platBarCfgRef.current) platBarCfgRef.current.onAction(n, p); } };
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'mines') return;
+    const el = platBarRef.current;
+    if (el && typeof window.PlatBar !== 'undefined') {
+      window.PlatBar.attach(el, platBarCfgStable.current);
+      return () => { if (typeof window.PlatBar !== 'undefined') window.PlatBar.detach(el); };
+    }
+  }, [screen]);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'mines') return;
+    window.PlatBar.update({
+      mode: inputMode === 'flag' ? 1 : 0,
+      modes: [{ icon: '⛏️', label: '挖開' }, { icon: '🚩', label: '插旗' }],
+      modeTitle: '切換模式（挖開/插旗）',
+      showInput: false, inputMode: 'num', showDraw: false, showHostClear: false
+    });
+  });
+
+  // ---------- 平台倒數（PlatCountdown）：殼端共用元件，照數橋用法（cdNum 有值 show、null hide） ----------
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.PlatCountdown) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'mines') return;
+    if (cdNum != null) window.PlatCountdown.show(cdNum); else window.PlatCountdown.hide();
+  }, [cdNum]);
+
+  // ---------- 平台結算（PlatResults）：多人競速/合作共用殼端結算卡（比照數橋：等待卡可關、關後觀戰面板常駐） ----------
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.PlatResults) return;
+    if (window.__PLAT_NET && window.__PLAT_NET.inMatch !== 'mines') return;
+    if (!mpRef.current.on) return;
+    var M = mpRef.current, stage = null, specR = null;
+    if (M.mode === 'race') {
+      if (mpPhase === 'done' && raceFinal) stage = 'fin';
+      else if (mpPhase === 'playing' && myOutcome) stage = 'wait';
+    } else if (mpPhase === 'done' && (status === 'won' || status === 'lost')) stage = 'coop';
+    if (!stage) { window.PlatResults.hide(); if (dismissRef.current) dismissRef.current = null; if (leaveArm) setLeaveArm(false); return; }
+    if (dismissRef.current === stage) { window.PlatResults.hide(); return; }
+    var inTourn = !!M.tourn;
+    var acts = (id) => {
+      if (id === 'watch') { dismissRef.current = stage; setLeaveArm(false); try { window.PlatResults.hide(); } catch (e) {} }
+      else if (id === 'rematch') { dismissRef.current = null; try { window.PlatResults.hide(); } catch (e) {} if (mpRef.current.isHost) startMatch(); else mpSend({ type: 'REQ_REMATCH', uid: myId }); }
+      else if (id === 'lobby') { try { window.PlatResults.hide(); } catch (e) {} requestLobby(); }
+      else if (id === 'home') {
+        if (!leaveArm) { setLeaveArm(true); if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current); leaveArmTimerRef.current = setTimeout(() => setLeaveArm(false), 3500); return; }
+        if (leaveArmTimerRef.current) clearTimeout(leaveArmTimerRef.current);
+        setLeaveArm(false); dismissRef.current = null; try { window.PlatResults.hide(); } catch (e) {} leaveMatch();
+      }
+    };
+    var homeBtn = leaveArm ? { id: 'home', label: '⚠️ 確定離開？', kind: 'danger' } : { id: 'home', label: '離開' };
+    var stdBtns = [{ id: 'watch', label: '👁️ 繼續觀戰', kind: 'primary' }].concat(inTourn ? [] : [{ id: 'rematch', label: '🔁 再來一局' }]).concat([{ id: 'lobby', label: '🏁 回房間頁' }, homeBtn]);
+    if (stage === 'fin') {
+      specR = { accent: ACCENT, title: '競速結果', entries: raceFinal.entries,
+        verdict: raceFinal.winnerUid === myId ? '🎉 你贏了！' : (myOutcome === 'finished' ? '完賽了，本場名次如上！' : (myOutcome === 'boom' ? '💥 你踩到雷出局了，名次照當時進度排。' : '本場比賽結束，名次如上。')),
+        buttons: stdBtns, onAction: acts };
+    } else if (stage === 'wait') {
+      var res2 = playersRef.current.filter(p => !p.spectator && !p.pending).map(p => ({ p: p, g: godRef.current[p.id] || { progress: 0, state: 'playing' } })).filter(e => e.g.state === 'finished' || e.g.state === 'boom');
+      res2.sort((a, b) => ((a.g.state === 'finished' ? 0 : 1) - (b.g.state === 'finished' ? 0 : 1)) || (a.g.state === 'finished' ? (a.g.timeMs || 0) - (b.g.timeMs || 0) : (b.g.progress || 0) - (a.g.progress || 0)));
+      specR = { accent: ACCENT, title: '本場成績', waitingText: '等待其他玩家完成…',
+        entries: res2.map(e => ({ key: e.p.id, name: e.p.name, color: e.p.color, isMe: e.p.id === myId, right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : ('💥 ' + Math.floor((e.g.progress || 0) * 100) + '%') })),
+        verdict: myOutcome === 'finished' ? '🏁 你已完賽，先看看大家的盤面吧' : '💥 你踩到雷出局了，先看看大家的盤面吧',
+        buttons: [{ id: 'watch', label: '👁️ 轉變為上帝模式（觀戰）', kind: 'primary' }, homeBtn], onAction: acts };
+    } else {
+      specR = { accent: ACCENT, title: '合作結果',
+        entries: playersRef.current.filter(p => !p.pending).map(p => ({ key: p.id, name: p.name, color: p.color, isMe: p.id === myId, right: '' })),
+        verdict: status === 'won' ? ('🎉 合作成功！用時 ' + fmtTime(elapsed)) : ('💥 ' + (coopBoomBy || '有人') + ' 踩到地雷了，全隊出局'),
+        buttons: stdBtns, onAction: acts };
+    }
+    window.PlatResults.show(specR);
+  });
+
+  // ---------- 平台 hooks ----------
+  const sessRef = useRef(null);
+  const hubColorRef = useRef(null); // 殼帶入的代表色（大廳摩天輪選色；enter 時存下，hub 模式配色以它為準）
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.__PLAT_PLATFORM) return;
+    window.__PLAT_HOOKS_mines = {
+      enter: (sess) => {
+        sessRef.current = sess || null;
+        hubColorRef.current = (sess && typeof sess.color === 'string' && sess.color) ? sess.color : null; // 只驗非空字串：地雷 MP_COLORS 與殼色票是不同集合，不拿來驗
+        // 開新局先清掉上一局的結算暫存（站規：新局絕不能重播上一局的結算）
+        cleanupMp();
+        setHdrOpen(false);
+        setRaceFinal(null); finalRef.current = null; setMyOutcome(null); outcomeRef.current = null;
+        setGodBoards({}); godRef.current = {}; dismissRef.current = null;
+        setStatus('ready'); statusRef.current = 'ready'; setHitIdx(-1); setCells(null); setLayout(null); setNums(null);
+        setDailyDate(null);
+        if (sess) setupMp(sess);
+      },
+      exit: () => { cleanupMp(); sessRef.current = null; hubColorRef.current = null; setScreen('home'); },
+      identity: (d) => { // 殼端身分同步（名條改色）：self 改自己那筆、非 self 以名字找 entry；房主改完廣播一次讓全員一致，來賓只改本地不送訊息
+        if (!d || typeof d.color !== 'string' || !d.color) return;
+        if (d.self) setPlayersBoth(playersRef.current.map(p => p.id === myId ? Object.assign({}, p, { color: d.color }) : p));
+        else setPlayersBoth(playersRef.current.map(p => normName(p.name) === normName(d.name || '') ? Object.assign({}, p, { color: d.color }) : p));
+        if (mpRef.current.isHost) hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current });
+      },
+      migrate: () => { // 殼端房主接管：我升格成房主就接手主持（名單保留、來賓會重新 JOIN）
+        if (mpRef.current.on && !mpRef.current.isHost && typeof window !== 'undefined' && window.__PLAT_NET && window.__PLAT_NET.isHost) becomeHost(true);
+      },
+      debug: () => Object.assign({}, dbgRef.current, { mp: { on: mpRef.current.on, isHost: mpRef.current.isHost, mode: mpRef.current.mode, phase: mpRef.current.phase, tourn: mpRef.current.tourn }, players: playersRef.current, god: godRef.current, final: finalRef.current })
+    };
+  }, []);
+
+  // 問號干擾到期清除（500ms 掃一次過期的 fx，讓數字恢復顯示）
+  useEffect(() => {
+    if (!Object.keys(questionFx).length) return;
+    var iv = setInterval(() => {
+      var now = Date.now(), cur = questionFxRef.current, nxt = null;
+      for (var k in cur) if (cur[k] <= now) { if (!nxt) nxt = Object.assign({}, cur); delete nxt[k]; }
+      if (nxt) { questionFxRef.current = nxt; setQuestionFx(nxt); }
+    }, 500);
+    return () => clearInterval(iv);
+  }, [questionFx]);
+
+  // ---------- 渲染 ----------
+  const gapPx = sizeId === 16 ? 2 : 3;
+  // 盤面隨視窗放大（iPad/大螢幕不再縮成手機尺寸）：可用寬 = min(視窗, 720) − 根層 padding 24 − 卡片 padding/邊框 26
+  const cellPx = Math.max(sizeId === 16 ? 22 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
+  const zCellPx = Math.max(14, Math.round(cellPx * zoom)); // 使用者縮放後的實際格長（zoom=1 即適應螢幕原尺寸）
+  const colW = spec.w * cellPx + (spec.w - 1) * gapPx + 26; // 對局畫面所有欄位（標頭列/狀態列/進度/貢獻/PlatBar）與盤同寬，不再各寬各的
+  function renderCell(i) {
+    var st = cells[i], isMine = layout ? !!layout[i] : false, num = nums ? nums[i] : 0; // 合作觀戰者可能沒有完整 layout（只收已開格數字），要能容忍 null
+    var content = '', bg = '', color = '', extra = {};
+    if (st === 'x') { content = '✗'; color = '#dc2626'; bg = '#fecaca'; } // 容錯踩雷格：引爆過、確認是雷，記 ✗ 續玩（任何狀態下都顯示 ✗，與最終出局的 💥 區分）
+    else if (status === 'lost') {
+      if (isMine && st !== 'f' && st !== 'L') { content = (i === hitIdx) ? '💥' : '💣'; bg = i === hitIdx ? '#fca5a5' : '#e2e8f0'; }
+      else if (st === 'f' && !isMine) { content = '❌'; bg = '#e2e8f0'; }
+      else if (st === 'f' || st === 'L') { content = '🚩'; bg = '#e2e8f0'; }
+      else if (st === 'o') { content = num > 0 ? String(num) : ''; color = NUM_COLORS[num] || ''; bg = '#f1f5f9'; }
+      else { bg = 'linear-gradient(145deg,#fdba74,#fb923c)'; }
+    } else if (status === 'won' && isMine && st !== 'o') {
+      content = '🚩'; bg = '#e2e8f0';
+    } else if (st === 'o') {
+      content = num > 0 ? String(num) : ''; color = NUM_COLORS[num] || ''; bg = '#f8fafc';
+      if (mpRef.current.on && mpRef.current.mode === 'coop' && ownArr && ownArr[i] >= 0) { var opC = players[ownArr[i]]; if (opC) { bg = opC.color + '2e'; extra = Object.assign({}, extra, { boxShadow: 'inset 0 0 0 2px ' + opC.color }); } } // 合作貢獻著色：誰開的格就染誰的顏色
+      var qfx = questionFx[i]; if (qfx && qfx > Date.now() && num > 0) { content = '?'; color = '#7c3aed'; bg = '#ede9fe'; } // 問號干擾：數字被蓋成問號（本地效果、到期自動恢復）
+    } else if (st === 'f' || st === 'L') {
+      content = '🚩'; bg = st === 'L' ? 'linear-gradient(145deg,#bbf7d0,#4ade80)' : 'linear-gradient(145deg,#fdba74,#fb923c)';
+      if (st === 'L') extra = Object.assign({}, extra, { boxShadow: 'inset 0 0 0 2px #16a34a' }); // 禮物鎖定旗：綠底＋綠環，跟一般旗區分
+    } else {
+      bg = 'linear-gradient(145deg,#fdba74,#fb923c)';
+    }
+    return (
+      <button key={i} data-cell={i}
+        className="mine-cell flex items-center justify-center font-black rounded-[4px] border border-orange-900/20"
+        style={Object.assign({ width: zCellPx, height: zCellPx, background: bg, color: color, fontSize: zCellPx <= 22 ? 12 : Math.round(zCellPx * 0.5), lineHeight: 1 }, extra)}
+        onClick={() => onCellAction(i)}
+        onPointerDown={(e) => onCellDown(i, e)}
+        onPointerMove={onCellMove}
+        onPointerUp={onCellUp} onPointerLeave={onCellUp} onPointerCancel={onCellUp}
+        onContextMenu={(e) => { e.preventDefault(); toggleFlag(i); }}
+      >{content}</button>
+    );
+  }
+
+  function renderBoard() {
+    if (!cells) return null;
+    var rows = [];
+    for (var y = 0; y < spec.h; y++) {
+      var rowCells = [];
+      for (var x = 0; x < spec.w; x++) rowCells.push(renderCell(y * spec.w + x));
+      rows.push(<div key={y} className="flex" style={{ gap: gapPx }}>{rowCells}</div>);
+    }
+    return <div className="flex flex-col items-center" style={{ gap: gapPx }}>{rows}</div>;
+  }
+
+  function bestText(sz) { var b = sGet('mines_best_' + sz); return b ? '最佳 ' + fmtTime(parseInt(b, 10)) : ''; }
+
+  // ---------- 上帝模式觀戰：只渲染對手已公開的盤面（已開格數字+插旗），不含雷位 ----------
+  function renderGodBoard(g, szId) {
+    var sp = SIZES[szId] || SIZES[9];
+    var arr = (g.cells || '').split('');
+    var px = szId === 16 ? 21 : 38, gp = szId === 16 ? 2 : 3;
+    var rows = [];
+    for (var y = 0; y < sp.h; y++) {
+      var rc = [];
+      for (var x = 0; x < sp.w; x++) {
+        var i = y * sp.w + x, st = arr[i];
+        var content = '', bg = 'linear-gradient(145deg,#fdba74,#fb923c)', color = '';
+        if (st === 'o') { var n = g.nums ? g.nums[i] : 0; if (n === -1) { content = '💣'; bg = '#fecaca'; } else { content = n > 0 ? String(n) : ''; color = NUM_COLORS[n] || ''; bg = '#f8fafc'; } }
+        else if (st === 'x') { content = '✗'; color = '#dc2626'; bg = '#fecaca'; } // 容錯踩雷格（觀戰同步顯示）
+        else if (st === 'f' || st === 'L') { content = '🚩'; }
+        rc.push(<div key={i} className="flex items-center justify-center font-black rounded-[4px] border border-orange-900/20" style={{ width: px, height: px, background: bg, color: color, fontSize: szId === 16 ? 12 : 19, lineHeight: 1 }}>{content}</div>);
+      }
+      rows.push(<div key={y} className="flex" style={{ gap: gp }}>{rc}</div>);
+    }
+    return <div className="flex flex-col items-center" style={{ gap: gp }}>{rows}</div>;
+  }
+  function renderGodPanel() {
+    if (!mpOn || mpRef.current.mode !== 'race') return null;
+    if (mpPhase !== 'playing' && mpPhase !== 'done') return null;
+    var specMode = iAmSpec();
+    if (!myOutcome && !specMode) return null; // 還在比賽中：只顯示進度條，不開上帝面板
+    var opps = players.filter(p => !p.spectator && !p.pending && p.id !== myId);
+    if (!opps.length) return null;
+    var sel = (godUid && opps.some(p => p.id === godUid)) ? godUid : opps[0].id;
+    var selP = opps.find(p => p.id === sel);
+    var g = godBoards[sel] || { progress: 0, state: 'playing', cells: '', nums: {} };
+    var title = myOutcome === 'boom' ? '💥 已出局・觀戰中' : (myOutcome === 'finished' ? '🏁 已完賽・觀戰中' : '👁️ 觀戰中');
+    return (
+      <div className="w-full max-w-md mt-3 bg-white border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn">
+        <div className="font-black text-slate-800 mb-2">{title}</div>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {opps.map(p => { var gg = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
+            <button key={p.id} onClick={() => setGodUid(p.id)} className="text-xs font-black px-2 py-1 rounded-full border-2 flex items-center gap-1 active:translate-y-[1px]" style={p.id === sel ? { background: '#1e293b', color: '#fff', borderColor: '#1e293b' } : { background: '#fff', color: '#334155', borderColor: '#cbd5e1' }}>
+              <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((gg.progress || 0) * 100) + '%' : Math.floor((gg.progress || 0) * 100) + '%'}
+            </button>); })}
+        </div>
+        {g.cells ? renderGodBoard(g, mpRef.current.sizeId) : <p className="font-bold text-slate-400 text-center py-3">等待 {selP ? selP.name : '對手'} 的盤面…</p>}
+      </div>
+    );
+  }
+
+  // ---------- 每日一題月曆（規格比照數獨/數橋：固定 6 列、完成亮燈、未來反灰） ----------
+  function openDailyCal() { if (window.PlatCalendar) window.PlatCalendar.show({ accent: '#fb923c', records: readDailyRecords(), selected: dailySel, onPick: (ds) => { setDailySel(ds); SFX.click(); startDaily(ds); } }); } // 每日月曆已統一為殼端 PlatCalendar（v1.16）
+
+  if (screen === 'setup') {
+    return (
+      <div key="setup" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn">
+          <h2 className="font-black text-2xl text-slate-800 mb-1">👤 單機挑戰</h2>
+          <p className="font-bold text-slate-400 text-sm mb-5">選一個盤面大小開始</p>
+          <div className="flex flex-col gap-3">
+            {[9, 16].map(sz => (
+              <button key={sz} onClick={() => { SFX.click(); newGame(sz); }}
+                className="w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-between px-4">
+                <span>{sz === 9 ? '🌱' : '🔥'} {SIZES[sz].name}</span>
+                <span className="text-sm text-slate-700">{bestText(sz)}</span>
+              </button>
+            ))}
+            <button onClick={() => setScreen('home')} className="w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">← 返回主選單</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === 'home') {
+    const dRec = readDailyRecords(), dStreak = readDailyStreak();
+    const dDone = dRec[dailySel] != null, dBest = dRec[dailySel], dIsToday = dailySel === todayStr();
+    return (
+      <div key="home" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn">
+          <h1 className="font-black text-4xl text-slate-800">💣 踩地雷</h1>
+          <div className="text-slate-400 font-black tracking-widest text-sm mb-6">Minesweeper</div>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => { SFX.click(); setScreen('setup'); }} className="w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">👤 單機挑戰</button>
+            <button onClick={() => { SFX.click(); startDaily(dailySel); }} className="w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2">
+              <span>📅 每日一題</span>{dDone && <span className="text-base bg-white/70 rounded-lg px-2 py-0.5">✓ 已完成</span>}
+            </button>
+            <div className="flex items-center gap-2">
+              <button disabled={dailySel <= DAILY_MIN} onClick={() => setDailySel(shiftDate(dailySel, -1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">◀</button>
+              <button onClick={openDailyCal}
+                className="flex-1 py-2.5 bg-white border-2 border-slate-800 rounded-lg font-black text-lg text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">📅 {dailySel}{dIsToday ? '（今天）' : ''}</button>
+              <button disabled={dailySel >= todayStr()} onClick={() => setDailySel(shiftDate(dailySel, 1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">▶</button>
+            </div>
+            <div className="text-sm font-black text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
+            <button onClick={() => setShowHelp(true)} className="w-full py-3.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
+          </div>
+        </div>
+        {isPlat && (
+          <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }}
+            className="z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏠 回大廳</button>
+        )}
+        <div className="shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. ({isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0'})</div>
+        
+        {showHelp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" onClick={() => setShowHelp(false)}>
+            <div className="bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative animate-popIn" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowHelp(false)} className="absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10">✕</button>
+              <h3 className="text-2xl font-black text-slate-800 border-b-4 border-[#fb923c] inline-block pb-1 mb-5">❓ 玩法教學</h3>
+
+              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+                <div className="flex justify-center mb-3">
+                  <div className="relative">
+                    <div className="grid grid-cols-3 gap-[3px]">
+                      <div className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc', color: NUM_COLORS[1] }}>1</div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-num" style={{ color: NUM_COLORS[1] }}>1</span>
+                        <div className="mtut-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc' }}></div>
+                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      <div className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc', color: NUM_COLORS[2] }}>2</div>
+                    </div>
+                    <span className="mtut-finger absolute text-3xl pointer-events-none" style={{ left: 63, top: 62 }}>👆</span>
+                  </div>
+                </div>
+                <p className="text-center font-black text-slate-700">點格子挖開——數字代表周圍 8 格有幾顆地雷</p>
+              </div>
+
+              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+                <div className="flex justify-center mb-3">
+                  <div className="w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}>
+                    <span className="mtut-flag text-3xl">🚩</span>
+                  </div>
+                </div>
+                <div className="flex justify-center gap-2 mb-3">
+                  <span className="px-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">⛏️ 挖開</span>
+                  <span className="mtut-chip px-3 py-2 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">🚩 插旗</span>
+                </div>
+                <p className="text-center font-black text-slate-700">懷疑是地雷？切到「插旗」模式點它，或長按格子做記號</p>
+              </div>
+
+              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+                <div className="flex justify-center mb-3">
+                  <div className="relative">
+                    <div className="grid grid-cols-3 gap-[3px]">
+                      <div className="w-11 h-11 flex items-center justify-center text-xl rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}>🚩</div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-chord-num" style={{ color: NUM_COLORS[2] }}>2</span>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-chord-num" style={{ color: NUM_COLORS[1] }}>1</span>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-chord-num" style={{ color: NUM_COLORS[1] }}>1</span>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc', color: NUM_COLORS[1] }}>1</div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-chord-num" style={{ color: NUM_COLORS[1] }}>1</span>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
+                        <span className="mtut-chord-num" style={{ color: NUM_COLORS[2] }}>2</span>
+                        <div className="mtut-chord-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
+                      </div>
+                    </div>
+                    <span className="mtut-finger2 absolute text-3xl pointer-events-none" style={{ left: 63, top: 62 }}>👆</span>
+                  </div>
+                </div>
+                <p className="text-center font-black text-slate-700">數字旁的旗子數剛好等於數字時，再點數字格，周圍剩下的格子一次挖開</p>
+              </div>
+
+              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+                <div className="flex justify-center gap-8 mb-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="mtut-boom w-14 h-14 flex items-center justify-center text-3xl rounded-[4px] border border-orange-900/20" style={{ background: '#e2e8f0' }}>💣</div>
+                    <span className="text-xs font-black text-slate-400">踩到雷</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc' }}>
+                      <span className="mtut-trophy text-3xl">🏆</span>
+                    </div>
+                    <span className="text-xs font-black text-slate-400">全部挖開</span>
+                  </div>
+                </div>
+                <p className="text-center font-black text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
+              </div>
+
+              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+                <div className="font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2">
+                  <p>📅 每日一題：每天同一題（9×9），可以回補今年的舊題目，只有今天的會累積連續天數。</p>
+                  <p>👥 多人競速：同一個盤面各玩各的，最快清完的人贏；踩到雷直接出局，照當時進度排名。</p>
+                </div>
+              </div>
+
+              <button onClick={() => setShowHelp(false)} className="w-full py-3.5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">知道了，開始玩！</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ---------- 多人等待畫面（站規：等候室只有殼的房間頁一個，遊戲內不另設——hub 一般對局只顯示極簡等待卡等自動開局；錦標賽用與數獨/數橋同款的局間等待卡：名單徽章＋準備鈕＋房主開始本局） ----------
+  if (screen === 'mp') {
+    const M = mpRef.current;
+    const szName = (SIZES[M.sizeId] || SIZES[9]).name;
+    if (!M.tourn) {
+      return (
+        <div key="mp" className="min-h-screen w-full flex flex-col items-center p-4 relative">
+          <div className="flex-1 flex items-center justify-center w-full">
+            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn">
+              <div className="text-5xl mb-3">⏳</div>
+              <div className="font-black text-2xl text-slate-800 animate-pulse">等房主開始對局…</div>
+              <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
+            </div>
+          </div>
+          <div ref={platBarRef} className="h-16 shrink-0 w-full max-w-md"></div>
+        </div>
+      );
+    }
+    const racersW = players.filter(p => !p.spectator && !p.pending);
+    const pendW = players.filter(p => p.pending);
+    const allReadyW = racersW.length > 0 && racersW.every(p => p.ready);
+    const waitedW = waitSinceRef.current ? Date.now() - waitSinceRef.current : 0;
+    const canStartW = M.isHost && racersW.length >= 2 && ((pendW.length === 0 && allReadyW) || waitedW >= 60000); // 錦標賽閘門比照數獨：全員到齊+全員準備，或等滿 60 秒（未到者開賽清席、遲到觀戰加入）
+    const startNoteW = !M.isHost ? '' : (racersW.length < 2 ? '等待選手加入（至少 2 位）…' : (canStartW ? (pendW.length ? '未到的選手將以觀戰身分加入' : '') : (pendW.length ? '等待全員到齊…' : '等待全員準備（或 ' + Math.max(0, 60 - Math.floor(waitedW / 1000)) + ' 秒後開放開始）')));
+    const myEntryW = players.find(p => p.id === myId);
+    const tInfo = M.tournInfo || {};
+    return (
+      <div key="mp" className="min-h-screen w-full flex flex-col items-center p-4 relative">
+        <div className="flex-1 flex items-center justify-center w-full">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
+          <div className="text-center text-4xl mb-1">🏆</div>
+          <div className="font-black text-2xl text-slate-800 text-center">錦標賽・第 {tInfo.round || '?'} 局</div>
+          <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：踩地雷競速・{szName}・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
+          <div className="flex flex-col gap-2 mb-4">
+            {players.map(p => (
+              <div key={p.id} className="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800">
+                <span className="w-4 h-4 rounded-full border-2 border-slate-800 shrink-0" style={{ background: p.color }}></span>
+                <span className="truncate">{p.name}{p.isHost ? ' 👑' : ''}{p.id === myId ? '（你）' : ''}</span>
+                <span className="ml-auto shrink-0">{p.pending ? <span className="text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md">未到</span> : p.offline ? <span className="text-[10px] bg-rose-100 border border-rose-400 text-rose-600 px-1.5 py-0.5 rounded-md">離線</span> : p.spectator ? <span className="text-[10px] bg-sky-100 border border-sky-400 text-sky-700 px-1.5 py-0.5 rounded-md">👁️ 觀戰</span> : (p.ready ? <span className="text-[10px] bg-emerald-100 border border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-md">✅ 準備好了</span> : <span className="text-[10px] bg-slate-100 border border-slate-300 text-slate-400 px-1.5 py-0.5 rounded-md">未準備</span>)}</span>
+              </div>
+            ))}
+            {!players.length && <p className="font-bold text-slate-400 text-center py-2">連線中…</p>}
+          </div>
+          {myEntryW && !myEntryW.pending && !myEntryW.spectator && (
+            <button onClick={toggleMyReady} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500')}>{myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+          )}
+          {M.isHost ? (
+            <div>
+              <button disabled={!canStartW} onClick={startMatch} className="w-full py-3 bg-[#fb923c] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
+              {startNoteW && <p className="text-xs text-slate-500 font-bold text-center mt-2">{startNoteW}</p>}
+            </div>
+          ) : (
+            <p className="font-black text-slate-700 animate-pulse text-center">等待房主開始...</p>
+          )}
+        </div>
+        </div>
+        <div ref={platBarRef} className="h-16 shrink-0 w-full max-w-md"></div>
+      </div>
+    );
+  }
+
+  // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
+  const over = status === 'won' || status === 'lost';
+  const hbtn = "px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-slate-800 shrink-0";
+  return (
+    <div key="game" className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#fdf3e7', backgroundImage: 'radial-gradient(#f7ddba 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
+      <div className="w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
+        <div className="bg-[#fb923c] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5">
+            <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+              <h1 className="font-black tracking-tight uppercase text-base md:text-2xl text-slate-900 flex items-center gap-1 shrink-0">💣<span className="hidden sm:inline">踩地雷</span></h1>
+              <div className="flex items-center gap-1 bg-[#2d2a26] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0">⏱ {fmtTime(elapsed)}</div>
+              {dailyDate && !mpOn && (<div className="flex items-center gap-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0">📅 每日 {dailyDate.slice(5)}{dailyDate !== todayStr() ? ' 補玩' : ''}</div>)}
+              {mpOn && (<span className="bg-emerald-400 text-slate-900 px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">{mpRef.current.mode === 'race' ? '⚔️ 競速對戰' : '🤝 合作模式'}</span>)}
+            </div>
+            <button onClick={() => setHdrOpen(o => !o)} className="shrink-0 flex px-1.5 py-0.5 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] items-center gap-1 whitespace-nowrap">{hdrOpen ? '🔼 縮小面板' : '🔽 展開規則'}</button>
+          </div>
+          <div className={"w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 " + (hdrOpen ? 'max-h-[500px] opacity-100 scale-y-100' : 'max-h-0 opacity-0 scale-y-95')}>
+            <div className="bg-white border-[3px] border-slate-800 rounded-xl p-2 md:p-3 text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <h3 className="text-sm md:text-base font-black mb-1 border-b-[3px] border-[#fb923c] inline-block pb-0.5">📜 遊戲規則</h3>
+              <ol className="list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold">
+                <li>點格子挖開：數字代表周圍 8 格的地雷數，空白格會自動展開。</li>
+                <li>第一下點的格子＋周圍 8 格保證沒有地雷，放心開始。</li>
+                <li>覺得是雷就插旗：切到 🚩 插旗模式再點格子，或長按格子直接插旗。</li>
+                <li>數字和周圍的旗數一樣時，再點那個數字，可一次挖開周圍剩下的格子（挖開／插旗模式都可以）。</li>
+              </ol>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <span className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷</span>
+            <div className="flex gap-1 items-center shrink-0">
+              <button onClick={() => setZoomOpen(!zoomOpen)} className={hbtn} title="調整盤面大小（比照數獨的縮放）">🔍{zoom > 1 && (<span className="ml-0.5 text-[10px]">{Math.round(zoom * 100)}%</span>)}</button>
+              {zoomOpen && (<React.Fragment>
+                <button onClick={() => setZoom(Math.max(1, Math.round((zoom - 0.25) * 100) / 100))} className={hbtn} title="縮小">－</button>
+                <button onClick={() => setZoom(Math.min(2.5, Math.round((zoom + 0.25) * 100) / 100))} className={hbtn} title="放大">＋</button>
+                <button onClick={() => setZoom(1)} className={hbtn} title="回到適應螢幕">適應</button>
+              </React.Fragment>)}
+            </div>
+            <div className="flex gap-1 md:gap-2 flex-wrap items-center ml-auto">
+              {!mpOn && (<button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className={hbtn} title="重開一局">🔄<span className="hidden sm:inline ml-1">重開</span></button>)}
+              <button onClick={() => { var m = !muted; setMuted(m); sSet('mines_muted', m ? '1' : '0'); }} title={muted ? '取消靜音' : '靜音'} className={hbtn}>{muted ? '🔇' : '🔊'}</button>
+              {mpOn ? (<button onClick={() => setShowExitMenu(true)} className={hbtn} title="離開對局">🔌<span className="hidden sm:inline ml-1">退出</span></button>)
+                    : (<button onClick={() => setScreen('home')} className={hbtn} title="回主選單">🏠<span className="hidden sm:inline ml-1">主選單</span></button>)}
+            </div>
+          </div>
+        </div>
+        <div className="w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2">
+          <div className="font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0">💣 {spec.mines - flagsUsed}{mpOn && mpRef.current.mode === 'race' && Math.floor(spec.mines / 10) > 0 && (<span className="ml-1" style={{ fontSize: 13 }} title="愛心＝還能踩錯的命（容錯次數＋1）：踩到雷少一顆、變灰，歸零後再踩就出局">{Array.from({ length: Math.floor(spec.mines / 10) + 1 }).map((_, hi) => (<span key={hi} style={hi < mistLeft + 1 ? undefined : { filter: 'grayscale(1)', opacity: 0.35 }}>❤️</span>))}</span>)}</div>
+          <div className="flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black shrink-0">
+            <button data-mode="dig" onClick={() => setInputMode('dig')} className="px-4 py-1.5" style={inputMode === 'dig' ? { background: ACCENT, color: '#fff' } : { color: '#64748b' }}>⛏️ 挖開</button>
+            <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-4 py-1.5" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
+          </div>
+          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0">進度 {Math.floor(progress * 100)}%<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
+        </div>
+        {showExitMenu && mpOn && (
+          <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
+            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn" onClick={e => e.stopPropagation()}>
+              <div className="font-black text-xl text-slate-800 mb-4">要離開對局嗎？</div>
+              {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
+                <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">⏹️ 結束本局（錦標賽）</button>
+              )}
+              <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏁 回等待室</button>
+              <button onClick={() => { setShowExitMenu(false); leaveMatch(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🚪 退出（回大廳）</button>
+              <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
+            </div>
+          </div>
+        )}
+        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full">
+          <div className="bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0" style={{ maxWidth: '100%', overflowX: 'auto', overflowY: zoom > 1 ? 'auto' : 'visible', maxHeight: zoom > 1 ? '68vh' : 'none' }}>
+            <div style={{ width: 'max-content', margin: '0 auto' }}>{renderBoard()}</div>
+          </div>
+      {mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
+        <div className="w-full mt-2 flex items-center gap-2 shrink-0" style={{ width: colW, maxWidth: '100%' }}>
+          <span className="text-[11px] font-black text-slate-400 mr-auto leading-tight">里程碑道具<br />集滿 3 自動發動</span>
+          <button onClick={() => useGift()} disabled={myItems.gift <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="禮物：幫自己把一顆地雷標上旗子並鎖定（自己按才發動）">🎁{myItems.gift > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.gift}</span>)}</button>
+          <button onClick={() => fireItem('question')} disabled={myItems.question <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="問號干擾：把對手 3–6 個還沒確定的數字變成問號（10 秒）">❓{myItems.question > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-violet-600 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.question}</span>)}</button>
+          <button onClick={() => fireItem('backfill')} disabled={myItems.backfill <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="回填：把對手已打開的一片格子（3×3，連鎖空格整片）蓋回去">⏪{myItems.backfill > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-amber-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.backfill}</span>)}</button>
+        </div>)}
+      {itemToast && (<div className="fixed left-1/2 bottom-24 z-[96] -translate-x-1/2 bg-slate-900/90 text-white font-black text-sm px-4 py-2 rounded-full shadow-lg animate-popIn text-center" style={{ maxWidth: '92vw' }}>{itemToast}</div>)}
+      {mpOn && mpRef.current.mode === 'coop' && ownArr && (() => { var cc = players.map((p, ix) => ({ p: p, n: ownArr.reduce((a, o) => a + (o === ix ? 1 : 0), 0) })).filter(c => !c.p.spectator && !c.p.pending); var tot = cc.reduce((a, c) => a + c.n, 0); return (
+        <div className="w-full mt-2" style={{ width: colW, maxWidth: '100%' }}>
+          <div className="flex h-3.5 rounded-full overflow-hidden border-2 border-slate-800 bg-white">
+            {tot > 0 && cc.map(c => c.n > 0 ? <div key={c.p.id} style={{ width: (c.n / tot * 100) + '%', background: c.p.color }}></div> : null)}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {cc.map(c => (
+              <span key={c.p.id} className="text-xs font-black px-2 py-1 rounded-full border-2 border-slate-300 bg-white flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: c.p.color }}></span>{c.p.name} 開了 {c.n} 格{tot > 0 ? '・' + Math.round(c.n / tot * 100) + '%' : ''}
+              </span>))}
+          </div>
+        </div>); })()}
+      {mpOn && mpRef.current.mode === 'race' && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
+        <div className="w-full mt-2 flex flex-wrap gap-1.5" style={{ width: colW, maxWidth: "100%" }}>
+          {players.filter(p => !p.spectator && !p.pending && p.id !== myId).map(p => { const g = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
+            <span key={p.id} className="text-xs font-black px-2 py-1 rounded-full border-2 border-slate-300 bg-white flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%'}
+            </span>); })}
+        </div>
+      )}
+          {renderGodPanel()}
+        </div>
+        <div ref={platBarRef} className="h-16 shrink-0 w-full"></div>
+        {over && !mpOn && (
+        <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4">
+          <div className="bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn">
+            <div className="text-5xl mb-2">{status === 'won' ? '🎉' : '💥'}</div>
+            <h3 className="font-black text-2xl text-slate-800 mb-1">{status === 'won' ? '全部排完了！' : '踩到地雷！'}</h3>
+            <p className="font-bold text-slate-500 mb-4">{status === 'won' ? ('用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '')) : ('進度 ' + Math.floor(progress * 100) + '%')}</p>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className="w-full py-3 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🔁 再來一局</button>
+              <button onClick={() => setScreen('home')} className="w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">回主選單</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(MinesGame));
