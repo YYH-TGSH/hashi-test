@@ -79,28 +79,39 @@ async function soloPart() {
   const scroller = d.querySelector('#view-mines .mines-board-scroll');
   ok(!!scroller, '盤面捲動容器存在（.mines-board-scroll）');
   if (scroller) {
-    let SL = 0;
+    let SL = 0, ST = 0;
     Object.defineProperty(scroller, 'scrollWidth', { configurable: true, get: () => 600 });
     Object.defineProperty(scroller, 'clientWidth', { configurable: true, get: () => 300 });
     Object.defineProperty(scroller, 'scrollHeight', { configurable: true, get: () => 900 });
     Object.defineProperty(scroller, 'clientHeight', { configurable: true, get: () => 400 });
     Object.defineProperty(scroller, 'scrollLeft', { configurable: true, get: () => SL, set: v => { SL = v; } });
-    Object.defineProperty(scroller, 'scrollTop', { configurable: true, get: () => 0 });
+    Object.defineProperty(scroller, 'scrollTop', { configurable: true, get: () => ST, set: v => { ST = v; } });
     scroller.dispatchEvent(new w.Event('scroll', { bubbles: true }));
     await sleep(400);
     const wrap = scroller.parentElement;
     const fadeR = [...wrap.querySelectorAll('div')].find(x => (x.style.background || '').includes('to right'));
-    const fadeB = [...wrap.querySelectorAll('div')].find(x => { const bg = x.style.background || ''; return bg.includes('255, 251, 243') && !bg.includes('to right'); }); // jsdom 序列化會把預設方向 'to bottom' 吃掉，改以顏色指紋＋排除右緣辨識
+    const fadeB = [...wrap.querySelectorAll('div')].find(x => { const bg = x.style.background || ''; return bg.includes('255, 251, 243') && !bg.includes('to right') && !bg.includes('to left') && !bg.includes('to top'); }); // jsdom 序列化會把預設方向 'to bottom' 吃掉，改以顏色指紋＋排除其他三邊辨識
+    const fadeL = [...wrap.querySelectorAll('div')].find(x => (x.style.background || '').includes('to left'));
+    const fadeT = [...wrap.querySelectorAll('div')].find(x => (x.style.background || '').includes('to top'));
     ok(!!fadeR && fadeR.style.opacity === '1', '右邊還有題目 → 右緣虛化顯示');
     ok(!!fadeB && fadeB.style.opacity === '1', '下邊還有題目 → 下緣虛化顯示');
+    ok(!!fadeL && fadeL.style.opacity === '0', '在最左緣 → 左緣不虛化');
+    ok(!!fadeT && fadeT.style.opacity === '0', '在最上緣 → 上緣不虛化');
     const trackV = [...wrap.children].find(x => x.style && x.style.width === '6px');
     const trackH = [...wrap.children].find(x => x.style && x.style.height === '6px');
     ok(!!trackV && trackV.style.display === 'block', '直向卷軸指示條顯示');
     ok(!!trackH && trackH.style.display === 'block', '橫向卷軸指示條顯示');
-    SL = 300; // 捲到最右
+    SL = 150; ST = 200; // 捲到中間：四邊都有沒看到的題目
+    scroller.dispatchEvent(new w.Event('scroll', { bubbles: true }));
+    await sleep(400);
+    ok(!!fadeL && fadeL.style.opacity === '1', '向右捲走 → 左緣虛化顯示');
+    ok(!!fadeT && fadeT.style.opacity === '1', '向下捲走 → 上緣虛化顯示');
+    ok(!!fadeR && fadeR.style.opacity === '1' && !!fadeB && fadeB.style.opacity === '1', '中間位置 → 右/下緣仍虛化');
+    SL = 300; ST = 500; // 捲到最右下
     scroller.dispatchEvent(new w.Event('scroll', { bubbles: true }));
     await sleep(400);
     ok(!!fadeR && fadeR.style.opacity === '0', '捲到最右 → 右緣虛化消失');
+    ok(!!fadeB && fadeB.style.opacity === '0', '捲到最下 → 下緣虛化消失');
   }
   ok(P.errors.length === 0, '單機段零頁面錯誤', P.errors.slice(0, 3).join(' | '));
 }

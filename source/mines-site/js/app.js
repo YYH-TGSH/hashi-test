@@ -174,7 +174,7 @@ function MinesGame() {
   const [custCfg, setCustCfg] = useState(() => { try { var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null'); if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines); } catch (e) {} return { w: 16, h: 16, mines: 40 }; }); // 單機自訂盤面（寬/高/雷），持久化
   const [custOpen, setCustOpen] = useState(false);
   const boardScrollRef = useRef(null);          // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
-  const fadeRRef = useRef(null), fadeBRef = useRef(null);
+  const fadeRRef = useRef(null), fadeBRef = useRef(null), fadeLRef = useRef(null), fadeTRef = useRef(null);
   const indVTrackRef = useRef(null), indHTrackRef = useRef(null), indVRef = useRef(null), indHRef = useRef(null);
   const giftCreditRef = useRef(0);        // 禮物額度（正確插旗 +0.5，滿 1 送弱者）
   const creditedMinesRef = useRef({});    // 已計入額度的雷格（防拔插重刷）
@@ -1002,14 +1002,16 @@ function MinesGame() {
   });
 
   // ---------- 盤面邊緣虛化＋自製卷軸指示條（使用者 2026-11-04 指示） ----------
-  // 右/下還有題目時：邊緣漸層虛化＋細指示條（滑塊長度=可視比例、位置=捲動進度），捲到那一端就自動消失；
-  // 完全沒溢出時兩者都不出現——玩家一眼就知道「現在看到的是全部還是部分」。iOS 不顯示原生 scrollbar，
-  // 所以指示條自己畫（桌面/Android 另有 CSS 原生 scrollbar 染色，見 style.css 的 .mines-board-scroll）。
+  // 四邊（上下左右）都虛化：哪一邊還有沒看到的題目，那一邊就漸層虛化；捲到那一邊的邊緣（到底/到頂/到左/到右）就不用虛化、自動消失。
+  // 另有細指示條（滑塊長度=可視比例、位置=捲動進度）；完全沒溢出時全部都不出現——玩家一眼就知道「現在看到的是全部還是部分」。
+  // iOS 不顯示原生 scrollbar，所以指示條自己畫（桌面/Android 另有 CSS 原生 scrollbar 染色，見 style.css 的 .mines-board-scroll）。
   function updScrollUi() {
     var el = boardScrollRef.current; if (!el) return;
     var maxL = el.scrollWidth - el.clientWidth, maxT = el.scrollHeight - el.clientHeight;
-    if (fadeRRef.current) fadeRRef.current.style.opacity = maxL - el.scrollLeft > 2 ? '1' : '0';
-    if (fadeBRef.current) fadeBRef.current.style.opacity = maxT - el.scrollTop > 2 ? '1' : '0';
+    if (fadeRRef.current) fadeRRef.current.style.opacity = maxL - el.scrollLeft > 2 ? '1' : '0'; // 右邊還有題目
+    if (fadeBRef.current) fadeBRef.current.style.opacity = maxT - el.scrollTop > 2 ? '1' : '0'; // 下邊還有題目
+    if (fadeLRef.current) fadeLRef.current.style.opacity = el.scrollLeft > 2 ? '1' : '0'; // 左邊還有題目（已向右捲走）
+    if (fadeTRef.current) fadeTRef.current.style.opacity = el.scrollTop > 2 ? '1' : '0'; // 上邊還有題目（已向下捲走）
     var tv = indVTrackRef.current, pv = indVRef.current;
     if (tv && pv) {
       var showV = maxT > 2; tv.style.display = showV ? 'block' : 'none';
@@ -1535,6 +1537,8 @@ function MinesGame() {
             </div>
             <div ref={fadeRRef} style={{ position: 'absolute', top: 3, right: 3, bottom: 3, width: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to right, rgba(255,251,243,0), rgba(255,251,243,.96))', borderTopRightRadius: 9, borderBottomRightRadius: 9 }}></div>
             <div ref={fadeBRef} style={{ position: 'absolute', left: 3, right: 3, bottom: 3, height: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to bottom, rgba(255,251,243,0), rgba(255,251,243,.96))', borderBottomLeftRadius: 9, borderBottomRightRadius: 9 }}></div>
+            <div ref={fadeLRef} style={{ position: 'absolute', top: 3, left: 3, bottom: 3, width: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to left, rgba(255,251,243,0), rgba(255,251,243,.96))', borderTopLeftRadius: 9, borderBottomLeftRadius: 9 }}></div>
+            <div ref={fadeTRef} style={{ position: 'absolute', left: 3, right: 3, top: 3, height: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to top, rgba(255,251,243,0), rgba(255,251,243,.96))', borderTopLeftRadius: 9, borderTopRightRadius: 9 }}></div>
             <div ref={indVTrackRef} style={{ position: 'absolute', top: 8, bottom: 8, right: 5, width: 6, borderRadius: 3, background: 'rgba(30,41,59,.14)', display: 'none', pointerEvents: 'none' }}>
               <div ref={indVRef} style={{ position: 'absolute', left: 0, width: '100%', borderRadius: 3, background: '#f97316', border: '1px solid rgba(30,41,59,.55)' }}></div>
             </div>
