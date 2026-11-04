@@ -3567,10 +3567,10 @@
                         {dailyStatus.streak > 1 ? `  🔥 連擊 x${dailyStatus.streak}` : ''}
                       </p>
                     )}
-                    <button onClick={openTutorial} className="w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-lg text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">❓ 玩法教學</button>
+                    <button onClick={openTutorial} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">❓ 玩法教學</button>
                   {PLAT_MODE && (
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="flex-1 py-2.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠 回大廳</button>
+                      <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠 回大廳</button>
                       {renderDockCapsule(false)}
                     </div>
                   )}

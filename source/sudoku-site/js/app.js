@@ -3039,7 +3039,7 @@ function SudokuGame() {
                             ))}
                         </div>
                     </div>
-                    <p className="text-center font-black text-slate-700">點一格，再按下面的數字鍵填入</p>
+                    <p className="text-center font-bold text-slate-700">點一格，再按下面的數字鍵填入</p>
                 </div>
 
                 <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
@@ -3050,7 +3050,7 @@ function SudokuGame() {
                             <span className="absolute -bottom-3 -right-3 text-2xl">✏️</span>
                         </div>
                     </div>
-                    <p className="text-center font-black text-slate-700">還不確定？先開筆記，把可能的數字記下來</p>
+                    <p className="text-center font-bold text-slate-700">還不確定？先開筆記，把可能的數字記下來</p>
                 </div>
 
                 <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")}>
@@ -3059,7 +3059,7 @@ function SudokuGame() {
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (<div key={n} className="tut-row-cell w-8 h-8 md:w-9 md:h-9 flex items-center justify-center font-black border-r border-slate-300 last:border-r-0" style={{ animationDelay: (n * 0.28) + 's' }}>{n}</div>))}
                         </div>
                     </div>
-                    <p className="text-center font-black text-slate-700">每一行、每一列、每個 3×3 宮，1~9 都不能重複</p>
+                    <p className="text-center font-bold text-slate-700">每一行、每一列、每個 3×3 宮，1~9 都不能重複</p>
                 </div>
 
                 <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
@@ -3067,7 +3067,7 @@ function SudokuGame() {
                         <span className="px-3 py-2 bg-[#ffcc00] border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">🔢 先點數字 → 再點格子</span>
                         <span className="px-3 py-2 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">👆 先點格子 → 再點數字</span>
                     </div>
-                    <p className="text-center font-black text-slate-700">輸入方式自己選，遊戲中在盤面下方隨時切換</p>
+                    <p className="text-center font-bold text-slate-700">輸入方式自己選，遊戲中在盤面下方隨時切換</p>
                 </div>
 
                 <div className="flex justify-center gap-2 mb-5">

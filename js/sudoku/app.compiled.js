@@ -5679,7 +5679,7 @@ function SudokuGame() {
       className: "tut-key-num text-emerald-600"
     }, "8") : v);
   }))), /*#__PURE__*/React.createElement("p", {
-    className: "text-center font-black text-slate-700"
+    className: "text-center font-bold text-slate-700"
   }, "\u9EDE\u4E00\u683C\uFF0C\u518D\u6309\u4E0B\u9762\u7684\u6578\u5B57\u9375\u586B\u5165")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
@@ -5693,7 +5693,7 @@ function SudokuGame() {
   }, "7"), /*#__PURE__*/React.createElement("span", {
     className: "absolute -bottom-3 -right-3 text-2xl"
   }, "\u270F\uFE0F"))), /*#__PURE__*/React.createElement("p", {
-    className: "text-center font-black text-slate-700"
+    className: "text-center font-bold text-slate-700"
   }, "\u9084\u4E0D\u78BA\u5B9A\uFF1F\u5148\u958B\u7B46\u8A18\uFF0C\u628A\u53EF\u80FD\u7684\u6578\u5B57\u8A18\u4E0B\u4F86")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
@@ -5709,7 +5709,7 @@ function SudokuGame() {
       }
     }, n);
   }))), /*#__PURE__*/React.createElement("p", {
-    className: "text-center font-black text-slate-700"
+    className: "text-center font-bold text-slate-700"
   }, "\u6BCF\u4E00\u884C\u3001\u6BCF\u4E00\u5217\u3001\u6BCF\u500B 3\xD73 \u5BAE\uFF0C1~9 \u90FD\u4E0D\u80FD\u91CD\u8907")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
@@ -5719,7 +5719,7 @@ function SudokuGame() {
   }, "\uD83D\uDD22 \u5148\u9EDE\u6578\u5B57 \u2192 \u518D\u9EDE\u683C\u5B50"), /*#__PURE__*/React.createElement("span", {
     className: "px-3 py-2 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDC46 \u5148\u9EDE\u683C\u5B50 \u2192 \u518D\u9EDE\u6578\u5B57")), /*#__PURE__*/React.createElement("p", {
-    className: "text-center font-black text-slate-700"
+    className: "text-center font-bold text-slate-700"
   }, "\u8F38\u5165\u65B9\u5F0F\u81EA\u5DF1\u9078\uFF0C\u904A\u6232\u4E2D\u5728\u76E4\u9762\u4E0B\u65B9\u96A8\u6642\u5207\u63DB")), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-2 mb-5"
   }, [0, 1, 2, 3].map(function (idx) {

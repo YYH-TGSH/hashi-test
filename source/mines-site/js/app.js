@@ -1288,13 +1288,13 @@ function MinesGame() {
                 className="flex-1 py-2.5 bg-white border-2 border-slate-800 rounded-lg font-black text-lg text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">📅 {dailySel}{dIsToday ? '（今天）' : ''}</button>
               <button disabled={dailySel >= todayStr()} onClick={() => setDailySel(shiftDate(dailySel, 1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">▶</button>
             </div>
-            <div className="text-sm font-black text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
-            <button onClick={() => { setTutStep(0); setShowHelp(true); }} className="w-full py-3.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
+            <div className="text-sm font-bold text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
+            <button onClick={() => { setTutStep(0); setShowHelp(true); }} className="w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
           </div>
         </div>
         {isPlat && (
           <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }}
-            className="z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏠 回大廳</button>
+            className="z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏠 回大廳</button>
         )}
         <div className="shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. ({isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0'})</div>
         
@@ -1324,7 +1324,7 @@ function MinesGame() {
                     <span className="mtut-finger absolute text-3xl pointer-events-none" style={{ left: 63, top: 62 }}>👆</span>
                   </div>
                 </div>
-                <p className="text-center font-black text-slate-700">點格子挖開——數字代表周圍 8 格有幾顆地雷</p>
+                <p className="text-center font-bold text-slate-700">點格子挖開——數字代表周圍 8 格有幾顆地雷</p>
               </div>
 
               <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
@@ -1337,7 +1337,7 @@ function MinesGame() {
                   <span className="px-3 py-2 bg-white border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">⛏️ 挖開</span>
                   <span className="mtut-chip px-3 py-2 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]">🚩 插旗</span>
                 </div>
-                <p className="text-center font-black text-slate-700">懷疑是地雷？切到「插旗」模式點它，或長按格子做記號</p>
+                <p className="text-center font-bold text-slate-700">懷疑是地雷？切到「插旗」模式點它，或長按格子做記號</p>
               </div>
 
               <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")}>
@@ -1376,7 +1376,7 @@ function MinesGame() {
                     <span className="mtut-finger2 absolute text-3xl pointer-events-none" style={{ left: 63, top: 62 }}>👆</span>
                   </div>
                 </div>
-                <p className="text-center font-black text-slate-700">數字旁的旗子數剛好等於數字時，再點數字格，周圍剩下的格子一次挖開</p>
+                <p className="text-center font-bold text-slate-700">數字旁的旗子數剛好等於數字時，再點數字格，周圍剩下的格子一次挖開</p>
               </div>
 
               <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
@@ -1392,7 +1392,7 @@ function MinesGame() {
                     <span className="text-xs font-black text-slate-400">全部挖開</span>
                   </div>
                 </div>
-                <p className="text-center font-black text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
+                <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
               </div>
 
               <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]">

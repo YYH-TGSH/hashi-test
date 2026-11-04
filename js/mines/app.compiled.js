@@ -3227,18 +3227,18 @@ function MinesGame() {
       },
       className: "w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\u25B6")), /*#__PURE__*/React.createElement("div", {
-      className: "text-sm font-black text-slate-500 -mt-1"
+      className: "text-sm font-bold text-slate-500 -mt-1"
     }, "\uD83D\uDD25 \u9023\u7E8C\u6311\u6230 ", dStreak.count || 0, " \u5929", dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         setTutStep(0);
         setShowHelp(true);
       },
-      className: "w-full py-3.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"))), isPlat && /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         if (window.PLAT_show) window.PLAT_show('home');
       },
-      className: "z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '整合版 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showHelp && /*#__PURE__*/React.createElement("div", {
@@ -3330,7 +3330,7 @@ function MinesGame() {
         top: 62
       }
     }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
-      className: "text-center font-black text-slate-700"
+      className: "text-center font-bold text-slate-700"
     }, "\u9EDE\u683C\u5B50\u6316\u958B\u2014\u2014\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u6709\u5E7E\u9846\u5730\u96F7")), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
@@ -3349,7 +3349,7 @@ function MinesGame() {
     }, "\u26CF\uFE0F \u6316\u958B"), /*#__PURE__*/React.createElement("span", {
       className: "mtut-chip px-3 py-2 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("p", {
-      className: "text-center font-black text-slate-700"
+      className: "text-center font-bold text-slate-700"
     }, "\u61F7\u7591\u662F\u5730\u96F7\uFF1F\u5207\u5230\u300C\u63D2\u65D7\u300D\u6A21\u5F0F\u9EDE\u5B83\uFF0C\u6216\u9577\u6309\u683C\u5B50\u505A\u8A18\u865F")), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
@@ -3471,7 +3471,7 @@ function MinesGame() {
         top: 62
       }
     }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
-      className: "text-center font-black text-slate-700"
+      className: "text-center font-bold text-slate-700"
     }, "\u6578\u5B57\u65C1\u7684\u65D7\u5B50\u6578\u525B\u597D\u7B49\u65BC\u6578\u5B57\u6642\uFF0C\u518D\u9EDE\u6578\u5B57\u683C\uFF0C\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u4E00\u6B21\u6316\u958B")), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
@@ -3497,7 +3497,7 @@ function MinesGame() {
     }, "\uD83C\uDFC6")), /*#__PURE__*/React.createElement("span", {
       className: "text-xs font-black text-slate-400"
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
-      className: "text-center font-black text-slate-700"
+      className: "text-center font-bold text-slate-700"
     }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F")), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, /*#__PURE__*/React.createElement("div", {

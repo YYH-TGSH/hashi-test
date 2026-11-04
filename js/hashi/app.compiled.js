@@ -5464,7 +5464,7 @@ function HashiGame() {
             ),
             React.createElement(
               'button',
-              { onClick: openTutorial, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-lg text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+              { onClick: openTutorial, className: 'w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
               '\u2753 \u73A9\u6CD5\u6559\u5B78'
             ),
             PLAT_MODE && React.createElement(
@@ -5474,7 +5474,7 @@ function HashiGame() {
                 'button',
                 { onClick: function onClick() {
                     if (window.PLAT_show) window.PLAT_show('home');
-                  }, className: 'flex-1 py-2.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
+                  }, className: 'flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
                 '\uD83C\uDFE0 \u56DE\u5927\u5EF3'
               ),
               renderDockCapsule(false)
