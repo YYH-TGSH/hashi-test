@@ -135,6 +135,8 @@ function MinesGame() {
   // ---------- 畫面/單機狀態 ----------
   const [screen, setScreen] = useState('home'); // home | game
   const [showHelp, setShowHelp] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false); // 存檔/讀檔（v1.42 補齊：比照數獨/數橋代碼式）
+  const [saveCode, setSaveCode] = useState('');
   const [tutStep, setTutStep] = useState(0); // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
   const [muted, setMuted] = useState(sGet('mines_muted') === '1');
   const [sizeId, setSizeId] = useState(9);
@@ -270,6 +272,62 @@ function MinesGame() {
     if (!prev || t < prev) sSet(key, String(t));
   }
   function startDaily(ds) { newGame(9, dailySeed(ds), ds); }
+
+  // ---------- 存檔/讀檔（比照數獨/數橋：進度代碼產生＋貼上還原，v1.42 補齊 Q1） ----------
+  function handleSaveCode() {
+    if (!layout || !cells) return;
+    if (status !== 'ready' && status !== 'playing') { itemSay('⚠️ 這局已結束，不能存檔'); return; }
+    var sp = specRef.current;
+    var data = { g: 'mines', v: 1, sz: sizeId, seed: curSeed, lay: layout.map(b => b ? '1' : '0').join(''), cells: cells.join(''), t: elapsed, daily: dailyDate || null };
+    if (sizeId === 'custom') data.cust = { w: sp.w, h: sp.h, mines: sp.mines };
+    try {
+      var code = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      setSaveCode(code);
+      var ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); itemSay('✅ 已產生並複製代碼！'); } catch (e) {}
+      document.body.removeChild(ta);
+    } catch (e) { itemSay('❌ 產生代碼失敗'); }
+  }
+  function handleQuickPaste() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(text => { if (text) { setSaveCode(text); itemSay('✅ 貼上成功！'); } }).catch(() => { var t2 = document.getElementById('saveCodeTextarea'); if (t2) t2.focus(); itemSay('⚠️ 瀏覽器阻擋自動貼上，請手動貼上'); });
+      } else throw new Error();
+    } catch (e) { var t3 = document.getElementById('saveCodeTextarea'); if (t3) t3.focus(); itemSay('⚠️ 瀏覽器阻擋自動貼上，請手動貼上'); }
+  }
+  function handleLoadCode() {
+    if (!saveCode.trim()) return itemSay('⚠️ 請先貼上代碼');
+    try {
+      var data = JSON.parse(decodeURIComponent(escape(atob(saveCode.trim()))));
+      if (!data || data.g !== 'mines') throw new Error('bad');
+      var sp;
+      if (data.sz === 'custom') { if (!data.cust) throw new Error('bad'); sp = regCustomSpec(data.cust); }
+      else sp = SIZES[data.sz];
+      if (!sp) throw new Error('bad');
+      var n = sp.w * sp.h;
+      if (typeof data.lay !== 'string' || data.lay.length !== n || typeof data.cells !== 'string' || data.cells.length !== n) throw new Error('bad');
+      var L = [], opened = 0, mc = 0;
+      for (var i = 0; i < n; i++) {
+        var isM = data.lay[i] === '1'; L.push(isM); if (isM) mc++;
+        var ch = data.cells[i];
+        if ('hof'.indexOf(ch) < 0) throw new Error('bad');
+        if (ch === 'o') opened++;
+      }
+      if (mc !== sp.mines) throw new Error('bad');
+      setSizeId(sp.id); setCurSeed((data.seed || 0) >>> 0); setLayout(L); setNums(computeNums(sp.w, sp.h, L));
+      setCells(data.cells.split(''));
+      var st = opened > 0 ? 'playing' : 'ready';
+      setStatus(st); statusRef.current = st;
+      firstRef.current = opened === 0;
+      setHitIdx(-1); setInputMode('dig');
+      setElapsed(data.t || 0);
+      if (opened > 0) { var base = Date.now() - (data.t || 0) * 1000; setStartedAt(base); startedAtRef.current = base; }
+      else { setStartedAt(null); startedAtRef.current = null; }
+      setDailyDate(data.daily || null);
+      setShowSaveModal(false); setScreen('game');
+      itemSay('✅ 進度載入成功！');
+    } catch (e) { itemSay('❌ 無效的進度代碼'); }
+  }
   function startCustom() { // 單機自訂盤面：clamp→持久化→註冊規格→以 sizeId 'custom' 開局（與預設盤走同一條 newGame 路徑）
     var cl = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines);
     setCustCfg(cl); sSet('mines_custom_cfg', JSON.stringify(cl));
@@ -1515,6 +1573,7 @@ function MinesGame() {
             </div>
             <div className="flex gap-1 md:gap-2 flex-wrap items-center ml-auto">
               {!mpOn && (<button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className={hbtn} title="重開一局">🔄<span className="hidden sm:inline ml-1">重開</span></button>)}
+              {!mpOn && (<button onClick={() => { setSaveCode(''); setShowSaveModal(true); }} className={hbtn} title="存檔/讀檔（進度代碼）">💾<span className="hidden sm:inline ml-1">存檔</span></button>)}
               <button onClick={() => { var m = !muted; setMuted(m); sSet('mines_muted', m ? '1' : '0'); }} title={muted ? '取消靜音' : '靜音'} className={hbtn}>{muted ? '🔇' : '🔊'}</button>
               {mpOn ? (<button onClick={() => setShowExitMenu(true)} className={hbtn} title="離開對局">🔌<span className="hidden sm:inline ml-1">退出</span></button>)
                     : (<button onClick={() => setScreen('home')} className={hbtn} title="回主選單">🏠<span className="hidden sm:inline ml-1">主選單</span></button>)}
@@ -1539,6 +1598,25 @@ function MinesGame() {
               <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏁 回等待室</button>
               <button onClick={() => { setShowExitMenu(false); leaveMatch(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🚪 退出（回大廳）</button>
               <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
+            </div>
+          </div>
+        )}
+        {showSaveModal && !mpOn && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div className="bg-[#fff7ed] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popIn">
+              <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
+              <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
+              <div className="mb-6">
+                <button onClick={handleSaveCode} className="w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
+                <div className="relative">
+                  <textarea id="saveCodeTextarea" value={saveCode} onChange={(e) => setSaveCode(e.target.value)} placeholder="點擊上方按鈕生成，或是手動貼上舊代碼至此處" rows="4" className="w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white" />
+                  <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setShowSaveModal(false)} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">關閉</button>
+                <button onClick={handleLoadCode} className="flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">載入代碼</button>
+              </div>
             </div>
           </div>
         )}

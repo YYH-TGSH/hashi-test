@@ -350,72 +350,80 @@ function MinesGame() {
     _useState4 = _slicedToArray(_useState3, 2),
     showHelp = _useState4[0],
     setShowHelp = _useState4[1];
-  var _useState5 = useState(0),
+  var _useState5 = useState(false),
     _useState6 = _slicedToArray(_useState5, 2),
-    tutStep = _useState6[0],
-    setTutStep = _useState6[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
-  var _useState7 = useState(sGet('mines_muted') === '1'),
+    showSaveModal = _useState6[0],
+    setShowSaveModal = _useState6[1]; // 存檔/讀檔（v1.42 補齊：比照數獨/數橋代碼式）
+  var _useState7 = useState(''),
     _useState8 = _slicedToArray(_useState7, 2),
-    muted = _useState8[0],
-    setMuted = _useState8[1];
-  var _useState9 = useState(9),
+    saveCode = _useState8[0],
+    setSaveCode = _useState8[1];
+  var _useState9 = useState(0),
     _useState10 = _slicedToArray(_useState9, 2),
-    sizeId = _useState10[0],
-    setSizeId = _useState10[1];
-  var _useState11 = useState(null),
+    tutStep = _useState10[0],
+    setTutStep = _useState10[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+  var _useState11 = useState(sGet('mines_muted') === '1'),
     _useState12 = _slicedToArray(_useState11, 2),
-    layout = _useState12[0],
-    setLayout = _useState12[1]; // bool[] 雷位（目前這一局）
-  var _useState13 = useState(null),
+    muted = _useState12[0],
+    setMuted = _useState12[1];
+  var _useState13 = useState(9),
     _useState14 = _slicedToArray(_useState13, 2),
-    nums = _useState14[0],
-    setNums = _useState14[1]; // int[] 鄰雷數（-1=雷）
+    sizeId = _useState14[0],
+    setSizeId = _useState14[1];
   var _useState15 = useState(null),
     _useState16 = _slicedToArray(_useState15, 2),
-    cells = _useState16[0],
-    setCells = _useState16[1]; // 'h'|'o'|'f'
+    layout = _useState16[0],
+    setLayout = _useState16[1]; // bool[] 雷位（目前這一局）
   var _useState17 = useState(null),
     _useState18 = _slicedToArray(_useState17, 2),
-    ownArr = _useState18[0],
-    setOwnArr = _useState18[1]; // 合作專用：每格由哪位玩家開啟（players 索引，-1=未開）→ 染玩家色算貢獻
-  var _useState19 = useState(function () {
+    nums = _useState18[0],
+    setNums = _useState18[1]; // int[] 鄰雷數（-1=雷）
+  var _useState19 = useState(null),
+    _useState20 = _slicedToArray(_useState19, 2),
+    cells = _useState20[0],
+    setCells = _useState20[1]; // 'h'|'o'|'f'
+  var _useState21 = useState(null),
+    _useState22 = _slicedToArray(_useState21, 2),
+    ownArr = _useState22[0],
+    setOwnArr = _useState22[1]; // 合作專用：每格由哪位玩家開啟（players 索引，-1=未開）→ 染玩家色算貢獻
+  var _useState23 = useState(function () {
       return typeof window !== 'undefined' && window.innerWidth || 390;
     }),
-    _useState20 = _slicedToArray(_useState19, 2),
-    vpW = _useState20[0],
-    setVpW = _useState20[1]; // 視窗寬（盤面響應式放大用）
-  var _useState21 = useState(0),
-    _useState22 = _slicedToArray(_useState21, 2),
-    curSeed = _useState22[0],
-    setCurSeed = _useState22[1];
-  var _useState23 = useState('ready'),
     _useState24 = _slicedToArray(_useState23, 2),
-    status = _useState24[0],
-    setStatus = _useState24[1]; // ready | playing | won | lost
-  var _useState25 = useState(-1),
+    vpW = _useState24[0],
+    setVpW = _useState24[1]; // 視窗寬（盤面響應式放大用）
+  var _useState25 = useState(0),
     _useState26 = _slicedToArray(_useState25, 2),
-    hitIdx = _useState26[0],
-    setHitIdx = _useState26[1];
-  var _useState27 = useState('dig'),
+    curSeed = _useState26[0],
+    setCurSeed = _useState26[1];
+  var _useState27 = useState('ready'),
     _useState28 = _slicedToArray(_useState27, 2),
-    inputMode = _useState28[0],
-    setInputMode = _useState28[1]; // dig | flag
-  var _useState29 = useState(null),
+    status = _useState28[0],
+    setStatus = _useState28[1]; // ready | playing | won | lost
+  var _useState29 = useState(-1),
     _useState30 = _slicedToArray(_useState29, 2),
-    startedAt = _useState30[0],
-    setStartedAt = _useState30[1];
-  var _useState31 = useState(0),
+    hitIdx = _useState30[0],
+    setHitIdx = _useState30[1];
+  var _useState31 = useState('dig'),
     _useState32 = _slicedToArray(_useState31, 2),
-    elapsed = _useState32[0],
-    setElapsed = _useState32[1];
+    inputMode = _useState32[0],
+    setInputMode = _useState32[1]; // dig | flag
   var _useState33 = useState(null),
     _useState34 = _slicedToArray(_useState33, 2),
-    dailyDate = _useState34[0],
-    setDailyDate = _useState34[1]; // 非 null = 每日一題模式（日期字串）
-  var _useState35 = useState(todayStr()),
+    startedAt = _useState34[0],
+    setStartedAt = _useState34[1];
+  var _useState35 = useState(0),
     _useState36 = _slicedToArray(_useState35, 2),
-    dailySel = _useState36[0],
-    setDailySel = _useState36[1]; // 主畫面每日一題目前選取日期
+    elapsed = _useState36[0],
+    setElapsed = _useState36[1];
+  var _useState37 = useState(null),
+    _useState38 = _slicedToArray(_useState37, 2),
+    dailyDate = _useState38[0],
+    setDailyDate = _useState38[1]; // 非 null = 每日一題模式（日期字串）
+  var _useState39 = useState(todayStr()),
+    _useState40 = _slicedToArray(_useState39, 2),
+    dailySel = _useState40[0],
+    setDailySel = _useState40[1]; // 主畫面每日一題目前選取日期
   var firstRef = useRef(true); // 本局是否還沒挖第一下（首點保護/計時起點）
   var statusRef = useRef('ready');
   statusRef.current = status;
@@ -436,43 +444,43 @@ function MinesGame() {
     return cells ? countFlags(cells) : 0;
   }, [cells]);
   // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
-  var _useState37 = useState({
+  var _useState41 = useState({
       question: 0,
       backfill: 0,
       gift: 0
     }),
-    _useState38 = _slicedToArray(_useState37, 2),
-    myItems = _useState38[0],
-    setMyItems = _useState38[1];
+    _useState42 = _slicedToArray(_useState41, 2),
+    myItems = _useState42[0],
+    setMyItems = _useState42[1];
   var itemsRef = useRef({
     question: 0,
     backfill: 0,
     gift: 0
   });
-  var _useState39 = useState({}),
-    _useState40 = _slicedToArray(_useState39, 2),
-    questionFx = _useState40[0],
-    setQuestionFx = _useState40[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
-  var questionFxRef = useRef({});
-  var _useState41 = useState(null),
-    _useState42 = _slicedToArray(_useState41, 2),
-    itemToast = _useState42[0],
-    setItemToast = _useState42[1];
-  var itemToastTimerRef = useRef(null);
-  var _useState43 = useState(0),
+  var _useState43 = useState({}),
     _useState44 = _slicedToArray(_useState43, 2),
-    mistLeft = _useState44[0],
-    setMistLeft = _useState44[1]; // 競速容錯剩餘次數（顯示用）
-  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
-  var _useState45 = useState(1),
+    questionFx = _useState44[0],
+    setQuestionFx = _useState44[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
+  var questionFxRef = useRef({});
+  var _useState45 = useState(null),
     _useState46 = _slicedToArray(_useState45, 2),
-    zoom = _useState46[0],
-    setZoom = _useState46[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
-  var _useState47 = useState(false),
+    itemToast = _useState46[0],
+    setItemToast = _useState46[1];
+  var itemToastTimerRef = useRef(null);
+  var _useState47 = useState(0),
     _useState48 = _slicedToArray(_useState47, 2),
-    zoomOpen = _useState48[0],
-    setZoomOpen = _useState48[1];
-  var _useState49 = useState(function () {
+    mistLeft = _useState48[0],
+    setMistLeft = _useState48[1]; // 競速容錯剩餘次數（顯示用）
+  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
+  var _useState49 = useState(1),
+    _useState50 = _slicedToArray(_useState49, 2),
+    zoom = _useState50[0],
+    setZoom = _useState50[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
+  var _useState51 = useState(false),
+    _useState52 = _slicedToArray(_useState51, 2),
+    zoomOpen = _useState52[0],
+    setZoomOpen = _useState52[1];
+  var _useState53 = useState(function () {
       try {
         var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null');
         if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines);
@@ -483,13 +491,13 @@ function MinesGame() {
         mines: 40
       };
     }),
-    _useState50 = _slicedToArray(_useState49, 2),
-    custCfg = _useState50[0],
-    setCustCfg = _useState50[1]; // 單機自訂盤面（寬/高/雷），持久化
-  var _useState51 = useState(false),
-    _useState52 = _slicedToArray(_useState51, 2),
-    custOpen = _useState52[0],
-    setCustOpen = _useState52[1];
+    _useState54 = _slicedToArray(_useState53, 2),
+    custCfg = _useState54[0],
+    setCustCfg = _useState54[1]; // 單機自訂盤面（寬/高/雷），持久化
+  var _useState55 = useState(false),
+    _useState56 = _slicedToArray(_useState55, 2),
+    custOpen = _useState56[0],
+    setCustOpen = _useState56[1];
   var boardScrollRef = useRef(null); // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
   var fadeRRef = useRef(null),
     fadeBRef = useRef(null),
@@ -723,6 +731,121 @@ function MinesGame() {
   function startDaily(ds) {
     newGame(9, dailySeed(ds), ds);
   }
+
+  // ---------- 存檔/讀檔（比照數獨/數橋：進度代碼產生＋貼上還原，v1.42 補齊 Q1） ----------
+  function handleSaveCode() {
+    if (!layout || !cells) return;
+    if (status !== 'ready' && status !== 'playing') {
+      itemSay('⚠️ 這局已結束，不能存檔');
+      return;
+    }
+    var sp = specRef.current;
+    var data = {
+      g: 'mines',
+      v: 1,
+      sz: sizeId,
+      seed: curSeed,
+      lay: layout.map(function (b) {
+        return b ? '1' : '0';
+      }).join(''),
+      cells: cells.join(''),
+      t: elapsed,
+      daily: dailyDate || null
+    };
+    if (sizeId === 'custom') data.cust = {
+      w: sp.w,
+      h: sp.h,
+      mines: sp.mines
+    };
+    try {
+      var code = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      setSaveCode(code);
+      var ta = document.createElement('textarea');
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        itemSay('✅ 已產生並複製代碼！');
+      } catch (e) {}
+      document.body.removeChild(ta);
+    } catch (e) {
+      itemSay('❌ 產生代碼失敗');
+    }
+  }
+  function handleQuickPaste() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function (text) {
+          if (text) {
+            setSaveCode(text);
+            itemSay('✅ 貼上成功！');
+          }
+        })["catch"](function () {
+          var t2 = document.getElementById('saveCodeTextarea');
+          if (t2) t2.focus();
+          itemSay('⚠️ 瀏覽器阻擋自動貼上，請手動貼上');
+        });
+      } else throw new Error();
+    } catch (e) {
+      var t3 = document.getElementById('saveCodeTextarea');
+      if (t3) t3.focus();
+      itemSay('⚠️ 瀏覽器阻擋自動貼上，請手動貼上');
+    }
+  }
+  function handleLoadCode() {
+    if (!saveCode.trim()) return itemSay('⚠️ 請先貼上代碼');
+    try {
+      var data = JSON.parse(decodeURIComponent(escape(atob(saveCode.trim()))));
+      if (!data || data.g !== 'mines') throw new Error('bad');
+      var sp;
+      if (data.sz === 'custom') {
+        if (!data.cust) throw new Error('bad');
+        sp = regCustomSpec(data.cust);
+      } else sp = SIZES[data.sz];
+      if (!sp) throw new Error('bad');
+      var n = sp.w * sp.h;
+      if (typeof data.lay !== 'string' || data.lay.length !== n || typeof data.cells !== 'string' || data.cells.length !== n) throw new Error('bad');
+      var L = [],
+        opened = 0,
+        mc = 0;
+      for (var i = 0; i < n; i++) {
+        var isM = data.lay[i] === '1';
+        L.push(isM);
+        if (isM) mc++;
+        var ch = data.cells[i];
+        if ('hof'.indexOf(ch) < 0) throw new Error('bad');
+        if (ch === 'o') opened++;
+      }
+      if (mc !== sp.mines) throw new Error('bad');
+      setSizeId(sp.id);
+      setCurSeed((data.seed || 0) >>> 0);
+      setLayout(L);
+      setNums(computeNums(sp.w, sp.h, L));
+      setCells(data.cells.split(''));
+      var st = opened > 0 ? 'playing' : 'ready';
+      setStatus(st);
+      statusRef.current = st;
+      firstRef.current = opened === 0;
+      setHitIdx(-1);
+      setInputMode('dig');
+      setElapsed(data.t || 0);
+      if (opened > 0) {
+        var base = Date.now() - (data.t || 0) * 1000;
+        setStartedAt(base);
+        startedAtRef.current = base;
+      } else {
+        setStartedAt(null);
+        startedAtRef.current = null;
+      }
+      setDailyDate(data.daily || null);
+      setShowSaveModal(false);
+      setScreen('game');
+      itemSay('✅ 進度載入成功！');
+    } catch (e) {
+      itemSay('❌ 無效的進度代碼');
+    }
+  }
   function startCustom() {
     // 單機自訂盤面：clamp→持久化→註冊規格→以 sizeId 'custom' 開局（與預設盤走同一條 newGame 路徑）
     var cl = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines);
@@ -898,62 +1021,62 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState53 = useState(false),
-    _useState54 = _slicedToArray(_useState53, 2),
-    mpOn = _useState54[0],
-    setMpOn = _useState54[1];
-  var _useState55 = useState('off'),
-    _useState56 = _slicedToArray(_useState55, 2),
-    mpPhase = _useState56[0],
-    setMpPhase = _useState56[1]; // off|waiting|countdown|playing|done
-  var _useState57 = useState([]),
+  var _useState57 = useState(false),
     _useState58 = _slicedToArray(_useState57, 2),
-    players = _useState58[0],
-    setPlayers = _useState58[1];
-  var _useState59 = useState(false),
+    mpOn = _useState58[0],
+    setMpOn = _useState58[1];
+  var _useState59 = useState('off'),
     _useState60 = _slicedToArray(_useState59, 2),
-    myReadySt = _useState60[0],
-    setMyReadySt = _useState60[1];
-  var _useState61 = useState({}),
+    mpPhase = _useState60[0],
+    setMpPhase = _useState60[1]; // off|waiting|countdown|playing|done
+  var _useState61 = useState([]),
     _useState62 = _slicedToArray(_useState61, 2),
-    godBoards = _useState62[0],
-    setGodBoards = _useState62[1];
-  var _useState63 = useState(null),
+    players = _useState62[0],
+    setPlayers = _useState62[1];
+  var _useState63 = useState(false),
     _useState64 = _slicedToArray(_useState63, 2),
-    godUid = _useState64[0],
-    setGodUid = _useState64[1];
-  var _useState65 = useState(null),
+    myReadySt = _useState64[0],
+    setMyReadySt = _useState64[1];
+  var _useState65 = useState({}),
     _useState66 = _slicedToArray(_useState65, 2),
-    raceFinal = _useState66[0],
-    setRaceFinal = _useState66[1];
+    godBoards = _useState66[0],
+    setGodBoards = _useState66[1];
   var _useState67 = useState(null),
     _useState68 = _slicedToArray(_useState67, 2),
-    myOutcome = _useState68[0],
-    setMyOutcome = _useState68[1]; // 'finished'|'boom'
-  var _useState69 = useState(false),
+    godUid = _useState68[0],
+    setGodUid = _useState68[1];
+  var _useState69 = useState(null),
     _useState70 = _slicedToArray(_useState69, 2),
-    leaveArm = _useState70[0],
-    setLeaveArm = _useState70[1];
-  var _useState71 = useState(false),
+    raceFinal = _useState70[0],
+    setRaceFinal = _useState70[1];
+  var _useState71 = useState(null),
     _useState72 = _slicedToArray(_useState71, 2),
-    showExitMenu = _useState72[0],
-    setShowExitMenu = _useState72[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+    myOutcome = _useState72[0],
+    setMyOutcome = _useState72[1]; // 'finished'|'boom'
   var _useState73 = useState(false),
     _useState74 = _slicedToArray(_useState73, 2),
-    hdrOpen = _useState74[0],
-    setHdrOpen = _useState74[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
-  var _useState75 = useState(''),
+    leaveArm = _useState74[0],
+    setLeaveArm = _useState74[1];
+  var _useState75 = useState(false),
     _useState76 = _slicedToArray(_useState75, 2),
-    coopBoomBy = _useState76[0],
-    setCoopBoomBy = _useState76[1];
-  var _useState77 = useState(null),
+    showExitMenu = _useState76[0],
+    setShowExitMenu = _useState76[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState77 = useState(false),
     _useState78 = _slicedToArray(_useState77, 2),
-    cdNum = _useState78[0],
-    setCdNum = _useState78[1];
-  var _useState79 = useState(0),
+    hdrOpen = _useState78[0],
+    setHdrOpen = _useState78[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState79 = useState(''),
     _useState80 = _slicedToArray(_useState79, 2),
-    waitTick = _useState80[0],
-    setWaitTick = _useState80[1];
+    coopBoomBy = _useState80[0],
+    setCoopBoomBy = _useState80[1];
+  var _useState81 = useState(null),
+    _useState82 = _slicedToArray(_useState81, 2),
+    cdNum = _useState82[0],
+    setCdNum = _useState82[1];
+  var _useState83 = useState(0),
+    _useState84 = _slicedToArray(_useState83, 2),
+    waitTick = _useState84[0],
+    setWaitTick = _useState84[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -3713,7 +3836,16 @@ function MinesGame() {
     title: "\u91CD\u958B\u4E00\u5C40"
   }, "\uD83D\uDD04", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline ml-1"
-  }, "\u91CD\u958B")), /*#__PURE__*/React.createElement("button", {
+  }, "\u91CD\u958B")), !mpOn && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setSaveCode('');
+      setShowSaveModal(true);
+    },
+    className: hbtn,
+    title: "\u5B58\u6A94/\u8B80\u6A94\uFF08\u9032\u5EA6\u4EE3\u78BC\uFF09"
+  }, "\uD83D\uDCBE", /*#__PURE__*/React.createElement("span", {
+    className: "hidden sm:inline ml-1"
+  }, "\u5B58\u6A94")), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       var m = !muted;
       setMuted(m);
@@ -3822,7 +3954,44 @@ function MinesGame() {
       return setShowExitMenu(false);
     },
     className: "w-full py-2 text-slate-400 font-bold hover:text-slate-700"
-  }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u53D6\u6D88"))), showSaveModal && !mpOn && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#fff7ed] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popIn"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1"
+  }, "\uD83D\uDCBE \u5B58\u6A94\u8207\u8B80\u6A94"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold text-slate-600 mb-4"
+  }, "\u5C07\u9032\u5EA6\u8F49\u63DB\u70BA\u4EE3\u78BC\uFF0C\u4E0B\u6B21\u8CBC\u4E0A\u4EE3\u78BC\u5373\u53EF\u6062\u5FA9\uFF01"), /*#__PURE__*/React.createElement("div", {
+    className: "mb-6"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: handleSaveCode,
+    className: "w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg"
+  }, "\u7522\u751F\u9032\u5EA6\u4EE3\u78BC (\u81EA\u52D5\u8907\u88FD)"), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    id: "saveCodeTextarea",
+    value: saveCode,
+    onChange: function onChange(e) {
+      return setSaveCode(e.target.value);
+    },
+    placeholder: "\u9EDE\u64CA\u4E0A\u65B9\u6309\u9215\u751F\u6210\uFF0C\u6216\u662F\u624B\u52D5\u8CBC\u4E0A\u820A\u4EE3\u78BC\u81F3\u6B64\u8655",
+    rows: "4",
+    className: "w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: handleQuickPaste,
+    className: "absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none"
+  }, "\uD83D\uDCCB \u5FEB\u901F\u8CBC\u4E0A"))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowSaveModal(false);
+    },
+    className: "flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+  }, "\u95DC\u9589"), /*#__PURE__*/React.createElement("button", {
+    onClick: handleLoadCode,
+    className: "flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+  }, "\u8F09\u5165\u4EE3\u78BC")))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
     className: "relative shrink-0",

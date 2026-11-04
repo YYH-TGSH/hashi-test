@@ -39,6 +39,7 @@ const SUITES = [
   ['test-islandgift-strict.js', {}],
   ['test-inputfix.js', {}],
   ['test-mines-solo.js', {}],
+  ['test-mines-save.js', {}],
   ['test-mines-mp.js', {}],
   ['test-mines-tourn.js', {}],
   ['test-mines-items.js', {}],
