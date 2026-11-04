@@ -2441,14 +2441,16 @@ function SudokuGame() {
   }, [brawlWinners]);
   var syncState = function syncState(partial) {
     var shouldBroadcast = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    var fromRemote = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     if (partial.matchToken) matchTokenRef.current = partial.matchToken;else if (isHostRef.current && partial.isGenerating === true) matchTokenRef.current = Math.random().toString(36).slice(2, 10); // 房主開新局鑄代幣
     if (partial.cells !== undefined) setCells(partial.cells);
     if (partial.localCells !== undefined) setLocalCells(partial.localCells);
     if (partial.levelData !== undefined) setLevelData(partial.levelData);
     if (partial.startTime !== undefined) {
-      setStartTime(partial.startTime);
-      setMatchStartTime(partial.startTime);
-    }
+      var stVal = fromRemote ? partial.startTime - platTimeOffset() : partial.startTime;
+      setStartTime(stVal);
+      setMatchStartTime(stVal);
+    } // 遠端來的 startTime 是房主時鐘，須換算回本地時鐘（D-05）；否則兩台手機時鐘差會直接吃掉完賽時間（2026-11-04 實機：玩 10 分鐘顯示 00:51）
     if (partial.matchPhase !== undefined) setMatchPhase(partial.matchPhase);
     if (partial.matchEndTime !== undefined) stateRef.current.matchEndTime = partial.matchEndTime;
     if (partial.countdownTarget !== undefined) setCountdownTarget(partial.countdownTarget);
@@ -2496,6 +2498,7 @@ function SudokuGame() {
     if (partial.selectedChar !== undefined) setSelectedChar(partial.selectedChar);
     if (partial.isAutoFilling !== undefined) isAutoFillingRef.current = partial.isAutoFilling;
     var updatedState = _objectSpread(_objectSpread({}, stateRef.current), partial);
+    if (fromRemote && partial.startTime !== undefined) updatedState.startTime = partial.startTime - platTimeOffset(); // ref 鏡像也要本地時鐘版（武器延遲閘門讀 stateRef.startTime）
     stateRef.current = updatedState;
     if (shouldBroadcast && engineRef.current === 'peerjs') {
       var broadcastData = {};
@@ -5137,8 +5140,8 @@ function SudokuGame() {
               if (!existingPlayer) showToast("\uD83D\uDC4B ".concat(m.pName || "玩家", " \u5DF2\u52A0\u5165\u5C0D\u5C40")); // 重送 JOIN 的冪等回應不再跳提示
             } else if (m.type === 'SYNC') {
               if (!isStaleSync(m.data)) {
-                syncState(m.data, false);
-                if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
+                syncState(m.data, false, true);
+                if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime - platTimeOffset());
               }
             } else if (m.type === 'PLAYERS_UPDATE') {
               if (m.players) setPlayersList(m.players);
@@ -5373,13 +5376,13 @@ function SudokuGame() {
             setIsConnecting(false);
             // 強制立刻儲存一次，避開 syncState 的狀態更新延遲 (v3.8.15)
             saveLocalProgress(rId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells);
-            syncState(m.data, false);
+            syncState(m.data, false, true);
             setPlayersList(adoptHubPlayers(m.players));
             setIsSpectator(m.isSpectator);
           } else if (m.type === 'SYNC') {
             if (isStaleSync(m.data)) {/* 上一局遲到的 SYNC：丟棄，不覆寫新局盤面（新局開局包不在此列，見 isStaleSync） */} else {
-              syncState(m.data, false);
-              if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime);
+              syncState(m.data, false, true);
+              if (m.data.isBrawlMode && m.data.startTime) setMatchStartTime(m.data.startTime - platTimeOffset());
               // 客端收到同步後也立刻存檔備援 (v3.8.21)
               if (roomId && !isSpectator) {
                 saveLocalProgress(roomId, myId, pName, false, m.data.isBrawlMode ? m.data.localCells : m.data.cells, m.data.sessionId || stateRef.current.sessionId, {

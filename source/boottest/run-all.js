@@ -31,6 +31,7 @@ const SUITES = [
   ['repro-sudoku-rematch.js', {}],
   ['test-hashi-items.js', {}],
   ['test-sudoku-items.js', {}],
+  ['test-sudoku-wintime.js', {}],
   ['test-prob-weights.js', {}],
   ['test-lastone.js', {}],
   ['test-lastone2.js', {}],
