@@ -8,7 +8,10 @@ body[data-view="home"] {
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
 .plat-view { display: none; }
-.plat-view.active { display: block; }
+.plat-view.active { display: block; animation: platViewIn .26s ease-out; }
+/* 畫面轉場 Fade Through（美學稽核 V-02）：切換不再瞬斷，舊畫面換新畫面時淡入＋微縮放，約 260ms */
+@keyframes platViewIn { from { opacity: 0; transform: scale(.996) translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .plat-view.active { animation: none; } }
 #plat-back {
   position: fixed; top: 10px; left: 10px; z-index: 9999;
   background: #fff; border: 3px solid #1e293b; border-radius: 9999px;

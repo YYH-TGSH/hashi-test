@@ -1056,7 +1056,7 @@ function MinesGame() {
       }
     };
     var homeBtn = leaveArm ? { id: 'home', label: '⚠️ 確定離開？', kind: 'danger' } : { id: 'home', label: '離開' };
-    var stdBtns = [{ id: 'watch', label: '👁️ 繼續觀戰', kind: 'primary' }].concat(inTourn ? [] : [{ id: 'rematch', label: '🔁 再來一局' }]).concat([{ id: 'lobby', label: '🏁 回房間頁' }, homeBtn]);
+    var stdBtns = [{ id: 'watch', label: '👁️ 看盤面' }].concat(inTourn ? [{ id: 'lobby', label: '🏁 回等待室', kind: 'primary' }] : [{ id: 'rematch', label: '🔁 再來一局', kind: 'primary' }, { id: 'lobby', label: '🏁 回等待室' }]).concat([homeBtn]); // 結算按鈕三款統一（美學稽核 V-11：同文案、同主次——看盤面／再來一局(primary)／回等待室／離開；錦標賽比照數獨數橋以回等待室為 primary）
     if (stage === 'fin') {
       specR = { accent: ACCENT, title: '競速結果', entries: raceFinal.entries,
         verdict: raceFinal.winnerUid === myId ? '🎉 你贏了！' : (myOutcome === 'finished' ? '完賽了，本場名次如上！' : (myOutcome === 'boom' ? '💥 你踩到雷出局了，名次照當時進度排。' : '本場比賽結束，名次如上。')),
@@ -1267,9 +1267,15 @@ function MinesGame() {
     const dDone = dRec[dailySel] != null, dBest = dRec[dailySel], dIsToday = dailySel === todayStr();
     return (
       <div key="home" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn">
-          <h1 className="font-black text-4xl text-slate-800">💣 踩地雷</h1>
-          <div className="text-slate-400 font-black tracking-widest text-sm mb-6">Minesweeper</div>
+        <div className="w-full max-w-md bg-[#fff7ed] border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-10 text-center relative transform -rotate-1 z-10 animate-fadeIn">
+          <h1 className="text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3">
+            <span className="inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]">踩</span>
+            <span className="inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">地</span>
+            <span className="inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">雷</span>
+          </h1>
+          <div className="inline-block border-[3px] border-dashed border-slate-800 rounded-xl px-6 py-2 mb-8 bg-white shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-2">
+            <p className="text-slate-800 font-black text-xl tracking-widest uppercase italic">Minesweeper</p>
+          </div>
           <div className="flex flex-col gap-3">
             <button onClick={() => { SFX.click(); setScreen('setup'); }} className="w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">👤 單機挑戰</button>
             <button onClick={() => { SFX.click(); startDaily(dailySel); }} className="w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2">
@@ -1417,7 +1423,6 @@ function MinesGame() {
               <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
             </div>
           </div>
-          <div ref={platBarRef} className="h-16 shrink-0 w-full max-w-md"></div>
         </div>
       );
     }
@@ -1459,7 +1464,6 @@ function MinesGame() {
           )}
         </div>
         </div>
-        <div ref={platBarRef} className="h-16 shrink-0 w-full max-w-md"></div>
       </div>
     );
   }

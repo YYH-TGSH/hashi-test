@@ -3078,7 +3078,7 @@ function SudokuGame() {
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn">
                 <div className="flex-1 flex flex-col justify-center w-full max-w-md items-center">
-                    <div className="bg-[#fffaf0] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
+                    <div className="bg-[#fffaf0] border-4 border-slate-800 p-10 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
                         <h1 className="text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3">
                             <span className="inline-block bg-[#ffcc00] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]">數</span>
                             <span className="inline-block bg-[#ffcc00] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">獨</span>
@@ -3218,7 +3218,7 @@ function SudokuGame() {
 
             {showExitMenu && (
                 <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
-                    <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
                         <div className="font-black text-xl text-[#1e293b] mb-4">要離開對局嗎？</div>
                         {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
                             <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">⏹️ 結束本局（錦標賽）</button>
@@ -3242,7 +3242,7 @@ function SudokuGame() {
             {/* === 題型與難度設定 Modal === */}
             {showSetupModal && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4">
-                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter">
+                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter">
                         <h2 className="text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1">
                             ⚙️ 設定題型與難度
                         </h2>
@@ -3277,7 +3277,7 @@ function SudokuGame() {
             {/* === 遊戲功能設定 Modal === */}
             {showBrawlSettings && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4">
-                    <div className="bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto">
+                    <div className="bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto">
                         <h2 className={`text-xl font-black mb-2 border-b-4 ${isBrawlMode ? 'border-purple-500' : 'border-sky-500'} inline-block pb-1`}>
                             ⚙️ {isBrawlMode ? '大亂鬥設定' : '遊戲設定'}
                         </h2>
@@ -3385,7 +3385,7 @@ function SudokuGame() {
                 </div>
             )}
 
-            <div className="w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
+            <div className="w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
 
                 <div className={`bg-[#ffcc00] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5`}>
                     <div className="flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5">
@@ -3578,7 +3578,7 @@ function SudokuGame() {
                         {isSpectator || (isBrawlMode && winner && finishViewMode === 'god') ? (
                             isBrawlMode ? renderHostGodView() : (
                                 <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
-                                    <div className="bg-white border-4 border-slate-800 rounded-xl p-6 md:p-10 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-2xl text-center">
+                                    <div className="bg-white border-4 border-slate-800 rounded-xl p-6 md:p-10 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-2xl text-center">
                                         <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-2 tracking-widest">📡 賽況轉播中</h2>
                                         <p className="text-slate-500 font-bold mb-8">您以觀戰者身分加入，請為場上玩家加油！</p>
 
@@ -3851,7 +3851,7 @@ function SudokuGame() {
 
                     {(isWon || (isBrawlMode && winner)) && !hideVictoryModal && !(isBrawlMode && typeof window !== 'undefined' && window.PlatResults) && (
                         <div className={`absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ${isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-                            <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
+                            <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
                                 <button onClick={closeVictoryModal} className="absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black">✕</button>
                                 {isBrawlMode ? (
                                     <div className="w-full">
@@ -3979,7 +3979,7 @@ function SudokuGame() {
             {/* === 獨立選色/設定面板 === */}
             {colorPickerTarget && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={(e) => { e.stopPropagation(); setColorPickerTarget(null); setColorSeq([]); }}>
-                    <div className="bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-800">⚙️ 個人設定</h3>
                             <button onClick={() => { setColorPickerTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black text-lg leading-none">✕</button>

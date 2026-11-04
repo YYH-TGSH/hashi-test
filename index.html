@@ -2013,7 +2013,10 @@ body[data-view="home"] {
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
 .plat-view { display: none; }
-.plat-view.active { display: block; }
+.plat-view.active { display: block; animation: platViewIn .26s ease-out; }
+/* 畫面轉場 Fade Through（美學稽核 V-02）：切換不再瞬斷，舊畫面換新畫面時淡入＋微縮放，約 260ms */
+@keyframes platViewIn { from { opacity: 0; transform: scale(.996) translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .plat-view.active { animation: none; } }
 #plat-back {
   position: fixed; top: 10px; left: 10px; z-index: 9999;
   background: #fff; border: 3px solid #1e293b; border-radius: 9999px;
@@ -8986,7 +8989,7 @@ function SudokuGame() {
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex flex-col justify-center w-full max-w-md items-center"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "bg-[#fffaf0] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10"
+      className: "bg-[#fffaf0] border-4 border-slate-800 p-10 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10"
     }, /*#__PURE__*/React.createElement("h1", {
       className: "text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3"
     }, /*#__PURE__*/React.createElement("span", {
@@ -9177,7 +9180,7 @@ function SudokuGame() {
       return setShowExitMenu(false);
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter",
+    className: "bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter",
     onClick: function onClick(e) {
       return e.stopPropagation();
     }
@@ -9216,7 +9219,7 @@ function SudokuGame() {
   }, countdownValue)), showSetupModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter"
+    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1"
   }, "\u2699\uFE0F \u8A2D\u5B9A\u984C\u578B\u8207\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -9265,7 +9268,7 @@ function SudokuGame() {
   }, "\u78BA\u8A8D\u7522\u751F")))), showBrawlSettings && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto"
+    className: "bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black mb-2 border-b-4 ".concat(isBrawlMode ? 'border-purple-500' : 'border-sky-500', " inline-block pb-1")
   }, "\u2699\uFE0F ", isBrawlMode ? '大亂鬥設定' : '遊戲設定'), isBrawlMode && /*#__PURE__*/React.createElement("div", {
@@ -9419,7 +9422,7 @@ function SudokuGame() {
     },
     className: "mt-4 px-4 py-3 bg-[#ffcc00] border-4 border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all"
   }, "\u95DC\u9589\u8A2D\u5B9A"))), /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
+    className: "w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#ffcc00] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -9663,7 +9666,7 @@ function SudokuGame() {
   }, isSpectator || isBrawlMode && winner && finishViewMode === 'god' ? isBrawlMode ? renderHostGodView() : /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col items-center justify-center min-h-[400px]"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-slate-800 rounded-xl p-6 md:p-10 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-2xl text-center"
+    className: "bg-white border-4 border-slate-800 rounded-xl p-6 md:p-10 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-2xl text-center"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-3xl md:text-4xl font-black text-slate-800 mb-2 tracking-widest"
   }, "\uD83D\uDCE1 \u8CFD\u6CC1\u8F49\u64AD\u4E2D"), /*#__PURE__*/React.createElement("p", {
@@ -10122,7 +10125,7 @@ function SudokuGame() {
   }))))), (isWon || isBrawlMode && winner) && !hideVictoryModal && !(isBrawlMode && typeof window !== 'undefined' && window.PlatResults) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ".concat(isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn')
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ".concat(isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter')
+    className: "bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ".concat(isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter')
   }, /*#__PURE__*/React.createElement("button", {
     onClick: closeVictoryModal,
     className: "absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black"
@@ -10290,7 +10293,7 @@ function SudokuGame() {
       setColorSeq([]);
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4",
+    className: "bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4",
     onClick: function onClick(e) {
       return e.stopPropagation();
     }
@@ -20535,15 +20538,19 @@ function MinesGame() {
     };
     var stdBtns = [{
       id: 'watch',
-      label: '👁️ 繼續觀戰',
-      kind: 'primary'
-    }].concat(inTourn ? [] : [{
-      id: 'rematch',
-      label: '🔁 再來一局'
-    }]).concat([{
+      label: '👁️ 看盤面'
+    }].concat(inTourn ? [{
       id: 'lobby',
-      label: '🏁 回房間頁'
-    }, homeBtn]);
+      label: '🏁 回等待室',
+      kind: 'primary'
+    }] : [{
+      id: 'rematch',
+      label: '🔁 再來一局',
+      kind: 'primary'
+    }, {
+      id: 'lobby',
+      label: '🏁 回等待室'
+    }]).concat([homeBtn]); // 結算按鈕三款統一（美學稽核 V-11：同文案、同主次——看盤面／再來一局(primary)／回等待室／離開；錦標賽比照數獨數橋以回等待室為 primary）
     if (stage === 'fin') {
       specR = {
         accent: ACCENT,
@@ -21068,12 +21075,20 @@ function MinesGame() {
       key: "home",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-[#fff7ed] border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-10 text-center relative transform -rotate-1 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h1", {
-      className: "font-black text-4xl text-slate-800"
-    }, "\uD83D\uDCA3 \u8E29\u5730\u96F7"), /*#__PURE__*/React.createElement("div", {
-      className: "text-slate-400 font-black tracking-widest text-sm mb-6"
-    }, "Minesweeper"), /*#__PURE__*/React.createElement("div", {
+      className: "text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u8E29"), /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u5730"), /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u96F7")), /*#__PURE__*/React.createElement("div", {
+      className: "inline-block border-[3px] border-dashed border-slate-800 rounded-xl px-6 py-2 mb-8 bg-white shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-slate-800 font-black text-xl tracking-widest uppercase italic"
+    }, "Minesweeper")), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-3"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
@@ -21407,10 +21422,7 @@ function MinesGame() {
         className: "font-black text-2xl text-slate-800 animate-pulse"
       }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
         className: "font-bold text-slate-400 text-sm mt-2"
-      }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))), /*#__PURE__*/React.createElement("div", {
-        ref: platBarRef,
-        className: "h-16 shrink-0 w-full max-w-md"
-      }));
+      }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))));
     }
     var racersW = players.filter(function (p) {
       return !p.spectator && !p.pending;
@@ -21480,10 +21492,7 @@ function MinesGame() {
       className: "text-xs text-slate-500 font-bold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
       className: "font-black text-slate-700 animate-pulse text-center"
-    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))), /*#__PURE__*/React.createElement("div", {
-      ref: platBarRef,
-      className: "h-16 shrink-0 w-full max-w-md"
-    }));
+    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))));
   }
 
   // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
@@ -22106,7 +22115,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.37.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.38.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。

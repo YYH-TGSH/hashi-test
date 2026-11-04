@@ -2639,15 +2639,19 @@ function MinesGame() {
     };
     var stdBtns = [{
       id: 'watch',
-      label: '👁️ 繼續觀戰',
-      kind: 'primary'
-    }].concat(inTourn ? [] : [{
-      id: 'rematch',
-      label: '🔁 再來一局'
-    }]).concat([{
+      label: '👁️ 看盤面'
+    }].concat(inTourn ? [{
       id: 'lobby',
-      label: '🏁 回房間頁'
-    }, homeBtn]);
+      label: '🏁 回等待室',
+      kind: 'primary'
+    }] : [{
+      id: 'rematch',
+      label: '🔁 再來一局',
+      kind: 'primary'
+    }, {
+      id: 'lobby',
+      label: '🏁 回等待室'
+    }]).concat([homeBtn]); // 結算按鈕三款統一（美學稽核 V-11：同文案、同主次——看盤面／再來一局(primary)／回等待室／離開；錦標賽比照數獨數橋以回等待室為 primary）
     if (stage === 'fin') {
       specR = {
         accent: ACCENT,
@@ -3172,12 +3176,20 @@ function MinesGame() {
       key: "home",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-[#fff7ed] border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-10 text-center relative transform -rotate-1 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h1", {
-      className: "font-black text-4xl text-slate-800"
-    }, "\uD83D\uDCA3 \u8E29\u5730\u96F7"), /*#__PURE__*/React.createElement("div", {
-      className: "text-slate-400 font-black tracking-widest text-sm mb-6"
-    }, "Minesweeper"), /*#__PURE__*/React.createElement("div", {
+      className: "text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u8E29"), /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u5730"), /*#__PURE__*/React.createElement("span", {
+      className: "inline-block bg-[#f97316] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    }, "\u96F7")), /*#__PURE__*/React.createElement("div", {
+      className: "inline-block border-[3px] border-dashed border-slate-800 rounded-xl px-6 py-2 mb-8 bg-white shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-slate-800 font-black text-xl tracking-widest uppercase italic"
+    }, "Minesweeper")), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-3"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
@@ -3511,10 +3523,7 @@ function MinesGame() {
         className: "font-black text-2xl text-slate-800 animate-pulse"
       }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
         className: "font-bold text-slate-400 text-sm mt-2"
-      }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))), /*#__PURE__*/React.createElement("div", {
-        ref: platBarRef,
-        className: "h-16 shrink-0 w-full max-w-md"
-      }));
+      }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))));
     }
     var racersW = players.filter(function (p) {
       return !p.spectator && !p.pending;
@@ -3584,10 +3593,7 @@ function MinesGame() {
       className: "text-xs text-slate-500 font-bold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
       className: "font-black text-slate-700 animate-pulse text-center"
-    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))), /*#__PURE__*/React.createElement("div", {
-      ref: platBarRef,
-      className: "h-16 shrink-0 w-full max-w-md"
-    }));
+    }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))));
   }
 
   // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
