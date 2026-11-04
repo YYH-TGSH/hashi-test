@@ -42,6 +42,7 @@ const SUITES = [
   ['test-mines-tourn.js', {}],
   ['test-mines-items.js', {}],
   ['test-mines-takeover.js', {}],
+  ['test-mines-zoomcustom.js', {}],
   ['test-resume.js', {}],
 ];
 

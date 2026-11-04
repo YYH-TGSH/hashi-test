@@ -21,6 +21,13 @@ body {
     }
     .animate-popIn { animation: popIn 0.18s ease both; }
     .mine-cell { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    /* 盤面卷軸（桌面/Android 的原生 scrollbar 染色常駐）：讓玩家看得出盤面有溢出、目前看到多少；
+       iOS 不吃 ::-webkit-scrollbar 這套，由遊戲內的自製指示條＋邊緣虛化補上（app.js updScrollUi）。 */
+    .mines-board-scroll { scrollbar-width: thin; scrollbar-color: #f97316 rgba(30,41,59,.12); }
+    .mines-board-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .mines-board-scroll::-webkit-scrollbar-track { background: rgba(30,41,59,.08); border-radius: 6px; }
+    .mines-board-scroll::-webkit-scrollbar-thumb { background: #fb923c; border: 2px solid rgba(255,251,243,.9); border-radius: 6px; }
+    .mines-board-scroll::-webkit-scrollbar-corner { background: transparent; }
     /* 玩法教學動畫（卡片式，比照數獨 tut-*；mtut- 前綴避免平台同頁與數獨撞名） */
     @keyframes mtutCover { 0%, 22% { opacity: 1; } 38%, 84% { opacity: 0; } 97%, 100% { opacity: 1; } }
     @keyframes mtutNum { 0%, 22% { opacity: 0; } 38%, 84% { opacity: 1; } 97%, 100% { opacity: 0; } }

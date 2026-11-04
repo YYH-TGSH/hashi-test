@@ -121,6 +121,33 @@ var SIZES = {
     "short": '16×16'
   }
 };
+// 自訂盤面（使用者 2026-11-04 指示：單機/多人都能自選 寬×高＋雷數）：引擎函式本來就吃 w/h/mines 參數，
+// 自訂規格註冊進 SIZES.custom、sizeId='custom' 貫穿單機/多人/回座（比照數橋 hub 自訂尺寸的貫穿方式）。
+// 上下限在此統一 clamp：寬 8–30、高 8–24、雷至少 5 且 ≤ 總格數−9——首點保護圈（點格＋鄰 8 格）必須留空，
+// 雷數超過這個上限時 makeFirstSafe 沒地方搬雷、首點保護會失效，所以這是硬上限不是偏好。
+function clampCustomSpec(w, h, mines) {
+  var W = Math.max(8, Math.min(30, Math.round(Number(w) || 16)));
+  var H = Math.max(8, Math.min(24, Math.round(Number(h) || 16)));
+  var M = Math.max(5, Math.min(W * H - 9, Math.round(Number(mines) || 40)));
+  return {
+    w: W,
+    h: H,
+    mines: M
+  };
+}
+function regCustomSpec(c) {
+  if (!c) return SIZES.custom || null;
+  var cl = clampCustomSpec(c.w, c.h, c.mines);
+  SIZES.custom = {
+    id: 'custom',
+    w: cl.w,
+    h: cl.h,
+    mines: cl.mines,
+    name: cl.w + '×' + cl.h + '・' + cl.mines + ' 雷',
+    "short": cl.w + '×' + cl.h
+  };
+  return SIZES.custom;
+}
 function neighborsOf(w, h, i) {
   var x = i % w,
     y = Math.floor(i / w),
@@ -392,6 +419,8 @@ function MinesGame() {
   var lpPtRef = useRef(null); // 長按起點座標（移動超過 10px 取消長按：滑動/捲動不是長按）
 
   var spec = SIZES[sizeId] || SIZES[9];
+  var specRef = useRef(spec);
+  specRef.current = spec; // 事件處理器讀這份（不吃 setSizeId 的 state 更新時序；自訂盤面不能再用「格數 256 推規格」的舊推斷）
   var totalSafe = spec.w * spec.h - spec.mines;
   var openedSafe = useMemo(function () {
     if (!cells) return 0;
@@ -434,11 +463,36 @@ function MinesGame() {
   var _useState43 = useState(1),
     _useState44 = _slicedToArray(_useState43, 2),
     zoom = _useState44[0],
-    setZoom = _useState44[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）
+    setZoom = _useState44[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
   var _useState45 = useState(false),
     _useState46 = _slicedToArray(_useState45, 2),
     zoomOpen = _useState46[0],
     setZoomOpen = _useState46[1];
+  var _useState47 = useState(function () {
+      try {
+        var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null');
+        if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines);
+      } catch (e) {}
+      return {
+        w: 16,
+        h: 16,
+        mines: 40
+      };
+    }),
+    _useState48 = _slicedToArray(_useState47, 2),
+    custCfg = _useState48[0],
+    setCustCfg = _useState48[1]; // 單機自訂盤面（寬/高/雷），持久化
+  var _useState49 = useState(false),
+    _useState50 = _slicedToArray(_useState49, 2),
+    custOpen = _useState50[0],
+    setCustOpen = _useState50[1];
+  var boardScrollRef = useRef(null); // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
+  var fadeRRef = useRef(null),
+    fadeBRef = useRef(null);
+  var indVTrackRef = useRef(null),
+    indHTrackRef = useRef(null),
+    indVRef = useRef(null),
+    indHRef = useRef(null);
   var giftCreditRef = useRef(0); // 禮物額度（正確插旗 +0.5，滿 1 送弱者）
   var creditedMinesRef = useRef({}); // 已計入額度的雷格（防拔插重刷）
   var milestoneRef = useRef(0); // 已通報的里程碑段數（每 5% 一段，只增不減——被回填打回去也不重報）
@@ -560,7 +614,7 @@ function MinesGame() {
 
   // 挖一格（含首點保護、和弦、勝負判定）——單機與多人共用核心
   function doReveal(from, baseCells, baseLayout, baseNums) {
-    var sp = baseCells.length === 256 ? SIZES[16] : SIZES[9]; // 從盤面大小推，不吃 state 更新時序
+    var sp = specRef.current; // 目前盤面規格（含自訂）：舊版用格數 256/81 推斷，自訂尺寸會推錯，改讀 render 期同步的 specRef
     var L = baseLayout,
       N = baseNums,
       C = baseCells;
@@ -651,16 +705,26 @@ function MinesGame() {
       }
       return;
     }
-    var key = 'mines_best_' + sizeId;
+    var spk = specRef.current;
+    var key = 'mines_best_' + (sizeId === 'custom' ? 'c' + spk.w + 'x' + spk.h + '_' + spk.mines : sizeId); // 自訂盤最佳紀錄依形狀分開存，不同形狀不互相覆蓋
     var prev = parseInt(sGet(key) || '0', 10);
     if (!prev || t < prev) sSet(key, String(t));
   }
   function startDaily(ds) {
     newGame(9, dailySeed(ds), ds);
   }
+  function startCustom() {
+    // 單機自訂盤面：clamp→持久化→註冊規格→以 sizeId 'custom' 開局（與預設盤走同一條 newGame 路徑）
+    var cl = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines);
+    setCustCfg(cl);
+    sSet('mines_custom_cfg', JSON.stringify(cl));
+    regCustomSpec(cl);
+    SFX.click();
+    newGame('custom');
+  }
   function chord(idx) {
     if (!layout || !cells || nums[idx] <= 0) return;
-    var sp = cells.length === 256 ? SIZES[16] : SIZES[9],
+    var sp = specRef.current,
       nb = neighborsOf(sp.w, sp.h, idx),
       f = 0,
       i;
@@ -746,7 +810,7 @@ function MinesGame() {
         if (cells[idx] === 'o') {
           // 合作和弦：把鄰格挖開拆成單格動作依序送出（房主定序，踩雷後後續的會被擋下）
           if (!nums || nums[idx] <= 0) return;
-          var sp2 = cells.length === 256 ? SIZES[16] : SIZES[9],
+          var sp2 = specRef.current,
             nb2 = neighborsOf(sp2.w, sp2.h, idx),
             f2 = 0,
             j2;
@@ -824,62 +888,62 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState47 = useState(false),
-    _useState48 = _slicedToArray(_useState47, 2),
-    mpOn = _useState48[0],
-    setMpOn = _useState48[1];
-  var _useState49 = useState('off'),
-    _useState50 = _slicedToArray(_useState49, 2),
-    mpPhase = _useState50[0],
-    setMpPhase = _useState50[1]; // off|waiting|countdown|playing|done
-  var _useState51 = useState([]),
+  var _useState51 = useState(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    players = _useState52[0],
-    setPlayers = _useState52[1];
-  var _useState53 = useState(false),
+    mpOn = _useState52[0],
+    setMpOn = _useState52[1];
+  var _useState53 = useState('off'),
     _useState54 = _slicedToArray(_useState53, 2),
-    myReadySt = _useState54[0],
-    setMyReadySt = _useState54[1];
-  var _useState55 = useState({}),
+    mpPhase = _useState54[0],
+    setMpPhase = _useState54[1]; // off|waiting|countdown|playing|done
+  var _useState55 = useState([]),
     _useState56 = _slicedToArray(_useState55, 2),
-    godBoards = _useState56[0],
-    setGodBoards = _useState56[1];
-  var _useState57 = useState(null),
+    players = _useState56[0],
+    setPlayers = _useState56[1];
+  var _useState57 = useState(false),
     _useState58 = _slicedToArray(_useState57, 2),
-    godUid = _useState58[0],
-    setGodUid = _useState58[1];
-  var _useState59 = useState(null),
+    myReadySt = _useState58[0],
+    setMyReadySt = _useState58[1];
+  var _useState59 = useState({}),
     _useState60 = _slicedToArray(_useState59, 2),
-    raceFinal = _useState60[0],
-    setRaceFinal = _useState60[1];
+    godBoards = _useState60[0],
+    setGodBoards = _useState60[1];
   var _useState61 = useState(null),
     _useState62 = _slicedToArray(_useState61, 2),
-    myOutcome = _useState62[0],
-    setMyOutcome = _useState62[1]; // 'finished'|'boom'
-  var _useState63 = useState(false),
+    godUid = _useState62[0],
+    setGodUid = _useState62[1];
+  var _useState63 = useState(null),
     _useState64 = _slicedToArray(_useState63, 2),
-    leaveArm = _useState64[0],
-    setLeaveArm = _useState64[1];
-  var _useState65 = useState(false),
+    raceFinal = _useState64[0],
+    setRaceFinal = _useState64[1];
+  var _useState65 = useState(null),
     _useState66 = _slicedToArray(_useState65, 2),
-    showExitMenu = _useState66[0],
-    setShowExitMenu = _useState66[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+    myOutcome = _useState66[0],
+    setMyOutcome = _useState66[1]; // 'finished'|'boom'
   var _useState67 = useState(false),
     _useState68 = _slicedToArray(_useState67, 2),
-    hdrOpen = _useState68[0],
-    setHdrOpen = _useState68[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
-  var _useState69 = useState(''),
+    leaveArm = _useState68[0],
+    setLeaveArm = _useState68[1];
+  var _useState69 = useState(false),
     _useState70 = _slicedToArray(_useState69, 2),
-    coopBoomBy = _useState70[0],
-    setCoopBoomBy = _useState70[1];
-  var _useState71 = useState(null),
+    showExitMenu = _useState70[0],
+    setShowExitMenu = _useState70[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState71 = useState(false),
     _useState72 = _slicedToArray(_useState71, 2),
-    cdNum = _useState72[0],
-    setCdNum = _useState72[1];
-  var _useState73 = useState(0),
+    hdrOpen = _useState72[0],
+    setHdrOpen = _useState72[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState73 = useState(''),
     _useState74 = _slicedToArray(_useState73, 2),
-    waitTick = _useState74[0],
-    setWaitTick = _useState74[1];
+    coopBoomBy = _useState74[0],
+    setCoopBoomBy = _useState74[1];
+  var _useState75 = useState(null),
+    _useState76 = _slicedToArray(_useState75, 2),
+    cdNum = _useState76[0],
+    setCdNum = _useState76[1];
+  var _useState77 = useState(0),
+    _useState78 = _slicedToArray(_useState77, 2),
+    waitTick = _useState78[0],
+    setWaitTick = _useState78[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -888,6 +952,7 @@ function MinesGame() {
     hub: false,
     code: '',
     sizeId: 9,
+    custom: null,
     seed: 0,
     startAt: 0,
     phase: 'off'
@@ -989,6 +1054,7 @@ function MinesGame() {
       hub: false,
       code: '',
       sizeId: 9,
+      custom: null,
       seed: 0,
       startAt: 0,
       phase: 'off'
@@ -1024,10 +1090,14 @@ function MinesGame() {
     if (!mpRef.current.on || mpRef.current.mode !== 'race' || iAmSpecRef.current || outcomeRef.current) return;
     var a = stateArgsRef.current;
     if (!a || !a[0] || !a[2] || !mpRef.current.seed) return;
+    var spSv = SIZES[mpRef.current.sizeId] || SIZES[9];
     try {
       sSet(minesResumeKey(), JSON.stringify({
         seed: mpRef.current.seed,
         sizeId: mpRef.current.sizeId,
+        cw: spSv.w,
+        ch: spSv.h,
+        cm: spSv.mines,
         startAt: mpRef.current.startAt,
         cells: a[0].join(''),
         items: itemsRef.current,
@@ -1035,7 +1105,7 @@ function MinesGame() {
         milestone: milestoneRef.current,
         ts: Date.now()
       }));
-    } catch (e) {}
+    } catch (e) {} // cw/ch/cm：自訂盤的形狀指紋，回座時對不上就不還原（陳年存檔鐵則）
   }
   function loadResume(seed, sizeId, total) {
     try {
@@ -1051,11 +1121,13 @@ function MinesGame() {
   }
   function resumeRestore(m) {
     // guestOnInit 回座：還原中斷前的盤面/犯錯/道具（本地存檔優先，房主 god 快照備援）
+    if (m.sizeId === 'custom' && m.custom) regCustomSpec(m.custom); // 保險：不論呼叫順序，先註冊規格再查表
     var sp = SIZES[m.sizeId] || SIZES[9],
       total = sp.w * sp.h;
     var L = makeLayout(sp.w, sp.h, sp.mines, m.seed),
       N = computeNums(sp.w, sp.h, L);
     var save = loadResume(m.seed, m.sizeId, total);
+    if (save && save.cw != null && (save.cw !== sp.w || save.ch !== sp.h || save.cm !== sp.mines)) save = null; // 自訂形狀對不上＝別場的存檔
     var cellsArr = null;
     if (save) cellsArr = save.cells.split('');else if (m.god && m.god[myId] && typeof m.god[myId].cells === 'string' && m.god[myId].cells.length === total) cellsArr = m.god[myId].cells.split('');
     if (!cellsArr) return; // 無存檔可用：維持 startMatchLocal 的新盤（至少回座繼續打）
@@ -1879,8 +1951,9 @@ function MinesGame() {
       type: 'MINE_START',
       seed: seed,
       sizeId: szId,
-      startAt: startAt
-    });
+      startAt: startAt,
+      custom: mpRef.current.custom || undefined
+    }); // 自訂盤：規格隨開局訊息給來賓註冊（種子只決定雷位，尺寸不帶就會開成預設盤）
     startMatchLocal(seed, szId, startAt);
   }
 
@@ -1931,7 +2004,10 @@ function MinesGame() {
         }
         break;
       case 'MINE_START':
-        if (!H) startMatchLocal(m.seed, m.sizeId, m.startAt);
+        if (!H) {
+          if (m.sizeId === 'custom') regCustomSpec(m.custom);
+          startMatchLocal(m.seed, m.sizeId, m.startAt);
+        }
         break;
       case 'MINE_PROGRESS':
         godSet(m.uid, {
@@ -2055,6 +2131,7 @@ function MinesGame() {
         players: list,
         mode: mpRef.current.mode,
         sizeId: mpRef.current.sizeId,
+        custom: mpRef.current.custom || undefined,
         phase: phase,
         seed: myEntry && myEntry.spectator ? undefined : mpRef.current.seed,
         startAt: mpRef.current.startAt,
@@ -2072,6 +2149,14 @@ function MinesGame() {
   function guestOnInit(m) {
     setPlayersBoth(m.players || []);
     mpRef.current.mode = m.mode || mpRef.current.mode;
+    if (m.sizeId === 'custom') {
+      regCustomSpec(m.custom);
+      mpRef.current.custom = m.custom ? {
+        w: SIZES.custom.w,
+        h: SIZES.custom.h,
+        mines: SIZES.custom.mines
+      } : null;
+    } // 先註冊再 startMatchLocal/回座還原，查表才不會落回 9×9
     mpRef.current.sizeId = m.sizeId || mpRef.current.sizeId;
     setSizeId(m.sizeId || 9);
     iAmSpecRef.current = !!m.youSpec;
@@ -2234,6 +2319,16 @@ function MinesGame() {
     var itemDelayS = Number(st.itemStartTime);
     if (isNaN(itemDelayS)) itemDelayS = 60;
     itemDelayS = Math.max(0, Math.min(600, itemDelayS));
+    var mpSizeId = st.sizeId === 'custom' ? 'custom' : Number(st.sizeId) || 9; // 'custom' 是字串：Number('custom')=NaN 會被 || 9 吞掉（舊寫法），自訂盤會變 9×9，必須先分流
+    var mpCustom = null;
+    if (mpSizeId === 'custom') {
+      var rcS = regCustomSpec(st.custom);
+      if (rcS) mpCustom = {
+        w: rcS.w,
+        h: rcS.h,
+        mines: rcS.mines
+      };else mpSizeId = 9;
+    } // 房主/來賓都在進場時先註冊規格，後續所有 SIZES[sizeId] 查表才查得到
     mpRef.current = {
       on: true,
       isHost: !!sess.isHost,
@@ -2242,7 +2337,8 @@ function MinesGame() {
       tournInfo: sess.tourn || null,
       hub: !!sess.hub,
       code: sess.code,
-      sizeId: Number(st.sizeId) || 9,
+      sizeId: mpSizeId,
+      custom: mpCustom,
       seed: 0,
       startAt: 0,
       phase: 'waiting',
@@ -2358,6 +2454,26 @@ function MinesGame() {
         });
         SFX.click();
       }
+      // 殼 PlatBar 左下角縮放組（＋/－/循環）：v1.31 只做了卡片內 🔍 那組、這組沒人接線 → 按了沒反應（使用者 2026-11-04 截圖回報）。
+      // 接到與卡片內 🔍 相同的 zoom state，兩組永遠同步；數獨/數橋的 PlatBar 本來就有接，只有地雷漏了。
+      else if (name === 'zoom-in') {
+        setZoom(function (z) {
+          return Math.min(2.5, Math.round((z + 0.25) * 100) / 100);
+        });
+        SFX.click();
+      } else if (name === 'zoom-out') {
+        setZoom(function (z) {
+          return Math.max(1, Math.round((z - 0.25) * 100) / 100);
+        });
+        SFX.click();
+      } else if (name === 'zoom-cycle') {
+        setZoom(function (z) {
+          var steps = [1, 1.5, 2, 2.5];
+          for (var i = 0; i < steps.length; i++) if (steps[i] > z + 0.001) return steps[i];
+          return 1;
+        });
+        SFX.click();
+      }
     }
   };
   var platBarCfgStable = useRef(null);
@@ -2390,12 +2506,52 @@ function MinesGame() {
         label: '插旗'
       }],
       modeTitle: '切換模式（挖開/插旗）',
+      zoomLabel: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔍',
+      zoomGlyph: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔲',
       showInput: false,
       inputMode: 'num',
       showDraw: false,
       showHostClear: false
     });
   });
+
+  // ---------- 盤面邊緣虛化＋自製卷軸指示條（使用者 2026-11-04 指示） ----------
+  // 右/下還有題目時：邊緣漸層虛化＋細指示條（滑塊長度=可視比例、位置=捲動進度），捲到那一端就自動消失；
+  // 完全沒溢出時兩者都不出現——玩家一眼就知道「現在看到的是全部還是部分」。iOS 不顯示原生 scrollbar，
+  // 所以指示條自己畫（桌面/Android 另有 CSS 原生 scrollbar 染色，見 style.css 的 .mines-board-scroll）。
+  function updScrollUi() {
+    var el = boardScrollRef.current;
+    if (!el) return;
+    var maxL = el.scrollWidth - el.clientWidth,
+      maxT = el.scrollHeight - el.clientHeight;
+    if (fadeRRef.current) fadeRRef.current.style.opacity = maxL - el.scrollLeft > 2 ? '1' : '0';
+    if (fadeBRef.current) fadeBRef.current.style.opacity = maxT - el.scrollTop > 2 ? '1' : '0';
+    var tv = indVTrackRef.current,
+      pv = indVRef.current;
+    if (tv && pv) {
+      var showV = maxT > 2;
+      tv.style.display = showV ? 'block' : 'none';
+      if (showV) {
+        var thV = Math.max(18, Math.round(tv.clientHeight * el.clientHeight / el.scrollHeight));
+        pv.style.height = thV + 'px';
+        pv.style.top = Math.round((maxT > 0 ? el.scrollTop / maxT : 0) * Math.max(0, tv.clientHeight - thV)) + 'px';
+      }
+    }
+    var th = indHTrackRef.current,
+      ph = indHRef.current;
+    if (th && ph) {
+      var showH = maxL > 2;
+      th.style.display = showH ? 'block' : 'none';
+      if (showH) {
+        var twH = Math.max(18, Math.round(th.clientWidth * el.clientWidth / el.scrollWidth));
+        ph.style.width = twH + 'px';
+        ph.style.left = Math.round((maxL > 0 ? el.scrollLeft / maxL : 0) * Math.max(0, th.clientWidth - twH)) + 'px';
+      }
+    }
+  }
+  useEffect(function () {
+    updScrollUi();
+  }); // 每次 render 後依實際捲動幾何校正（開局/縮放/換盤都會走到）
 
   // ---------- 平台倒數（PlatCountdown）：殼端共用元件，照數橋用法（cdNum 有值 show、null hide） ----------
   useEffect(function () {
@@ -2648,9 +2804,9 @@ function MinesGame() {
   }, [questionFx]);
 
   // ---------- 渲染 ----------
-  var gapPx = sizeId === 16 ? 2 : 3;
+  var gapPx = spec.w >= 14 ? 2 : 3; // 舊版以 sizeId===16 二分；改依盤寬通式（自訂尺寸同規：寬盤間隔 2、窄盤 3）
   // 盤面隨視窗放大（iPad/大螢幕不再縮成手機尺寸）：可用寬 = min(視窗, 720) − 根層 padding 24 − 卡片 padding/邊框 26
-  var cellPx = Math.max(sizeId === 16 ? 22 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
+  var cellPx = Math.max(spec.w <= 10 ? 28 : 22, Math.min(spec.w <= 10 ? 64 : 38, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 格長上下限舊版以 9/16 二分，改依盤寬通式（窄盤 28–64、寬盤 22–38，與舊 9×9/16×16 完全等值）；16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
   var zCellPx = Math.max(14, Math.round(cellPx * zoom)); // 使用者縮放後的實際格長（zoom=1 即適應螢幕原尺寸）
   var colW = spec.w * cellPx + (spec.w - 1) * gapPx + 26; // 對局畫面所有欄位（標頭列/狀態列/進度/貢獻/PlatBar）與盤同寬，不再各寬各的
   function renderCell(i) {
@@ -2772,8 +2928,8 @@ function MinesGame() {
   function renderGodBoard(g, szId) {
     var sp = SIZES[szId] || SIZES[9];
     var arr = (g.cells || '').split('');
-    var px = szId === 16 ? 21 : 38,
-      gp = szId === 16 ? 2 : 3;
+    var px = sp.w >= 14 ? 21 : 38,
+      gp = sp.w >= 14 ? 2 : 3; // 舊版以 szId===16 二分，改依規格寬度（自訂寬盤同規）
     var rows = [];
     for (var y = 0; y < sp.h; y++) {
       var rc = [];
@@ -2809,7 +2965,7 @@ function MinesGame() {
             height: px,
             background: bg,
             color: color,
-            fontSize: szId === 16 ? 12 : 19,
+            fontSize: sp.w >= 14 ? 12 : 19,
             lineHeight: 1
           }
         }, content));
@@ -2883,7 +3039,12 @@ function MinesGame() {
           background: p.color
         }
       }), p.name, " ", gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((gg.progress || 0) * 100) + '%' : Math.floor((gg.progress || 0) * 100) + '%');
-    })), g.cells ? renderGodBoard(g, mpRef.current.sizeId) : /*#__PURE__*/React.createElement("p", {
+    })), g.cells ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        overflowX: 'auto',
+        maxWidth: '100%'
+      }
+    }, renderGodBoard(g, mpRef.current.sizeId)) : /*#__PURE__*/React.createElement("p", {
       className: "font-bold text-slate-400 text-center py-3"
     }, "\u7B49\u5F85 ", selP ? selP.name : '對手', " \u7684\u76E4\u9762\u2026"));
   }
@@ -2903,6 +3064,7 @@ function MinesGame() {
   } // 每日月曆已統一為殼端 PlatCalendar（v1.16）
 
   if (screen === 'setup') {
+    var effC = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines); // 自訂盤實際會開的規格（輸入超出範圍先 clamp，開始鈕直接顯示修正後的值，不讓玩家猜）
     return /*#__PURE__*/React.createElement("div", {
       key: "setup",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
@@ -2925,7 +3087,67 @@ function MinesGame() {
       }, /*#__PURE__*/React.createElement("span", null, sz === 9 ? '🌱' : '🔥', " ", SIZES[sz].name), /*#__PURE__*/React.createElement("span", {
         className: "text-sm text-slate-700"
       }, bestText(sz)));
-    }), /*#__PURE__*/React.createElement("button", {
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setCustOpen(!custOpen);
+      },
+      className: "w-full flex items-center justify-between font-black text-xl text-slate-800"
+    }, /*#__PURE__*/React.createElement("span", null, "\u2699\uFE0F \u81EA\u8A02\u76E4\u9762"), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm text-slate-400"
+    }, custOpen ? '▾ 收起' : '▸ 展開')), custOpen && /*#__PURE__*/React.createElement("div", {
+      className: "mt-3 flex flex-col gap-2"
+    }, /*#__PURE__*/React.createElement("label", {
+      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    }, "\u5BEC\u5EA6\uFF08\u5DE6\u53F3\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "8",
+      max: "30",
+      value: custCfg.w,
+      onChange: function onChange(e) {
+        return setCustCfg(function (c) {
+          return Object.assign({}, c, {
+            w: e.target.value
+          });
+        });
+      },
+      className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
+    })), /*#__PURE__*/React.createElement("label", {
+      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    }, "\u9AD8\u5EA6\uFF08\u4E0A\u4E0B\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "8",
+      max: "24",
+      value: custCfg.h,
+      onChange: function onChange(e) {
+        return setCustCfg(function (c) {
+          return Object.assign({}, c, {
+            h: e.target.value
+          });
+        });
+      },
+      className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
+    })), /*#__PURE__*/React.createElement("label", {
+      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    }, "\u5730\u96F7\u6578", /*#__PURE__*/React.createElement("input", {
+      type: "number",
+      min: "5",
+      value: custCfg.mines,
+      onChange: function onChange(e) {
+        return setCustCfg(function (c) {
+          return Object.assign({}, c, {
+            mines: e.target.value
+          });
+        });
+      },
+      className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold text-slate-400 leading-relaxed"
+    }, "\u7BC4\u570D\uFF1A\u5BEC 8\u201330\u3001\u9AD8 8\u201324\u3001\u96F7 5\u2013", effC.w * effC.h - 9, "\uFF08\u4F9D\u76EE\u524D\u5BEC\u9AD8\uFF1B\u9996\u9EDE\u4FDD\u8B77\u9700\u7559 9 \u683C\u7A7A\u767D\uFF09\u3002\u8D85\u51FA\u7BC4\u570D\u6703\u81EA\u52D5\u4FEE\u6B63\uFF0C\u958B\u59CB\u9215\u986F\u793A\u7684\u5C31\u662F\u5BE6\u969B\u6703\u958B\u7684\u76E4\u3002"), /*#__PURE__*/React.createElement("button", {
+      onClick: startCustom,
+      className: "w-full py-3 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    }, "\u25B6 \u958B\u59CB\uFF1A", effC.w, "\xD7", effC.h, "\u30FB", effC.mines, " \u96F7"))), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setScreen('home');
       },
@@ -3558,7 +3780,14 @@ function MinesGame() {
   }, "\u53D6\u6D88"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0",
+    className: "relative shrink-0",
+    style: {
+      maxWidth: '100%'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: boardScrollRef,
+    onScroll: updScrollUi,
+    className: "mines-board-scroll bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn",
     style: {
       maxWidth: '100%',
       overflowX: 'auto',
@@ -3570,7 +3799,83 @@ function MinesGame() {
       width: 'max-content',
       margin: '0 auto'
     }
-  }, renderBoard())), mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && /*#__PURE__*/React.createElement("div", {
+  }, renderBoard())), /*#__PURE__*/React.createElement("div", {
+    ref: fadeRRef,
+    style: {
+      position: 'absolute',
+      top: 3,
+      right: 3,
+      bottom: 3,
+      width: 30,
+      pointerEvents: 'none',
+      opacity: 0,
+      transition: 'opacity .25s',
+      background: 'linear-gradient(to right, rgba(255,251,243,0), rgba(255,251,243,.96))',
+      borderTopRightRadius: 9,
+      borderBottomRightRadius: 9
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    ref: fadeBRef,
+    style: {
+      position: 'absolute',
+      left: 3,
+      right: 3,
+      bottom: 3,
+      height: 30,
+      pointerEvents: 'none',
+      opacity: 0,
+      transition: 'opacity .25s',
+      background: 'linear-gradient(to bottom, rgba(255,251,243,0), rgba(255,251,243,.96))',
+      borderBottomLeftRadius: 9,
+      borderBottomRightRadius: 9
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    ref: indVTrackRef,
+    style: {
+      position: 'absolute',
+      top: 8,
+      bottom: 8,
+      right: 5,
+      width: 6,
+      borderRadius: 3,
+      background: 'rgba(30,41,59,.14)',
+      display: 'none',
+      pointerEvents: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: indVRef,
+    style: {
+      position: 'absolute',
+      left: 0,
+      width: '100%',
+      borderRadius: 3,
+      background: '#f97316',
+      border: '1px solid rgba(30,41,59,.55)'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    ref: indHTrackRef,
+    style: {
+      position: 'absolute',
+      left: 8,
+      right: 8,
+      bottom: 5,
+      height: 6,
+      borderRadius: 3,
+      background: 'rgba(30,41,59,.14)',
+      display: 'none',
+      pointerEvents: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: indHRef,
+    style: {
+      position: 'absolute',
+      top: 0,
+      height: '100%',
+      borderRadius: 3,
+      background: '#f97316',
+      border: '1px solid rgba(30,41,59,.55)'
+    }
+  }))), mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && /*#__PURE__*/React.createElement("div", {
     className: "w-full mt-2 flex items-center gap-2 shrink-0",
     style: {
       width: colW,

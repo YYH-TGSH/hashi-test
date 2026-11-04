@@ -159,7 +159,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.34.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.35.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -641,12 +641,12 @@
   var HUB_SIZES = [{ id: 4, name: '4x4 幼幼班' }, { id: 9, name: '9x9 標準' }, { id: 16, name: '16x16 史詩' }];
   var HUB_DIFFS = [{ id: 'easy', name: '🟢 簡單' }, { id: 'medium', name: '🟡 普通' }, { id: 'hard', name: '🔴 困難' }];
   var HUB_LEVELS = [{ id: 1, name: '5x5 幼幼班' }, { id: 2, name: '10x10 標準' }, { id: 3, name: '10x20 手機直式' }, { id: 4, name: '15x15 魔王' }, { id: 5, name: '20x20 史詩' }, { id: 'custom', name: '⚙️ 自訂尺寸' }];
-  var HUB_MINES_SIZES = [{ id: 9, name: '9×9・10 雷' }, { id: 16, name: '16×16・40 雷' }];
+  var HUB_MINES_SIZES = [{ id: 9, name: '9×9・10 雷' }, { id: 16, name: '16×16・40 雷' }, { id: 'custom', name: '⚙️ 自訂盤面' }];
   function hubDefaults() {
     return {
       sudoku: { mode: 'coop', sizeId: 9, diffId: 'medium', winnersCount: 3, allowWeapons: true, allowGifts: true, allowYellowHint: false, showNumbersInGodMode: false, allowOthersToPlayAgain: true, allowQuickFill: false, allowTraversal: false, weaponStartTime: 60 },
       hashi: { mode: 'coop', sizeId: 2, itemsEnabled: true, godNumbers: true, customW: 15, customH: 15 },
-      mines: { mode: 'coop', sizeId: 9, allowItems: true, itemStartTime: 60 }
+      mines: { mode: 'coop', sizeId: 9, allowItems: true, itemStartTime: 60, customW: 16, customH: 16, customMines: 40 }
     };
   }
   function ensureHub() {
@@ -661,12 +661,20 @@
   function hubGameMode(game) { var H = ensureHub(); return H.cfg[game].mode; }
   function hubStateBroadcast() { platBroadcast({ kind: 'hubstate', ready: ensureHub().ready, spec: ensureHub().spec }); }
   function hubCfgBroadcast(game) { platBroadcast({ kind: 'hubcfg', game: game, cfg: ensureHub().cfg[game] }); }
+  function hubMinesCustom(c) { // 地雷自訂規格 clamp（與遊戲端 clampCustomSpec 同界：寬 8–30、高 8–24、雷 5..格數−9，首點保護圈要留 9 格）
+    var w = Math.max(8, Math.min(30, Math.round(Number(c.customW) || 16)));
+    var h = Math.max(8, Math.min(24, Math.round(Number(c.customH) || 16)));
+    var m = Math.max(5, Math.min(w * h - 9, Math.round(Number(c.customMines) || 40)));
+    return { w: w, h: h, mines: m };
+  }
   function hubLaunchCfg(game) {
     var H = ensureHub(), c = H.cfg[game];
     if (game === 'sudoku') { var wt = Number(c.weaponStartTime); if (isNaN(wt)) wt = 60; wt = Math.max(0, Math.min(600, wt));
       return { mode: c.mode, sizeId: Number(c.sizeId) || 9, diffId: c.diffId || 'medium',
       brawl: { winnersCount: Number(c.winnersCount) || 3, allowWeapons: c.allowWeapons !== false, allowGifts: c.allowGifts !== false, allowYellowHint: !!c.allowYellowHint, showNumbersInGodMode: !!c.showNumbersInGodMode, allowOthersToPlayAgain: c.allowOthersToPlayAgain !== false, allowQuickFill: !!c.allowQuickFill, allowTraversal: !!c.allowTraversal, hideAnswers: true, weaponStartTime: wt } }; }
-    if (game === 'mines') { var wt2 = Number(c.itemStartTime); if (isNaN(wt2)) wt2 = 60; wt2 = Math.max(0, Math.min(600, wt2)); return { mode: c.mode, sizeId: Number(c.sizeId) || 9, allowItems: c.allowItems !== false, itemStartTime: wt2, brawl: {} }; }
+    if (game === 'mines') { var wt2 = Number(c.itemStartTime); if (isNaN(wt2)) wt2 = 60; wt2 = Math.max(0, Math.min(600, wt2));
+      if (String(c.sizeId) === 'custom') return { mode: c.mode, sizeId: 'custom', custom: hubMinesCustom(c), allowItems: c.allowItems !== false, itemStartTime: wt2, brawl: {} }; // 自訂盤：sizeId 保持字串 'custom'（Number() 會變 NaN 被吞成 9），規格走 custom 欄位給遊戲註冊
+      return { mode: c.mode, sizeId: Number(c.sizeId) || 9, allowItems: c.allowItems !== false, itemStartTime: wt2, brawl: {} }; }
     return { mode: c.mode, sizeId: c.sizeId === 'custom' ? 'custom' : (Number(c.sizeId) || 2), customW: Math.max(5, Math.min(100, Number(c.customW) || 15)), customH: Math.max(5, Math.min(100, Number(c.customH) || 15)), brawl: { itemsEnabled: c.itemsEnabled !== false, godNumbers: c.godNumbers !== false } };
   }
   function hubRacers() { return Net.roster.slice(); } // 房間頁不分觀戰：進房的都是選手（觀戰是對局內的事）
@@ -746,6 +754,11 @@
       }
     } else if (game === 'mines') {
       h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 w-10 text-sm shrink-0">盤面</span>' + hubSel('mines', 'sizeId', c.sizeId, HUB_MINES_SIZES) + '</div>';
+      if (String(c.sizeId) === 'custom') { // 自訂盤面欄位（比照數橋自訂尺寸：選到自訂才展開）
+        h += hubNum('mines', 'customW', c.customW, '自訂寬度（左右格數）', 8, 30);
+        h += hubNum('mines', 'customH', c.customH, '自訂高度（上下格數）', 8, 24);
+        h += hubNum('mines', 'customMines', c.customMines, '自訂地雷數', 5, 999);
+      }
       if (c.mode === 'race') {
         h += hubChk('mines', 'allowItems', c.allowItems, '開啟道具與禮物（❓問號干擾／⏪回填／🎁鎖定旗禮物）');
         h += '<div class="flex gap-2 items-center"><span class="font-bold text-slate-500 text-sm shrink-0">道具延遲</span>' + hubSel('mines', 'itemStartTime', c.itemStartTime, [0, 30, 60, 90, 120, 180].map(function (n) { return { id: n, name: n + ' 秒' }; })) + '</div>';
@@ -1488,7 +1501,7 @@
       brawl: { winnersCount: t.entrants.length, allowWeapons: t.sudoku.allowWeapons !== false, allowGifts: t.sudoku.allowGifts !== false, allowYellowHint: !!t.sudoku.allowYellowHint, showNumbersInGodMode: !!t.sudoku.showNumbersInGodMode, allowOthersToPlayAgain: true, allowQuickFill: !!t.sudoku.allowQuickFill, allowTraversal: !!t.sudoku.allowTraversal, hideAnswers: true, weaponStartTime: (t.sudoku.weaponStartTime == null ? 60 : t.sudoku.weaponStartTime) } };
     else if (t.curGame === 'hashi') settings = { mode: 'brawl', sizeId: t.hashi.sizeId,
       brawl: { itemsEnabled: t.hashi.itemsEnabled !== false, godNumbers: t.hashi.godNumbers !== false } };
-    else if (t.curGame === 'mines') settings = { mode: 'brawl', sizeId: t.mines.sizeId, allowItems: true, itemStartTime: 60, brawl: {} };
+    else if (t.curGame === 'mines') settings = { mode: 'brawl', sizeId: t.mines.sizeId, custom: t.mines.custom || undefined, allowItems: true, itemStartTime: 60, brawl: {} };
     return { round: t.round, total: t.totalRounds, playoff: t.phase === 'playoff', entrants: t.entrants.length,
       roster: t.entrants.map(function (e) { return { uid: e.uid, name: e.name, color: e.color }; }),
       sizeId: t.curGame === 'sudoku' ? t.sudoku.sizeId : (t.curGame === 'mines' ? t.mines.sizeId : t.hashi.sizeId), diffId: t.sudoku.diffId, roundSecs: t.roundSecs, settings: settings };
@@ -1523,7 +1536,7 @@
     var cfg = { order: ($('t-order') || {}).value || 'alt-s',
       sudoku: { sizeId: Number(sC.sizeId) || 9, diffId: sC.diffId || 'medium', allowWeapons: sC.allowWeapons !== false, allowGifts: sC.allowGifts !== false, allowYellowHint: !!sC.allowYellowHint, showNumbersInGodMode: !!sC.showNumbersInGodMode, allowQuickFill: !!sC.allowQuickFill, allowTraversal: !!sC.allowTraversal, weaponStartTime: (function () { var w = Number(sC.weaponStartTime); return isNaN(w) ? 60 : Math.max(0, Math.min(600, w)); })() },
       hashi: { sizeId: Number(hC.sizeId) || 2, itemsEnabled: hC.itemsEnabled !== false, godNumbers: hC.godNumbers !== false },
-      mines: { sizeId: Number(mC.sizeId) || 9 },
+      mines: { sizeId: String(mC.sizeId) === 'custom' ? 'custom' : (Number(mC.sizeId) || 9), custom: String(mC.sizeId) === 'custom' ? hubMinesCustom(mC) : null }, // 錦標賽地雷回合沿用對局設定的盤面（含自訂）
       roundSecs: Number(($('t-secs') || {}).value) || 300, totalRounds: Number(($('t-rounds') || {}).value) || 5, rounds: null,
       entrants: Net.roster.map(function (p) { return { pid: p.pid, uid: p.uid || p.pid, name: p.name, color: p.color }; }) };
     cfg.rounds = tournBuildRounds(cfg.order, cfg.totalRounds);

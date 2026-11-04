@@ -24,6 +24,22 @@ var SIZES = {
   9: { id: 9, w: 9, h: 9, mines: 10, name: '9×9・10 雷', short: '9×9' },
   16: { id: 16, w: 16, h: 16, mines: 40, name: '16×16・40 雷', short: '16×16' }
 };
+// 自訂盤面（使用者 2026-11-04 指示：單機/多人都能自選 寬×高＋雷數）：引擎函式本來就吃 w/h/mines 參數，
+// 自訂規格註冊進 SIZES.custom、sizeId='custom' 貫穿單機/多人/回座（比照數橋 hub 自訂尺寸的貫穿方式）。
+// 上下限在此統一 clamp：寬 8–30、高 8–24、雷至少 5 且 ≤ 總格數−9——首點保護圈（點格＋鄰 8 格）必須留空，
+// 雷數超過這個上限時 makeFirstSafe 沒地方搬雷、首點保護會失效，所以這是硬上限不是偏好。
+function clampCustomSpec(w, h, mines) {
+  var W = Math.max(8, Math.min(30, Math.round(Number(w) || 16)));
+  var H = Math.max(8, Math.min(24, Math.round(Number(h) || 16)));
+  var M = Math.max(5, Math.min(W * H - 9, Math.round(Number(mines) || 40)));
+  return { w: W, h: H, mines: M };
+}
+function regCustomSpec(c) {
+  if (!c) return SIZES.custom || null;
+  var cl = clampCustomSpec(c.w, c.h, c.mines);
+  SIZES.custom = { id: 'custom', w: cl.w, h: cl.h, mines: cl.mines, name: cl.w + '×' + cl.h + '・' + cl.mines + ' 雷', short: cl.w + '×' + cl.h };
+  return SIZES.custom;
+}
 function neighborsOf(w, h, i) {
   var x = i % w, y = Math.floor(i / w), out = [];
   for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
@@ -140,6 +156,7 @@ function MinesGame() {
   const lpPtRef = useRef(null);                     // 長按起點座標（移動超過 10px 取消長按：滑動/捲動不是長按）
 
   const spec = SIZES[sizeId] || SIZES[9];
+  const specRef = useRef(spec); specRef.current = spec; // 事件處理器讀這份（不吃 setSizeId 的 state 更新時序；自訂盤面不能再用「格數 256 推規格」的舊推斷）
   const totalSafe = spec.w * spec.h - spec.mines;
   const openedSafe = useMemo(() => { if (!cells) return 0; var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'o' && (!layout || !layout[i])) c++; return c; }, [cells, layout]); // layout 為 null（合作來賓看不到雷位）時直接數已開格：'o' 恆為安全格，進度才不會恆 0%
   const flagsUsed = useMemo(() => cells ? countFlags(cells) : 0, [cells]);
@@ -152,8 +169,13 @@ function MinesGame() {
   const itemToastTimerRef = useRef(null);
   const [mistLeft, setMistLeft] = useState(0);   // 競速容錯剩餘次數（顯示用）
   const mistakesRef = useRef(0);                // 競速已用掉的容錯次數
-  const [zoom, setZoom] = useState(1);          // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）
+  const [zoom, setZoom] = useState(1);          // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [custCfg, setCustCfg] = useState(() => { try { var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null'); if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines); } catch (e) {} return { w: 16, h: 16, mines: 40 }; }); // 單機自訂盤面（寬/高/雷），持久化
+  const [custOpen, setCustOpen] = useState(false);
+  const boardScrollRef = useRef(null);          // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
+  const fadeRRef = useRef(null), fadeBRef = useRef(null);
+  const indVTrackRef = useRef(null), indHTrackRef = useRef(null), indVRef = useRef(null), indHRef = useRef(null);
   const giftCreditRef = useRef(0);        // 禮物額度（正確插旗 +0.5，滿 1 送弱者）
   const creditedMinesRef = useRef({});    // 已計入額度的雷格（防拔插重刷）
   const milestoneRef = useRef(0);         // 已通報的里程碑段數（每 5% 一段，只增不減——被回填打回去也不重報）
@@ -193,7 +215,7 @@ function MinesGame() {
 
   // 挖一格（含首點保護、和弦、勝負判定）——單機與多人共用核心
   function doReveal(from, baseCells, baseLayout, baseNums) {
-    var sp = baseCells.length === 256 ? SIZES[16] : SIZES[9]; // 從盤面大小推，不吃 state 更新時序
+    var sp = specRef.current; // 目前盤面規格（含自訂）：舊版用格數 256/81 推斷，自訂尺寸會推錯，改讀 render 期同步的 specRef
     var L = baseLayout, N = baseNums, C = baseCells;
     if (firstRef.current) {
       var fs = makeFirstSafe(L, sp.w, sp.h, from, baseCells);
@@ -241,15 +263,23 @@ function MinesGame() {
       }
       return;
     }
-    var key = 'mines_best_' + sizeId;
+    var spk = specRef.current;
+    var key = 'mines_best_' + (sizeId === 'custom' ? 'c' + spk.w + 'x' + spk.h + '_' + spk.mines : sizeId); // 自訂盤最佳紀錄依形狀分開存，不同形狀不互相覆蓋
     var prev = parseInt(sGet(key) || '0', 10);
     if (!prev || t < prev) sSet(key, String(t));
   }
   function startDaily(ds) { newGame(9, dailySeed(ds), ds); }
+  function startCustom() { // 單機自訂盤面：clamp→持久化→註冊規格→以 sizeId 'custom' 開局（與預設盤走同一條 newGame 路徑）
+    var cl = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines);
+    setCustCfg(cl); sSet('mines_custom_cfg', JSON.stringify(cl));
+    regCustomSpec(cl);
+    SFX.click();
+    newGame('custom');
+  }
 
   function chord(idx) {
     if (!layout || !cells || nums[idx] <= 0) return;
-    var sp = cells.length === 256 ? SIZES[16] : SIZES[9], nb = neighborsOf(sp.w, sp.h, idx), f = 0, i;
+    var sp = specRef.current, nb = neighborsOf(sp.w, sp.h, idx), f = 0, i;
     for (i = 0; i < nb.length; i++) if (cells[nb[i]] === 'f' || cells[nb[i]] === 'L' || cells[nb[i]] === 'x') f++; // 鎖定旗與容錯 ✗ 也算已知雷（和弦判定）
     if (f !== nums[idx]) return;
     var C = cells, L = layout, N = nums, last = { cells: C, layout: L, nums: N };
@@ -299,7 +329,7 @@ function MinesGame() {
         if (cells[idx] === 'f') return;
         if (cells[idx] === 'o') { // 合作和弦：把鄰格挖開拆成單格動作依序送出（房主定序，踩雷後後續的會被擋下）
           if (!nums || nums[idx] <= 0) return;
-          var sp2 = cells.length === 256 ? SIZES[16] : SIZES[9], nb2 = neighborsOf(sp2.w, sp2.h, idx), f2 = 0, j2;
+          var sp2 = specRef.current, nb2 = neighborsOf(sp2.w, sp2.h, idx), f2 = 0, j2;
           for (j2 = 0; j2 < nb2.length; j2++) if (cells[nb2[j2]] === 'f') f2++;
           if (f2 !== nums[idx]) return;
           for (j2 = 0; j2 < nb2.length; j2++) if (cells[nb2[j2]] === 'h') mpSendAct('reveal', nb2[j2]);
@@ -357,7 +387,7 @@ function MinesGame() {
   const [coopBoomBy, setCoopBoomBy] = useState('');
   const [cdNum, setCdNum] = useState(null);
   const [waitTick, setWaitTick] = useState(0);
-  const mpRef = useRef({ on: false, isHost: false, mode: 'coop', tourn: false, hub: false, code: '', sizeId: 9, seed: 0, startAt: 0, phase: 'off' });
+  const mpRef = useRef({ on: false, isHost: false, mode: 'coop', tourn: false, hub: false, code: '', sizeId: 9, custom: null, seed: 0, startAt: 0, phase: 'off' });
   const playersRef = useRef([]);
   const peerRef = useRef(null), connsRef = useRef([]), hostConnRef = useRef(null);
   const godRef = useRef({}), outcomeRef = useRef(null), finalRef = useRef(null);
@@ -388,7 +418,7 @@ function MinesGame() {
     if (cdIvRef.current) { clearInterval(cdIvRef.current); cdIvRef.current = null; }
     if (peerRef.current) { try { peerRef.current.destroy(); } catch (e) {} peerRef.current = null; }
     connsRef.current = []; hostConnRef.current = null;
-    mpRef.current = { on: false, isHost: false, mode: 'coop', tourn: false, tournInfo: null, hub: false, code: '', sizeId: 9, seed: 0, startAt: 0, phase: 'off' };
+    mpRef.current = { on: false, isHost: false, mode: 'coop', tourn: false, tournInfo: null, hub: false, code: '', sizeId: 9, custom: null, seed: 0, startAt: 0, phase: 'off' };
     setMpOn(false); setMpPhase('off'); setPlayersBoth([]); setMyReadySt(false); myReadyRef.current = false;
     setGodBoards({}); godRef.current = {}; setRaceFinal(null); finalRef.current = null;
     setMyOutcome(null); outcomeRef.current = null; setCdNum(null); iAmSpecRef.current = false;
@@ -401,7 +431,8 @@ function MinesGame() {
   function saveResume() {
     if (!mpRef.current.on || mpRef.current.mode !== 'race' || iAmSpecRef.current || outcomeRef.current) return;
     var a = stateArgsRef.current; if (!a || !a[0] || !a[2] || !mpRef.current.seed) return;
-    try { sSet(minesResumeKey(), JSON.stringify({ seed: mpRef.current.seed, sizeId: mpRef.current.sizeId, startAt: mpRef.current.startAt, cells: a[0].join(''), items: itemsRef.current, giftCredit: giftCreditRef.current, milestone: milestoneRef.current, ts: Date.now() })); } catch (e) {}
+    var spSv = SIZES[mpRef.current.sizeId] || SIZES[9];
+    try { sSet(minesResumeKey(), JSON.stringify({ seed: mpRef.current.seed, sizeId: mpRef.current.sizeId, cw: spSv.w, ch: spSv.h, cm: spSv.mines, startAt: mpRef.current.startAt, cells: a[0].join(''), items: itemsRef.current, giftCredit: giftCreditRef.current, milestone: milestoneRef.current, ts: Date.now() })); } catch (e) {} // cw/ch/cm：自訂盤的形狀指紋，回座時對不上就不還原（陳年存檔鐵則）
   }
   function loadResume(seed, sizeId, total) {
     try {
@@ -413,9 +444,11 @@ function MinesGame() {
     } catch (e) { return null; }
   }
   function resumeRestore(m) { // guestOnInit 回座：還原中斷前的盤面/犯錯/道具（本地存檔優先，房主 god 快照備援）
+    if (m.sizeId === 'custom' && m.custom) regCustomSpec(m.custom); // 保險：不論呼叫順序，先註冊規格再查表
     var sp = SIZES[m.sizeId] || SIZES[9], total = sp.w * sp.h;
     var L = makeLayout(sp.w, sp.h, sp.mines, m.seed), N = computeNums(sp.w, sp.h, L);
     var save = loadResume(m.seed, m.sizeId, total);
+    if (save && save.cw != null && (save.cw !== sp.w || save.ch !== sp.h || save.cm !== sp.mines)) save = null; // 自訂形狀對不上＝別場的存檔
     var cellsArr = null;
     if (save) cellsArr = save.cells.split('');
     else if (m.god && m.god[myId] && typeof m.god[myId].cells === 'string' && m.god[myId].cells.length === total) cellsArr = m.god[myId].cells.split('');
@@ -752,7 +785,7 @@ function MinesGame() {
     var szId = mpRef.current.sizeId;
     setPlayersBoth(playersRef.current.filter(p => !p.pending).map(p => Object.assign({}, p, { ready: false }))); // 開賽清未到席位（比照數獨；殼端結算另有「未到不擋結算」規則）
     hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current });
-    hostBroadcast({ type: 'MINE_START', seed: seed, sizeId: szId, startAt: startAt });
+    hostBroadcast({ type: 'MINE_START', seed: seed, sizeId: szId, startAt: startAt, custom: mpRef.current.custom || undefined }); // 自訂盤：規格隨開局訊息給來賓註冊（種子只決定雷位，尺寸不帶就會開成預設盤）
     startMatchLocal(seed, szId, startAt);
   }
 
@@ -768,7 +801,7 @@ function MinesGame() {
       case 'PLAYERS_UPDATE': if (!H) { setPlayersBoth(m.players || []); var mp2 = myPlayer(); if (mp2) iAmSpecRef.current = !!mp2.spectator; } break;
       case 'READY': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { ready: !!m.ready }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
       case 'SPEC': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { spectator: !!m.spectator }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
-      case 'MINE_START': if (!H) startMatchLocal(m.seed, m.sizeId, m.startAt); break;
+      case 'MINE_START': if (!H) { if (m.sizeId === 'custom') regCustomSpec(m.custom); startMatchLocal(m.seed, m.sizeId, m.startAt); } break;
       case 'MINE_PROGRESS': godSet(m.uid, { progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); break;
       case 'MINE_STATE': godSet(m.uid, { cells: m.cells, nums: m.nums || {}, progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); break;
       case 'MINE_FINISH': godSet(m.uid, { state: 'finished', timeMs: m.timeMs, progress: 1 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
@@ -800,12 +833,13 @@ function MinesGame() {
     setPlayersBoth(list);
     hostBroadcast({ type: 'PLAYERS_UPDATE', players: list }, conn);
     var myEntry = list.find(p => p.id === m.uid);
-    try { conn.send({ type: 'INIT', players: list, mode: mpRef.current.mode, sizeId: mpRef.current.sizeId, phase: phase, seed: (myEntry && myEntry.spectator) ? undefined : mpRef.current.seed, startAt: mpRef.current.startAt, god: godRef.current, youSpec: !!(myEntry && myEntry.spectator),
+    try { conn.send({ type: 'INIT', players: list, mode: mpRef.current.mode, sizeId: mpRef.current.sizeId, custom: mpRef.current.custom || undefined, phase: phase, seed: (myEntry && myEntry.spectator) ? undefined : mpRef.current.seed, startAt: mpRef.current.startAt, god: godRef.current, youSpec: !!(myEntry && myEntry.spectator),
       coopSnap: (mpRef.current.mode === 'coop' && boardRef.current.cells) ? { cells: boardRef.current.cells.join(''), sparse: coopSparse(boardRef.current.cells, boardRef.current.nums), status: statusRef.current, own: encOwners(boardRef.current.owners) } : null }); } catch (e) {}
   }
   function guestOnInit(m) {
     setPlayersBoth(m.players || []);
     mpRef.current.mode = m.mode || mpRef.current.mode;
+    if (m.sizeId === 'custom') { regCustomSpec(m.custom); mpRef.current.custom = m.custom ? { w: SIZES.custom.w, h: SIZES.custom.h, mines: SIZES.custom.mines } : null; } // 先註冊再 startMatchLocal/回座還原，查表才不會落回 9×9
     mpRef.current.sizeId = m.sizeId || mpRef.current.sizeId;
     setSizeId(m.sizeId || 9);
     iAmSpecRef.current = !!m.youSpec;
@@ -884,7 +918,10 @@ function MinesGame() {
   function setupMp(sess) {
     var st = sess.settings || {};
     var itemDelayS = Number(st.itemStartTime); if (isNaN(itemDelayS)) itemDelayS = 60; itemDelayS = Math.max(0, Math.min(600, itemDelayS));
-    mpRef.current = { on: true, isHost: !!sess.isHost, mode: sess.mode === 'coop' ? 'coop' : 'race', tourn: !!sess.tourn, tournInfo: sess.tourn || null, hub: !!sess.hub, code: sess.code, sizeId: Number(st.sizeId) || 9, seed: 0, startAt: 0, phase: 'waiting', itemsAllow: st.allowItems !== false, itemDelay: itemDelayS };
+    var mpSizeId = st.sizeId === 'custom' ? 'custom' : (Number(st.sizeId) || 9); // 'custom' 是字串：Number('custom')=NaN 會被 || 9 吞掉（舊寫法），自訂盤會變 9×9，必須先分流
+    var mpCustom = null;
+    if (mpSizeId === 'custom') { var rcS = regCustomSpec(st.custom); if (rcS) mpCustom = { w: rcS.w, h: rcS.h, mines: rcS.mines }; else mpSizeId = 9; } // 房主/來賓都在進場時先註冊規格，後續所有 SIZES[sizeId] 查表才查得到
+    mpRef.current = { on: true, isHost: !!sess.isHost, mode: sess.mode === 'coop' ? 'coop' : 'race', tourn: !!sess.tourn, tournInfo: sess.tourn || null, hub: !!sess.hub, code: sess.code, sizeId: mpSizeId, custom: mpCustom, seed: 0, startAt: 0, phase: 'waiting', itemsAllow: st.allowItems !== false, itemDelay: itemDelayS };
     setMpOn(true); setMpPhase('waiting'); waitSinceRef.current = Date.now();
     setScreen('mp');
     if (sess.isHost) {
@@ -932,7 +969,14 @@ function MinesGame() {
   const platBarCfgRef = useRef(null);
   platBarCfgRef.current = {
     accent: ACCENT,
-    onAction: (name) => { if (name === 'mode-press') { setInputMode(m => (m === 'dig' ? 'flag' : 'dig')); SFX.click(); } }
+    onAction: (name) => {
+      if (name === 'mode-press') { setInputMode(m => (m === 'dig' ? 'flag' : 'dig')); SFX.click(); }
+      // 殼 PlatBar 左下角縮放組（＋/－/循環）：v1.31 只做了卡片內 🔍 那組、這組沒人接線 → 按了沒反應（使用者 2026-11-04 截圖回報）。
+      // 接到與卡片內 🔍 相同的 zoom state，兩組永遠同步；數獨/數橋的 PlatBar 本來就有接，只有地雷漏了。
+      else if (name === 'zoom-in') { setZoom(z => Math.min(2.5, Math.round((z + 0.25) * 100) / 100)); SFX.click(); }
+      else if (name === 'zoom-out') { setZoom(z => Math.max(1, Math.round((z - 0.25) * 100) / 100)); SFX.click(); }
+      else if (name === 'zoom-cycle') { setZoom(z => { var steps = [1, 1.5, 2, 2.5]; for (var i = 0; i < steps.length; i++) if (steps[i] > z + 0.001) return steps[i]; return 1; }); SFX.click(); }
+    }
   };
   const platBarCfgStable = useRef(null);
   if (!platBarCfgStable.current) platBarCfgStable.current = { accent: ACCENT, onAction: (n, p) => { if (platBarCfgRef.current) platBarCfgRef.current.onAction(n, p); } };
@@ -951,9 +995,33 @@ function MinesGame() {
       mode: inputMode === 'flag' ? 1 : 0,
       modes: [{ icon: '⛏️', label: '挖開' }, { icon: '🚩', label: '插旗' }],
       modeTitle: '切換模式（挖開/插旗）',
+      zoomLabel: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔍',
+      zoomGlyph: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔲',
       showInput: false, inputMode: 'num', showDraw: false, showHostClear: false
     });
   });
+
+  // ---------- 盤面邊緣虛化＋自製卷軸指示條（使用者 2026-11-04 指示） ----------
+  // 右/下還有題目時：邊緣漸層虛化＋細指示條（滑塊長度=可視比例、位置=捲動進度），捲到那一端就自動消失；
+  // 完全沒溢出時兩者都不出現——玩家一眼就知道「現在看到的是全部還是部分」。iOS 不顯示原生 scrollbar，
+  // 所以指示條自己畫（桌面/Android 另有 CSS 原生 scrollbar 染色，見 style.css 的 .mines-board-scroll）。
+  function updScrollUi() {
+    var el = boardScrollRef.current; if (!el) return;
+    var maxL = el.scrollWidth - el.clientWidth, maxT = el.scrollHeight - el.clientHeight;
+    if (fadeRRef.current) fadeRRef.current.style.opacity = maxL - el.scrollLeft > 2 ? '1' : '0';
+    if (fadeBRef.current) fadeBRef.current.style.opacity = maxT - el.scrollTop > 2 ? '1' : '0';
+    var tv = indVTrackRef.current, pv = indVRef.current;
+    if (tv && pv) {
+      var showV = maxT > 2; tv.style.display = showV ? 'block' : 'none';
+      if (showV) { var thV = Math.max(18, Math.round(tv.clientHeight * el.clientHeight / el.scrollHeight)); pv.style.height = thV + 'px'; pv.style.top = Math.round((maxT > 0 ? el.scrollTop / maxT : 0) * Math.max(0, tv.clientHeight - thV)) + 'px'; }
+    }
+    var th = indHTrackRef.current, ph = indHRef.current;
+    if (th && ph) {
+      var showH = maxL > 2; th.style.display = showH ? 'block' : 'none';
+      if (showH) { var twH = Math.max(18, Math.round(th.clientWidth * el.clientWidth / el.scrollWidth)); ph.style.width = twH + 'px'; ph.style.left = Math.round((maxL > 0 ? el.scrollLeft / maxL : 0) * Math.max(0, th.clientWidth - twH)) + 'px'; }
+    }
+  }
+  useEffect(() => { updScrollUi(); }); // 每次 render 後依實際捲動幾何校正（開局/縮放/換盤都會走到）
 
   // ---------- 平台倒數（PlatCountdown）：殼端共用元件，照數橋用法（cdNum 有值 show、null hide） ----------
   useEffect(() => {
@@ -1051,9 +1119,9 @@ function MinesGame() {
   }, [questionFx]);
 
   // ---------- 渲染 ----------
-  const gapPx = sizeId === 16 ? 2 : 3;
+  const gapPx = spec.w >= 14 ? 2 : 3; // 舊版以 sizeId===16 二分；改依盤寬通式（自訂尺寸同規：寬盤間隔 2、窄盤 3）
   // 盤面隨視窗放大（iPad/大螢幕不再縮成手機尺寸）：可用寬 = min(視窗, 720) − 根層 padding 24 − 卡片 padding/邊框 26
-  const cellPx = Math.max(sizeId === 16 ? 22 : 28, Math.min(sizeId === 16 ? 38 : 64, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
+  const cellPx = Math.max(spec.w <= 10 ? 28 : 22, Math.min(spec.w <= 10 ? 64 : 38, Math.floor((Math.min(vpW, 720) - 50 - (spec.w - 1) * gapPx) / spec.w))); // 格長上下限舊版以 9/16 二分，改依盤寬通式（窄盤 28–64、寬盤 22–38，與舊 9×9/16×16 完全等值）；16×16 舊下限 18px 在手機上只剩 19px 一格、間隔 2px，手指/觸控筆必沾鄰格（誤觸主因之一）→ 下限拉到 22，超出螢幕時靠盤面橫向捲動
   const zCellPx = Math.max(14, Math.round(cellPx * zoom)); // 使用者縮放後的實際格長（zoom=1 即適應螢幕原尺寸）
   const colW = spec.w * cellPx + (spec.w - 1) * gapPx + 26; // 對局畫面所有欄位（標頭列/狀態列/進度/貢獻/PlatBar）與盤同寬，不再各寬各的
   function renderCell(i) {
@@ -1108,7 +1176,7 @@ function MinesGame() {
   function renderGodBoard(g, szId) {
     var sp = SIZES[szId] || SIZES[9];
     var arr = (g.cells || '').split('');
-    var px = szId === 16 ? 21 : 38, gp = szId === 16 ? 2 : 3;
+    var px = sp.w >= 14 ? 21 : 38, gp = sp.w >= 14 ? 2 : 3; // 舊版以 szId===16 二分，改依規格寬度（自訂寬盤同規）
     var rows = [];
     for (var y = 0; y < sp.h; y++) {
       var rc = [];
@@ -1118,7 +1186,7 @@ function MinesGame() {
         if (st === 'o') { var n = g.nums ? g.nums[i] : 0; if (n === -1) { content = '💣'; bg = '#fecaca'; } else { content = n > 0 ? String(n) : ''; color = NUM_COLORS[n] || ''; bg = '#f8fafc'; } }
         else if (st === 'x') { content = '✗'; color = '#dc2626'; bg = '#fecaca'; } // 容錯踩雷格（觀戰同步顯示）
         else if (st === 'f' || st === 'L') { content = '🚩'; }
-        rc.push(<div key={i} className="flex items-center justify-center font-black rounded-[4px] border border-orange-900/20" style={{ width: px, height: px, background: bg, color: color, fontSize: szId === 16 ? 12 : 19, lineHeight: 1 }}>{content}</div>);
+        rc.push(<div key={i} className="flex items-center justify-center font-black rounded-[4px] border border-orange-900/20" style={{ width: px, height: px, background: bg, color: color, fontSize: sp.w >= 14 ? 12 : 19, lineHeight: 1 }}>{content}</div>);
       }
       rows.push(<div key={y} className="flex" style={{ gap: gp }}>{rc}</div>);
     }
@@ -1144,7 +1212,7 @@ function MinesGame() {
               <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((gg.progress || 0) * 100) + '%' : Math.floor((gg.progress || 0) * 100) + '%'}
             </button>); })}
         </div>
-        {g.cells ? renderGodBoard(g, mpRef.current.sizeId) : <p className="font-bold text-slate-400 text-center py-3">等待 {selP ? selP.name : '對手'} 的盤面…</p>}
+        {g.cells ? <div style={{ overflowX: 'auto', maxWidth: '100%' }}>{renderGodBoard(g, mpRef.current.sizeId)}</div> : <p className="font-bold text-slate-400 text-center py-3">等待 {selP ? selP.name : '對手'} 的盤面…</p>}
       </div>
     );
   }
@@ -1153,6 +1221,7 @@ function MinesGame() {
   function openDailyCal() { if (window.PlatCalendar) window.PlatCalendar.show({ accent: '#fb923c', records: readDailyRecords(), selected: dailySel, onPick: (ds) => { setDailySel(ds); SFX.click(); startDaily(ds); } }); } // 每日月曆已統一為殼端 PlatCalendar（v1.16）
 
   if (screen === 'setup') {
+    const effC = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines); // 自訂盤實際會開的規格（輸入超出範圍先 clamp，開始鈕直接顯示修正後的值，不讓玩家猜）
     return (
       <div key="setup" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
         <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn">
@@ -1166,6 +1235,24 @@ function MinesGame() {
                 <span className="text-sm text-slate-700">{bestText(sz)}</span>
               </button>
             ))}
+            <div className="w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]">
+              <button onClick={() => setCustOpen(!custOpen)} className="w-full flex items-center justify-between font-black text-xl text-slate-800">
+                <span>⚙️ 自訂盤面</span><span className="text-sm text-slate-400">{custOpen ? '▾ 收起' : '▸ 展開'}</span>
+              </button>
+              {custOpen && (<div className="mt-3 flex flex-col gap-2">
+                <label className="flex items-center justify-between font-black text-slate-600 text-sm">寬度（左右格數）
+                  <input type="number" min="8" max="30" value={custCfg.w} onChange={e => setCustCfg(c => Object.assign({}, c, { w: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                </label>
+                <label className="flex items-center justify-between font-black text-slate-600 text-sm">高度（上下格數）
+                  <input type="number" min="8" max="24" value={custCfg.h} onChange={e => setCustCfg(c => Object.assign({}, c, { h: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                </label>
+                <label className="flex items-center justify-between font-black text-slate-600 text-sm">地雷數
+                  <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                </label>
+                <div className="text-xs font-bold text-slate-400 leading-relaxed">範圍：寬 8–30、高 8–24、雷 5–{effC.w * effC.h - 9}（依目前寬高；首點保護需留 9 格空白）。超出範圍會自動修正，開始鈕顯示的就是實際會開的盤。</div>
+                <button onClick={startCustom} className="w-full py-3 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 開始：{effC.w}×{effC.h}・{effC.mines} 雷</button>
+              </div>)}
+            </div>
             <button onClick={() => setScreen('home')} className="w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">← 返回主選單</button>
           </div>
         </div>
@@ -1442,8 +1529,18 @@ function MinesGame() {
           </div>
         )}
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full">
-          <div className="bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn shrink-0" style={{ maxWidth: '100%', overflowX: 'auto', overflowY: zoom > 1 ? 'auto' : 'visible', maxHeight: zoom > 1 ? '68vh' : 'none' }}>
-            <div style={{ width: 'max-content', margin: '0 auto' }}>{renderBoard()}</div>
+          <div className="relative shrink-0" style={{ maxWidth: '100%' }}>
+            <div ref={boardScrollRef} onScroll={updScrollUi} className="mines-board-scroll bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn" style={{ maxWidth: '100%', overflowX: 'auto', overflowY: zoom > 1 ? 'auto' : 'visible', maxHeight: zoom > 1 ? '68vh' : 'none' }}>
+              <div style={{ width: 'max-content', margin: '0 auto' }}>{renderBoard()}</div>
+            </div>
+            <div ref={fadeRRef} style={{ position: 'absolute', top: 3, right: 3, bottom: 3, width: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to right, rgba(255,251,243,0), rgba(255,251,243,.96))', borderTopRightRadius: 9, borderBottomRightRadius: 9 }}></div>
+            <div ref={fadeBRef} style={{ position: 'absolute', left: 3, right: 3, bottom: 3, height: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to bottom, rgba(255,251,243,0), rgba(255,251,243,.96))', borderBottomLeftRadius: 9, borderBottomRightRadius: 9 }}></div>
+            <div ref={indVTrackRef} style={{ position: 'absolute', top: 8, bottom: 8, right: 5, width: 6, borderRadius: 3, background: 'rgba(30,41,59,.14)', display: 'none', pointerEvents: 'none' }}>
+              <div ref={indVRef} style={{ position: 'absolute', left: 0, width: '100%', borderRadius: 3, background: '#f97316', border: '1px solid rgba(30,41,59,.55)' }}></div>
+            </div>
+            <div ref={indHTrackRef} style={{ position: 'absolute', left: 8, right: 8, bottom: 5, height: 6, borderRadius: 3, background: 'rgba(30,41,59,.14)', display: 'none', pointerEvents: 'none' }}>
+              <div ref={indHRef} style={{ position: 'absolute', top: 0, height: '100%', borderRadius: 3, background: '#f97316', border: '1px solid rgba(30,41,59,.55)' }}></div>
+            </div>
           </div>
       {mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
         <div className="w-full mt-2 flex items-center gap-2 shrink-0" style={{ width: colW, maxWidth: '100%' }}>
