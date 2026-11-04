@@ -135,6 +135,7 @@ function MinesGame() {
   // ---------- 畫面/單機狀態 ----------
   const [screen, setScreen] = useState('home'); // home | game
   const [showHelp, setShowHelp] = useState(false);
+  const [tutStep, setTutStep] = useState(0); // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
   const [muted, setMuted] = useState(sGet('mines_muted') === '1');
   const [sizeId, setSizeId] = useState(9);
   const [layout, setLayout] = useState(null);       // bool[] 雷位（目前這一局）
@@ -1207,7 +1208,7 @@ function MinesGame() {
     var title = myOutcome === 'boom' ? '💥 已出局・觀戰中' : (myOutcome === 'finished' ? '🏁 已完賽・觀戰中' : '👁️ 觀戰中');
     return (
       <div className="w-full max-w-md mt-3 bg-white border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn">
-        <div className="font-black text-slate-800 mb-2">{title}</div>
+        <div className="font-black text-xl text-slate-800 mb-2">{title}</div>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {opps.map(p => { var gg = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
             <button key={p.id} onClick={() => setGodUid(p.id)} className="text-xs font-black px-2 py-1 rounded-full border-2 flex items-center gap-1 active:translate-y-[1px]" style={p.id === sel ? { background: '#1e293b', color: '#fff', borderColor: '#1e293b' } : { background: '#fff', color: '#334155', borderColor: '#cbd5e1' }}>
@@ -1288,7 +1289,7 @@ function MinesGame() {
               <button disabled={dailySel >= todayStr()} onClick={() => setDailySel(shiftDate(dailySel, 1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">▶</button>
             </div>
             <div className="text-sm font-black text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
-            <button onClick={() => setShowHelp(true)} className="w-full py-3.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
+            <button onClick={() => { setTutStep(0); setShowHelp(true); }} className="w-full py-3.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
           </div>
         </div>
         {isPlat && (
@@ -1303,7 +1304,7 @@ function MinesGame() {
               <button onClick={() => setShowHelp(false)} className="absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10">✕</button>
               <h3 className="text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5">❓ 玩法教學</h3>
 
-              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="relative">
                     <div className="grid grid-cols-3 gap-[3px]">
@@ -1326,7 +1327,7 @@ function MinesGame() {
                 <p className="text-center font-black text-slate-700">點格子挖開——數字代表周圍 8 格有幾顆地雷</p>
               </div>
 
-              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}>
                     <span className="mtut-flag text-3xl">🚩</span>
@@ -1339,7 +1340,7 @@ function MinesGame() {
                 <p className="text-center font-black text-slate-700">懷疑是地雷？切到「插旗」模式點它，或長按格子做記號</p>
               </div>
 
-              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="relative">
                     <div className="grid grid-cols-3 gap-[3px]">
@@ -1378,7 +1379,7 @@ function MinesGame() {
                 <p className="text-center font-black text-slate-700">數字旁的旗子數剛好等於數字時，再點數字格，周圍剩下的格子一次挖開</p>
               </div>
 
-              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
                 <div className="flex justify-center gap-8 mb-3">
                   <div className="flex flex-col items-center gap-1">
                     <div className="mtut-boom w-14 h-14 flex items-center justify-center text-3xl rounded-[4px] border border-orange-900/20" style={{ background: '#e2e8f0' }}>💣</div>
@@ -1401,7 +1402,14 @@ function MinesGame() {
                 </div>
               </div>
 
-              <button onClick={() => setShowHelp(false)} className="w-full py-3.5 bg-[#f97316] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">知道了，開始玩！</button>
+              <div className="flex justify-center gap-2 mb-5">
+                    {[0, 1, 2, 3].map(idx => (<div key={idx} className={"w-2.5 h-2.5 rounded-full border-2 border-slate-800 " + (idx === tutStep ? "bg-[#f97316]" : "bg-white")} />))}
+                </div>
+                <div className="flex gap-3">
+                    {tutStep > 0 && (<button onClick={() => { SFX.click(); setTutStep(tutStep - 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800">上一步</button>)}
+                    <button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400">跳過</button>
+                    {tutStep < 3 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep + 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#f97316] text-slate-900">下一步</button>) : (<button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
+                </div>
             </div>
           </div>
         )}
@@ -1551,8 +1559,7 @@ function MinesGame() {
             </div>
           </div>
       {mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
-        <div className="w-full mt-2 flex items-center gap-2 shrink-0" style={{ width: colW, maxWidth: '100%' }}>
-          <span className="text-[11px] font-black text-slate-400 mr-auto leading-tight">里程碑道具<br />集滿 3 自動發動</span>
+        <div className="w-full mt-2 flex items-center justify-center gap-2 shrink-0" style={{ width: colW, maxWidth: '100%' }}>
           <button onClick={() => useGift()} disabled={myItems.gift <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="禮物：幫自己把一顆地雷標上旗子並鎖定（自己按才發動）">🎁{myItems.gift > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.gift}</span>)}</button>
           <button onClick={() => fireItem('question')} disabled={myItems.question <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="問號干擾：把對手 3–6 個還沒確定的數字變成問號（10 秒）">❓{myItems.question > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-violet-600 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.question}</span>)}</button>
           <button onClick={() => fireItem('backfill')} disabled={myItems.backfill <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="回填：把對手已打開的一片格子（3×3，連鎖空格整片）蓋回去">⏪{myItems.backfill > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-amber-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.backfill}</span>)}</button>
@@ -1573,8 +1580,11 @@ function MinesGame() {
       {mpOn && mpRef.current.mode === 'race' && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
         <div className="w-full mt-2 flex flex-wrap gap-1.5" style={{ width: colW, maxWidth: "100%" }}>
           {players.filter(p => !p.spectator && !p.pending && p.id !== myId).map(p => { const g = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
-            <span key={p.id} className="text-xs font-black px-2 py-1 rounded-full border-2 border-slate-300 bg-white flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%'}
+            <span key={p.id} className="text-xs font-black px-2 py-1 rounded-xl border-2 border-slate-300 bg-white flex flex-col gap-1 min-w-[84px]">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%'}
+              </span>
+              <span className="block h-1.5 rounded-full bg-slate-200 overflow-hidden"><span className="block h-full transition-all duration-300" style={{ width: Math.floor((g.progress || 0) * 100) + '%', background: p.color }}></span></span>
             </span>); })}
         </div>
       )}

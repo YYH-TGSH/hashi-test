@@ -52,7 +52,13 @@ async function main() {
   ok(clickBtn(b => b.textContent.includes('玩法教學'), d.querySelector('#mines-root')), '點玩法教學');
   await new Promise(r => setTimeout(r, 200));
   ok([...d.querySelectorAll('#mines-root div')].some(x => x.textContent.includes('周圍 8 格保證沒有雷')) && !!d.querySelector('#mines-root .mtut-cover') && !!d.querySelector('#mines-root .mtut-flag') && !!d.querySelector('#mines-root .mtut-boom'), '教學 overlay 出現（卡片式＋動畫元素 mtut-cover/flag/boom＋首點整圈保護文案）');
-  ok(clickBtn(b => b.textContent.includes('知道了'), d.querySelector('#mines-root')), '關教學');
+  ok(clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#mines-root')), '教學步進：下一步');
+  await new Promise(r => setTimeout(r, 200));
+  ok(clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#mines-root')), '教學步進：下一步 2');
+  await new Promise(r => setTimeout(r, 200));
+  ok(clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#mines-root')), '教學步進：下一步 3');
+  await new Promise(r => setTimeout(r, 200));
+  ok(clickBtn(b => b.textContent.includes('開始遊戲'), d.querySelector('#mines-root')), '關教學（步進末頁開始遊戲）');
 
   // --- 9×9 開局（先進單機挑戰才選難度） ---
   ok(clickBtn(b => b.textContent.includes('單機挑戰'), d.querySelector('#mines-root')), '點單機挑戰');

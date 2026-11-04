@@ -593,7 +593,12 @@ function SudokuGame() {
     _useState152 = _slicedToArray(_useState151, 2),
     showTutorial = _useState152[0],
     setShowTutorial = _useState152[1];
-  var _useState153 = useState([{
+  var _useState153 = useState(0),
+    _useState154 = _slicedToArray(_useState153, 2),
+    tutStep = _useState154[0],
+    setTutStep = _useState154[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+
+  var _useState155 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -601,37 +606,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
-    _useState154 = _slicedToArray(_useState153, 2),
-    playersList = _useState154[0],
-    setPlayersList = _useState154[1];
-  var _useState155 = useState(false),
     _useState156 = _slicedToArray(_useState155, 2),
-    isConnecting = _useState156[0],
-    setIsConnecting = _useState156[1];
-  var _useState157 = useState(""),
+    playersList = _useState156[0],
+    setPlayersList = _useState156[1];
+  var _useState157 = useState(false),
     _useState158 = _slicedToArray(_useState157, 2),
-    connectionStatus = _useState158[0],
-    setConnectionStatus = _useState158[1];
-  var _useState159 = useState(false),
+    isConnecting = _useState158[0],
+    setIsConnecting = _useState158[1];
+  var _useState159 = useState(""),
     _useState160 = _slicedToArray(_useState159, 2),
-    showCancelButton = _useState160[0],
-    setShowCancelButton = _useState160[1];
-  var _useState161 = useState(true),
+    connectionStatus = _useState160[0],
+    setConnectionStatus = _useState160[1];
+  var _useState161 = useState(false),
     _useState162 = _slicedToArray(_useState161, 2),
-    showOtherCursors = _useState162[0],
-    setShowOtherCursors = _useState162[1];
+    showCancelButton = _useState162[0],
+    setShowCancelButton = _useState162[1];
   var _useState163 = useState(true),
     _useState164 = _slicedToArray(_useState163, 2),
-    showGhostProgress = _useState164[0],
-    setShowGhostProgress = _useState164[1];
-  var _useState165 = useState({}),
+    showOtherCursors = _useState164[0],
+    setShowOtherCursors = _useState164[1];
+  var _useState165 = useState(true),
     _useState166 = _slicedToArray(_useState165, 2),
-    cursors = _useState166[0],
-    setCursors = _useState166[1];
-  var _useState167 = useState([]),
+    showGhostProgress = _useState166[0],
+    setShowGhostProgress = _useState166[1];
+  var _useState167 = useState({}),
     _useState168 = _slicedToArray(_useState167, 2),
-    ripples = _useState168[0],
-    setRipples = _useState168[1];
+    cursors = _useState168[0],
+    setCursors = _useState168[1];
+  var _useState169 = useState([]),
+    _useState170 = _slicedToArray(_useState169, 2),
+    ripples = _useState170[0],
+    setRipples = _useState170[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -4612,14 +4617,14 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState169 = useState(false),
-    _useState170 = _slicedToArray(_useState169, 2),
-    platTournLock = _useState170[0],
-    setPlatTournLock = _useState170[1];
   var _useState171 = useState(false),
     _useState172 = _slicedToArray(_useState171, 2),
-    platHub = _useState172[0],
-    setPlatHub = _useState172[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+    platTournLock = _useState172[0],
+    setPlatTournLock = _useState172[1];
+  var _useState173 = useState(false),
+    _useState174 = _slicedToArray(_useState173, 2),
+    platHub = _useState174[0],
+    setPlatHub = _useState174[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var platSessRef = useRef(null); // 殼 launch 的原始 sess（hub 判斷與代表色 sess.color 的來源；exit 時清空）
   var isShellColor = function isShellColor(c) {
@@ -4627,14 +4632,14 @@ function SudokuGame() {
   }; // 殼代表色合法值：20 色之一或彩虹
   var hubStartTimerRef = useRef(null);
   var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
-  var _useState173 = useState(null),
-    _useState174 = _slicedToArray(_useState173, 2),
-    tournRoundInfo = _useState174[0],
-    setTournRoundInfo = _useState174[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
-  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState175 = useState(0),
+  var _useState175 = useState(null),
     _useState176 = _slicedToArray(_useState175, 2),
-    setTournTick = _useState176[1];
+    tournRoundInfo = _useState176[0],
+    setTournRoundInfo = _useState176[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
+  var _useState177 = useState(0),
+    _useState178 = _slicedToArray(_useState177, 2),
+    setTournTick = _useState178[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -5661,7 +5666,7 @@ function SudokuGame() {
   }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
     className: "text-2xl font-black text-slate-800 border-b-4 border-[#ffcc00] inline-block pb-1 mb-5"
   }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5676,7 +5681,7 @@ function SudokuGame() {
   }))), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-black text-slate-700"
   }, "\u9EDE\u4E00\u683C\uFF0C\u518D\u6309\u4E0B\u9762\u7684\u6578\u5B57\u9375\u586B\u5165")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5690,7 +5695,7 @@ function SudokuGame() {
   }, "\u270F\uFE0F"))), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-black text-slate-700"
   }, "\u9084\u4E0D\u78BA\u5B9A\uFF1F\u5148\u958B\u7B46\u8A18\uFF0C\u628A\u53EF\u80FD\u7684\u6578\u5B57\u8A18\u4E0B\u4F86")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5706,7 +5711,7 @@ function SudokuGame() {
   }))), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-black text-slate-700"
   }, "\u6BCF\u4E00\u884C\u3001\u6BCF\u4E00\u5217\u3001\u6BCF\u500B 3\xD73 \u5BAE\uFF0C1~9 \u90FD\u4E0D\u80FD\u91CD\u8907")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-2 mb-3 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
@@ -5715,12 +5720,36 @@ function SudokuGame() {
     className: "px-3 py-2 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDC46 \u5148\u9EDE\u683C\u5B50 \u2192 \u518D\u9EDE\u6578\u5B57")), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-black text-slate-700"
-  }, "\u8F38\u5165\u65B9\u5F0F\u81EA\u5DF1\u9078\uFF0C\u904A\u6232\u4E2D\u5728\u76E4\u9762\u4E0B\u65B9\u96A8\u6642\u5207\u63DB")), /*#__PURE__*/React.createElement("button", {
+  }, "\u8F38\u5165\u65B9\u5F0F\u81EA\u5DF1\u9078\uFF0C\u904A\u6232\u4E2D\u5728\u76E4\u9762\u4E0B\u65B9\u96A8\u6642\u5207\u63DB")), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-2 mb-5"
+  }, [0, 1, 2, 3].map(function (idx) {
+    return /*#__PURE__*/React.createElement("div", {
+      key: idx,
+      className: "w-2.5 h-2.5 rounded-full border-2 border-slate-800 " + (idx === tutStep ? "bg-[#ffcc00]" : "bg-white")
+    });
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3"
+  }, tutStep > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setTutStep(tutStep - 1);
+    },
+    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800"
+  }, "\u4E0A\u4E00\u6B65"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowTutorial(false);
     },
-    className: "w-full py-3.5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
-  }, "\u77E5\u9053\u4E86\uFF0C\u958B\u59CB\u73A9\uFF01"))) : null;
+    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400"
+  }, "\u8DF3\u904E"), tutStep < 3 ? /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setTutStep(tutStep + 1);
+    },
+    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#ffcc00] text-slate-900"
+  }, "\u4E0B\u4E00\u6B65") : /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setShowTutorial(false);
+    },
+    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900"
+  }, "\u958B\u59CB\u904A\u6232 \uD83C\uDFAE")))) : null;
   if (screen === 'home') {
     return /*#__PURE__*/React.createElement("div", {
       className: "h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn"
@@ -5771,7 +5800,8 @@ function SudokuGame() {
       className: "font-black text-sm text-emerald-600"
     }, "\u6700\u4F73 ", formatTime(dailyRecords[dailyPickDate])) : null), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
-        return setShowTutorial(true);
+        setTutStep(0);
+        setShowTutorial(true);
       },
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), typeof window !== 'undefined' && window.__PLAT_PLATFORM && /*#__PURE__*/React.createElement("div", {

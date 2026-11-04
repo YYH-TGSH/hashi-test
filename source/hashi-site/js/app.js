@@ -3905,7 +3905,7 @@
               </div>
             )}
 
-            <div className="relative z-0 flex-1 flex flex-col min-h-0 bg-[#f6fdf6]">
+            <div className={"relative z-0 flex-1 flex flex-col min-h-0 bg-[#f6fdf6]" + ((raceState === 'spectating' || (inRace && raceWaiting)) ? " hidden" : "")}>
 
               {isGenerating && (
                 <div className="absolute inset-0 z-[40] flex items-center justify-center pointer-events-none">
@@ -4286,6 +4286,24 @@
                 </div>
               </div>
 
+              {(raceState === 'spectating' || (inRace && raceWaiting)) && (
+                <div className="relative z-0 flex-1 min-h-0 overflow-y-auto p-4">
+                  <div className="max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-xl font-black text-[#1e293b]">{raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'}</h2>
+                      <span className="text-xs font-black text-slate-400">比賽結束後自動顯示結果</span>
+                    </div>
+                    <div className="flex gap-1.5 mb-3 flex-wrap">
+                      {raceRacers.filter(uid => raceState === 'spectating' || uid !== myId).map(uid => {
+                        const p = playersList.find(x => x.id === uid);
+                        return <button key={uid} onClick={() => setGodViewUid(uid)} className={"px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (spectateUid === uid ? "bg-slate-800 text-white" : "bg-white text-slate-700")}>{p ? p.name : '選手'}</button>;
+                      })}
+                    </div>
+                    {spectateUid && brawlBoards[spectateUid] ? renderGodBoard(brawlBoards[spectateUid]) : <p className="font-bold text-slate-400 text-center py-8">等待選手盤面同步…</p>}
+                  </div>
+                </div>
+              )}
+
               {typeof window.PlatBar !== 'undefined' ? (<div ref={platBarRef} className="shrink-0 relative z-30"></div>) : (<React.Fragment>)}
               {/* 底部工具列（比照數獨排列：左縮放 / 右模式切換，繪圖子工具居中） */}
               <div className="shrink-0 bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] relative z-30">
@@ -4375,24 +4393,6 @@
                 </div>
               ) : null}
 
-
-              {(raceState === 'spectating' || (inRace && raceWaiting)) && (
-                <div className="absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4">
-                  <div className="max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-2xl font-black text-[#1e293b]">{raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'}</h2>
-                      <span className="text-xs font-black text-slate-400">比賽結束後自動顯示結果</span>
-                    </div>
-                    <div className="flex gap-1.5 mb-3 flex-wrap">
-                      {raceRacers.filter(uid => raceState === 'spectating' || uid !== myId).map(uid => {
-                        const p = playersList.find(x => x.id === uid);
-                        return <button key={uid} onClick={() => setGodViewUid(uid)} className={"px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (spectateUid === uid ? "bg-slate-800 text-white" : "bg-white text-slate-700")}>{p ? p.name : '選手'}</button>;
-                      })}
-                    </div>
-                    {spectateUid && brawlBoards[spectateUid] ? renderGodBoard(brawlBoards[spectateUid]) : <p className="font-bold text-slate-400 text-center py-8">等待選手盤面同步…</p>}
-                  </div>
-                </div>
-              )}
 
               {raceCountdown !== null && !(typeof window !== 'undefined' && window.PlatCountdown) && (
                 <div className="absolute inset-0 z-[65] flex items-center justify-center pointer-events-none">

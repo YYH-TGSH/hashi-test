@@ -6143,7 +6143,7 @@ function HashiGame() {
       ),
       React.createElement(
         'div',
-        { className: 'relative z-0 flex-1 flex flex-col min-h-0 bg-[#f6fdf6]' },
+        { className: "relative z-0 flex-1 flex flex-col min-h-0 bg-[#f6fdf6]" + (raceState === 'spectating' || inRace && raceWaiting ? " hidden" : "") },
         isGenerating && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[40] flex items-center justify-center pointer-events-none' },
@@ -6581,6 +6581,51 @@ function HashiGame() {
             )
           )
         ),
+        (raceState === 'spectating' || inRace && raceWaiting) && React.createElement(
+          'div',
+          { className: 'relative z-0 flex-1 min-h-0 overflow-y-auto p-4' },
+          React.createElement(
+            'div',
+            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2' },
+            React.createElement(
+              'div',
+              { className: 'flex items-center justify-between mb-3' },
+              React.createElement(
+                'h2',
+                { className: 'text-xl font-black text-[#1e293b]' },
+                raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'
+              ),
+              React.createElement(
+                'span',
+                { className: 'text-xs font-black text-slate-400' },
+                '\u6BD4\u8CFD\u7D50\u675F\u5F8C\u81EA\u52D5\u986F\u793A\u7D50\u679C'
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'flex gap-1.5 mb-3 flex-wrap' },
+              raceRacers.filter(function (uid) {
+                return raceState === 'spectating' || uid !== myId;
+              }).map(function (uid) {
+                var p = playersList.find(function (x) {
+                  return x.id === uid;
+                });
+                return React.createElement(
+                  'button',
+                  { key: uid, onClick: function onClick() {
+                      return setGodViewUid(uid);
+                    }, className: "px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (spectateUid === uid ? "bg-slate-800 text-white" : "bg-white text-slate-700") },
+                  p ? p.name : '選手'
+                );
+              })
+            ),
+            spectateUid && brawlBoards[spectateUid] ? renderGodBoard(brawlBoards[spectateUid]) : React.createElement(
+              'p',
+              { className: 'font-bold text-slate-400 text-center py-8' },
+              '\u7B49\u5F85\u9078\u624B\u76E4\u9762\u540C\u6B65\u2026'
+            )
+          )
+        ),
         typeof window.PlatBar !== 'undefined' ? React.createElement('div', { ref: platBarRef, className: 'shrink-0 relative z-30' }) : React.createElement(
           React.Fragment,
           null,
@@ -6833,51 +6878,6 @@ function HashiGame() {
             )
           )
         ) : null,
-        (raceState === 'spectating' || inRace && raceWaiting) && React.createElement(
-          'div',
-          { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
-          React.createElement(
-            'div',
-            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2' },
-            React.createElement(
-              'div',
-              { className: 'flex items-center justify-between mb-3' },
-              React.createElement(
-                'h2',
-                { className: 'text-2xl font-black text-[#1e293b]' },
-                raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'
-              ),
-              React.createElement(
-                'span',
-                { className: 'text-xs font-black text-slate-400' },
-                '\u6BD4\u8CFD\u7D50\u675F\u5F8C\u81EA\u52D5\u986F\u793A\u7D50\u679C'
-              )
-            ),
-            React.createElement(
-              'div',
-              { className: 'flex gap-1.5 mb-3 flex-wrap' },
-              raceRacers.filter(function (uid) {
-                return raceState === 'spectating' || uid !== myId;
-              }).map(function (uid) {
-                var p = playersList.find(function (x) {
-                  return x.id === uid;
-                });
-                return React.createElement(
-                  'button',
-                  { key: uid, onClick: function onClick() {
-                      return setGodViewUid(uid);
-                    }, className: "px-2.5 py-1 rounded-lg border-2 border-slate-800 font-black text-xs " + (spectateUid === uid ? "bg-slate-800 text-white" : "bg-white text-slate-700") },
-                  p ? p.name : '選手'
-                );
-              })
-            ),
-            spectateUid && brawlBoards[spectateUid] ? renderGodBoard(brawlBoards[spectateUid]) : React.createElement(
-              'p',
-              { className: 'font-bold text-slate-400 text-center py-8' },
-              '\u7B49\u5F85\u9078\u624B\u76E4\u9762\u540C\u6B65\u2026'
-            )
-          )
-        ),
         raceCountdown !== null && !(typeof window !== 'undefined' && window.PlatCountdown) && React.createElement(
           'div',
           { className: 'absolute inset-0 z-[65] flex items-center justify-center pointer-events-none' },
