@@ -5319,7 +5319,7 @@ function HashiGame() {
     { className: 'fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4' },
     React.createElement(
       'div',
-      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
+      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-lg animate-popUpCenter' },
       React.createElement(
         'div',
         { className: 'text-5xl mb-3 text-center' },

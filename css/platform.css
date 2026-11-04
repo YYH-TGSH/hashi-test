@@ -27,8 +27,8 @@ overscroll-behavior-y: none;
 /* 平台殼樣式（body 背景由 build 依各遊戲 body 規則產生 data-view 版本） */
 body[data-view="home"] {
   overscroll-behavior-y: none;
-  background-color: #fdf5e6;
-  background-image: radial-gradient(#d3c5ab 2px, transparent 2px);
+  background-color: #edf2f8;
+  background-image: radial-gradient(#b6c6da 2px, transparent 2px);
   background-size: 12px 12px;
   margin: 0; padding: 0;
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
@@ -47,8 +47,8 @@ body[data-view="home"] {
 #plat-back:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(30,41,59,1); }
 body[data-view="lobby"] {
   overscroll-behavior-y: none;
-  background-color: #fdf5e6;
-  background-image: radial-gradient(#d3c5ab 2px, transparent 2px);
+  background-color: #edf2f8;
+  background-image: radial-gradient(#b6c6da 2px, transparent 2px);
   background-size: 12px 12px;
   margin: 0; padding: 0;
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
@@ -76,7 +76,7 @@ body[data-view="lobby"] {
   box-shadow: 3px 3px 0 rgba(30,41,59,.5); display: flex; gap: 10px; align-items: center;
   max-width: 94vw;
 }
-#plat-speak button { background: #4ade80; color: #052e16; border: 2px solid #052e16; border-radius: 9999px; padding: 2px 12px; font-weight: 900; cursor: pointer; }
+#plat-speak button { background: #60a5fa; color: #172554; border: 2px solid #052e16; border-radius: 9999px; padding: 2px 12px; font-weight: 900; cursor: pointer; }
 #plat-speak #plat-speak-no { background: #fff; color: #1e293b; border-color: #1e293b; padding: 2px 9px; }
 /* 聊天面板：釘在視窗底部置中、半透明、不出螢幕（比照數橋 v2.17 定案） */
 #plat-chat { position: fixed; inset: 0; z-index: 99992; pointer-events: none; }
@@ -88,7 +88,7 @@ body[data-view="lobby"] {
   box-shadow: 4px 4px 0 rgba(30,41,59,1); display: flex; flex-direction: column;
 }
 #plat-chat-head {
-  background: #4ade80; padding: 8px 12px; font-weight: 900; color: #052e16;
+  background: #60a5fa; padding: 8px 12px; font-weight: 900; color: #172554;
   display: flex; justify-content: space-between; align-items: center; cursor: pointer;
 }
 #plat-chat-head button { background: transparent; border: none; font-size: 15px; cursor: pointer; padding: 2px 6px; }
@@ -99,7 +99,7 @@ body[data-view="lobby"] {
 .plat-msg.sys { color: #64748b; font-size: 12px; text-align: center; }
 #plat-chat-inputrow { display: flex; gap: 8px; padding: 8px 10px; border-top: 2px solid rgba(30,41,59,.15); }
 #plat-chat-input { flex: 1; min-width: 0; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 10px; font-weight: 700; }
-#plat-chat-send { background: #4ade80; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 16px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
+#plat-chat-send { background: #60a5fa; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 16px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
 .plat-unread { background: #ef4444; color: #fff; border-radius: 9999px; font-size: 10px; padding: 1px 7px; font-weight: 900; }
 /* 大廳 */
 /* 代表色摩天輪（v1.22.0 工廠化：大廳與選色覆蓋層共用 .fw-* 一份樣式；動畫由 JS 逐格驅動以維持車廂正立。
@@ -199,4 +199,4 @@ body.plat-room-on[data-view="mines"] {
 #plat-errbar-text { flex: 1; word-break: break-word; }
 #plat-errbar button { flex-shrink: 0; border: 2px solid #991b1b; background: #fff; color: #991b1b; border-radius: 8px; padding: 3px 8px; font-weight: 900; cursor: pointer; }
 /* 鍵盤焦點可見（稽核 F-03 快修：原本全站無 :focus-visible，鍵盤/開關操作看不到焦點） */
-:focus-visible { outline: 3px solid #f59e0b !important; outline-offset: 2px; }
+:focus-visible { outline: 3px solid #2563eb !important; outline-offset: 2px; }

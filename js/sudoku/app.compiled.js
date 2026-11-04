@@ -5987,7 +5987,7 @@ function SudokuGame() {
   }, countdownValue)), showSetupModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter"
+    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-md w-full mx-auto my-auto animate-popUpCenter"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1"
   }, "\u2699\uFE0F \u8A2D\u5B9A\u984C\u578B\u8207\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {

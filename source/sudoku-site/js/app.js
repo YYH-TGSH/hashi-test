@@ -3250,7 +3250,7 @@ function SudokuGame() {
             {/* === 題型與難度設定 Modal === */}
             {showSetupModal && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4">
-                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter">
+                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-md w-full mx-auto my-auto animate-popUpCenter">
                         <h2 className="text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1">
                             ⚙️ 設定題型與難度
                         </h2>
