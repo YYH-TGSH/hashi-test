@@ -502,12 +502,16 @@ function MinesGame() {
   var autoItemIvRef = useRef(null);
   var autoGiftIvRef = useRef(null);
   function itemSay(msg) {
+    if (typeof window !== 'undefined' && window.__PLAT_TOAST) {
+      window.__PLAT_TOAST(msg);
+      return;
+    }
     setItemToast(msg);
     if (itemToastTimerRef.current) clearTimeout(itemToastTimerRef.current);
     itemToastTimerRef.current = setTimeout(function () {
       return setItemToast(null);
     }, 3400);
-  }
+  } // 平台內統一走殼 toast（美學稽核 V-07：三款一式）；獨立版才用本地 pill
   function resetItems() {
     itemsRef.current = {
       question: 0,
@@ -3056,7 +3060,7 @@ function MinesGame() {
   // ---------- 每日一題月曆（規格比照數獨/數橋：固定 6 列、完成亮燈、未來反灰） ----------
   function openDailyCal() {
     if (window.PlatCalendar) window.PlatCalendar.show({
-      accent: '#fb923c',
+      accent: '#f97316',
       records: readDailyRecords(),
       selected: dailySel,
       onPick: function onPick(ds) {
@@ -3087,7 +3091,7 @@ function MinesGame() {
           SFX.click();
           newGame(sz);
         },
-        className: "w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-between px-4"
+        className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-between px-4"
       }, /*#__PURE__*/React.createElement("span", null, sz === 9 ? '🌱' : '🔥', " ", SIZES[sz].name), /*#__PURE__*/React.createElement("span", {
         className: "text-sm text-slate-700"
       }, bestText(sz)));
@@ -3150,7 +3154,7 @@ function MinesGame() {
       className: "text-xs font-bold text-slate-400 leading-relaxed"
     }, "\u7BC4\u570D\uFF1A\u5BEC 8\u201330\u3001\u9AD8 8\u201324\u3001\u96F7 5\u2013", effC.w * effC.h - 9, "\uFF08\u4F9D\u76EE\u524D\u5BEC\u9AD8\uFF1B\u9996\u9EDE\u4FDD\u8B77\u9700\u7559 9 \u683C\u7A7A\u767D\uFF09\u3002\u8D85\u51FA\u7BC4\u570D\u6703\u81EA\u52D5\u4FEE\u6B63\uFF0C\u958B\u59CB\u9215\u986F\u793A\u7684\u5C31\u662F\u5BE6\u969B\u6703\u958B\u7684\u76E4\u3002"), /*#__PURE__*/React.createElement("button", {
       onClick: startCustom,
-      className: "w-full py-3 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\u25B6 \u958B\u59CB\uFF1A", effC.w, "\xD7", effC.h, "\u30FB", effC.mines, " \u96F7"))), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setScreen('home');
@@ -3180,13 +3184,13 @@ function MinesGame() {
         SFX.click();
         setScreen('setup');
       },
-      className: "w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         SFX.click();
         startDaily(dailySel);
       },
-      className: "w-full py-4 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
+      className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
     }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C"), dDone && /*#__PURE__*/React.createElement("span", {
       className: "text-base bg-white/70 rounded-lg px-2 py-0.5"
     }, "\u2713 \u5DF2\u5B8C\u6210")), /*#__PURE__*/React.createElement("div", {
@@ -3236,7 +3240,7 @@ function MinesGame() {
       },
       className: "absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10"
     }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
-      className: "text-2xl font-black text-slate-800 border-b-4 border-[#fb923c] inline-block pb-1 mb-5"
+      className: "text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, /*#__PURE__*/React.createElement("div", {
@@ -3485,7 +3489,7 @@ function MinesGame() {
       onClick: function onClick() {
         return setShowHelp(false);
       },
-      className: "w-full py-3.5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+      className: "w-full py-3.5 bg-[#f97316] border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
     }, "\u77E5\u9053\u4E86\uFF0C\u958B\u59CB\u73A9\uFF01"))));
   }
 
@@ -3575,7 +3579,7 @@ function MinesGame() {
     }, myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'), M.isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
       disabled: !canStartW,
       onClick: startMatch,
-      className: "w-full py-3 bg-[#fb923c] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
+      className: "w-full py-3 bg-[#f97316] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
     }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), startNoteW && /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-slate-500 font-bold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
@@ -3600,7 +3604,7 @@ function MinesGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fb923c] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
+    className: "bg-[#f97316] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3610,7 +3614,7 @@ function MinesGame() {
   }, "\uD83D\uDCA3", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u8E29\u5730\u96F7")), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1 bg-[#2d2a26] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
+    className: "flex items-center gap-1 bg-[#1e293b] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
   }, "\u23F1 ", fmtTime(elapsed)), dailyDate && !mpOn && /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
   }, "\uD83D\uDCC5 \u6BCF\u65E5 ", dailyDate.slice(5), dailyDate !== todayStr() ? ' 補玩' : ''), mpOn && /*#__PURE__*/React.createElement("span", {
@@ -3621,13 +3625,13 @@ function MinesGame() {
         return !o;
       });
     },
-    className: "shrink-0 flex px-1.5 py-0.5 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] items-center gap-1 whitespace-nowrap"
+    className: "shrink-0 flex px-1.5 py-0.5 bg-[#1e293b] text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] items-center gap-1 whitespace-nowrap"
   }, hdrOpen ? '🔼 縮小面板' : '🔽 展開規則')), /*#__PURE__*/React.createElement("div", {
     className: "w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 " + (hdrOpen ? 'max-h-[500px] opacity-100 scale-y-100' : 'max-h-0 opacity-0 scale-y-95')
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-2 md:p-3 text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#fb923c] inline-block pb-0.5"
+    className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#f97316] inline-block pb-0.5"
   }, "\uD83D\uDCDC \u904A\u6232\u898F\u5247"), /*#__PURE__*/React.createElement("ol", {
     className: "list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold"
   }, /*#__PURE__*/React.createElement("li", null, "\u9EDE\u683C\u5B50\u6316\u958B\uFF1A\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u7684\u5730\u96F7\u6578\uFF0C\u7A7A\u767D\u683C\u6703\u81EA\u52D5\u5C55\u958B\u3002"), /*#__PURE__*/React.createElement("li", null, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\uFF0B\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u5730\u96F7\uFF0C\u653E\u5FC3\u958B\u59CB\u3002"), /*#__PURE__*/React.createElement("li", null, "\u89BA\u5F97\u662F\u96F7\u5C31\u63D2\u65D7\uFF1A\u5207\u5230 \uD83D\uDEA9 \u63D2\u65D7\u6A21\u5F0F\u518D\u9EDE\u683C\u5B50\uFF0C\u6216\u9577\u6309\u683C\u5B50\u76F4\u63A5\u63D2\u65D7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6578\u5B57\u548C\u5468\u570D\u7684\u65D7\u6578\u4E00\u6A23\u6642\uFF0C\u518D\u9EDE\u90A3\u500B\u6578\u5B57\uFF0C\u53EF\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\uFF08\u6316\u958B\uFF0F\u63D2\u65D7\u6A21\u5F0F\u90FD\u53EF\u4EE5\uFF09\u3002")))), /*#__PURE__*/React.createElement("div", {
@@ -4033,7 +4037,7 @@ function MinesGame() {
     onClick: function onClick() {
       if (dailyDate) startDaily(dailyDate);else newGame(sizeId);
     },
-    className: "w-full py-3 bg-[#fb923c] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
   }, "\uD83D\uDD01 \u518D\u4F86\u4E00\u5C40"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setScreen('home');

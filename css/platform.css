@@ -167,7 +167,8 @@ body[data-view="lobby"] {
 /* 多人模式底色：進房後改平台深藍，不用數獨的黃、也不用數橋的綠（使用者指示） */
 body.plat-room-on[data-view="lobby"],
 body.plat-room-on[data-view="sudoku"],
-body.plat-room-on[data-view="hashi"] {
+body.plat-room-on[data-view="hashi"],
+body.plat-room-on[data-view="mines"] {
   background-color: #2b3a55 !important;
   background-image: none !important;
 }

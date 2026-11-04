@@ -1637,7 +1637,7 @@ function SudokuGame() {
     const closeVictoryModal = () => setHideVictoryModal(true);
 
     const toastTimerRef = useRef(null);
-    const showToast = (m) => { setToastMsg(m); if (toastTimerRef.current) clearTimeout(toastTimerRef.current); toastTimerRef.current = setTimeout(() => setToastMsg(""), 4000); }; // 新 toast 先取消舊計時器，否則前一則的計時器會提早清掉後一則（稽核修）
+    const showToast = (m) => { if (typeof window !== 'undefined' && window.__PLAT_TOAST) { window.__PLAT_TOAST(m); return; } setToastMsg(m); if (toastTimerRef.current) clearTimeout(toastTimerRef.current); toastTimerRef.current = setTimeout(() => setToastMsg(""), 4000); }; // 平台內統一走殼 toast（美學稽核 V-07：三款一式）；獨立版才用本地 toast。新 toast 先取消舊計時器，否則前一則的計時器會提早清掉後一則（稽核修）
 
     const getSvgCoords = (clientX, clientY) => {
         const svg = svgRef.current;
@@ -2286,7 +2286,7 @@ function SudokuGame() {
             mode: interactionMode,
             modes: [{ icon: '🖋️', label: '填答' }, { icon: '✏️', label: '筆記' }, { icon: '🖌️', label: '塗鴉' }],
             modeTitle: '切換模式（填答/筆記/塗鴉）',
-            zoomLabel: zoomIndicator.visible ? zoomIndicator.value.toFixed(1) + 'X' : '🔍',
+            zoomLabel: zoomIndicator.visible && zoomIndicator.value > 1 ? Math.round(zoomIndicator.value * 100) + '%' : '🔍', // zoom 標示三款統一百分比（美學稽核 V-22）
             zoomGlyph: zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲',
             showInput: true, inputMode: inputMode,
             showDraw: interactionMode === 2, drawTool: drawSubMode,
@@ -3218,8 +3218,8 @@ function SudokuGame() {
 
             {showExitMenu && (
                 <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
-                    <div className="bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
-                        <div className="font-black text-xl text-[#2d2a26] mb-4">要離開對局嗎？</div>
+                    <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
+                        <div className="font-black text-xl text-[#1e293b] mb-4">要離開對局嗎？</div>
                         {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
                             <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">⏹️ 結束本局（錦標賽）</button>
                         )}
@@ -3242,21 +3242,21 @@ function SudokuGame() {
             {/* === 題型與難度設定 Modal === */}
             {showSetupModal && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4">
-                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter">
+                    <div className="bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter">
                         <h2 className="text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1">
                             ⚙️ 設定題型與難度
                         </h2>
 
                         <div>
                             <label className="block text-sm font-bold text-slate-600 mb-1">盤面尺寸：</label>
-                            <select value={tempSizeId} onChange={(e) => setTempSizeId(parseInt(e.target.value))} className="w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer">
+                            <select value={tempSizeId} onChange={(e) => setTempSizeId(parseInt(e.target.value))} className="w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer">
                                 {SIZES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                         </div>
 
                         <div className="mb-2">
                             <label className="block text-sm font-bold text-slate-600 mb-1">遊戲難度：</label>
-                            <select value={tempDiffId} onChange={(e) => setTempDiffId(e.target.value)} className="w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer">
+                            <select value={tempDiffId} onChange={(e) => setTempDiffId(e.target.value)} className="w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer">
                                 {DIFFICULTIES.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
                         </div>
@@ -3277,7 +3277,7 @@ function SudokuGame() {
             {/* === 遊戲功能設定 Modal === */}
             {showBrawlSettings && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4">
-                    <div className="bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto">
+                    <div className="bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto">
                         <h2 className={`text-xl font-black mb-2 border-b-4 ${isBrawlMode ? 'border-purple-500' : 'border-sky-500'} inline-block pb-1`}>
                             ⚙️ {isBrawlMode ? '大亂鬥設定' : '遊戲設定'}
                         </h2>
@@ -3380,7 +3380,7 @@ function SudokuGame() {
                             </label>
                         )}
 
-                        <button onClick={() => setShowBrawlSettings(false)} className="mt-4 px-4 py-3 bg-[#ffcc00] border-4 border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all">關閉設定</button>
+                        <button onClick={() => setShowBrawlSettings(false)} className="mt-4 px-4 py-3 bg-[#ffcc00] border-4 border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all">關閉設定</button>
                     </div>
                 </div>
             )}
@@ -3390,8 +3390,8 @@ function SudokuGame() {
                 <div className={`bg-[#ffcc00] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5`}>
                     <div className="flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5">
                         <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
-                            <h1 className="font-black tracking-tight uppercase text-base md:text-2xl text-[#2d2a26] flex items-center gap-1 shrink-0">🔢<span className="hidden sm:inline">數獨 - SUDOKU</span></h1>
-                            <div className="flex items-center gap-1 bg-[#2d2a26] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0">
+                            <h1 className="font-black tracking-tight uppercase text-base md:text-2xl text-[#1e293b] flex items-center gap-1 shrink-0">🔢<span className="hidden sm:inline">數獨 - SUDOKU</span></h1>
+                            <div className="flex items-center gap-1 bg-[#1e293b] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0">
                                 <GameTimer startTime={startTime} endTime={isBrawlMode ? (matchPhase === 'finished' ? (stateRef.current.matchEndTime || endTime) : null) : (endTime || (winner ? matchStartTime : null))} isRunning={(isBrawlMode ? matchPhase === 'playing' : !isWon) && !winner && screen === 'game'} matchPhase={matchPhase} />
                             </div>
                             {dailyDate && (<div className="flex items-center gap-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded font-black shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0">📅 每日 {dailyDate.slice(5)}{dailyDate !== dailyTodayStr() ? ' 補玩' : ''}</div>)}
@@ -3422,11 +3422,11 @@ function SudokuGame() {
                                 )}
                             </div>
                         </div>
-                        <button onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)} className="shrink-0 flex px-1.5 py-0.5 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap">{isHeaderCollapsed ? '🔽 展開規則' : '🔼 縮小面板'}</button>
+                        <button onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)} className="shrink-0 flex px-1.5 py-0.5 bg-[#1e293b] text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap">{isHeaderCollapsed ? '🔽 展開規則' : '🔼 縮小面板'}</button>
                     </div>
 
                     <div className={`w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 ${isHeaderCollapsed ? 'max-h-0 opacity-0 scale-y-95' : 'max-h-[500px] opacity-100 scale-y-100'}`}>
-                        <div className="bg-white border-[3px] border-[#2d2a26] rounded-xl p-2 md:p-3 text-[#2d2a26] shadow-[4px_4px_0px_#2d2a26] flex flex-col md:flex-row gap-3">
+                        <div className="bg-white border-[3px] border-[#1e293b] rounded-xl p-2 md:p-3 text-[#1e293b] shadow-[4px_4px_0px_#1e293b] flex flex-col md:flex-row gap-3">
                             <div className="flex-1">
                                 <h3 className="text-sm md:text-base font-black mb-1 border-b-[3px] border-[#ffcc00] inline-block pb-0.5">📜 遊戲規則</h3>
                                 <ol className="list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold">
@@ -3445,7 +3445,7 @@ function SudokuGame() {
                             <button
                                 disabled={isMultiplayer && !isHostRef.current}
                                 onClick={() => { setTempSizeId(sizeId); setTempDiffId(diffId); setShowSetupModal(true); }}
-                                className="px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#2d2a26] font-bold bg-white text-[#2d2a26] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#2d2a26] active:translate-y-[2px] active:shadow-none transition-all"
+                                className="px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
                                 title="設定題型與難度"
                             >
                                 ⚙️ {SIZES.find(s => s.id === sizeId)?.name.split(' ')[0]} - {DIFFICULTIES.find(d => d.id === diffId)?.name.split(' ')[1] || '難度'}
@@ -3453,12 +3453,12 @@ function SudokuGame() {
                         </div>
 
                         <div className="flex gap-1.5 items-center ml-auto shrink-0">
-                            <button onClick={handlePlayAgain} disabled={isMultiplayer && !isHost} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="新題">🎲<span className="hidden sm:inline">新題</span></button>
-                            {(true) && (<button onClick={handleUndo} disabled={history.length === 0 || isWon || (isMultiplayer && !isBrawlMode)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26] shrink-0" title="復原">↩️<span className="hidden sm:inline">復原</span></button>)}
-                            <button onClick={handleReset} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
-                            <button onClick={() => setShowSaveModal(true)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
-                            <button onClick={() => { const m = window.SUDOKU_SOUND.toggleMute(); setMuted(m); if (!m) window.SUDOKU_SOUND.play('click'); }} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26] shrink-0" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
-                            <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'sudoku') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
+                            <button onClick={handlePlayAgain} disabled={isMultiplayer && !isHost} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="新題">🎲<span className="hidden sm:inline">新題</span></button>
+                            {(true) && (<button onClick={handleUndo} disabled={history.length === 0 || isWon || (isMultiplayer && !isBrawlMode)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0" title="復原">↩️<span className="hidden sm:inline">復原</span></button>)}
+                            <button onClick={handleReset} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
+                            <button onClick={() => setShowSaveModal(true)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
+                            <button onClick={() => { const m = window.SUDOKU_SOUND.toggleMute(); setMuted(m); if (!m) window.SUDOKU_SOUND.play('click'); }} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
+                            <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'sudoku') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
                         </div>
                     </div>
                 </div>
@@ -3851,8 +3851,8 @@ function SudokuGame() {
 
                     {(isWon || (isBrawlMode && winner)) && !hideVictoryModal && !(isBrawlMode && typeof window !== 'undefined' && window.PlatResults) && (
                         <div className={`absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ${isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-                            <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
-                                <button onClick={closeVictoryModal} className="absolute top-2 right-4 text-slate-400 hover:text-[#2d2a26] text-2xl font-black">✕</button>
+                            <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
+                                <button onClick={closeVictoryModal} className="absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black">✕</button>
                                 {isBrawlMode ? (
                                     <div className="w-full">
                                         <div className="text-5xl mb-2">⚔️🏆</div>
@@ -3893,23 +3893,23 @@ function SudokuGame() {
                                 ) : (
                                     <div>
                                         <div className="text-6xl mb-3">💥🏆</div>
-                                        <h2 className="text-3xl font-black text-[#2d2a26] mb-1 uppercase tracking-wide">完美通關！</h2>
+                                        <h2 className="text-3xl font-black text-[#1e293b] mb-1 uppercase tracking-wide">完美通關！</h2>
                                         <p className="text-slate-600 mb-6 text-sm font-bold border-b-2 border-dashed border-slate-300 pb-4">完成時間：{endTime ? formatTime(Math.floor((endTime - startTime) / 1000)) : "00:00"}</p>
                                     </div>
                                 )}
                                 <div className="flex justify-center gap-3 flex-wrap w-full mt-4">
                                     {!isMultiplayer ? (
                                         <React.Fragment>
-                                            <button onClick={handlePlayAgain} className="flex-1 px-3 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">下一題 (同設定)</button>
-                                            <button onClick={handleGoHome} className="flex-1 px-3 py-3 bg-white text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">返回主選單</button>
+                                            <button onClick={handlePlayAgain} className="flex-1 px-3 py-3 bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">下一題 (同設定)</button>
+                                            <button onClick={handleGoHome} className="flex-1 px-3 py-3 bg-white text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">返回主選單</button>
                                         </React.Fragment>
                                     ) : (
                                         <React.Fragment>
                                             {matchPhase === 'finished' ? (
                                                 (isHostRef.current || stateRef.current.brawlSettings.allowOthersToPlayAgain !== false) ? (
                                                     <React.Fragment>
-                                                        <button onClick={handlePlayAgain} className="flex-1 px-3 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">再來一局 (同設定)</button>
-                                                        <button onClick={handleBackToLobby} className="flex-1 px-3 py-3 bg-white text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">返回大廳</button>
+                                                        <button onClick={handlePlayAgain} className="flex-1 px-3 py-3 bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">再來一局 (同設定)</button>
+                                                        <button onClick={handleBackToLobby} className="flex-1 px-3 py-3 bg-white text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">返回大廳</button>
                                                     </React.Fragment>
                                                 ) : (
                                                     <span className="font-black text-slate-500 bg-slate-100 px-4 py-2 rounded-xl border-2 border-slate-300 w-full text-center">⏳ 等待房主決定下一局...</span>
@@ -3937,7 +3937,7 @@ function SudokuGame() {
                                 <button onClick={() => { setFinishViewMode('my'); toggleSpectator(myId, true, false); }} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${finishViewMode === 'my' ? 'bg-blue-500 text-white shadow-inner' : 'text-slate-500 hover:bg-slate-100'}`}>👤 我的版面</button>
                                 <button onClick={() => { setFinishViewMode('god'); toggleSpectator(myId, true, true); }} className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all ${finishViewMode === 'god' ? 'bg-purple-500 text-white shadow-inner' : 'text-slate-500 hover:bg-slate-100'}`}>👁️ 上帝視角</button>
                             </div>
-                            <button onClick={() => setHideVictoryModal(false)} className="pointer-events-auto bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] px-6 py-3 rounded-full shadow-[6px_6px_0px_#2d2a26] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg">🏆 顯示成績</button>
+                            <button onClick={() => setHideVictoryModal(false)} className="pointer-events-auto bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] px-6 py-3 rounded-full shadow-[6px_6px_0px_#1e293b] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg">🏆 顯示成績</button>
                         </div>
                     )}
 
@@ -4013,7 +4013,7 @@ function SudokuGame() {
 
             {showSaveModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-[#fffdfa] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
+                    <div className="bg-[#fffdfa] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
                         <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
                         <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
                         <div className="mb-6">

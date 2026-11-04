@@ -2653,12 +2653,16 @@ function SudokuGame() {
   };
   var toastTimerRef = useRef(null);
   var showToast = function showToast(m) {
+    if (typeof window !== 'undefined' && window.__PLAT_TOAST) {
+      window.__PLAT_TOAST(m);
+      return;
+    }
     setToastMsg(m);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(function () {
       return setToastMsg("");
     }, 4000);
-  }; // 新 toast 先取消舊計時器，否則前一則的計時器會提早清掉後一則（稽核修）
+  }; // 平台內統一走殼 toast（美學稽核 V-07：三款一式）；獨立版才用本地 toast。新 toast 先取消舊計時器，否則前一則的計時器會提早清掉後一則（稽核修）
 
   var getSvgCoords = function getSvgCoords(clientX, clientY) {
     var svg = svgRef.current;
@@ -4317,7 +4321,8 @@ function SudokuGame() {
         label: '塗鴉'
       }],
       modeTitle: '切換模式（填答/筆記/塗鴉）',
-      zoomLabel: zoomIndicator.visible ? zoomIndicator.value.toFixed(1) + 'X' : '🔍',
+      zoomLabel: zoomIndicator.visible && zoomIndicator.value > 1 ? Math.round(zoomIndicator.value * 100) + '%' : '🔍',
+      // zoom 標示三款統一百分比（美學稽核 V-22）
       zoomGlyph: zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲',
       showInput: true,
       inputMode: inputMode,
@@ -5913,12 +5918,12 @@ function SudokuGame() {
       return setShowExitMenu(false);
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-[#2d2a26] rounded-2xl shadow-[8px_8px_0px_#2d2a26] p-6 w-full max-w-xs text-center animate-popUpCenter",
+    className: "bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter",
     onClick: function onClick(e) {
       return e.stopPropagation();
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-xl text-[#2d2a26] mb-4"
+    className: "font-black text-xl text-[#1e293b] mb-4"
   }, "\u8981\u96E2\u958B\u5C0D\u5C40\u55CE\uFF1F"), typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND() && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
@@ -5952,7 +5957,7 @@ function SudokuGame() {
   }, countdownValue)), showSetupModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter"
+    className: "bg-[#fffdfa] rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto animate-popUpCenter"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black mb-2 border-b-4 border-[#ffcc00] inline-block pb-1"
   }, "\u2699\uFE0F \u8A2D\u5B9A\u984C\u578B\u8207\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -5962,7 +5967,7 @@ function SudokuGame() {
     onChange: function onChange(e) {
       return setTempSizeId(parseInt(e.target.value));
     },
-    className: "w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer"
+    className: "w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer"
   }, SIZES.map(function (s) {
     return /*#__PURE__*/React.createElement("option", {
       key: s.id,
@@ -5977,7 +5982,7 @@ function SudokuGame() {
     onChange: function onChange(e) {
       return setTempDiffId(e.target.value);
     },
-    className: "w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer"
+    className: "w-full px-3 py-2 rounded-xl border-2 border-slate-800 font-bold bg-white text-slate-800 outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer"
   }, DIFFICULTIES.map(function (d) {
     return /*#__PURE__*/React.createElement("option", {
       key: d.id,
@@ -6001,7 +6006,7 @@ function SudokuGame() {
   }, "\u78BA\u8A8D\u7522\u751F")))), showBrawlSettings && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md pointer-events-auto animate-fadeIn p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-2xl p-6 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto"
+    className: "bg-white rounded-2xl p-6 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] relative flex flex-col gap-4 min-w-[300px] max-w-sm w-full mx-auto my-auto"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black mb-2 border-b-4 ".concat(isBrawlMode ? 'border-purple-500' : 'border-sky-500', " inline-block pb-1")
   }, "\u2699\uFE0F ", isBrawlMode ? '大亂鬥設定' : '遊戲設定'), isBrawlMode && /*#__PURE__*/React.createElement("div", {
@@ -6153,7 +6158,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setShowBrawlSettings(false);
     },
-    className: "mt-4 px-4 py-3 bg-[#ffcc00] border-4 border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all"
+    className: "mt-4 px-4 py-3 bg-[#ffcc00] border-4 border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all"
   }, "\u95DC\u9589\u8A2D\u5B9A"))), /*#__PURE__*/React.createElement("div", {
     className: "w-full max-w-[1200px] bg-[#fffaf0] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
@@ -6163,11 +6168,11 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1.5 flex-nowrap shrink-0"
   }, /*#__PURE__*/React.createElement("h1", {
-    className: "font-black tracking-tight uppercase text-base md:text-2xl text-[#2d2a26] flex items-center gap-1 shrink-0"
+    className: "font-black tracking-tight uppercase text-base md:text-2xl text-[#1e293b] flex items-center gap-1 shrink-0"
   }, "\uD83D\uDD22", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u6578\u7368 - SUDOKU")), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1 bg-[#2d2a26] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
+    className: "flex items-center gap-1 bg-[#1e293b] text-white px-1.5 py-0.5 rounded font-mono font-bold shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-[10px] md:text-sm whitespace-nowrap shrink-0"
   }, /*#__PURE__*/React.createElement(GameTimer, {
     startTime: startTime,
     endTime: isBrawlMode ? matchPhase === 'finished' ? stateRef.current.matchEndTime || endTime : null : endTime || (winner ? matchStartTime : null),
@@ -6199,11 +6204,11 @@ function SudokuGame() {
     onClick: function onClick() {
       return setIsHeaderCollapsed(!isHeaderCollapsed);
     },
-    className: "shrink-0 flex px-1.5 py-0.5 bg-[#2d2a26] text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap"
+    className: "shrink-0 flex px-1.5 py-0.5 bg-[#1e293b] text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(0,0,0,0.3)] hover:bg-slate-800 items-center gap-1 whitespace-nowrap"
   }, isHeaderCollapsed ? '🔽 展開規則' : '🔼 縮小面板')), /*#__PURE__*/React.createElement("div", {
     className: "w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 ".concat(isHeaderCollapsed ? 'max-h-0 opacity-0 scale-y-95' : 'max-h-[500px] opacity-100 scale-y-100')
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-[#2d2a26] rounded-xl p-2 md:p-3 text-[#2d2a26] shadow-[4px_4px_0px_#2d2a26] flex flex-col md:flex-row gap-3"
+    className: "bg-white border-[3px] border-[#1e293b] rounded-xl p-2 md:p-3 text-[#1e293b] shadow-[4px_4px_0px_#1e293b] flex flex-col md:flex-row gap-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex-1"
   }, /*#__PURE__*/React.createElement("h3", {
@@ -6221,7 +6226,7 @@ function SudokuGame() {
       setTempDiffId(diffId);
       setShowSetupModal(true);
     },
-    className: "px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#2d2a26] font-bold bg-white text-[#2d2a26] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#2d2a26] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#2d2a26] active:translate-y-[2px] active:shadow-none transition-all",
+    className: "px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
     title: "\u8A2D\u5B9A\u984C\u578B\u8207\u96E3\u5EA6"
   }, "\u2699\uFE0F ", (_SIZES$find = SIZES.find(function (s) {
     return s.id === sizeId;
@@ -6232,20 +6237,20 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handlePlayAgain,
     disabled: isMultiplayer && !isHost,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
     title: "\u65B0\u984C"
   }, "\uD83C\uDFB2", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u65B0\u984C")), true && /*#__PURE__*/React.createElement("button", {
     onClick: handleUndo,
     disabled: history.length === 0 || isWon || isMultiplayer && !isBrawlMode,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26] shrink-0",
+    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0",
     title: "\u5FA9\u539F"
   }, "\u21A9\uFE0F", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u5FA9\u539F")), /*#__PURE__*/React.createElement("button", {
     onClick: handleReset,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
     title: "\u91CD\u7F6E"
   }, "\uD83D\uDD04", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
@@ -6253,7 +6258,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setShowSaveModal(true);
     },
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
     title: "\u5B58\u6A94/\u8B80\u6A94"
   }, "\uD83D\uDCBE", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
@@ -6263,14 +6268,14 @@ function SudokuGame() {
       setMuted(m);
       if (!m) window.SUDOKU_SOUND.play('click');
     },
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#2d2a26] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#2d2a26] shrink-0",
+    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0",
     title: muted ? "取消靜音" : "靜音"
   }, muted ? '🔇' : '🔊'), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       var N = typeof window !== 'undefined' ? window.__PLAT_NET : null;
       if (N && N.inMatch === 'sudoku' || typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
     },
-    className: "bg-white text-[#2d2a26] border-2 border-[#2d2a26] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#2d2a26] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
     title: "\u56DE\u9996\u9801/\u65B7\u7DDA"
   }, !isMultiplayer ? '🏠' : '🔌', /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline ml-1"
@@ -6858,10 +6863,10 @@ function SudokuGame() {
   }))))), (isWon || isBrawlMode && winner) && !hideVictoryModal && !(isBrawlMode && typeof window !== 'undefined' && window.PlatResults) && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ".concat(isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn')
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#2d2a26] shadow-[8px_8px_0px_#2d2a26] text-center min-w-[280px] md:min-w-[320px] relative ".concat(isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter')
+    className: "bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ".concat(isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter')
   }, /*#__PURE__*/React.createElement("button", {
     onClick: closeVictoryModal,
-    className: "absolute top-2 right-4 text-slate-400 hover:text-[#2d2a26] text-2xl font-black"
+    className: "absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black"
   }, "\u2715"), isBrawlMode ? /*#__PURE__*/React.createElement("div", {
     className: "w-full"
   }, /*#__PURE__*/React.createElement("div", {
@@ -6916,23 +6921,23 @@ function SudokuGame() {
   })) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-6xl mb-3"
   }, "\uD83D\uDCA5\uD83C\uDFC6"), /*#__PURE__*/React.createElement("h2", {
-    className: "text-3xl font-black text-[#2d2a26] mb-1 uppercase tracking-wide"
+    className: "text-3xl font-black text-[#1e293b] mb-1 uppercase tracking-wide"
   }, "\u5B8C\u7F8E\u901A\u95DC\uFF01"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-600 mb-6 text-sm font-bold border-b-2 border-dashed border-slate-300 pb-4"
   }, "\u5B8C\u6210\u6642\u9593\uFF1A", endTime ? formatTime(Math.floor((endTime - startTime) / 1000)) : "00:00")), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-3 flex-wrap w-full mt-4"
   }, !isMultiplayer ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     onClick: handlePlayAgain,
-    className: "flex-1 px-3 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
+    className: "flex-1 px-3 py-3 bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\u4E0B\u4E00\u984C (\u540C\u8A2D\u5B9A)"), /*#__PURE__*/React.createElement("button", {
     onClick: handleGoHome,
-    className: "flex-1 px-3 py-3 bg-white text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
+    className: "flex-1 px-3 py-3 bg-white text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\u8FD4\u56DE\u4E3B\u9078\u55AE")) : /*#__PURE__*/React.createElement(React.Fragment, null, matchPhase === 'finished' ? isHostRef.current || stateRef.current.brawlSettings.allowOthersToPlayAgain !== false ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     onClick: handlePlayAgain,
-    className: "flex-1 px-3 py-3 bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
+    className: "flex-1 px-3 py-3 bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\u518D\u4F86\u4E00\u5C40 (\u540C\u8A2D\u5B9A)"), /*#__PURE__*/React.createElement("button", {
     onClick: handleBackToLobby,
-    className: "flex-1 px-3 py-3 bg-white text-[#2d2a26] border-[4px] border-[#2d2a26] font-black rounded-xl shadow-[4px_4px_0px_#2d2a26] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
+    className: "flex-1 px-3 py-3 bg-white text-[#1e293b] border-[4px] border-[#1e293b] font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\u8FD4\u56DE\u5927\u5EF3")) : /*#__PURE__*/React.createElement("span", {
     className: "font-black text-slate-500 bg-slate-100 px-4 py-2 rounded-xl border-2 border-slate-300 w-full text-center"
   }, "\u23F3 \u7B49\u5F85\u623F\u4E3B\u6C7A\u5B9A\u4E0B\u4E00\u5C40...") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
@@ -6965,7 +6970,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setHideVictoryModal(false);
     },
-    className: "pointer-events-auto bg-[#ffcc00] text-[#2d2a26] border-[4px] border-[#2d2a26] px-6 py-3 rounded-full shadow-[6px_6px_0px_#2d2a26] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg"
+    className: "pointer-events-auto bg-[#ffcc00] text-[#1e293b] border-[4px] border-[#1e293b] px-6 py-3 rounded-full shadow-[6px_6px_0px_#1e293b] hover:translate-y-[2px] transition-all font-black flex items-center gap-2 tracking-wide text-lg"
   }, "\uD83C\uDFC6 \u986F\u793A\u6210\u7E3E")))), flares.length > 0 && /*#__PURE__*/React.createElement("svg", {
     className: "fixed inset-0 pointer-events-none z-[120]",
     style: {
@@ -7109,7 +7114,7 @@ function SudokuGame() {
   })))), showSaveModal && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-[#fffdfa] border-[4px] border-[#2d2a26] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter"
+    className: "bg-[#fffdfa] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1"
   }, "\uD83D\uDCBE \u5B58\u6A94\u8207\u8B80\u6A94"), /*#__PURE__*/React.createElement("p", {
