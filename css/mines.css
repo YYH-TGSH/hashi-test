@@ -3,7 +3,7 @@ button { transition: all 150ms ease; }
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fadeIn { animation: fadeIn 0.25s ease both; }
+    .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; } /* 三款統一進場規格（美學稽核 V-04/V-23：串接覆蓋後以此為準、與數獨數橋逐字相同） */
     @keyframes popIn {
       0% { opacity: 0; transform: scale(0.92); }
       100% { opacity: 1; transform: scale(1); }

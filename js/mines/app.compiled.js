@@ -3077,7 +3077,7 @@ function MinesGame() {
       key: "setup",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h2", {
       className: "font-black text-2xl text-slate-800 mb-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("p", {
@@ -3172,7 +3172,7 @@ function MinesGame() {
       key: "home",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h1", {
       className: "font-black text-4xl text-slate-800"
     }, "\uD83D\uDCA3 \u8E29\u5730\u96F7"), /*#__PURE__*/React.createElement("div", {
@@ -3504,7 +3504,7 @@ function MinesGame() {
       }, /*#__PURE__*/React.createElement("div", {
         className: "flex-1 flex items-center justify-center w-full"
       }, /*#__PURE__*/React.createElement("div", {
-        className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn"
+        className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn"
       }, /*#__PURE__*/React.createElement("div", {
         className: "text-5xl mb-3"
       }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
@@ -3538,7 +3538,7 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex items-center justify-center w-full"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-center text-4xl mb-1"
     }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
@@ -3602,7 +3602,7 @@ function MinesGame() {
       backgroundSize: '12px 12px'
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
+    className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#f97316] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3756,7 +3756,7 @@ function MinesGame() {
       return setShowExitMenu(false);
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn",
+    className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn",
     onClick: function onClick(e) {
       return e.stopPropagation();
     }
@@ -4024,7 +4024,7 @@ function MinesGame() {
   }), over && !mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn"
+    className: "bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-5xl mb-2"
   }, status === 'won' ? '🎉' : '💥'), /*#__PURE__*/React.createElement("h3", {

@@ -1503,7 +1503,7 @@
         const opps = Object.keys(brawlBoards);
         return (
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setGodViewUid(null)}>
-            <div className="bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-black text-base md:text-lg text-[#1e293b]">👁️ 上帝視角 — {board.name}（{Math.round((board.progress || 0) * 100)}%）</h3>
                 <button onClick={() => setGodViewUid(null)} className="w-8 h-8 shrink-0 bg-white border-2 border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)]">✕</button>
@@ -3512,7 +3512,7 @@
 
       const tutorialOverlay = showTutorial ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
+          <div className="bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter">
             <div className="text-5xl mb-3 text-center">{TUTORIAL_STEPS[tutorialStep].icon}</div>
             <h2 className="text-xl font-black text-slate-800 mb-2 text-center">{TUTORIAL_STEPS[tutorialStep].title}</h2>
             <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center">{TUTORIAL_STEPS[tutorialStep].body}</p>
@@ -3543,7 +3543,7 @@
         return (
           <div className="h-screen w-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fadeIn">
             <div className="flex-1 flex flex-col justify-center w-full max-w-md items-center">
-              <div className="bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
+              <div className="bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10">
                  <h1 className="text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3">
                     <span className="inline-block animate-float-slow bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform rotate-3 shadow-[4px_4px_0px_rgba(30,41,59,1)]">數</span>
                     <span className="inline-block animate-float-slow animate-float-slow-d bg-[#4ade80] px-4 py-2 border-4 border-slate-800 rounded-xl transform -rotate-2 shadow-[4px_4px_0px_rgba(30,41,59,1)]">橋</span>
@@ -3604,7 +3604,7 @@
 
       return (
         <div className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
-          <div className="w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
+          <div className="w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
 
             <div className={`bg-gradient-to-b from-[#ffd633] to-[#4ade80] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2`}>
                <div className="flex items-center justify-between gap-1 w-full">
@@ -3868,7 +3868,7 @@
 
             {editTarget && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={(e) => { e.stopPropagation(); setEditTarget(null); setColorSeq([]); }}>
-                <div className="bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
+                <div className="bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2">
                     <h3 className="text-sm font-black text-slate-800">⚙️ 個人設定</h3>
                     <button onClick={() => { setEditTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black text-lg leading-none">✕</button>
@@ -4325,7 +4325,7 @@
 
               {showExitMenu && (
                 <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
-                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
+                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
                     <div className="font-black text-xl text-[#1e293b] mb-4">要離開對局嗎？</div>
                     {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
                       <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">⏹️ 結束本局（錦標賽）</button>
@@ -4339,7 +4339,7 @@
 
               {roomOpen && platHub && platTournLock ? (
                 <div className="absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4 flex">
-                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto">
+                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto">
                     <div className="text-center text-4xl mb-1">🏆</div>
                     <div className="font-black text-2xl text-[#1e293b] text-center">錦標賽・{(tournRoundInfo && tournRoundInfo.playoff) ? '加賽' : ('第 ' + ((tournRoundInfo && tournRoundInfo.round) || '?') + ' 局')}</div>
                     <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：數橋大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
@@ -4367,7 +4367,7 @@
                 </div>
               ) : roomOpen && platHub ? (
                 <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4">
-                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-8 text-center max-w-sm w-full">
+                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full">
                     <div className="text-5xl mb-3">⏳</div>
                     <div className="font-black text-2xl text-[#1e293b] animate-pulse">等房主開始對局…</div>
                     <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
@@ -4378,7 +4378,7 @@
 
               {(raceState === 'spectating' || (inRace && raceWaiting)) && (
                 <div className="absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4">
-                  <div className="max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-5 mt-2">
+                  <div className="max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-2xl font-black text-[#1e293b]">{raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'}</h2>
                       <span className="text-xs font-black text-slate-400">比賽結束後自動顯示結果</span>
@@ -4396,7 +4396,7 @@
 
               {raceCountdown !== null && !(typeof window !== 'undefined' && window.PlatCountdown) && (
                 <div className="absolute inset-0 z-[65] flex items-center justify-center pointer-events-none">
-                  <div key={raceCountdown} className="animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]">
+                  <div key={raceCountdown} className="animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[10px_10px_0px_rgba(30,41,59,1)]">
                     {raceCountdown === 0 ? 'GO!' : raceCountdown}
                   </div>
                 </div>
@@ -4411,7 +4411,7 @@
 
               {inRace && raceState === 'finished' && raceResult && !(typeof window !== 'undefined' && window.PlatResults) && (
                 <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4">
-                  <div className="bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto">
+                  <div className="bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto">
                     <div className="text-5xl mb-2">🏆</div>
                     <h2 className="text-2xl font-black text-[#1e293b] mb-4">大亂鬥結果</h2>
                     {raceResult.entries.map((e, idx) => (
@@ -4453,7 +4453,7 @@
 
               {isWon && !hideVictoryModal && !inRace && (
                 <div className={`absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ${isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-                  <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
+                  <div className={`bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ${isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter'}`}>
                     <button onClick={closeVictoryModal} className="absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black">✕</button>
                     <div className="text-5xl md:text-6xl mb-3">💥🏆</div>
                     <h2 className="text-2xl md:text-3xl font-black text-[#1e293b] mb-2 uppercase tracking-wide">PERFECT!</h2>

@@ -1,11 +1,8 @@
 body {
       overscroll-behavior-y: none;
       background-color: #fdf3e7;
-      background-image:
-        radial-gradient(#f7ddba 3px, transparent 3.5px),
-        radial-gradient(#f3d3a7 1.5px, transparent 2px),
-        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
-      background-size: 28px 28px, 12px 12px, 100% 100%;
+      background-image: radial-gradient(#f7ddba 2px, transparent 2px);
+      background-size: 12px 12px; /* 背景語法三款統一：單層點陣 2px/12px、只換色調（美學稽核 V-06） */
       margin: 0; padding: 0;
       font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
     }
@@ -14,7 +11,7 @@ body {
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fadeIn { animation: fadeIn 0.25s ease both; }
+    .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; } /* 三款統一進場規格（美學稽核 V-04/V-23：串接覆蓋後以此為準、與數獨數橋逐字相同） */
     @keyframes popIn {
       0% { opacity: 0; transform: scale(0.92); }
       100% { opacity: 1; transform: scale(1); }

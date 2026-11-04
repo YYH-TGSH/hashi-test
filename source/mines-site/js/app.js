@@ -1226,7 +1226,7 @@ function MinesGame() {
     const effC = clampCustomSpec(custCfg.w, custCfg.h, custCfg.mines); // 自訂盤實際會開的規格（輸入超出範圍先 clamp，開始鈕直接顯示修正後的值，不讓玩家猜）
     return (
       <div key="setup" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn">
           <h2 className="font-black text-2xl text-slate-800 mb-1">👤 單機挑戰</h2>
           <p className="font-bold text-slate-400 text-sm mb-5">選一個盤面大小開始</p>
           <div className="flex flex-col gap-3">
@@ -1267,7 +1267,7 @@ function MinesGame() {
     const dDone = dRec[dailySel] != null, dBest = dRec[dailySel], dIsToday = dailySel === todayStr();
     return (
       <div key="home" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn">
           <h1 className="font-black text-4xl text-slate-800">💣 踩地雷</h1>
           <div className="text-slate-400 font-black tracking-widest text-sm mb-6">Minesweeper</div>
           <div className="flex flex-col gap-3">
@@ -1411,7 +1411,7 @@ function MinesGame() {
       return (
         <div key="mp" className="min-h-screen w-full flex flex-col items-center p-4 relative">
           <div className="flex-1 flex items-center justify-center w-full">
-            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn">
+            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn">
               <div className="text-5xl mb-3">⏳</div>
               <div className="font-black text-2xl text-slate-800 animate-pulse">等房主開始對局…</div>
               <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
@@ -1432,7 +1432,7 @@ function MinesGame() {
     return (
       <div key="mp" className="min-h-screen w-full flex flex-col items-center p-4 relative">
         <div className="flex-1 flex items-center justify-center w-full">
-        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
+        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
           <div className="text-center text-4xl mb-1">🏆</div>
           <div className="font-black text-2xl text-slate-800 text-center">錦標賽・第 {tInfo.round || '?'} 局</div>
           <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：踩地雷競速・{szName}・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
@@ -1469,7 +1469,7 @@ function MinesGame() {
   const hbtn = "px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-slate-800 shrink-0";
   return (
     <div key="game" className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#fdf3e7', backgroundImage: 'radial-gradient(#f7ddba 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
-      <div className="w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
+      <div className="w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
         <div className="bg-[#f97316] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5">
           <div className="flex items-center justify-between gap-2 w-full overflow-x-auto hide-scrollbar pb-0.5">
             <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
@@ -1519,7 +1519,7 @@ function MinesGame() {
         </div>
         {showExitMenu && mpOn && (
           <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
-            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn" onClick={e => e.stopPropagation()}>
+            <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn" onClick={e => e.stopPropagation()}>
               <div className="font-black text-xl text-slate-800 mb-4">要離開對局嗎？</div>
               {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
                 <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">⏹️ 結束本局（錦標賽）</button>
@@ -1579,7 +1579,7 @@ function MinesGame() {
         <div ref={platBarRef} className="h-16 shrink-0 w-full"></div>
         {over && !mpOn && (
         <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4">
-          <div className="bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn">
+          <div className="bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn">
             <div className="text-5xl mb-2">{status === 'won' ? '🎉' : '💥'}</div>
             <h3 className="font-black text-2xl text-slate-800 mb-1">{status === 'won' ? '全部排完了！' : '踩到地雷！'}</h3>
             <p className="font-bold text-slate-500 mb-4">{status === 'won' ? ('用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '')) : ('進度 ' + Math.floor(progress * 100) + '%')}</p>

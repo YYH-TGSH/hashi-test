@@ -1929,7 +1929,7 @@ button { transition: all 150ms ease; }
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fadeIn { animation: fadeIn 0.25s ease both; }
+    .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; } /* 三款統一進場規格（美學稽核 V-04/V-23：串接覆蓋後以此為準、與數獨數橋逐字相同） */
     @keyframes popIn {
       0% { opacity: 0; transform: scale(0.92); }
       100% { opacity: 1; transform: scale(1); }
@@ -1988,22 +1988,16 @@ overscroll-behavior-y: none;
 body[data-view="hashi"] {
 overscroll-behavior-y: none;
       background-color: #e9f7e9;
-      background-image:
-        radial-gradient(#c9e8c9 3px, transparent 3.5px),
-        radial-gradient(#b7ddb7 1.5px, transparent 2px),
-        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
-      background-size: 28px 28px, 12px 12px, 100% 100%;
+      background-image: radial-gradient(#b7ddb7 2px, transparent 2px);
+      background-size: 12px 12px; /* 背景語法三款統一：單層點陣 2px/12px、只換色調（美學稽核 V-06） */
       margin: 0; padding: 0;
       font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
 body[data-view="mines"] {
 overscroll-behavior-y: none;
       background-color: #fdf3e7;
-      background-image:
-        radial-gradient(#f7ddba 3px, transparent 3.5px),
-        radial-gradient(#f3d3a7 1.5px, transparent 2px),
-        linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 30%);
-      background-size: 28px 28px, 12px 12px, 100% 100%;
+      background-image: radial-gradient(#f7ddba 2px, transparent 2px);
+      background-size: 12px 12px; /* 背景語法三款統一：單層點陣 2px/12px、只換色調（美學稽核 V-06） */
       margin: 0; padding: 0;
       font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
@@ -13066,7 +13060,7 @@ function HashiGame() {
         } },
       React.createElement(
         'div',
-        { className: 'bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto', onClick: function onClick(e) {
+        { className: 'bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto', onClick: function onClick(e) {
             return e.stopPropagation();
           } },
         React.createElement(
@@ -15864,7 +15858,7 @@ function HashiGame() {
     { className: 'fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4' },
     React.createElement(
       'div',
-      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
+      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
       React.createElement(
         'div',
         { className: 'text-5xl mb-3 text-center' },
@@ -15929,7 +15923,7 @@ function HashiGame() {
         { className: 'flex-1 flex flex-col justify-center w-full max-w-md items-center' },
         React.createElement(
           'div',
-          { className: 'bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10' },
+          { className: 'bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10' },
           React.createElement(
             'h1',
             { className: 'text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3' },
@@ -16065,7 +16059,7 @@ function HashiGame() {
     { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
     React.createElement(
       'div',
-      { className: 'w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden' },
+      { className: 'w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden' },
       React.createElement(
         'div',
         { className: 'bg-gradient-to-b from-[#ffd633] to-[#4ade80] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2' },
@@ -16596,7 +16590,7 @@ function HashiGame() {
           } },
         React.createElement(
           'div',
-          { className: 'bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4', onClick: function onClick(e) {
+          { className: 'bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4', onClick: function onClick(e) {
               return e.stopPropagation();
             } },
           React.createElement(
@@ -17230,7 +17224,7 @@ function HashiGame() {
             } },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter', onClick: function onClick(e) {
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter', onClick: function onClick(e) {
                 return e.stopPropagation();
               } },
             React.createElement(
@@ -17273,7 +17267,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4 flex' },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto' },
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto' },
             React.createElement(
               'div',
               { className: 'text-center text-4xl mb-1' },
@@ -17360,7 +17354,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-8 text-center max-w-sm w-full' },
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full' },
             React.createElement(
               'div',
               { className: 'text-5xl mb-3' },
@@ -17383,7 +17377,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
           React.createElement(
             'div',
-            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-5 mt-2' },
+            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2' },
             React.createElement(
               'div',
               { className: 'flex items-center justify-between mb-3' },
@@ -17428,7 +17422,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[65] flex items-center justify-center pointer-events-none' },
           React.createElement(
             'div',
-            { key: raceCountdown, className: 'animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]' },
+            { key: raceCountdown, className: 'animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[10px_10px_0px_rgba(30,41,59,1)]' },
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
@@ -17448,7 +17442,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto' },
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto' },
             React.createElement(
               'div',
               { className: 'text-5xl mb-2' },
@@ -17547,7 +17541,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ' + (isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn') },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ' + (isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter') },
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ' + (isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter') },
             React.createElement(
               'button',
               { onClick: closeVictoryModal, className: 'absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black' },
@@ -20979,7 +20973,7 @@ function MinesGame() {
       key: "setup",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h2", {
       className: "font-black text-2xl text-slate-800 mb-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("p", {
@@ -21074,7 +21068,7 @@ function MinesGame() {
       key: "home",
       className: "min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 text-center relative transform -rotate-1 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("h1", {
       className: "font-black text-4xl text-slate-800"
     }, "\uD83D\uDCA3 \u8E29\u5730\u96F7"), /*#__PURE__*/React.createElement("div", {
@@ -21406,7 +21400,7 @@ function MinesGame() {
       }, /*#__PURE__*/React.createElement("div", {
         className: "flex-1 flex items-center justify-center w-full"
       }, /*#__PURE__*/React.createElement("div", {
-        className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn"
+        className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn"
       }, /*#__PURE__*/React.createElement("div", {
         className: "text-5xl mb-3"
       }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
@@ -21440,7 +21434,7 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex items-center justify-center w-full"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-center text-4xl mb-1"
     }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
@@ -21504,7 +21498,7 @@ function MinesGame() {
       backgroundSize: '12px 12px'
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
+    className: "w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#f97316] border-b-[3px] border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-1.5 flex flex-col gap-1.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -21658,7 +21652,7 @@ function MinesGame() {
       return setShowExitMenu(false);
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[8px_8px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn",
+    className: "bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn",
     onClick: function onClick(e) {
       return e.stopPropagation();
     }
@@ -21926,7 +21920,7 @@ function MinesGame() {
   }), over && !mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-4 border-slate-800 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn"
+    className: "bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-5xl mb-2"
   }, status === 'won' ? '🎉' : '💥'), /*#__PURE__*/React.createElement("h3", {
@@ -22112,7 +22106,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.36.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.37.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。

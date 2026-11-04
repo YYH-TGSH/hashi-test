@@ -2521,7 +2521,7 @@ function HashiGame() {
         } },
       React.createElement(
         'div',
-        { className: 'bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto', onClick: function onClick(e) {
+        { className: 'bg-white rounded-2xl border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] p-4 w-full max-w-[430px] max-h-[92vh] overflow-y-auto', onClick: function onClick(e) {
             return e.stopPropagation();
           } },
         React.createElement(
@@ -5319,7 +5319,7 @@ function HashiGame() {
     { className: 'fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4' },
     React.createElement(
       'div',
-      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
+      { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUpCenter' },
       React.createElement(
         'div',
         { className: 'text-5xl mb-3 text-center' },
@@ -5384,7 +5384,7 @@ function HashiGame() {
         { className: 'flex-1 flex flex-col justify-center w-full max-w-md items-center' },
         React.createElement(
           'div',
-          { className: 'bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[8px_8px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10' },
+          { className: 'bg-[#f6fdf6] border-4 border-slate-800 p-10 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full text-center relative transform -rotate-1 z-10' },
           React.createElement(
             'h1',
             { className: 'text-6xl font-black text-slate-800 mb-6 tracking-widest flex justify-center gap-3' },
@@ -5520,7 +5520,7 @@ function HashiGame() {
     { className: 'h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative', style: { backgroundColor: '#e9f7e9', backgroundImage: 'radial-gradient(#b7ddb7 2px, transparent 2px)', backgroundSize: '12px 12px' } },
     React.createElement(
       'div',
-      { className: 'w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden' },
+      { className: 'w-full max-w-[1200px] bg-[#f6fdf6] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden' },
       React.createElement(
         'div',
         { className: 'bg-gradient-to-b from-[#ffd633] to-[#4ade80] border-b-4 border-slate-800 shrink-0 z-50 relative transition-all duration-300 ease-in-out px-2 md:px-4 py-2 flex flex-col gap-2' },
@@ -6051,7 +6051,7 @@ function HashiGame() {
           } },
         React.createElement(
           'div',
-          { className: 'bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[8px_8px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4', onClick: function onClick(e) {
+          { className: 'bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4', onClick: function onClick(e) {
               return e.stopPropagation();
             } },
           React.createElement(
@@ -6685,7 +6685,7 @@ function HashiGame() {
             } },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter', onClick: function onClick(e) {
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter', onClick: function onClick(e) {
                 return e.stopPropagation();
               } },
             React.createElement(
@@ -6728,7 +6728,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4 flex' },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto' },
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto' },
             React.createElement(
               'div',
               { className: 'text-center text-4xl mb-1' },
@@ -6815,7 +6815,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-8 text-center max-w-sm w-full' },
+            { className: 'bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full' },
             React.createElement(
               'div',
               { className: 'text-5xl mb-3' },
@@ -6838,7 +6838,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[58] overflow-y-auto bg-[#f6fdf6] p-4' },
           React.createElement(
             'div',
-            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[8px_8px_0px_#1e293b] p-5 mt-2' },
+            { className: 'max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2' },
             React.createElement(
               'div',
               { className: 'flex items-center justify-between mb-3' },
@@ -6883,7 +6883,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[65] flex items-center justify-center pointer-events-none' },
           React.createElement(
             'div',
-            { key: raceCountdown, className: 'animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[8px_8px_0px_rgba(30,41,59,1)]' },
+            { key: raceCountdown, className: 'animate-countdownPop text-8xl md:text-9xl font-black text-[#1e293b] bg-[#4ade80] border-4 border-slate-800 rounded-3xl px-10 py-6 shadow-[10px_10px_0px_rgba(30,41,59,1)]' },
             raceCountdown === 0 ? 'GO!' : raceCountdown
           )
         ),
@@ -6903,7 +6903,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4' },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto' },
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[300px] max-w-md w-full animate-popUpCenter max-h-[92vh] overflow-y-auto' },
             React.createElement(
               'div',
               { className: 'text-5xl mb-2' },
@@ -7002,7 +7002,7 @@ function HashiGame() {
           { className: 'absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] pointer-events-auto ' + (isClosingModal ? 'animate-fadeOut' : 'animate-fadeIn') },
           React.createElement(
             'div',
-            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[8px_8px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ' + (isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter') },
+            { className: 'bg-white rounded-2xl p-6 md:p-8 border-[4px] border-[#1e293b] shadow-[10px_10px_0px_#1e293b] text-center min-w-[280px] md:min-w-[320px] relative ' + (isClosingModal ? 'animate-popOutCenter' : 'animate-popUpCenter') },
             React.createElement(
               'button',
               { onClick: closeVictoryModal, className: 'absolute top-2 right-4 text-slate-400 hover:text-[#1e293b] text-2xl font-black' },
