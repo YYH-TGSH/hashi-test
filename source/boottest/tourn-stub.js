@@ -114,7 +114,10 @@ const cells16 = Array.from({ length: 16 }, (_, i) => ({ id: i, isGiven: i < 10, 
   host.D.querySelector('#t-s-size').value = '4';
   host.D.querySelector('#t-s-diff').value = 'easy';
   check('開賽卡房主可見', host.D.querySelector('#lob-tourn-setup').style.display === 'block');
-  click(host.w, host.D.querySelector('#t-start'));
+  click(host.w, host.D.querySelector('#lob-step-room [data-pr="ready"]'));
+  click(guest.w, guest.D.querySelector('#lob-step-room [data-pr="ready"]'));
+  const tCardStartS = await waitFor(() => { const b = host.D.querySelector('#lob-step-room [data-pr="start"]'); return (b && !b.disabled && b.textContent.includes('開賽')) ? b : null; }, 30000, 'tourn card start');
+  click(host.w, tCardStartS);
   // 第 1 局 launch（雙方 stub enter 帶 tourn preset）
   await waitFor(() => host.stub.enters.length === 1 && guest.stub.enters.length === 1, 60000, 'round1 enters');
   const e1 = host.stub.enters[0];

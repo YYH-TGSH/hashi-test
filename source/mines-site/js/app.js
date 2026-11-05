@@ -1508,7 +1508,7 @@ function MinesGame() {
     return (
       <div key="mp" className="min-h-screen w-full flex flex-col items-center p-4 relative">
         <div className="flex-1 flex items-center justify-center w-full">
-        <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
+        <div className="w-full max-w-md bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
           <div className="text-center text-4xl mb-1">🏆</div>
           <div className="font-black text-2xl text-slate-800 text-center">錦標賽・第 {tInfo.round || '?'} 局</div>
           <div className="font-semibold text-slate-400 text-sm text-center mt-1 mb-4">本局：踩地雷競速・{szName}・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
@@ -1523,11 +1523,11 @@ function MinesGame() {
             {!players.length && <p className="font-bold text-slate-400 text-center py-2">連線中…</p>}
           </div>
           {myEntryW && !myEntryW.pending && !myEntryW.spectator && (
-            <button onClick={toggleMyReady} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500')}>{myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+            <button onClick={toggleMyReady} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
           )}
           {M.isHost ? (
             <div>
-              <button disabled={!canStartW} onClick={startMatch} className="w-full py-3 bg-[#f97316] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
+              <button disabled={!canStartW} onClick={startMatch} className="w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
               {startNoteW && <p className="text-xs text-slate-500 font-semibold text-center mt-2">{startNoteW}</p>}
             </div>
           ) : (

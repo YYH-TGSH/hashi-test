@@ -3702,7 +3702,7 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex items-center justify-center w-full"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
+      className: "w-full max-w-md bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-center text-4xl mb-1"
     }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
@@ -3739,11 +3739,11 @@ function MinesGame() {
       className: "font-bold text-slate-400 text-center py-2"
     }, "\u9023\u7DDA\u4E2D\u2026")), myEntryW && !myEntryW.pending && !myEntryW.spectator && /*#__PURE__*/React.createElement("button", {
       onClick: toggleMyReady,
-      className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500')
+      className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')
     }, myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'), M.isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
       disabled: !canStartW,
       onClick: startMatch,
-      className: "w-full py-3 bg-[#f97316] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
+      className: "w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
     }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), startNoteW && /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-slate-500 font-semibold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {

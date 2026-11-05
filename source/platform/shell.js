@@ -159,7 +159,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.47.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.48.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -682,6 +682,9 @@
     var H = ensureHub();
     var game = Net.armed.game, c = H.cfg[game] || hubDefaults()[game] || hubDefaults().sudoku; // cfg 缺遊戲（舊版存檔/異常狀態）也不能讓房間頁掛掉
     var brawl = c.mode === 'brawl' || c.mode === 'race';
+    var tournSetup = Net.roomTab === 'tourn' && !Net.tourn; // 錦標賽設定階段：準備與開始比照其他競速模式（v1.48.0 統一；原本錦標賽沒有準備步驟、房主在設定面板直接開賽，跟其他模式不一樣）
+    var tournActive = Net.roomTab === 'tourn' && !!Net.tourn;
+    if (tournSetup) brawl = true; else if (tournActive) brawl = false;
     var racers = hubRacers();
     var allReady = racers.length > 0 && racers.every(function (p) { return !!H.ready[p.uid || p.pid]; });
     var waited = H.enteredAt ? (Date.now() - H.enteredAt) : 0;
@@ -700,7 +703,14 @@
         editRainbow: !!(editing && key === Net.myUid && storeGet('plat_rainbow') === '1') };
     });
     var start = null, waitingText = null;
-    if (Net.isHost) {
+    if (tournActive) { start = null; waitingText = null; }
+    else if (tournSetup && Net.isHost) {
+      var tNote = null;
+      if (racers.length < 2) tNote = '等待選手加入（至少 2 位）…';
+      else if (!allReady && waitLeft > 0) tNote = '等待全員準備（或 ' + Math.ceil(waitLeft / 1000) + ' 秒後開放開始）';
+      start = { label: '🏆 開賽（全員進第 1 局）', disabled: !(racers.length >= 2 && (allReady || waitLeft <= 0)), note: tNote };
+    }
+    else if (Net.isHost) {
       var note = null;
       if (racers.length < 2) note = '等待選手加入（至少 2 位）…';
       else if (brawl && !allReady && waitLeft > 0) note = '等待全員準備（或 ' + Math.ceil(waitLeft / 1000) + ' 秒後開放開始）';
@@ -943,7 +953,7 @@
       if (Net.isHost) { map[Net.myUid] = v; hubStateBroadcast(); hubRender(); }
       else { var m = { kind: key, uid: Net.myUid }; m[key] = v; platToHost(m); map[Net.myUid] = v; hubRender(); }
     }
-    else if (name === 'start') hubStart();
+    else if (name === 'start') { if (Net.roomTab === 'tourn' && !Net.tourn) tournCreate(); else hubStart(); }
     else if (name === 'leave') leaveRoom();
     else if (name === 'refresh') hubRender();
   }

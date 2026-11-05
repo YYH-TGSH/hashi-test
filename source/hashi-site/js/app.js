@@ -4353,7 +4353,7 @@
 
               {roomOpen && platHub && platTournLock ? (
                 <div className="absolute inset-0 z-[60] overflow-y-auto bg-slate-900/60 backdrop-blur-[2px] p-4 flex">
-                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto">
+                  <div className="bg-[#fffaf0] border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto">
                     <div className="text-center text-4xl mb-1">🏆</div>
                     <div className="font-black text-2xl text-[#1e293b] text-center">錦標賽・{(tournRoundInfo && tournRoundInfo.playoff) ? '加賽' : ('第 ' + ((tournRoundInfo && tournRoundInfo.round) || '?') + ' 局')}</div>
                     <div className="font-semibold text-slate-400 text-sm text-center mt-1 mb-4">本局：數橋大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
@@ -4367,11 +4367,11 @@
                       ))}
                     </div>
                     {tournMyEntry && !tournMyEntry.pending && (
-                      <button onClick={() => setMyReady(!(tournMyEntry && tournMyEntry.isReady))} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-emerald-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+                      <button onClick={() => setMyReady(!(tournMyEntry && tournMyEntry.isReady))} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
                     )}
                     {isHostRef.current ? (
                       <div>
-                        <button onClick={() => { if (mpModeRef.current === 'race') startRace(); else startCoop(); }} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
+                        <button onClick={() => { if (mpModeRef.current === 'race') startRace(); else startCoop(); }} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
                         <p className="text-xs text-slate-500 font-semibold text-center mt-2">{tournStartNote}</p>
                       </div>
                     ) : (
@@ -4381,7 +4381,7 @@
                 </div>
               ) : roomOpen && platHub ? (
                 <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4">
-                  <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full">
+                  <div className="bg-[#fffaf0] border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full">
                     <div className="text-5xl mb-3">⏳</div>
                     <div className="font-black text-2xl text-[#1e293b] animate-pulse">等房主開始對局…</div>
                     <div className="font-semibold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>

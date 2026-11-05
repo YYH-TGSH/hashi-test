@@ -72,7 +72,11 @@ async function main() {
   const roundsSel = H.document.querySelector('#t-rounds'); if (roundsSel) roundsSel.value = '3';
   const orderSel = H.document.querySelector('#t-order'); if (orderSel) orderSel.value = 'alt-h';
   console.log('t-rounds=', roundsSel && roundsSel.value, 't-order=', orderSel && orderSel.value);
-  click(H, '#t-start');
+  // v1.48.0：開賽改走房間卡準備閘門——兩邊按「準備好了」，房主按名單卡上的開賽鈕
+  await waitFor(() => (H.document.querySelector('#lob-step-room [data-pr="ready"]') && G.document.querySelector('#lob-step-room [data-pr="ready"]')) ? true : null, 30000, 'both ready btns');
+  for (const p of [H, G]) clickEl(p, p.document.querySelector('#lob-step-room [data-pr="ready"]'));
+  const tCardStart = await waitFor(() => { const b = H.document.querySelector('#lob-step-room [data-pr="start"]'); return (b && !b.disabled && b.textContent.includes('開賽')) ? b : null; }, 30000, 'tourn card start');
+  clickEl(H, tCardStart);
   const seq = ['hashi', 'mines', 'sudoku'];
   for (let r = 0; r < 3; r++) {
     const g = seq[r];

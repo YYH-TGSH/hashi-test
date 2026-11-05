@@ -3213,11 +3213,11 @@ function SudokuGame() {
                             ))}
                         </div>
                         {tournMyEntry && !tournMyEntry.pending && (
-                            <button onClick={handleTournReady} className={"w-full py-3 mb-2 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-800')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+                            <button onClick={handleTournReady} className={"w-full py-3 mb-2 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
                         )}
                         {isHost ? (
                             <div>
-                                <button onClick={handleForceStart} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
+                                <button onClick={handleForceStart} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
                                 <p className="text-xs text-slate-500 font-semibold text-center mt-2">{tournStartNote}</p>
                             </div>
                         ) : (

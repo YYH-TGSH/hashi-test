@@ -43,6 +43,7 @@ const SUITES = [
   ['test-settings-modal.js', {}],
   ['test-tutdemo.js', {}],
   ['test-roomtoast.js', {}],
+  ['test-tournready.js', {}],
   ['test-mines-mp.js', {}],
   ['test-mines-tourn.js', {}],
   ['test-mines-items.js', {}],
