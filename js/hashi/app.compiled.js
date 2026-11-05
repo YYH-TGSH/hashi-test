@@ -334,89 +334,95 @@ function HashiGame() {
       showSaveModal = _useState34[0],
       setShowSaveModal = _useState34[1];
 
-  var _useState35 = useState(""),
+  var _useState35 = useState(false),
       _useState36 = _slicedToArray(_useState35, 2),
-      saveCode = _useState36[0],
-      setSaveCode = _useState36[1];
+      showSettingsModal = _useState36[0],
+      setShowSettingsModal = _useState36[1]; // 設定難度 modal（v1.43 Q2：設定入口三款統一 modal 式，廢標頭 select）
 
-  var _useState37 = useState(false),
+
+  var _useState37 = useState(""),
       _useState38 = _slicedToArray(_useState37, 2),
-      showCustomModal = _useState38[0],
-      setShowCustomModal = _useState38[1];
+      saveCode = _useState38[0],
+      setSaveCode = _useState38[1];
 
-  var _useState39 = useState(30),
+  var _useState39 = useState(false),
       _useState40 = _slicedToArray(_useState39, 2),
-      tempWidth = _useState40[0],
-      setTempWidth = _useState40[1];
+      showCustomModal = _useState40[0],
+      setShowCustomModal = _useState40[1];
 
   var _useState41 = useState(30),
       _useState42 = _slicedToArray(_useState41, 2),
-      tempHeight = _useState42[0],
-      setTempHeight = _useState42[1];
+      tempWidth = _useState42[0],
+      setTempWidth = _useState42[1];
 
-  var _useState43 = useState(0),
+  var _useState43 = useState(30),
       _useState44 = _slicedToArray(_useState43, 2),
-      interactionMode = _useState44[0],
-      setInteractionMode = _useState44[1];
+      tempHeight = _useState44[0],
+      setTempHeight = _useState44[1];
 
-  var _useState45 = useState('pen'),
+  var _useState45 = useState(0),
       _useState46 = _slicedToArray(_useState45, 2),
-      drawSubMode = _useState46[0],
-      setDrawSubMode = _useState46[1];
+      interactionMode = _useState46[0],
+      setInteractionMode = _useState46[1];
+
+  var _useState47 = useState('pen'),
+      _useState48 = _slicedToArray(_useState47, 2),
+      drawSubMode = _useState48[0],
+      setDrawSubMode = _useState48[1];
 
   var modeIcons = ['🖋️', '✏️', '🖌️'];
   var modeTitles = ['實線模式', '草稿模式', '繪圖作記號'];
 
-  var _useState47 = useState(0),
-      _useState48 = _slicedToArray(_useState47, 2),
-      zoomModeIdx = _useState48[0],
-      setZoomModeIdx = _useState48[1];
-
-  var _useState49 = useState(false),
+  var _useState49 = useState(0),
       _useState50 = _slicedToArray(_useState49, 2),
-      isClosingModal = _useState50[0],
-      setIsClosingModal = _useState50[1];
+      zoomModeIdx = _useState50[0],
+      setZoomModeIdx = _useState50[1];
 
   var _useState51 = useState(false),
       _useState52 = _slicedToArray(_useState51, 2),
-      isGenerating = _useState52[0],
-      setIsGenerating = _useState52[1];
+      isClosingModal = _useState52[0],
+      setIsClosingModal = _useState52[1];
 
-  var _useState53 = useState(0),
+  var _useState53 = useState(false),
       _useState54 = _slicedToArray(_useState53, 2),
-      boardFadeKey = _useState54[0],
-      setBoardFadeKey = _useState54[1]; // 新題目時棋盤淡入
+      isGenerating = _useState54[0],
+      setIsGenerating = _useState54[1];
 
-  var _useState55 = useState(null),
+  var _useState55 = useState(0),
       _useState56 = _slicedToArray(_useState55, 2),
-      hoveredBridgeId = _useState56[0],
-      setHoveredBridgeId = _useState56[1];
+      boardFadeKey = _useState56[0],
+      setBoardFadeKey = _useState56[1]; // 新題目時棋盤淡入
 
   var _useState57 = useState(null),
       _useState58 = _slicedToArray(_useState57, 2),
-      hoveredIslandId = _useState58[0],
-      setHoveredIslandId = _useState58[1];
+      hoveredBridgeId = _useState58[0],
+      setHoveredBridgeId = _useState58[1];
 
   var _useState59 = useState(null),
       _useState60 = _slicedToArray(_useState59, 2),
-      colorPickerTarget = _useState60[0],
-      setColorPickerTarget = _useState60[1];
+      hoveredIslandId = _useState60[0],
+      setHoveredIslandId = _useState60[1];
 
-  var _useState61 = useState([]),
+  var _useState61 = useState(null),
       _useState62 = _slicedToArray(_useState61, 2),
-      colorSeq = _useState62[0],
-      setColorSeq = _useState62[1];
+      colorPickerTarget = _useState62[0],
+      setColorPickerTarget = _useState62[1];
 
-  var _useState63 = useState(null),
+  var _useState63 = useState([]),
       _useState64 = _slicedToArray(_useState63, 2),
-      editTarget = _useState64[0],
-      setEditTarget = _useState64[1]; // 個人設定 modal（改名/改色，比照數獨進度條）：點自己（或房主點任何人）的選手晶片開啟
+      colorSeq = _useState64[0],
+      setColorSeq = _useState64[1];
 
-
-  var _useState65 = useState(''),
+  var _useState65 = useState(null),
       _useState66 = _slicedToArray(_useState65, 2),
-      editName = _useState66[0],
-      setEditName = _useState66[1];
+      editTarget = _useState66[0],
+      setEditTarget = _useState66[1]; // 個人設定 modal（改名/改色，比照數獨進度條）：點自己（或房主點任何人）的選手晶片開啟
+
+
+  var _useState67 = useState(''),
+      _useState68 = _slicedToArray(_useState67, 2),
+      editName = _useState68[0],
+      setEditName = _useState68[1];
 
   // 💾 記住暱稱與房號（同一裝置下次免重打；房主代碼固定不變）
 
@@ -463,52 +469,52 @@ function HashiGame() {
     } catch (e) {}
   };
 
-  var _useState67 = useState(""),
-      _useState68 = _slicedToArray(_useState67, 2),
-      roomId = _useState68[0],
-      setRoomId = _useState68[1];
-
-  var _useState69 = useState(false),
+  var _useState69 = useState(""),
       _useState70 = _slicedToArray(_useState69, 2),
-      isHost = _useState70[0],
-      setIsHost = _useState70[1];
+      roomId = _useState70[0],
+      setRoomId = _useState70[1];
 
-  var _useState71 = useState(function () {
+  var _useState71 = useState(false),
+      _useState72 = _slicedToArray(_useState71, 2),
+      isHost = _useState72[0],
+      setIsHost = _useState72[1];
+
+  var _useState73 = useState(function () {
     return loadLastRoom();
   }),
-      _useState72 = _slicedToArray(_useState71, 2),
-      tempRoomId = _useState72[0],
-      setTempRoomId = _useState72[1];
-
-  var _useState73 = useState(""),
       _useState74 = _slicedToArray(_useState73, 2),
-      tempPlayerName = _useState74[0],
-      setTempPlayerName = _useState74[1];
+      tempRoomId = _useState74[0],
+      setTempRoomId = _useState74[1];
 
-  var _useState75 = useState(function () {
+  var _useState75 = useState(""),
+      _useState76 = _slicedToArray(_useState75, 2),
+      tempPlayerName = _useState76[0],
+      setTempPlayerName = _useState76[1];
+
+  var _useState77 = useState(function () {
     return ANIMAL_NAMES[Math.random() * ANIMAL_NAMES.length | 0];
   }),
-      _useState76 = _slicedToArray(_useState75, 1),
-      namePlaceholderAnimal = _useState76[0];
+      _useState78 = _slicedToArray(_useState77, 1),
+      namePlaceholderAnimal = _useState78[0];
 
   var nameInputRef = useRef(null);
 
-  var _useState77 = useState('choose'),
-      _useState78 = _slicedToArray(_useState77, 2),
-      joinStep = _useState78[0],
-      setJoinStep = _useState78[1]; // 'choose' | 'hostSetup' | 'guestSetup' | 'connecting' | 'nick'
-
-
-  var _useState79 = useState([]),
+  var _useState79 = useState('choose'),
       _useState80 = _slicedToArray(_useState79, 2),
-      takenNames = _useState80[0],
-      setTakenNames = _useState80[1]; // 來賓：房主回傳的已用名單快照
+      joinStep = _useState80[0],
+      setJoinStep = _useState80[1]; // 'choose' | 'hostSetup' | 'guestSetup' | 'connecting' | 'nick'
 
 
-  var _useState81 = useState(""),
+  var _useState81 = useState([]),
       _useState82 = _slicedToArray(_useState81, 2),
-      nickError = _useState82[0],
-      setNickError = _useState82[1]; // nick 步輸入框下方 inline 錯誤
+      takenNames = _useState82[0],
+      setTakenNames = _useState82[1]; // 來賓：房主回傳的已用名單快照
+
+
+  var _useState83 = useState(""),
+      _useState84 = _slicedToArray(_useState83, 2),
+      nickError = _useState84[0],
+      setNickError = _useState84[1]; // nick 步輸入框下方 inline 錯誤
 
 
   var joinRoleRef = useRef(null); // 'host' | 'guest'
@@ -520,45 +526,45 @@ function HashiGame() {
   var hostRoomRetryRef = useRef(false); // 房主固定代碼衝突時只自動重試一次
   // 🎰 暱稱拉霸機
 
-  var _useState83 = useState(false),
-      _useState84 = _slicedToArray(_useState83, 2),
-      showSlotMachine = _useState84[0],
-      setShowSlotMachine = _useState84[1];
-
-  var _useState85 = useState('host'),
+  var _useState85 = useState(false),
       _useState86 = _slicedToArray(_useState85, 2),
-      slotMode = _useState86[0],
-      setSlotMode = _useState86[1];
+      showSlotMachine = _useState86[0],
+      setShowSlotMachine = _useState86[1];
 
-  var _useState87 = useState(ANIMAL_NAMES),
+  var _useState87 = useState('host'),
       _useState88 = _slicedToArray(_useState87, 2),
-      slotPool = _useState88[0],
-      setSlotPool = _useState88[1];
+      slotMode = _useState88[0],
+      setSlotMode = _useState88[1];
 
-  var _useState89 = useState(""),
+  var _useState89 = useState(ANIMAL_NAMES),
       _useState90 = _slicedToArray(_useState89, 2),
-      slotName = _useState90[0],
-      setSlotName = _useState90[1];
+      slotPool = _useState90[0],
+      setSlotPool = _useState90[1];
 
-  var _useState91 = useState(false),
+  var _useState91 = useState(""),
       _useState92 = _slicedToArray(_useState91, 2),
-      slotSpinning = _useState92[0],
-      setSlotSpinning = _useState92[1];
+      slotName = _useState92[0],
+      setSlotName = _useState92[1];
 
-  var _useState93 = useState(""),
+  var _useState93 = useState(false),
       _useState94 = _slicedToArray(_useState93, 2),
-      slotFinalName = _useState94[0],
-      setSlotFinalName = _useState94[1];
+      slotSpinning = _useState94[0],
+      setSlotSpinning = _useState94[1];
 
-  var _useState95 = useState(false),
+  var _useState95 = useState(""),
       _useState96 = _slicedToArray(_useState95, 2),
-      slotWaiting = _useState96[0],
-      setSlotWaiting = _useState96[1];
+      slotFinalName = _useState96[0],
+      setSlotFinalName = _useState96[1];
 
-  var _useState97 = useState(0),
+  var _useState97 = useState(false),
       _useState98 = _slicedToArray(_useState97, 2),
-      slotRound = _useState98[0],
-      setSlotRound = _useState98[1];
+      slotWaiting = _useState98[0],
+      setSlotWaiting = _useState98[1];
+
+  var _useState99 = useState(0),
+      _useState100 = _slicedToArray(_useState99, 2),
+      slotRound = _useState100[0],
+      setSlotRound = _useState100[1];
 
   var slotPoolRef = useRef(ANIMAL_NAMES);
   var slotFinalNameRef = useRef("");
@@ -568,62 +574,62 @@ function HashiGame() {
   var guestNamesResolvedRef = useRef(false);
   var guestNamesTimeoutRef = useRef(null);
 
-  var _useState99 = useState([]),
-      _useState100 = _slicedToArray(_useState99, 2),
-      playersList = _useState100[0],
-      setPlayersList = _useState100[1];
-
-  var _useState101 = useState(false),
+  var _useState101 = useState([]),
       _useState102 = _slicedToArray(_useState101, 2),
-      isConnecting = _useState102[0],
-      setIsConnecting = _useState102[1];
+      playersList = _useState102[0],
+      setPlayersList = _useState102[1];
 
-  var _useState103 = useState(true),
+  var _useState103 = useState(false),
       _useState104 = _slicedToArray(_useState103, 2),
-      showOtherCursors = _useState104[0],
-      setShowOtherCursors = _useState104[1];
+      isConnecting = _useState104[0],
+      setIsConnecting = _useState104[1];
 
-  var _useState105 = useState({}),
+  var _useState105 = useState(true),
       _useState106 = _slicedToArray(_useState105, 2),
-      cursors = _useState106[0],
-      setCursors = _useState106[1];
+      showOtherCursors = _useState106[0],
+      setShowOtherCursors = _useState106[1];
 
-  var _useState107 = useState([]),
+  var _useState107 = useState({}),
       _useState108 = _slicedToArray(_useState107, 2),
-      ripples = _useState108[0],
-      setRipples = _useState108[1];
+      cursors = _useState108[0],
+      setCursors = _useState108[1];
+
+  var _useState109 = useState([]),
+      _useState110 = _slicedToArray(_useState109, 2),
+      ripples = _useState110[0],
+      setRipples = _useState110[1];
 
   // 💬 聊天室
 
 
-  var _useState109 = useState([]),
-      _useState110 = _slicedToArray(_useState109, 2),
-      chatMsgs = _useState110[0],
-      setChatMsgs = _useState110[1]; // {id, uid, name, color, text, ts, mine}
-
-
-  var _useState111 = useState(false),
+  var _useState111 = useState([]),
       _useState112 = _slicedToArray(_useState111, 2),
-      chatOpen = _useState112[0],
-      setChatOpen = _useState112[1];
+      chatMsgs = _useState112[0],
+      setChatMsgs = _useState112[1]; // {id, uid, name, color, text, ts, mine}
 
-  var _useState113 = useState(''),
+
+  var _useState113 = useState(false),
       _useState114 = _slicedToArray(_useState113, 2),
-      chatInput = _useState114[0],
-      setChatInput = _useState114[1];
+      chatOpen = _useState114[0],
+      setChatOpen = _useState114[1];
 
-  var _useState115 = useState(0),
+  var _useState115 = useState(''),
       _useState116 = _slicedToArray(_useState115, 2),
-      unreadChat = _useState116[0],
-      setUnreadChat = _useState116[1];
+      chatInput = _useState116[0],
+      setChatInput = _useState116[1];
+
+  var _useState117 = useState(0),
+      _useState118 = _slicedToArray(_useState117, 2),
+      unreadChat = _useState118[0],
+      setUnreadChat = _useState118[1];
 
   var chatOpenRef = useRef(false);
   var chatListRef = useRef(null);
 
-  var _useState117 = useState(false),
-      _useState118 = _slicedToArray(_useState117, 2),
-      chatMin = _useState118[0],
-      setChatMin = _useState118[1]; // 💬 聊天室收合
+  var _useState119 = useState(false),
+      _useState120 = _slicedToArray(_useState119, 2),
+      chatMin = _useState120[0],
+      setChatMin = _useState120[1]; // 💬 聊天室收合
 
   // 💬 聊天室邏輯
 
@@ -664,25 +670,25 @@ function HashiGame() {
 
   // 📹 圓形視訊（PeerJS MediaConnection，走 WebRTC 不經伺服器）
 
-  var _useState119 = useState(false),
-      _useState120 = _slicedToArray(_useState119, 2),
-      videoOn = _useState120[0],
-      setVideoOn = _useState120[1];
-
   var _useState121 = useState(false),
       _useState122 = _slicedToArray(_useState121, 2),
-      micMuted = _useState122[0],
-      setMicMuted = _useState122[1];
+      videoOn = _useState122[0],
+      setVideoOn = _useState122[1];
 
-  var _useState123 = useState(null),
+  var _useState123 = useState(false),
       _useState124 = _slicedToArray(_useState123, 2),
-      localStream = _useState124[0],
-      setLocalStream = _useState124[1];
+      micMuted = _useState124[0],
+      setMicMuted = _useState124[1];
 
-  var _useState125 = useState({}),
+  var _useState125 = useState(null),
       _useState126 = _slicedToArray(_useState125, 2),
-      remoteVideos = _useState126[0],
-      setRemoteVideos = _useState126[1]; // uid -> MediaStream
+      localStream = _useState126[0],
+      setLocalStream = _useState126[1];
+
+  var _useState127 = useState({}),
+      _useState128 = _slicedToArray(_useState127, 2),
+      remoteVideos = _useState128[0],
+      setRemoteVideos = _useState128[1]; // uid -> MediaStream
 
 
   var localStreamRef = useRef(null);
@@ -693,21 +699,21 @@ function HashiGame() {
   }, [videoOn]);
   // 🔊 喇叭預設關閉；有人開麥發言時提示是否開音效
 
-  var _useState127 = useState(false),
-      _useState128 = _slicedToArray(_useState127, 2),
-      speakerOn = _useState128[0],
-      setSpeakerOn = _useState128[1];
-
-  var _useState129 = useState({}),
+  var _useState129 = useState(false),
       _useState130 = _slicedToArray(_useState129, 2),
-      remoteMic = _useState130[0],
-      setRemoteMic = _useState130[1]; // uid -> muted(bool)
+      speakerOn = _useState130[0],
+      setSpeakerOn = _useState130[1];
 
-
-  var _useState131 = useState(null),
+  var _useState131 = useState({}),
       _useState132 = _slicedToArray(_useState131, 2),
-      speakPrompt = _useState132[0],
-      setSpeakPrompt = _useState132[1]; // {uid, name}
+      remoteMic = _useState132[0],
+      setRemoteMic = _useState132[1]; // uid -> muted(bool)
+
+
+  var _useState133 = useState(null),
+      _useState134 = _slicedToArray(_useState133, 2),
+      speakPrompt = _useState134[0],
+      setSpeakPrompt = _useState134[1]; // {uid, name}
 
 
   var speakerOnRef = useRef(false);
@@ -907,56 +913,56 @@ function HashiGame() {
 
   // 首次教學導覽
 
-  var _useState133 = useState(false),
-      _useState134 = _slicedToArray(_useState133, 2),
-      showTutorial = _useState134[0],
-      setShowTutorial = _useState134[1];
-
-  var _useState135 = useState(0),
+  var _useState135 = useState(false),
       _useState136 = _slicedToArray(_useState135, 2),
-      tutorialStep = _useState136[0],
-      setTutorialStep = _useState136[1];
+      showTutorial = _useState136[0],
+      setShowTutorial = _useState136[1];
+
+  var _useState137 = useState(0),
+      _useState138 = _slicedToArray(_useState137, 2),
+      tutorialStep = _useState138[0],
+      setTutorialStep = _useState138[1];
 
   // 靜音偏好（與全域音效引擎同步）
 
 
-  var _useState137 = useState(function () {
+  var _useState139 = useState(function () {
     try {
       return localStorage.getItem('hashi_muted') === '1';
     } catch (e) {
       return false;
     }
   }),
-      _useState138 = _slicedToArray(_useState137, 2),
-      muted = _useState138[0],
-      setMuted = _useState138[1];
+      _useState140 = _slicedToArray(_useState139, 2),
+      muted = _useState140[0],
+      setMuted = _useState140[1];
 
   // 🏁 競速模式
 
 
-  var _useState139 = useState('coop'),
-      _useState140 = _slicedToArray(_useState139, 2),
-      mpMode = _useState140[0],
-      setMpMode = _useState140[1]; // 'coop' | 'race'
-
-
-  var _useState141 = useState('idle'),
+  var _useState141 = useState('coop'),
       _useState142 = _slicedToArray(_useState141, 2),
-      raceState = _useState142[0],
-      setRaceState = _useState142[1]; // idle | lobby | countdown | racing | finished
+      mpMode = _useState142[0],
+      setMpMode = _useState142[1]; // 'coop' | 'race'
 
 
-  var _useState143 = useState({}),
+  var _useState143 = useState('idle'),
       _useState144 = _slicedToArray(_useState143, 2),
-      raceProgress = _useState144[0],
-      setRaceProgress = _useState144[1];
-  // ⚔️ 大亂鬥擴充：盤面快照（上帝視角）+ 道具 + 特效
+      raceState = _useState144[0],
+      setRaceState = _useState144[1]; // idle | lobby | countdown | racing | finished
 
 
   var _useState145 = useState({}),
       _useState146 = _slicedToArray(_useState145, 2),
-      brawlBoards = _useState146[0],
-      setBrawlBoards = _useState146[1];
+      raceProgress = _useState146[0],
+      setRaceProgress = _useState146[1];
+  // ⚔️ 大亂鬥擴充：盤面快照（上帝視角）+ 道具 + 特效
+
+
+  var _useState147 = useState({}),
+      _useState148 = _slicedToArray(_useState147, 2),
+      brawlBoards = _useState148[0],
+      setBrawlBoards = _useState148[1];
 
   var brawlBoardsRef = useRef({});
   useEffect(function () {
@@ -964,149 +970,149 @@ function HashiGame() {
   }, [brawlBoards]);
   // 🎮 統一多人框架：等待室 + 大亂鬥設定 + 本局選手名單
 
-  var _useState147 = useState(false),
-      _useState148 = _slicedToArray(_useState147, 2),
-      roomOpen = _useState148[0],
-      setRoomOpen = _useState148[1];
-
-  var _useState149 = useState({ sizeId: 2, itemsEnabled: true, godNumbers: true }),
+  var _useState149 = useState(false),
       _useState150 = _slicedToArray(_useState149, 2),
-      brawlSettings = _useState150[0],
-      setBrawlSettings = _useState150[1];
+      roomOpen = _useState150[0],
+      setRoomOpen = _useState150[1];
 
-  var _useState151 = useState([]),
+  var _useState151 = useState({ sizeId: 2, itemsEnabled: true, godNumbers: true }),
       _useState152 = _slicedToArray(_useState151, 2),
-      raceRacers = _useState152[0],
-      setRaceRacers = _useState152[1];
+      brawlSettings = _useState152[0],
+      setBrawlSettings = _useState152[1];
 
-  var _useState153 = useState(null),
+  var _useState153 = useState([]),
       _useState154 = _slicedToArray(_useState153, 2),
-      godViewUid = _useState154[0],
-      setGodViewUid = _useState154[1];
+      raceRacers = _useState154[0],
+      setRaceRacers = _useState154[1];
 
-  var _useState155 = useState([]),
+  var _useState155 = useState(null),
       _useState156 = _slicedToArray(_useState155, 2),
-      myItems = _useState156[0],
-      setMyItems = _useState156[1];
+      godViewUid = _useState156[0],
+      setGodViewUid = _useState156[1];
 
-  var _useState157 = useState({}),
+  var _useState157 = useState([]),
       _useState158 = _slicedToArray(_useState157, 2),
-      fxFog = _useState158[0],
-      setFxFog = _useState158[1];
+      myItems = _useState158[0],
+      setMyItems = _useState158[1];
 
-  var _useState159 = useState([]),
+  var _useState159 = useState({}),
       _useState160 = _slicedToArray(_useState159, 2),
-      fxFogBoxes = _useState160[0],
-      setFxFogBoxes = _useState160[1]; // 雲霧：[{id,minX,minY,maxX,maxY,until,cx,cy,R,puffs}]（命中島嶼外接矩形＋命中時算好的雲團幾何）
-
+      fxFog = _useState160[0],
+      setFxFog = _useState160[1];
 
   var _useState161 = useState([]),
       _useState162 = _slicedToArray(_useState161, 2),
-      fxMarks = _useState162[0],
-      setFxMarks = _useState162[1]; // 短暫特效標記：[{id,gx,gy,icon,until}]（💥炸橋／✨禮物補橋，格坐標中心）
+      fxFogBoxes = _useState162[0],
+      setFxFogBoxes = _useState162[1]; // 雲霧：[{id,minX,minY,maxX,maxY,until,cx,cy,R,puffs}]（命中島嶼外接矩形＋命中時算好的雲團幾何）
 
 
-  var _useState163 = useState(Date.now()),
+  var _useState163 = useState([]),
       _useState164 = _slicedToArray(_useState163, 2),
-      fxNow = _useState164[0],
-      setFxNow = _useState164[1];
+      fxMarks = _useState164[0],
+      setFxMarks = _useState164[1]; // 短暫特效標記：[{id,gx,gy,icon,until}]（💥炸橋／✨禮物補橋，格坐標中心）
 
-  var _useState165 = useState(null),
+
+  var _useState165 = useState(Date.now()),
       _useState166 = _slicedToArray(_useState165, 2),
-      raceResult = _useState166[0],
-      setRaceResult = _useState166[1];
+      fxNow = _useState166[0],
+      setFxNow = _useState166[1];
 
-  var _useState167 = useState(false),
+  var _useState167 = useState(null),
       _useState168 = _slicedToArray(_useState167, 2),
-      raceWaiting = _useState168[0],
-      setRaceWaiting = _useState168[1];
-
-  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
+      raceResult = _useState168[0],
+      setRaceResult = _useState168[1];
 
   var _useState169 = useState(false),
       _useState170 = _slicedToArray(_useState169, 2),
-      resultsDismissedUi = _useState170[0],
-      setResultsDismissedUi = _useState170[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+      raceWaiting = _useState170[0],
+      setRaceWaiting = _useState170[1];
 
+  var resultsDismissRef = useRef(null); // PlatResults 關閉標記（記 raceState：同 state 內關了不再彈，state 變了——如結算——再彈）
 
   var _useState171 = useState(false),
       _useState172 = _slicedToArray(_useState171, 2),
-      leaveArm = _useState172[0],
-      setLeaveArm = _useState172[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
+      resultsDismissedUi = _useState172[0],
+      setResultsDismissedUi = _useState172[1]; // 結果卡被「看盤面」關掉後，畫面留一顆🏆結果鈕可隨時叫回
+
+
+  var _useState173 = useState(false),
+      _useState174 = _slicedToArray(_useState173, 2),
+      leaveArm = _useState174[0],
+      setLeaveArm = _useState174[1]; // 結果卡「離開」兩段確認（防誤按就拆連線退場、結果再也叫不回）
 
 
   var leaveArmTimerRef = useRef(null);
 
-  var _useState173 = useState(false),
-      _useState174 = _slicedToArray(_useState173, 2),
-      showExitMenu = _useState174[0],
-      setShowExitMenu = _useState174[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
-
-
-  var _useState175 = useState(null),
+  var _useState175 = useState(false),
       _useState176 = _slicedToArray(_useState175, 2),
-      raceCountdown = _useState176[0],
-      setRaceCountdown = _useState176[1];
+      showExitMenu = _useState176[0],
+      setShowExitMenu = _useState176[1]; // 標頭「退出」選單（錦標賽房主進行中按退出才開，內含「結束本局」防誤觸）
+
+
+  var _useState177 = useState(null),
+      _useState178 = _slicedToArray(_useState177, 2),
+      raceCountdown = _useState178[0],
+      setRaceCountdown = _useState178[1];
 
   // ⭐ 星級評分
 
 
-  var _useState177 = useState(0),
-      _useState178 = _slicedToArray(_useState177, 2),
-      stars = _useState178[0],
-      setStars = _useState178[1];
-
-  var _useState179 = useState(false),
+  var _useState179 = useState(0),
       _useState180 = _slicedToArray(_useState179, 2),
-      isNewBest = _useState180[0],
-      setIsNewBest = _useState180[1];
+      stars = _useState180[0],
+      setStars = _useState180[1];
+
+  var _useState181 = useState(false),
+      _useState182 = _slicedToArray(_useState181, 2),
+      isNewBest = _useState182[0],
+      setIsNewBest = _useState182[1];
 
   // ✨ 爽感：粒子與撒花
 
 
-  var _useState181 = useState([]),
-      _useState182 = _slicedToArray(_useState181, 2),
-      bursts = _useState182[0],
-      setBursts = _useState182[1];
-
   var _useState183 = useState([]),
       _useState184 = _slicedToArray(_useState183, 2),
-      confetti = _useState184[0],
-      setConfetti = _useState184[1];
+      bursts = _useState184[0],
+      setBursts = _useState184[1];
+
+  var _useState185 = useState([]),
+      _useState186 = _slicedToArray(_useState185, 2),
+      confetti = _useState186[0],
+      setConfetti = _useState186[1];
 
   // 每日一題
 
 
-  var _useState185 = useState(false),
-      _useState186 = _slicedToArray(_useState185, 2),
-      isDailyMode = _useState186[0],
-      setIsDailyMode = _useState186[1];
-
-  var _useState187 = useState(""),
+  var _useState187 = useState(false),
       _useState188 = _slicedToArray(_useState187, 2),
-      dailyDateStr = _useState188[0],
-      setDailyDateStr = _useState188[1];
+      isDailyMode = _useState188[0],
+      setIsDailyMode = _useState188[1];
 
-  var _useState189 = useState(0),
+  var _useState189 = useState(""),
       _useState190 = _slicedToArray(_useState189, 2),
-      dailyStreak = _useState190[0],
-      setDailyStreak = _useState190[1];
+      dailyDateStr = _useState190[0],
+      setDailyDateStr = _useState190[1];
 
-  var _useState191 = useState(null),
+  var _useState191 = useState(0),
       _useState192 = _slicedToArray(_useState191, 2),
-      dailyDone = _useState192[0],
-      setDailyDone = _useState192[1];
+      dailyStreak = _useState192[0],
+      setDailyStreak = _useState192[1];
+
+  var _useState193 = useState(null),
+      _useState194 = _slicedToArray(_useState193, 2),
+      dailyDone = _useState194[0],
+      setDailyDone = _useState194[1];
 
   var isDailyModeRef = useRef(false);
   var dailyDateStrRef = useRef("");
   // 主選單選擇的每日題目日期（預設今天，可往前選以前的題目）
 
-  var _useState193 = useState(function () {
+  var _useState195 = useState(function () {
     return HASHI_PUZZLE.getDailyDateStr();
   }),
-      _useState194 = _slicedToArray(_useState193, 2),
-      dailyMenuDate = _useState194[0],
-      setDailyMenuDate = _useState194[1];
+      _useState196 = _slicedToArray(_useState195, 2),
+      dailyMenuDate = _useState196[0],
+      setDailyMenuDate = _useState196[1];
 
   var dailyStatus = useMemo(function () {
     if (screen !== 'home') return null;
@@ -1139,22 +1145,22 @@ function HashiGame() {
   var peerRef = useRef(null);
   var PLAT_MODE = typeof window !== 'undefined' && !!window.__PLAT_PLATFORM;
 
-  var _useState195 = useState(false),
-      _useState196 = _slicedToArray(_useState195, 2),
-      zoomOpen = _useState196[0],
-      setZoomOpen = _useState196[1];
-
   var _useState197 = useState(false),
       _useState198 = _slicedToArray(_useState197, 2),
-      drawSubOpen = _useState198[0],
-      setDrawSubOpen = _useState198[1];
+      zoomOpen = _useState198[0],
+      setZoomOpen = _useState198[1];
+
+  var _useState199 = useState(false),
+      _useState200 = _slicedToArray(_useState199, 2),
+      drawSubOpen = _useState200[0],
+      setDrawSubOpen = _useState200[1];
   // 平台 dock 按鈕（💬/🎥/🎤/🔈）：平台模式＋連線中時畫進自己的底部列，與遊戲按鈕同排同款
 
 
-  var _useState199 = useState(0),
-      _useState200 = _slicedToArray(_useState199, 2),
-      dockTick = _useState200[0],
-      setDockTick = _useState200[1];
+  var _useState201 = useState(0),
+      _useState202 = _slicedToArray(_useState201, 2),
+      dockTick = _useState202[0],
+      setDockTick = _useState202[1];
 
   useEffect(function () {
     if (window.PlatDock) return window.PlatDock.subscribe(function () {
@@ -3580,31 +3586,31 @@ function HashiGame() {
     });
   }, [playersList]);
 
-  var _useState201 = useState(false),
-      _useState202 = _slicedToArray(_useState201, 2),
-      platTournLock = _useState202[0],
-      setPlatTournLock = _useState202[1];
-
   var _useState203 = useState(false),
       _useState204 = _slicedToArray(_useState203, 2),
-      platHub = _useState204[0],
-      setPlatHub = _useState204[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+      platTournLock = _useState204[0],
+      setPlatTournLock = _useState204[1];
+
+  var _useState205 = useState(false),
+      _useState206 = _slicedToArray(_useState205, 2),
+      platHub = _useState206[0],
+      setPlatHub = _useState206[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
 
 
   var platHubRef = useRef(false);
   var hubStartTimerRef = useRef(null);
 
-  var _useState205 = useState(null),
-      _useState206 = _slicedToArray(_useState205, 2),
-      tournRoundInfo = _useState206[0],
-      setTournRoundInfo = _useState206[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState207 = useState(null),
+      _useState208 = _slicedToArray(_useState207, 2),
+      tournRoundInfo = _useState208[0],
+      setTournRoundInfo = _useState208[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
 
 
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
 
-  var _useState207 = useState(0),
-      _useState208 = _slicedToArray(_useState207, 2),
-      setTournTick = _useState208[1];
+  var _useState209 = useState(0),
+      _useState210 = _slicedToArray(_useState209, 2),
+      setTournTick = _useState210[1];
 
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
@@ -5708,20 +5714,14 @@ function HashiGame() {
           'div',
           { className: 'flex flex-wrap gap-1.5 items-center justify-between w-full' },
           React.createElement(
-            'select',
-            { disabled: isDailyMode || inRace || isMultiplayer && !isHostRef.current, value: currentLevelId, onChange: function onChange(e) {
-                var val = e.target.value;
-                handleLevelChange(val === 'custom' ? 'custom' : Number(val));
-              }, className: 'px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed' },
-            LEVELS.map(function (level) {
-              var isCustomActive = level.id === 'custom' && currentLevelId === 'custom' && randomLevelData;
-              var displayName = isCustomActive ? '\u2699\uFE0F \u81EA\u8A02 (' + randomLevelData.width + 'x' + randomLevelData.height + ')' : level.name;
-              return React.createElement(
-                'option',
-                { key: level.id, value: level.id },
-                displayName
-              );
-            })
+            'button',
+            { disabled: isDailyMode || inRace || isMultiplayer && !isHostRef.current, onClick: function onClick() {
+                return setShowSettingsModal(true);
+              }, title: '\u8A2D\u5B9A\u96E3\u5EA6', className: 'px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed' },
+            currentLevelId === 'custom' && randomLevelData ? '\u2699\uFE0F \u81EA\u8A02 (' + randomLevelData.width + 'x' + randomLevelData.height + ')' : (LEVELS.find(function (l) {
+              return String(l.id) === String(currentLevelId);
+            }) || {}).name || '',
+            ' \u25BE'
           ),
           React.createElement(
             'div',
@@ -7143,6 +7143,53 @@ function HashiGame() {
             { onClick: handleLoadCode, className: 'flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
             '\u8F09\u5165\u4EE3\u78BC'
           )
+        )
+      )
+    ),
+    showSettingsModal && React.createElement(
+      'div',
+      { className: 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4', onClick: function onClick() {
+          return setShowSettingsModal(false);
+        } },
+      React.createElement(
+        'div',
+        { className: 'bg-[#f6fdf6] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUp', onClick: function onClick(e) {
+            return e.stopPropagation();
+          } },
+        React.createElement(
+          'h2',
+          { className: 'text-2xl font-black text-slate-800 mb-2 border-b-4 border-[#4ade80] inline-block pb-1' },
+          '\u2699\uFE0F \u8A2D\u5B9A\u96E3\u5EA6'
+        ),
+        React.createElement(
+          'p',
+          { className: 'text-sm font-bold text-slate-600 mb-4' },
+          '\u9078\u4E00\u500B\u96E3\u5EA6\uFF0C\u7ACB\u523B\u63DB\u4E00\u984C\u65B0\u7684\u3002'
+        ),
+        React.createElement(
+          'div',
+          { className: 'flex flex-col gap-2 mb-4' },
+          LEVELS.map(function (level) {
+            return React.createElement(
+              'button',
+              { key: level.id, onClick: function onClick() {
+                  setShowSettingsModal(false);handleLevelChange(level.id === 'custom' ? 'custom' : level.id);
+                }, className: "w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800") },
+              level.name,
+              React.createElement(
+                'span',
+                { className: 'block text-xs font-bold opacity-70 mt-0.5' },
+                level.description
+              )
+            );
+          })
+        ),
+        React.createElement(
+          'button',
+          { onClick: function onClick() {
+              return setShowSettingsModal(false);
+            }, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+          '\u53D6\u6D88'
         )
       )
     ),

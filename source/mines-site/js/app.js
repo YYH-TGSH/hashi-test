@@ -136,6 +136,7 @@ function MinesGame() {
   const [screen, setScreen] = useState('home'); // home | game
   const [showHelp, setShowHelp] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false); // 存檔/讀檔（v1.42 補齊：比照數獨/數橋代碼式）
+  const [showSettingsModal, setShowSettingsModal] = useState(false); // 設定盤面 modal（v1.43 Q2：設定入口三款統一 modal 式）
   const [saveCode, setSaveCode] = useState('');
   const [tutStep, setTutStep] = useState(0); // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
   const [muted, setMuted] = useState(sGet('mines_muted') === '1');
@@ -1562,7 +1563,7 @@ function MinesGame() {
             </div>
           </div>
           <div className="flex items-center justify-between gap-2 w-full">
-            <span className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷</span>
+            {mpOn ? (<span className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷</span>) : (<button onClick={() => setShowSettingsModal(true)} title="設定盤面（換大小重開）" className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0 active:translate-y-[1px] active:shadow-none">⚙️ {spec.name}・{spec.mines} 雷 ▾</button>)}
             <div className="flex gap-1 items-center shrink-0">
               <button onClick={() => setZoomOpen(!zoomOpen)} className={hbtn} title="調整盤面大小（比照數獨的縮放）">🔍{zoom > 1 && (<span className="ml-0.5 text-[10px]">{Math.round(zoom * 100)}%</span>)}</button>
               {zoomOpen && (<React.Fragment>
@@ -1598,6 +1599,35 @@ function MinesGame() {
               <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏁 回等待室</button>
               <button onClick={() => { setShowExitMenu(false); leaveMatch(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🚪 退出（回大廳）</button>
               <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
+            </div>
+          </div>
+        )}
+        {showSettingsModal && !mpOn && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setShowSettingsModal(false)}>
+            <div className="bg-[#fff7ed] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popIn" onClick={e => e.stopPropagation()}>
+              <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-[#f97316] inline-block pb-1">⚙️ 設定盤面</h2>
+              <p className="text-sm font-bold text-slate-600 mb-4">選一個盤面大小，會立刻重開一局。</p>
+              <div className="flex flex-col gap-2 mb-4">
+                {[9, 16].map(sz => (
+                  <button key={sz} onClick={() => { setShowSettingsModal(false); newGame(sz); }} className={"w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (sizeId === sz ? "bg-[#f97316] text-slate-900" : "bg-white text-slate-800")}>{SIZES[sz].name}</button>
+                ))}
+                <div className="w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]">
+                  <div className="font-black text-slate-800 mb-2">⚙️ 自訂盤面</div>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">寬度（左右格數）
+                      <input type="number" min="8" max="30" value={custCfg.w} onChange={e => setCustCfg(c => Object.assign({}, c, { w: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                    </label>
+                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">高度（上下格數）
+                      <input type="number" min="8" max="24" value={custCfg.h} onChange={e => setCustCfg(c => Object.assign({}, c, { h: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                    </label>
+                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">地雷數
+                      <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
+                    </label>
+                    <button onClick={() => { setShowSettingsModal(false); startCustom(); }} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 以自訂盤開始</button>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setShowSettingsModal(false)} className="w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">取消</button>
             </div>
           </div>
         )}

@@ -209,6 +209,7 @@
       const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true);
 
       const [showSaveModal, setShowSaveModal] = useState(false);
+      const [showSettingsModal, setShowSettingsModal] = useState(false); // 設定難度 modal（v1.43 Q2：設定入口三款統一 modal 式，廢標頭 select）
       const [saveCode, setSaveCode] = useState("");
 
       const [showCustomModal, setShowCustomModal] = useState(false);
@@ -3671,18 +3672,7 @@
                </div>
 
                <div className="flex flex-wrap gap-1.5 items-center justify-between w-full">
-                  <select disabled={isDailyMode || inRace || (isMultiplayer && !isHostRef.current)} value={currentLevelId} onChange={(e) => {
-                      const val = e.target.value;
-                      handleLevelChange(val === 'custom' ? 'custom' : Number(val));
-                  }} className="px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed">
-                     {LEVELS.map(level => {
-                         const isCustomActive = (level.id === 'custom' && currentLevelId === 'custom' && randomLevelData);
-                         const displayName = isCustomActive
-                             ? `⚙️ 自訂 (${randomLevelData.width}x${randomLevelData.height})`
-                             : level.name;
-                         return <option key={level.id} value={level.id}>{displayName}</option>;
-                     })}
-                  </select>
+                  <button disabled={isDailyMode || inRace || (isMultiplayer && !isHostRef.current)} onClick={() => setShowSettingsModal(true)} title="設定難度" className="px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed">{(currentLevelId === 'custom' && randomLevelData) ? `⚙️ 自訂 (${randomLevelData.width}x${randomLevelData.height})` : ((LEVELS.find(l => String(l.id) === String(currentLevelId)) || {}).name || '')} ▾</button>
 
                   <div className="flex gap-1 md:gap-2 flex-wrap items-center ml-auto">
                      {!isWon && hasSolution && !showSolution && !inRace && ( <button onClick={handleShowSolution} className="px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#1e293b] border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="解答">💡<span className="hidden sm:inline">解答</span></button> )}
@@ -4511,6 +4501,25 @@
                   <button onClick={() => setShowSaveModal(false)} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">關閉</button>
                   <button onClick={handleLoadCode} className="flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">載入代碼</button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* 設定難度彈窗（v1.43 Q2：比照數獨設定 modal 的入口形式） */}
+          {showSettingsModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setShowSettingsModal(false)}>
+              <div className="bg-[#f6fdf6] border-[4px] border-[#1e293b] rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-md animate-popUp" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-[#4ade80] inline-block pb-1">⚙️ 設定難度</h2>
+                <p className="text-sm font-bold text-slate-600 mb-4">選一個難度，立刻換一題新的。</p>
+                <div className="flex flex-col gap-2 mb-4">
+                  {LEVELS.map(level => (
+                    <button key={level.id} onClick={() => { setShowSettingsModal(false); handleLevelChange(level.id === 'custom' ? 'custom' : level.id); }} className={"w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800")}>
+                      {level.name}
+                      <span className="block text-xs font-bold opacity-70 mt-0.5">{level.description}</span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setShowSettingsModal(false)} className="w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">取消</button>
               </div>
             </div>
           )}
