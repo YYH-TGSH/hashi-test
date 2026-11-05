@@ -41,6 +41,7 @@ const SUITES = [
   ['test-mines-solo.js', {}],
   ['test-mines-save.js', {}],
   ['test-settings-modal.js', {}],
+  ['test-tutdemo.js', {}],
   ['test-mines-mp.js', {}],
   ['test-mines-tourn.js', {}],
   ['test-mines-items.js', {}],

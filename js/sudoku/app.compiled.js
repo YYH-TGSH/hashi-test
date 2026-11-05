@@ -601,8 +601,16 @@ function SudokuGame() {
     _useState156 = _slicedToArray(_useState155, 2),
     tutStep = _useState156[0],
     setTutStep = _useState156[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+  var _useState157 = useState(null),
+    _useState158 = _slicedToArray(_useState157, 2),
+    tutDemoVal = _useState158[0],
+    setTutDemoVal = _useState158[1]; // 教學互動 demo（v1.46 Q6）：已填入的數字
+  var _useState159 = useState(null),
+    _useState160 = _slicedToArray(_useState159, 2),
+    tutDemoWrong = _useState160[0],
+    setTutDemoWrong = _useState160[1]; // 教學互動 demo：剛填錯的數字
 
-  var _useState157 = useState([{
+  var _useState161 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -610,37 +618,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
-    _useState158 = _slicedToArray(_useState157, 2),
-    playersList = _useState158[0],
-    setPlayersList = _useState158[1];
-  var _useState159 = useState(false),
-    _useState160 = _slicedToArray(_useState159, 2),
-    isConnecting = _useState160[0],
-    setIsConnecting = _useState160[1];
-  var _useState161 = useState(""),
     _useState162 = _slicedToArray(_useState161, 2),
-    connectionStatus = _useState162[0],
-    setConnectionStatus = _useState162[1];
+    playersList = _useState162[0],
+    setPlayersList = _useState162[1];
   var _useState163 = useState(false),
     _useState164 = _slicedToArray(_useState163, 2),
-    showCancelButton = _useState164[0],
-    setShowCancelButton = _useState164[1];
-  var _useState165 = useState(true),
+    isConnecting = _useState164[0],
+    setIsConnecting = _useState164[1];
+  var _useState165 = useState(""),
     _useState166 = _slicedToArray(_useState165, 2),
-    showOtherCursors = _useState166[0],
-    setShowOtherCursors = _useState166[1];
-  var _useState167 = useState(true),
+    connectionStatus = _useState166[0],
+    setConnectionStatus = _useState166[1];
+  var _useState167 = useState(false),
     _useState168 = _slicedToArray(_useState167, 2),
-    showGhostProgress = _useState168[0],
-    setShowGhostProgress = _useState168[1];
-  var _useState169 = useState({}),
+    showCancelButton = _useState168[0],
+    setShowCancelButton = _useState168[1];
+  var _useState169 = useState(true),
     _useState170 = _slicedToArray(_useState169, 2),
-    cursors = _useState170[0],
-    setCursors = _useState170[1];
-  var _useState171 = useState([]),
+    showOtherCursors = _useState170[0],
+    setShowOtherCursors = _useState170[1];
+  var _useState171 = useState(true),
     _useState172 = _slicedToArray(_useState171, 2),
-    ripples = _useState172[0],
-    setRipples = _useState172[1];
+    showGhostProgress = _useState172[0],
+    setShowGhostProgress = _useState172[1];
+  var _useState173 = useState({}),
+    _useState174 = _slicedToArray(_useState173, 2),
+    cursors = _useState174[0],
+    setCursors = _useState174[1];
+  var _useState175 = useState([]),
+    _useState176 = _slicedToArray(_useState175, 2),
+    ripples = _useState176[0],
+    setRipples = _useState176[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -4621,14 +4629,14 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState173 = useState(false),
-    _useState174 = _slicedToArray(_useState173, 2),
-    platTournLock = _useState174[0],
-    setPlatTournLock = _useState174[1];
-  var _useState175 = useState(false),
-    _useState176 = _slicedToArray(_useState175, 2),
-    platHub = _useState176[0],
-    setPlatHub = _useState176[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+  var _useState177 = useState(false),
+    _useState178 = _slicedToArray(_useState177, 2),
+    platTournLock = _useState178[0],
+    setPlatTournLock = _useState178[1];
+  var _useState179 = useState(false),
+    _useState180 = _slicedToArray(_useState179, 2),
+    platHub = _useState180[0],
+    setPlatHub = _useState180[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var platSessRef = useRef(null); // 殼 launch 的原始 sess（hub 判斷與代表色 sess.color 的來源；exit 時清空）
   var isShellColor = function isShellColor(c) {
@@ -4636,14 +4644,14 @@ function SudokuGame() {
   }; // 殼代表色合法值：20 色之一或彩虹
   var hubStartTimerRef = useRef(null);
   var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
-  var _useState177 = useState(null),
-    _useState178 = _slicedToArray(_useState177, 2),
-    tournRoundInfo = _useState178[0],
-    setTournRoundInfo = _useState178[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var _useState181 = useState(null),
+    _useState182 = _slicedToArray(_useState181, 2),
+    tournRoundInfo = _useState182[0],
+    setTournRoundInfo = _useState182[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
   var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState179 = useState(0),
-    _useState180 = _slicedToArray(_useState179, 2),
-    setTournTick = _useState180[1];
+  var _useState183 = useState(0),
+    _useState184 = _slicedToArray(_useState183, 2),
+    setTournTick = _useState184[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -5695,13 +5703,33 @@ function SudokuGame() {
   }, ['5', '', '', '', null, '3', '', '', ''].map(function (v, i) {
     return /*#__PURE__*/React.createElement("div", {
       key: i,
-      className: "relative aspect-square flex items-center justify-center font-black text-xl border border-slate-300 " + (v === null ? 'tut-target bg-amber-50' : 'bg-white text-slate-800')
-    }, v === null ? /*#__PURE__*/React.createElement("span", {
-      className: "tut-key-num text-emerald-600"
-    }, "8") : v);
-  }))), /*#__PURE__*/React.createElement("p", {
+      className: "relative aspect-square flex items-center justify-center font-black text-xl border border-slate-300 " + (v === null ? tutDemoVal === 8 ? 'bg-emerald-50' : tutDemoWrong ? 'bg-rose-50' : 'bg-amber-50' : 'bg-white text-slate-800')
+    }, v === null ? tutDemoVal === 8 ? /*#__PURE__*/React.createElement("span", {
+      className: "text-emerald-600"
+    }, "8") : tutDemoWrong ? /*#__PURE__*/React.createElement("span", {
+      className: "text-rose-500"
+    }, tutDemoWrong) : /*#__PURE__*/React.createElement("span", {
+      className: "text-amber-400"
+    }, "?") : v);
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-2 mb-3"
+  }, [7, 8, 9].map(function (n) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: n,
+      onClick: function onClick() {
+        if (n === 8) {
+          setTutDemoVal(8);
+          setTutDemoWrong(null);
+        } else {
+          setTutDemoVal(null);
+          setTutDemoWrong(n);
+        }
+      },
+      className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    }, n);
+  })), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-bold text-slate-700"
-  }, "\u9EDE\u4E00\u683C\uFF0C\u518D\u6309\u4E0B\u9762\u7684\u6578\u5B57\u9375\u586B\u5165")), /*#__PURE__*/React.createElement("div", {
+  }, tutDemoVal === 8 ? '✅ 答對了！中間這格就是 8——先點格子、再按數字鍵，就是這樣填的' : tutDemoWrong ? '❌ ' + tutDemoWrong + ' 不對喔，再想想這一格該填多少' : '動手試試：中間發亮的格子該填哪個數字？點下面的數字鍵試試')), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
@@ -5822,6 +5850,8 @@ function SudokuGame() {
     }, "\u6700\u4F73 ", formatTime(dailyRecords[dailyPickDate])) : null), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         setTutStep(0);
+        setTutDemoVal(null);
+        setTutDemoWrong(null);
         setShowTutorial(true);
       },
       className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"

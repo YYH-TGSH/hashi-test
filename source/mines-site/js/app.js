@@ -139,6 +139,8 @@ function MinesGame() {
   const [showSettingsModal, setShowSettingsModal] = useState(false); // 設定盤面 modal（v1.43 Q2：設定入口三款統一 modal 式）
   const [saveCode, setSaveCode] = useState('');
   const [tutStep, setTutStep] = useState(0); // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+  const [tutDemoOpen, setTutDemoOpen] = useState(() => new Array(9).fill(false)); // 教學互動 demo（v1.46 Q6）：3×3 已挖開格
+  const [tutDemoBoom, setTutDemoBoom] = useState(false); // 教學互動 demo：踩到雷了
   const [muted, setMuted] = useState(sGet('mines_muted') === '1');
   const [sizeId, setSizeId] = useState(9);
   const [layout, setLayout] = useState(null);       // bool[] 雷位（目前這一局）
@@ -1348,7 +1350,7 @@ function MinesGame() {
               <button disabled={dailySel >= todayStr()} onClick={() => setDailySel(shiftDate(dailySel, 1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">▶</button>
             </div>
             <div className="text-sm font-bold text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
-            <button onClick={() => { setTutStep(0); setShowHelp(true); }} className="w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
+            <button onClick={() => { setTutStep(0); setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); setShowHelp(true); }} className="w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
           </div>
         </div>
         {isPlat && (
@@ -1365,25 +1367,30 @@ function MinesGame() {
 
               <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
-                  <div className="relative">
-                    <div className="grid grid-cols-3 gap-[3px]">
-                      <div className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc', color: NUM_COLORS[1] }}>1</div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      <div className="w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden" style={{ background: '#f8fafc' }}>
-                        <span className="mtut-num" style={{ color: NUM_COLORS[1] }}>1</span>
-                        <div className="mtut-cover absolute inset-0" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      </div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc' }}></div>
-                      <div className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></div>
-                      <div className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc', color: NUM_COLORS[2] }}>2</div>
-                    </div>
-                    <span className="mtut-finger absolute text-3xl pointer-events-none" style={{ left: 63, top: 62 }}>👆</span>
+                  <div className="grid grid-cols-3 gap-[3px]">
+                    {[0, 1, -1, 0, 1, 1, 0, 0, 0].map((n, i) => {
+                      const isOpen = tutDemoOpen[i] || (tutDemoBoom && n === -1);
+                      if (!isOpen) return (<button key={i} onClick={() => {
+                        if (n === -1) { setTutDemoBoom(true); SFX.boom(); return; }
+                        const open = tutDemoOpen.slice();
+                        const stack = [i];
+                        while (stack.length) {
+                          const c = stack.pop();
+                          if (open[c]) continue;
+                          open[c] = true;
+                          if ([0, 1, -1, 0, 1, 1, 0, 0, 0][c] === 0) {
+                            const cx = c % 3, cy = Math.floor(c / 3);
+                            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = cx + dx, ny = cy + dy; if (nx >= 0 && nx < 3 && ny >= 0 && ny < 3) stack.push(ny * 3 + nx); }
+                          }
+                        }
+                        setTutDemoOpen(open); SFX.dig();
+                      }} className="w-11 h-11 rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}></button>);
+                      return (<div key={i} className="w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20" style={{ background: n === -1 ? '#fecaca' : '#f8fafc', color: n > 0 ? NUM_COLORS[n] : undefined }}>{n === -1 ? '💣' : (n > 0 ? n : '')}</div>);
+                    })}
                   </div>
                 </div>
-                <p className="text-center font-bold text-slate-700">點格子挖開——數字代表周圍 8 格有幾顆地雷</p>
+                <p className="text-center font-bold text-slate-700">{tutDemoBoom ? '💥 踩到地雷了！先看數字推理，避開最可疑的格子' : (tutDemoOpen.filter(Boolean).length >= 8 ? '✅ 全部挖開了！數字就是周圍 8 格的地雷數，你學會了' : '動手試試：點格子把安全的格子全部挖開——其中有一顆地雷，數字會給你提示')}</p>
+                {tutDemoBoom && (<div className="text-center mt-2"><button onClick={() => { setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); }} className="px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none">↺ 再試一次</button></div>)}
               </div>
 
               <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>

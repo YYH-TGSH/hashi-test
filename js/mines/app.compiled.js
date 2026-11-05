@@ -366,68 +366,78 @@ function MinesGame() {
     _useState12 = _slicedToArray(_useState11, 2),
     tutStep = _useState12[0],
     setTutStep = _useState12[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
-  var _useState13 = useState(sGet('mines_muted') === '1'),
+  var _useState13 = useState(function () {
+      return new Array(9).fill(false);
+    }),
     _useState14 = _slicedToArray(_useState13, 2),
-    muted = _useState14[0],
-    setMuted = _useState14[1];
-  var _useState15 = useState(9),
+    tutDemoOpen = _useState14[0],
+    setTutDemoOpen = _useState14[1]; // 教學互動 demo（v1.46 Q6）：3×3 已挖開格
+  var _useState15 = useState(false),
     _useState16 = _slicedToArray(_useState15, 2),
-    sizeId = _useState16[0],
-    setSizeId = _useState16[1];
-  var _useState17 = useState(null),
+    tutDemoBoom = _useState16[0],
+    setTutDemoBoom = _useState16[1]; // 教學互動 demo：踩到雷了
+  var _useState17 = useState(sGet('mines_muted') === '1'),
     _useState18 = _slicedToArray(_useState17, 2),
-    layout = _useState18[0],
-    setLayout = _useState18[1]; // bool[] 雷位（目前這一局）
-  var _useState19 = useState(null),
+    muted = _useState18[0],
+    setMuted = _useState18[1];
+  var _useState19 = useState(9),
     _useState20 = _slicedToArray(_useState19, 2),
-    nums = _useState20[0],
-    setNums = _useState20[1]; // int[] 鄰雷數（-1=雷）
+    sizeId = _useState20[0],
+    setSizeId = _useState20[1];
   var _useState21 = useState(null),
     _useState22 = _slicedToArray(_useState21, 2),
-    cells = _useState22[0],
-    setCells = _useState22[1]; // 'h'|'o'|'f'
+    layout = _useState22[0],
+    setLayout = _useState22[1]; // bool[] 雷位（目前這一局）
   var _useState23 = useState(null),
     _useState24 = _slicedToArray(_useState23, 2),
-    ownArr = _useState24[0],
-    setOwnArr = _useState24[1]; // 合作專用：每格由哪位玩家開啟（players 索引，-1=未開）→ 染玩家色算貢獻
-  var _useState25 = useState(function () {
+    nums = _useState24[0],
+    setNums = _useState24[1]; // int[] 鄰雷數（-1=雷）
+  var _useState25 = useState(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    cells = _useState26[0],
+    setCells = _useState26[1]; // 'h'|'o'|'f'
+  var _useState27 = useState(null),
+    _useState28 = _slicedToArray(_useState27, 2),
+    ownArr = _useState28[0],
+    setOwnArr = _useState28[1]; // 合作專用：每格由哪位玩家開啟（players 索引，-1=未開）→ 染玩家色算貢獻
+  var _useState29 = useState(function () {
       return typeof window !== 'undefined' && window.innerWidth || 390;
     }),
-    _useState26 = _slicedToArray(_useState25, 2),
-    vpW = _useState26[0],
-    setVpW = _useState26[1]; // 視窗寬（盤面響應式放大用）
-  var _useState27 = useState(0),
-    _useState28 = _slicedToArray(_useState27, 2),
-    curSeed = _useState28[0],
-    setCurSeed = _useState28[1];
-  var _useState29 = useState('ready'),
     _useState30 = _slicedToArray(_useState29, 2),
-    status = _useState30[0],
-    setStatus = _useState30[1]; // ready | playing | won | lost
-  var _useState31 = useState(-1),
+    vpW = _useState30[0],
+    setVpW = _useState30[1]; // 視窗寬（盤面響應式放大用）
+  var _useState31 = useState(0),
     _useState32 = _slicedToArray(_useState31, 2),
-    hitIdx = _useState32[0],
-    setHitIdx = _useState32[1];
-  var _useState33 = useState('dig'),
+    curSeed = _useState32[0],
+    setCurSeed = _useState32[1];
+  var _useState33 = useState('ready'),
     _useState34 = _slicedToArray(_useState33, 2),
-    inputMode = _useState34[0],
-    setInputMode = _useState34[1]; // dig | flag
-  var _useState35 = useState(null),
+    status = _useState34[0],
+    setStatus = _useState34[1]; // ready | playing | won | lost
+  var _useState35 = useState(-1),
     _useState36 = _slicedToArray(_useState35, 2),
-    startedAt = _useState36[0],
-    setStartedAt = _useState36[1];
-  var _useState37 = useState(0),
+    hitIdx = _useState36[0],
+    setHitIdx = _useState36[1];
+  var _useState37 = useState('dig'),
     _useState38 = _slicedToArray(_useState37, 2),
-    elapsed = _useState38[0],
-    setElapsed = _useState38[1];
+    inputMode = _useState38[0],
+    setInputMode = _useState38[1]; // dig | flag
   var _useState39 = useState(null),
     _useState40 = _slicedToArray(_useState39, 2),
-    dailyDate = _useState40[0],
-    setDailyDate = _useState40[1]; // 非 null = 每日一題模式（日期字串）
-  var _useState41 = useState(todayStr()),
+    startedAt = _useState40[0],
+    setStartedAt = _useState40[1];
+  var _useState41 = useState(0),
     _useState42 = _slicedToArray(_useState41, 2),
-    dailySel = _useState42[0],
-    setDailySel = _useState42[1]; // 主畫面每日一題目前選取日期
+    elapsed = _useState42[0],
+    setElapsed = _useState42[1];
+  var _useState43 = useState(null),
+    _useState44 = _slicedToArray(_useState43, 2),
+    dailyDate = _useState44[0],
+    setDailyDate = _useState44[1]; // 非 null = 每日一題模式（日期字串）
+  var _useState45 = useState(todayStr()),
+    _useState46 = _slicedToArray(_useState45, 2),
+    dailySel = _useState46[0],
+    setDailySel = _useState46[1]; // 主畫面每日一題目前選取日期
   var firstRef = useRef(true); // 本局是否還沒挖第一下（首點保護/計時起點）
   var statusRef = useRef('ready');
   statusRef.current = status;
@@ -448,43 +458,43 @@ function MinesGame() {
     return cells ? countFlags(cells) : 0;
   }, [cells]);
   // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
-  var _useState43 = useState({
+  var _useState47 = useState({
       question: 0,
       backfill: 0,
       gift: 0
     }),
-    _useState44 = _slicedToArray(_useState43, 2),
-    myItems = _useState44[0],
-    setMyItems = _useState44[1];
+    _useState48 = _slicedToArray(_useState47, 2),
+    myItems = _useState48[0],
+    setMyItems = _useState48[1];
   var itemsRef = useRef({
     question: 0,
     backfill: 0,
     gift: 0
   });
-  var _useState45 = useState({}),
-    _useState46 = _slicedToArray(_useState45, 2),
-    questionFx = _useState46[0],
-    setQuestionFx = _useState46[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
-  var questionFxRef = useRef({});
-  var _useState47 = useState(null),
-    _useState48 = _slicedToArray(_useState47, 2),
-    itemToast = _useState48[0],
-    setItemToast = _useState48[1];
-  var itemToastTimerRef = useRef(null);
-  var _useState49 = useState(0),
+  var _useState49 = useState({}),
     _useState50 = _slicedToArray(_useState49, 2),
-    mistLeft = _useState50[0],
-    setMistLeft = _useState50[1]; // 競速容錯剩餘次數（顯示用）
-  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
-  var _useState51 = useState(1),
+    questionFx = _useState50[0],
+    setQuestionFx = _useState50[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
+  var questionFxRef = useRef({});
+  var _useState51 = useState(null),
     _useState52 = _slicedToArray(_useState51, 2),
-    zoom = _useState52[0],
-    setZoom = _useState52[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
-  var _useState53 = useState(false),
+    itemToast = _useState52[0],
+    setItemToast = _useState52[1];
+  var itemToastTimerRef = useRef(null);
+  var _useState53 = useState(0),
     _useState54 = _slicedToArray(_useState53, 2),
-    zoomOpen = _useState54[0],
-    setZoomOpen = _useState54[1];
-  var _useState55 = useState(function () {
+    mistLeft = _useState54[0],
+    setMistLeft = _useState54[1]; // 競速容錯剩餘次數（顯示用）
+  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
+  var _useState55 = useState(1),
+    _useState56 = _slicedToArray(_useState55, 2),
+    zoom = _useState56[0],
+    setZoom = _useState56[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
+  var _useState57 = useState(false),
+    _useState58 = _slicedToArray(_useState57, 2),
+    zoomOpen = _useState58[0],
+    setZoomOpen = _useState58[1];
+  var _useState59 = useState(function () {
       try {
         var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null');
         if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines);
@@ -495,13 +505,13 @@ function MinesGame() {
         mines: 40
       };
     }),
-    _useState56 = _slicedToArray(_useState55, 2),
-    custCfg = _useState56[0],
-    setCustCfg = _useState56[1]; // 單機自訂盤面（寬/高/雷），持久化
-  var _useState57 = useState(false),
-    _useState58 = _slicedToArray(_useState57, 2),
-    custOpen = _useState58[0],
-    setCustOpen = _useState58[1];
+    _useState60 = _slicedToArray(_useState59, 2),
+    custCfg = _useState60[0],
+    setCustCfg = _useState60[1]; // 單機自訂盤面（寬/高/雷），持久化
+  var _useState61 = useState(false),
+    _useState62 = _slicedToArray(_useState61, 2),
+    custOpen = _useState62[0],
+    setCustOpen = _useState62[1];
   var boardScrollRef = useRef(null); // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
   var fadeRRef = useRef(null),
     fadeBRef = useRef(null),
@@ -1025,62 +1035,62 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState59 = useState(false),
-    _useState60 = _slicedToArray(_useState59, 2),
-    mpOn = _useState60[0],
-    setMpOn = _useState60[1];
-  var _useState61 = useState('off'),
-    _useState62 = _slicedToArray(_useState61, 2),
-    mpPhase = _useState62[0],
-    setMpPhase = _useState62[1]; // off|waiting|countdown|playing|done
-  var _useState63 = useState([]),
+  var _useState63 = useState(false),
     _useState64 = _slicedToArray(_useState63, 2),
-    players = _useState64[0],
-    setPlayers = _useState64[1];
-  var _useState65 = useState(false),
+    mpOn = _useState64[0],
+    setMpOn = _useState64[1];
+  var _useState65 = useState('off'),
     _useState66 = _slicedToArray(_useState65, 2),
-    myReadySt = _useState66[0],
-    setMyReadySt = _useState66[1];
-  var _useState67 = useState({}),
+    mpPhase = _useState66[0],
+    setMpPhase = _useState66[1]; // off|waiting|countdown|playing|done
+  var _useState67 = useState([]),
     _useState68 = _slicedToArray(_useState67, 2),
-    godBoards = _useState68[0],
-    setGodBoards = _useState68[1];
-  var _useState69 = useState(null),
+    players = _useState68[0],
+    setPlayers = _useState68[1];
+  var _useState69 = useState(false),
     _useState70 = _slicedToArray(_useState69, 2),
-    godUid = _useState70[0],
-    setGodUid = _useState70[1];
-  var _useState71 = useState(null),
+    myReadySt = _useState70[0],
+    setMyReadySt = _useState70[1];
+  var _useState71 = useState({}),
     _useState72 = _slicedToArray(_useState71, 2),
-    raceFinal = _useState72[0],
-    setRaceFinal = _useState72[1];
+    godBoards = _useState72[0],
+    setGodBoards = _useState72[1];
   var _useState73 = useState(null),
     _useState74 = _slicedToArray(_useState73, 2),
-    myOutcome = _useState74[0],
-    setMyOutcome = _useState74[1]; // 'finished'|'boom'
-  var _useState75 = useState(false),
+    godUid = _useState74[0],
+    setGodUid = _useState74[1];
+  var _useState75 = useState(null),
     _useState76 = _slicedToArray(_useState75, 2),
-    leaveArm = _useState76[0],
-    setLeaveArm = _useState76[1];
-  var _useState77 = useState(false),
+    raceFinal = _useState76[0],
+    setRaceFinal = _useState76[1];
+  var _useState77 = useState(null),
     _useState78 = _slicedToArray(_useState77, 2),
-    showExitMenu = _useState78[0],
-    setShowExitMenu = _useState78[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+    myOutcome = _useState78[0],
+    setMyOutcome = _useState78[1]; // 'finished'|'boom'
   var _useState79 = useState(false),
     _useState80 = _slicedToArray(_useState79, 2),
-    hdrOpen = _useState80[0],
-    setHdrOpen = _useState80[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
-  var _useState81 = useState(''),
+    leaveArm = _useState80[0],
+    setLeaveArm = _useState80[1];
+  var _useState81 = useState(false),
     _useState82 = _slicedToArray(_useState81, 2),
-    coopBoomBy = _useState82[0],
-    setCoopBoomBy = _useState82[1];
-  var _useState83 = useState(null),
+    showExitMenu = _useState82[0],
+    setShowExitMenu = _useState82[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState83 = useState(false),
     _useState84 = _slicedToArray(_useState83, 2),
-    cdNum = _useState84[0],
-    setCdNum = _useState84[1];
-  var _useState85 = useState(0),
+    hdrOpen = _useState84[0],
+    setHdrOpen = _useState84[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState85 = useState(''),
     _useState86 = _slicedToArray(_useState85, 2),
-    waitTick = _useState86[0],
-    setWaitTick = _useState86[1];
+    coopBoomBy = _useState86[0],
+    setCoopBoomBy = _useState86[1];
+  var _useState87 = useState(null),
+    _useState88 = _slicedToArray(_useState87, 2),
+    cdNum = _useState88[0],
+    setCdNum = _useState88[1];
+  var _useState89 = useState(0),
+    _useState90 = _slicedToArray(_useState89, 2),
+    waitTick = _useState90[0],
+    setWaitTick = _useState90[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -3358,6 +3368,8 @@ function MinesGame() {
     }, "\uD83D\uDD25 \u9023\u7E8C\u6311\u6230 ", dStreak.count || 0, " \u5929", dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         setTutStep(0);
+        setTutDemoOpen(new Array(9).fill(false));
+        setTutDemoBoom(false);
         setShowHelp(true);
       },
       className: "w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
@@ -3390,75 +3402,60 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center mb-3"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "relative"
-    }, /*#__PURE__*/React.createElement("div", {
       className: "grid grid-cols-3 gap-[3px]"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
-      style: {
-        background: '#f8fafc',
-        color: NUM_COLORS[1]
-      }
-    }, "1"), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 relative flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20 overflow-hidden",
-      style: {
-        background: '#f8fafc'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "mtut-num",
-      style: {
-        color: NUM_COLORS[1]
-      }
-    }, "1"), /*#__PURE__*/React.createElement("div", {
-      className: "mtut-cover absolute inset-0",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: '#f8fafc'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
-      style: {
-        background: 'linear-gradient(145deg,#fdba74,#fb923c)'
-      }
-    }), /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
-      style: {
-        background: '#f8fafc',
-        color: NUM_COLORS[2]
-      }
-    }, "2")), /*#__PURE__*/React.createElement("span", {
-      className: "mtut-finger absolute text-3xl pointer-events-none",
-      style: {
-        left: 63,
-        top: 62
-      }
-    }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
+    }, [0, 1, -1, 0, 1, 1, 0, 0, 0].map(function (n, i) {
+      var isOpen = tutDemoOpen[i] || tutDemoBoom && n === -1;
+      if (!isOpen) return /*#__PURE__*/React.createElement("button", {
+        key: i,
+        onClick: function onClick() {
+          if (n === -1) {
+            setTutDemoBoom(true);
+            SFX.boom();
+            return;
+          }
+          var open = tutDemoOpen.slice();
+          var stack = [i];
+          while (stack.length) {
+            var c = stack.pop();
+            if (open[c]) continue;
+            open[c] = true;
+            if ([0, 1, -1, 0, 1, 1, 0, 0, 0][c] === 0) {
+              var cx = c % 3,
+                cy = Math.floor(c / 3);
+              for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+                var nx = cx + dx,
+                  ny = cy + dy;
+                if (nx >= 0 && nx < 3 && ny >= 0 && ny < 3) stack.push(ny * 3 + nx);
+              }
+            }
+          }
+          setTutDemoOpen(open);
+          SFX.dig();
+        },
+        className: "w-11 h-11 rounded-[4px] border border-orange-900/20",
+        style: {
+          background: 'linear-gradient(145deg,#fdba74,#fb923c)'
+        }
+      });
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        className: "w-11 h-11 flex items-center justify-center font-black text-lg rounded-[4px] border border-orange-900/20",
+        style: {
+          background: n === -1 ? '#fecaca' : '#f8fafc',
+          color: n > 0 ? NUM_COLORS[n] : undefined
+        }
+      }, n === -1 ? '💣' : n > 0 ? n : '');
+    }))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
-    }, "\u9EDE\u683C\u5B50\u6316\u958B\u2014\u2014\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u6709\u5E7E\u9846\u5730\u96F7")), /*#__PURE__*/React.createElement("div", {
+    }, tutDemoBoom ? '💥 踩到地雷了！先看數字推理，避開最可疑的格子' : tutDemoOpen.filter(Boolean).length >= 8 ? '✅ 全部挖開了！數字就是周圍 8 格的地雷數，你學會了' : '動手試試：點格子把安全的格子全部挖開——其中有一顆地雷，數字會給你提示'), tutDemoBoom && /*#__PURE__*/React.createElement("div", {
+      className: "text-center mt-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        setTutDemoOpen(new Array(9).fill(false));
+        setTutDemoBoom(false);
+      },
+      className: "px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
+    }, "\u21BA \u518D\u8A66\u4E00\u6B21"))), /*#__PURE__*/React.createElement("div", {
       className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center mb-3"

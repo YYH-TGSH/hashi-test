@@ -210,6 +210,8 @@ function SudokuGame() {
     const [dailyStreak, setDailyStreak] = useState(() => { try { return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}'); } catch (e) { return { count: 0, lastDate: '' }; } });
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutStep, setTutStep] = useState(0); // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+    const [tutDemoVal, setTutDemoVal] = useState(null);   // 教學互動 demo（v1.46 Q6）：已填入的數字
+    const [tutDemoWrong, setTutDemoWrong] = useState(null); // 教學互動 demo：剛填錯的數字
 
     const [playersList, setPlayersList] = useState([{ id: myId, name: "單機玩家", isHost: true, color: COLORS[11], isReady: false, isSpectator: false }]);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -3038,13 +3040,18 @@ function SudokuGame() {
                     <div className="flex justify-center mb-3">
                         <div className="grid grid-cols-3 border-[3px] border-slate-800 rounded-lg overflow-hidden w-40">
                             {['5', '', '', '', null, '3', '', '', ''].map((v, i) => (
-                                <div key={i} className={"relative aspect-square flex items-center justify-center font-black text-xl border border-slate-300 " + (v === null ? 'tut-target bg-amber-50' : 'bg-white text-slate-800')}>
-                                    {v === null ? <span className="tut-key-num text-emerald-600">8</span> : v}
+                                <div key={i} className={"relative aspect-square flex items-center justify-center font-black text-xl border border-slate-300 " + (v === null ? (tutDemoVal === 8 ? 'bg-emerald-50' : tutDemoWrong ? 'bg-rose-50' : 'bg-amber-50') : 'bg-white text-slate-800')}>
+                                    {v === null ? (tutDemoVal === 8 ? <span className="text-emerald-600">8</span> : tutDemoWrong ? <span className="text-rose-500">{tutDemoWrong}</span> : <span className="text-amber-400">?</span>) : v}
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <p className="text-center font-bold text-slate-700">點一格，再按下面的數字鍵填入</p>
+                    <div className="flex justify-center gap-2 mb-3">
+                        {[7, 8, 9].map(n => (
+                            <button key={n} onClick={() => { if (n === 8) { setTutDemoVal(8); setTutDemoWrong(null); } else { setTutDemoVal(null); setTutDemoWrong(n); } }} className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">{n}</button>
+                        ))}
+                    </div>
+                    <p className="text-center font-bold text-slate-700">{tutDemoVal === 8 ? '✅ 答對了！中間這格就是 8——先點格子、再按數字鍵，就是這樣填的' : tutDemoWrong ? '❌ ' + tutDemoWrong + ' 不對喔，再想想這一格該填多少' : '動手試試：中間發亮的格子該填哪個數字？點下面的數字鍵試試'}</p>
                 </div>
 
                 <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
@@ -3109,7 +3116,7 @@ function SudokuGame() {
                                 <span className="font-black text-sm text-orange-600">🔥 連續 {dailyStreak.count || 0} 天</span>
                                 {dailyRecords[dailyPickDate] ? <span className="font-black text-sm text-emerald-600">最佳 {formatTime(dailyRecords[dailyPickDate])}</span> : null}
                             </div>
-                            <button onClick={() => { setTutStep(0); setShowTutorial(true); }} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">❓ 玩法教學</button>
+                            <button onClick={() => { setTutStep(0); setTutDemoVal(null); setTutDemoWrong(null); setShowTutorial(true); }} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">❓ 玩法教學</button>
                             {(typeof window !== 'undefined' && window.__PLAT_PLATFORM) && (
                                 <div className="flex items-center gap-2">
                                     <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠 回大廳</button>

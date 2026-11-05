@@ -51,7 +51,7 @@ async function main() {
   ok(!homeTexts.some(t => t.includes('🔊') || t.includes('🔇')), '主畫面沒有靜音鈕');
   ok(clickBtn(b => b.textContent.includes('玩法教學'), d.querySelector('#mines-root')), '點玩法教學');
   await new Promise(r => setTimeout(r, 200));
-  ok([...d.querySelectorAll('#mines-root div')].some(x => x.textContent.includes('周圍 8 格保證沒有雷')) && !!d.querySelector('#mines-root .mtut-cover') && !!d.querySelector('#mines-root .mtut-flag') && !!d.querySelector('#mines-root .mtut-boom'), '教學 overlay 出現（卡片式＋動畫元素 mtut-cover/flag/boom＋首點整圈保護文案）');
+  ok([...d.querySelectorAll('#mines-root div')].some(x => x.textContent.includes('周圍 8 格保證沒有雷')) && [...d.querySelectorAll('#mines-root button')].filter(b => b.textContent === '').length === 9 && !!d.querySelector('#mines-root .mtut-flag') && !!d.querySelector('#mines-root .mtut-boom'), '教學 overlay 出現（卡1 互動 demo 9 格可點＋卡片式動畫 mtut-flag/boom＋首點整圈保護文案）');
   ok(clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#mines-root')), '教學步進：下一步');
   await new Promise(r => setTimeout(r, 200));
   ok(clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#mines-root')), '教學步進：下一步 2');
