@@ -3623,7 +3623,7 @@ function MinesGame() {
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
     }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F")), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
+      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
     }, /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u76F4\u63A5\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002"))), /*#__PURE__*/React.createElement("div", {

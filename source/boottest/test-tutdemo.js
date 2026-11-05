@@ -50,6 +50,8 @@ async function main() {
   const demoCells = () => [...root.querySelectorAll('button')].filter(b => b.textContent === '');
   ok(clickBtn(b => b.textContent.includes('玩法教學'), root), '地雷：開教學');
   await sleep(400);
+  const modeCardHidden = () => { const p = [...root.querySelectorAll('p')].find(x => x.textContent.includes('多人競速')); const card = p && p.closest('div.bg-white'); return card ? card.className.includes('hidden') : null; };
+  ok(modeCardHidden() === true, '地雷：模式介紹卡在第 1 頁不出現（只出現一次）');
   ok(demoCells().length === 9, '地雷：卡1 有 9 格可點的 demo 盤（實際 ' + demoCells().length + '）');
   // 踩雷路徑：點第 3 格（index 2 = 雷）
   demoCells()[2].click();
@@ -72,6 +74,7 @@ async function main() {
   ok(doneP, '地雷：挖完安全格有完成回饋（剩餘未開格=' + demoCells().length + '）');
   // 步進器還能走完
   for (let s2 = 0; s2 < 3; s2++) { clickBtn(b => b.textContent.includes('下一步'), root); await sleep(200); }
+  ok(modeCardHidden() === false, '地雷：模式介紹卡只在最後一頁出現');
   ok(clickBtn(b => b.textContent.includes('開始遊戲'), root), '地雷：步進走到開始遊戲關閉');
 
   ok(errors.length === 0, '零錯誤' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));

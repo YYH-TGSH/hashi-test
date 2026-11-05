@@ -1461,7 +1461,7 @@ function MinesGame() {
                 <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
               </div>
 
-              <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
+              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
                 <div className="font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2">
                   <p>📅 每日一題：每天同一題（9×9），可以回補今年的舊題目，只有今天的會累積連續天數。</p>
                   <p>👥 多人競速：同一個盤面各玩各的，最快清完的人贏；踩到雷直接出局，照當時進度排名。</p>
