@@ -168,8 +168,10 @@ function pev(w, el, type, x, y) { const e = new w.Event(type, { bubbles: true, c
     check('S 房主完賽等待卡出現', !!waitCard);
     const godded = await waitFor(() => hostCells() === 0 ? true : null, 20000, 'S host auto god');
     check('S 房主盤面自動轉上帝視角（未按任何鈕）', !!godded, 'cells=' + hostCells());
-    const godGrid = [...H.document.querySelectorAll('#view-sudoku div')].some(d => (d.className || '').includes('bg-slate-900'));
-    check('S 上帝總覽（深色多盤面）已渲染', godGrid);
+    const godPanel = [...H.document.querySelectorAll('#view-sudoku div')].some(d => (d.textContent || '').includes('已完賽・觀戰中'));
+    check('S 觀戰面板（單盤＋選手切換，v1.44）已渲染', godPanel);
+    const godChips = [...H.document.querySelectorAll('#view-sudoku button')].filter(b => (b.textContent || '').includes('%'));
+    check('S 觀戰面板有選手切換鈕', godChips.length >= 1, 'chips=' + godChips.length);
     check('S 來賓仍在自己的盤面（不受影響）', G.document.querySelectorAll('#view-sudoku g[id^="cell-"]').length > 0);
     // 關掉成績卡 → 上帝視角仍在（打得開、不怕關）
     const watchBtn = [...H.document.querySelectorAll('#plat-results button')].find(b => (b.textContent || '').includes('上帝模式'));

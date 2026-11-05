@@ -3687,6 +3687,10 @@ function SudokuGame() {
     _useState102 = _slicedToArray(_useState101, 2),
     finishViewMode = _useState102[0],
     setFinishViewMode = _useState102[1]; // 'my' | 'god'
+  var _useState103 = useState(null),
+    _useState104 = _slicedToArray(_useState103, 2),
+    godUid = _useState104[0],
+    setGodUid = _useState104[1]; // 上帝視角正在看的選手（v1.44 Q5：觀戰改單盤＋選手切換，比照數橋/地雷）
   var lastMilestoneRef = useRef(0); // 已跨越的 5% 里程碑數量（0~19，逐格補報不跳過）
   var giftCreditRef = useRef(0); // 禮物計量額度：每完成一個行/列/宮/數字 +0.5，湊滿 1 才送出
 
@@ -3695,49 +3699,49 @@ function SudokuGame() {
   var scrambledCharsRef = useRef(new Set());
   var modeIcons = ['🖋️', '✏️', '🖌️'];
   var modeTitles = ['填答模式', '草稿模式', '畫筆作記號'];
-  var _useState103 = useState(3),
-    _useState104 = _slicedToArray(_useState103, 2),
-    zoomModeIdx = _useState104[0],
-    setZoomModeIdx = _useState104[1];
-  var _useState105 = useState({
+  var _useState105 = useState(3),
+    _useState106 = _slicedToArray(_useState105, 2),
+    zoomModeIdx = _useState106[0],
+    setZoomModeIdx = _useState106[1];
+  var _useState107 = useState({
       value: 1.0,
       visible: false
     }),
-    _useState106 = _slicedToArray(_useState105, 2),
-    zoomIndicator = _useState106[0],
-    setZoomIndicator = _useState106[1];
-  var zoomIndicatorTimer = useRef(null);
-  var _useState107 = useState(false),
     _useState108 = _slicedToArray(_useState107, 2),
-    isClosingModal = _useState108[0],
-    setIsClosingModal = _useState108[1];
-
-  // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
+    zoomIndicator = _useState108[0],
+    setZoomIndicator = _useState108[1];
+  var zoomIndicatorTimer = useRef(null);
   var _useState109 = useState(false),
     _useState110 = _slicedToArray(_useState109, 2),
-    zoomMenuOpen = _useState110[0],
-    setZoomMenuOpen = _useState110[1];
-  var _useState111 = useState({
+    isClosingModal = _useState110[0],
+    setIsClosingModal = _useState110[1];
+
+  // --- 漂浮選單分身術 (Zoom 與 Mode 獨立系統) ---
+  var _useState111 = useState(false),
+    _useState112 = _slicedToArray(_useState111, 2),
+    zoomMenuOpen = _useState112[0],
+    setZoomMenuOpen = _useState112[1];
+  var _useState113 = useState({
       x: -1,
       y: -1
     }),
-    _useState112 = _slicedToArray(_useState111, 2),
-    zoomMenuPos = _useState112[0],
-    setZoomMenuPos = _useState112[1];
-  var _useState113 = useState(false),
     _useState114 = _slicedToArray(_useState113, 2),
-    isDraggingZoom = _useState114[0],
-    setIsDraggingZoom = _useState114[1];
-  var wasZoomDragged = useRef(false);
-  var zoomDragTimer = useRef(null);
+    zoomMenuPos = _useState114[0],
+    setZoomMenuPos = _useState114[1];
   var _useState115 = useState(false),
     _useState116 = _slicedToArray(_useState115, 2),
-    modeSubOpen = _useState116[0],
-    setModeSubOpen = _useState116[1];
+    isDraggingZoom = _useState116[0],
+    setIsDraggingZoom = _useState116[1];
+  var wasZoomDragged = useRef(false);
+  var zoomDragTimer = useRef(null);
   var _useState117 = useState(false),
     _useState118 = _slicedToArray(_useState117, 2),
-    zoomOpen = _useState118[0],
-    setZoomOpen = _useState118[1];
+    modeSubOpen = _useState118[0],
+    setModeSubOpen = _useState118[1];
+  var _useState119 = useState(false),
+    _useState120 = _slicedToArray(_useState119, 2),
+    zoomOpen = _useState120[0],
+    setZoomOpen = _useState120[1];
   var advanceInteractionMode = function advanceInteractionMode() {
     var next = (interactionMode + 1) % 3;
     setInteractionMode(next);
@@ -3751,61 +3755,61 @@ function SudokuGame() {
     }
     advanceInteractionMode();
   };
-  var _useState119 = useState({
+  var _useState121 = useState({
       x: -1,
       y: -1
     }),
-    _useState120 = _slicedToArray(_useState119, 2),
-    modeMenuPos = _useState120[0],
-    setModeMenuPos = _useState120[1];
-  var _useState121 = useState(false),
     _useState122 = _slicedToArray(_useState121, 2),
-    isDraggingMode = _useState122[0],
-    setIsDraggingMode = _useState122[1];
+    modeMenuPos = _useState122[0],
+    setModeMenuPos = _useState122[1];
+  var _useState123 = useState(false),
+    _useState124 = _slicedToArray(_useState123, 2),
+    isDraggingMode = _useState124[0],
+    setIsDraggingMode = _useState124[1];
   var wasModeDragged = useRef(false);
   var modeDragTimer = useRef(null);
-  var _useState123 = useState(true),
-    _useState124 = _slicedToArray(_useState123, 2),
-    menuVertical = _useState124[0],
-    setMenuVertical = _useState124[1]; // 共用排列方向偏好
-  var _useState125 = useState(false),
+  var _useState125 = useState(true),
     _useState126 = _slicedToArray(_useState125, 2),
-    isGenerating = _useState126[0],
-    setIsGenerating = _useState126[1];
-  var _useState127 = useState(""),
+    menuVertical = _useState126[0],
+    setMenuVertical = _useState126[1]; // 共用排列方向偏好
+  var _useState127 = useState(false),
     _useState128 = _slicedToArray(_useState127, 2),
-    genProgress = _useState128[0],
-    setGenProgress = _useState128[1];
-  var isAutoFillingRef = useRef(false);
-  var _useState129 = useState(null),
+    isGenerating = _useState128[0],
+    setIsGenerating = _useState128[1];
+  var _useState129 = useState(""),
     _useState130 = _slicedToArray(_useState129, 2),
-    colorPickerTarget = _useState130[0],
-    setColorPickerTarget = _useState130[1];
-  var _useState131 = useState([]),
+    genProgress = _useState130[0],
+    setGenProgress = _useState130[1];
+  var isAutoFillingRef = useRef(false);
+  var _useState131 = useState(null),
     _useState132 = _slicedToArray(_useState131, 2),
-    colorSeq = _useState132[0],
-    setColorSeq = _useState132[1];
-  var _useState133 = useState(""),
+    colorPickerTarget = _useState132[0],
+    setColorPickerTarget = _useState132[1];
+  var _useState133 = useState([]),
     _useState134 = _slicedToArray(_useState133, 2),
-    editName = _useState134[0],
-    setEditName = _useState134[1];
+    colorSeq = _useState134[0],
+    setColorSeq = _useState134[1];
   var _useState135 = useState(""),
     _useState136 = _slicedToArray(_useState135, 2),
-    roomId = _useState136[0],
-    setRoomId = _useState136[1];
-  var _useState137 = useState(false),
+    editName = _useState136[0],
+    setEditName = _useState136[1];
+  var _useState137 = useState(""),
     _useState138 = _slicedToArray(_useState137, 2),
-    isHost = _useState138[0],
-    setIsHost = _useState138[1];
-  var isHostRef = useRef(false);
-  var _useState139 = useState(""),
+    roomId = _useState138[0],
+    setRoomId = _useState138[1];
+  var _useState139 = useState(false),
     _useState140 = _slicedToArray(_useState139, 2),
-    tempRoomId = _useState140[0],
-    setTempRoomId = _useState140[1];
+    isHost = _useState140[0],
+    setIsHost = _useState140[1];
+  var isHostRef = useRef(false);
   var _useState141 = useState(""),
     _useState142 = _slicedToArray(_useState141, 2),
-    tempPlayerName = _useState142[0],
-    setTempPlayerName = _useState142[1];
+    tempRoomId = _useState142[0],
+    setTempRoomId = _useState142[1];
+  var _useState143 = useState(""),
+    _useState144 = _slicedToArray(_useState143, 2),
+    tempPlayerName = _useState144[0],
+    setTempPlayerName = _useState144[1];
   // ===== 每日一題（比照數橋） =====
   var dailyTodayStr = function dailyTodayStr() {
     var d = new Date();
@@ -3816,29 +3820,29 @@ function SudokuGame() {
     d.setDate(d.getDate() + delta);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
-  var _useState143 = useState(function () {
+  var _useState145 = useState(function () {
       return dailyTodayStr();
     }),
-    _useState144 = _slicedToArray(_useState143, 2),
-    dailyPickDate = _useState144[0],
-    setDailyPickDate = _useState144[1];
-  var _useState145 = useState(null),
     _useState146 = _slicedToArray(_useState145, 2),
-    dailyDate = _useState146[0],
-    setDailyDate = _useState146[1]; // 進行中的每日題日期（null=非每日模式）
+    dailyPickDate = _useState146[0],
+    setDailyPickDate = _useState146[1];
+  var _useState147 = useState(null),
+    _useState148 = _slicedToArray(_useState147, 2),
+    dailyDate = _useState148[0],
+    setDailyDate = _useState148[1]; // 進行中的每日題日期（null=非每日模式）
   var dailyRef = useRef(null);
   var dailyRecordedRef = useRef(false);
-  var _useState147 = useState(function () {
+  var _useState149 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_records') || '{}');
       } catch (e) {
         return {};
       }
     }),
-    _useState148 = _slicedToArray(_useState147, 2),
-    dailyRecords = _useState148[0],
-    setDailyRecords = _useState148[1];
-  var _useState149 = useState(function () {
+    _useState150 = _slicedToArray(_useState149, 2),
+    dailyRecords = _useState150[0],
+    setDailyRecords = _useState150[1];
+  var _useState151 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem('sudoku_daily_streak') || '{"count":0,"lastDate":""}');
       } catch (e) {
@@ -3848,19 +3852,19 @@ function SudokuGame() {
         };
       }
     }),
-    _useState150 = _slicedToArray(_useState149, 2),
-    dailyStreak = _useState150[0],
-    setDailyStreak = _useState150[1];
-  var _useState151 = useState(false),
     _useState152 = _slicedToArray(_useState151, 2),
-    showTutorial = _useState152[0],
-    setShowTutorial = _useState152[1];
-  var _useState153 = useState(0),
+    dailyStreak = _useState152[0],
+    setDailyStreak = _useState152[1];
+  var _useState153 = useState(false),
     _useState154 = _slicedToArray(_useState153, 2),
-    tutStep = _useState154[0],
-    setTutStep = _useState154[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
+    showTutorial = _useState154[0],
+    setShowTutorial = _useState154[1];
+  var _useState155 = useState(0),
+    _useState156 = _slicedToArray(_useState155, 2),
+    tutStep = _useState156[0],
+    setTutStep = _useState156[1]; // 玩法教學步進（美學稽核 V-09：三款教學統一為數橋的步進骨架）
 
-  var _useState155 = useState([{
+  var _useState157 = useState([{
       id: myId,
       name: "單機玩家",
       isHost: true,
@@ -3868,37 +3872,37 @@ function SudokuGame() {
       isReady: false,
       isSpectator: false
     }]),
-    _useState156 = _slicedToArray(_useState155, 2),
-    playersList = _useState156[0],
-    setPlayersList = _useState156[1];
-  var _useState157 = useState(false),
     _useState158 = _slicedToArray(_useState157, 2),
-    isConnecting = _useState158[0],
-    setIsConnecting = _useState158[1];
-  var _useState159 = useState(""),
+    playersList = _useState158[0],
+    setPlayersList = _useState158[1];
+  var _useState159 = useState(false),
     _useState160 = _slicedToArray(_useState159, 2),
-    connectionStatus = _useState160[0],
-    setConnectionStatus = _useState160[1];
-  var _useState161 = useState(false),
+    isConnecting = _useState160[0],
+    setIsConnecting = _useState160[1];
+  var _useState161 = useState(""),
     _useState162 = _slicedToArray(_useState161, 2),
-    showCancelButton = _useState162[0],
-    setShowCancelButton = _useState162[1];
-  var _useState163 = useState(true),
+    connectionStatus = _useState162[0],
+    setConnectionStatus = _useState162[1];
+  var _useState163 = useState(false),
     _useState164 = _slicedToArray(_useState163, 2),
-    showOtherCursors = _useState164[0],
-    setShowOtherCursors = _useState164[1];
+    showCancelButton = _useState164[0],
+    setShowCancelButton = _useState164[1];
   var _useState165 = useState(true),
     _useState166 = _slicedToArray(_useState165, 2),
-    showGhostProgress = _useState166[0],
-    setShowGhostProgress = _useState166[1];
-  var _useState167 = useState({}),
+    showOtherCursors = _useState166[0],
+    setShowOtherCursors = _useState166[1];
+  var _useState167 = useState(true),
     _useState168 = _slicedToArray(_useState167, 2),
-    cursors = _useState168[0],
-    setCursors = _useState168[1];
-  var _useState169 = useState([]),
+    showGhostProgress = _useState168[0],
+    setShowGhostProgress = _useState168[1];
+  var _useState169 = useState({}),
     _useState170 = _slicedToArray(_useState169, 2),
-    ripples = _useState170[0],
-    setRipples = _useState170[1];
+    cursors = _useState170[0],
+    setCursors = _useState170[1];
+  var _useState171 = useState([]),
+    _useState172 = _slicedToArray(_useState171, 2),
+    ripples = _useState172[0],
+    setRipples = _useState172[1];
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -7879,14 +7883,14 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState171 = useState(false),
-    _useState172 = _slicedToArray(_useState171, 2),
-    platTournLock = _useState172[0],
-    setPlatTournLock = _useState172[1];
   var _useState173 = useState(false),
     _useState174 = _slicedToArray(_useState173, 2),
-    platHub = _useState174[0],
-    setPlatHub = _useState174[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+    platTournLock = _useState174[0],
+    setPlatTournLock = _useState174[1];
+  var _useState175 = useState(false),
+    _useState176 = _slicedToArray(_useState175, 2),
+    platHub = _useState176[0],
+    setPlatHub = _useState176[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var platSessRef = useRef(null); // 殼 launch 的原始 sess（hub 判斷與代表色 sess.color 的來源；exit 時清空）
   var isShellColor = function isShellColor(c) {
@@ -7894,14 +7898,14 @@ function SudokuGame() {
   }; // 殼代表色合法值：20 色之一或彩虹
   var hubStartTimerRef = useRef(null);
   var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
-  var _useState175 = useState(null),
-    _useState176 = _slicedToArray(_useState175, 2),
-    tournRoundInfo = _useState176[0],
-    setTournRoundInfo = _useState176[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
-  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState177 = useState(0),
+  var _useState177 = useState(null),
     _useState178 = _slicedToArray(_useState177, 2),
-    setTournTick = _useState178[1];
+    tournRoundInfo = _useState178[0],
+    setTournRoundInfo = _useState178[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
+  var _useState179 = useState(0),
+    _useState180 = _slicedToArray(_useState179, 2),
+    setTournTick = _useState180[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -8773,112 +8777,129 @@ function SudokuGame() {
     }
   };
   var renderHostGodView = function renderHostGodView() {
+    // v1.44 Q5 拍板：廢多盤面總覽，改單盤＋選手切換（與數橋/地雷觀戰同式：主欄白卡、標題統一）
     var activePlayers = playersList.filter(function (p) {
       return !p.isSpectator;
     });
     if (activePlayers.length === 0) return /*#__PURE__*/React.createElement("div", {
       className: "text-slate-500 text-2xl font-black flex items-center justify-center flex-1"
     }, "\u7B49\u5F85\u73A9\u5BB6\u52A0\u5165...");
+    var others = activePlayers.filter(function (p) {
+      return p.id !== myId;
+    });
+    var watchable = others.length ? others : activePlayers;
+    var sel = watchable.find(function (p) {
+      return p.id === godUid;
+    }) || watchable[0];
+    var iFinished = stateRef.current.brawlWinners.some(function (w) {
+      return w.id === myId;
+    }); // 大亂鬥的 winner 要等全場結束才設定；「我已完賽」看 brawlWinners 才準（標題與數橋/地雷同式）
+    var size = cSizeDef.size;
+    var CS = 40,
+      pw = size * CS;
     return /*#__PURE__*/React.createElement("div", {
-      className: "w-full h-full p-2 md:p-4 overflow-y-auto bg-slate-900 border-t-4 border-slate-800 grid gap-2 md:gap-4 auto-rows-max",
-      style: {
-        gridTemplateColumns: "repeat(auto-fit, minmax(".concat(Math.min(300, Math.max(150, 600 / Math.max(1, Math.ceil(activePlayers.length / 2)))), "px, 1fr))")
-      }
-    }, activePlayers.map(function (p) {
-      var size = cSizeDef.size;
-      var pw = size * 22;
-      return /*#__PURE__*/React.createElement("div", {
+      className: "w-full max-w-md mx-auto bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-4 md:p-5 animate-fadeIn my-4"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-black text-xl text-slate-800 text-center mb-3"
+    }, winner || iFinished ? '🏁 已完賽・觀戰中' : '👁️ 觀戰中'), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap justify-center gap-1.5 mb-3"
+    }, watchable.map(function (p) {
+      return /*#__PURE__*/React.createElement("button", {
         key: p.id,
-        className: "flex flex-col items-center bg-slate-800 rounded-lg p-2 border-[3px] shadow-[4px_4px_0px_rgba(0,0,0,0.5)]",
-        style: {
-          borderColor: p.color === 'rainbow' ? '#ffcc00' : p.color
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "text-white font-black mb-2 flex items-center gap-2 text-sm uppercase tracking-wider"
+        onClick: function onClick() {
+          return setGodUid(p.id);
+        },
+        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none " + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")
       }, /*#__PURE__*/React.createElement("span", {
-        className: "w-3 h-3 rounded-full shadow-inner",
+        className: "w-3 h-3 rounded-full border border-slate-800 shrink-0",
         style: {
           background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color
         }
-      }), p.name, " ", p.isHost && '👑', stateRef.current.brawlWinners.some(function (w) {
-        return w.id === p.id;
-      }) && /*#__PURE__*/React.createElement("span", {
-        className: "ml-1 text-[10px] bg-yellow-400 text-slate-800 px-1.5 py-0.5 rounded font-black shadow-[1px_1px_0px_#000]"
-      }, "\u5DF2\u5B8C\u6210")), /*#__PURE__*/React.createElement("svg", {
-        viewBox: "0 0 ".concat(pw, " ").concat(pw),
-        className: "w-full h-auto max-w-[400px]",
+      }), p.name, " ", p.isHost && '👑', " ", ghostProgress[p.id] || 0, "%");
+    })), /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 ".concat(pw, " ").concat(pw),
+      className: "w-full h-auto",
+      style: {
+        aspectRatio: '1/1',
+        background: '#1e293b',
+        borderRadius: '8px'
+      }
+    }, cells.map(function (cell) {
+      var cx = cell.x * CS;
+      var cy = cell.y * CS;
+      var isFilled = false;
+      var color = "rgba(255,255,255,0.05)";
+      var val = "";
+      if (cell.isGiven || cell.isSystemRevealed) {
+        isFilled = true;
+        color = "#475569";
+        val = cell.value;
+      } else if (ghostHints[cell.id] && ghostHints[cell.id][sel.id]) {
+        isFilled = true;
+        var hint = ghostHints[cell.id][sel.id];
+        color = _typeof(hint) === 'object' ? hint.color : hint;
+        val = _typeof(hint) === 'object' ? hint.value : "";
+      }
+      return /*#__PURE__*/React.createElement("g", {
+        key: cell.id
+      }, /*#__PURE__*/React.createElement("rect", {
+        x: cx + 1,
+        y: cy + 1,
+        width: CS - 2,
+        height: CS - 2,
+        fill: color,
+        fillOpacity: isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) ? "0.3" : "1",
+        rx: "3"
+      }), isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) && /*#__PURE__*/React.createElement("text", {
+        x: cx + CS / 2,
+        y: cy + CS / 2 + 7,
+        textAnchor: "middle",
+        fill: "white",
+        className: "font-black",
         style: {
-          aspectRatio: '1/1',
-          background: '#1e293b',
-          borderRadius: '4px'
+          fontSize: '20px'
         }
-      }, cells.map(function (cell) {
-        var cx = cell.x * 22;
-        var cy = cell.y * 22;
-        var isFilled = false;
-        var color = "rgba(255,255,255,0.05)";
-        var val = "";
-        if (cell.isGiven || cell.isSystemRevealed) {
-          isFilled = true;
-          color = "#475569";
-          val = cell.value;
-        } else if (ghostHints[cell.id] && ghostHints[cell.id][p.id]) {
-          isFilled = true;
-          var hint = ghostHints[cell.id][p.id];
-          color = _typeof(hint) === 'object' ? hint.color : hint;
-          val = _typeof(hint) === 'object' ? hint.value : "";
-        }
-        return /*#__PURE__*/React.createElement("g", {
-          key: cell.id
-        }, /*#__PURE__*/React.createElement("rect", {
-          x: cx + 1,
-          y: cy + 1,
-          width: "20",
-          height: "20",
-          fill: color,
-          fillOpacity: isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) ? "0.3" : "1",
-          rx: "2"
-        }), isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) && /*#__PURE__*/React.createElement("text", {
-          x: cx + 11,
-          y: cy + 15,
-          textAnchor: "middle",
-          fill: "white",
-          className: "font-black",
-          style: {
-            fontSize: '12px'
-          }
-        }, val));
-      }), Array.from({
-        length: size + 1
-      }).map(function (_, i) {
-        var isThickX = i % cSizeDef.boxW === 0;
-        var isThickY = i % cSizeDef.boxH === 0;
-        return /*#__PURE__*/React.createElement("g", {
-          key: "god-grid-".concat(i),
-          className: "pointer-events-none"
-        }, /*#__PURE__*/React.createElement("line", {
-          x1: i * 22,
-          y1: 0,
-          x2: i * 22,
-          y2: pw,
-          stroke: "#94a3b8",
-          strokeWidth: isThickX ? 2 : 0.5,
-          strokeOpacity: isThickX ? 1 : 0.3,
-          strokeLinecap: isThickX ? 'square' : 'butt'
-        }), /*#__PURE__*/React.createElement("line", {
-          x1: 0,
-          y1: i * 22,
-          x2: pw,
-          y2: i * 22,
-          stroke: "#94a3b8",
-          strokeWidth: isThickY ? 2 : 0.5,
-          strokeOpacity: isThickY ? 1 : 0.3,
-          strokeLinecap: isThickY ? 'square' : 'butt'
-        }));
-      })));
-    }));
+      }, val));
+    }), Array.from({
+      length: size + 1
+    }).map(function (_, i) {
+      var isThickX = i % cSizeDef.boxW === 0;
+      var isThickY = i % cSizeDef.boxH === 0;
+      return /*#__PURE__*/React.createElement("g", {
+        key: "god-grid-".concat(i),
+        className: "pointer-events-none"
+      }, /*#__PURE__*/React.createElement("line", {
+        x1: i * CS,
+        y1: 0,
+        x2: i * CS,
+        y2: pw,
+        stroke: "#94a3b8",
+        strokeWidth: isThickX ? 3 : 1,
+        strokeOpacity: isThickX ? 1 : 0.3,
+        strokeLinecap: isThickX ? 'square' : 'butt'
+      }), /*#__PURE__*/React.createElement("line", {
+        x1: 0,
+        y1: i * CS,
+        x2: pw,
+        y2: i * CS,
+        stroke: "#94a3b8",
+        strokeWidth: isThickY ? 3 : 1,
+        strokeOpacity: isThickY ? 1 : 0.3,
+        strokeLinecap: isThickY ? 'square' : 'butt'
+      }));
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "mt-3 flex items-center justify-center gap-2 font-black text-slate-700 text-sm"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "w-3.5 h-3.5 rounded-full border-2 border-slate-800",
+      style: {
+        background: sel.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : sel.color
+      }
+    }), sel.name, " ", sel.isHost && '👑', " \u7684\u76E4\u9762\u30FB\u9032\u5EA6 ", ghostProgress[sel.id] || 0, "%", stateRef.current.brawlWinners.some(function (w) {
+      return w.id === sel.id;
+    }) && /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] bg-yellow-400 text-slate-800 px-1.5 py-0.5 rounded font-black shadow-[1px_1px_0px_#000]"
+    }, "\u5DF2\u5B8C\u6210")));
   };
-
   // ==========================================
   // 新增：連線狀態蓋板 (v3.8.14)
   // ==========================================
@@ -22496,7 +22517,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.43.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.44.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。

@@ -145,6 +145,7 @@ function SudokuGame() {
     const [foggedBoxes, setFoggedBoxes] = useState({});     // { boxId: expiryTimestamp }
     const [erasingCells, setErasingCells] = useState({});   // { cellId: { value, timestamp } }
     const [finishViewMode, setFinishViewMode] = useState('my'); // 'my' | 'god'
+    const [godUid, setGodUid] = useState(null); // 上帝視角正在看的選手（v1.44 Q5：觀戰改單盤＋選手切換，比照數橋/地雷）
     const lastMilestoneRef = useRef(0);    // 已跨越的 5% 里程碑數量（0~19，逐格補報不跳過）
     const giftCreditRef = useRef(0);       // 禮物計量額度：每完成一個行/列/宮/數字 +0.5，湊滿 1 才送出
 
@@ -2929,65 +2930,69 @@ function SudokuGame() {
         }
     };
     const renderHostGodView = () => {
+        // v1.44 Q5 拍板：廢多盤面總覽，改單盤＋選手切換（與數橋/地雷觀戰同式：主欄白卡、標題統一）
         const activePlayers = playersList.filter(p => !p.isSpectator);
         if (activePlayers.length === 0) return <div className="text-slate-500 text-2xl font-black flex items-center justify-center flex-1">等待玩家加入...</div>;
-
+        const others = activePlayers.filter(p => p.id !== myId);
+        const watchable = others.length ? others : activePlayers;
+        const sel = watchable.find(p => p.id === godUid) || watchable[0];
+        const iFinished = stateRef.current.brawlWinners.some(w => w.id === myId); // 大亂鬥的 winner 要等全場結束才設定；「我已完賽」看 brawlWinners 才準（標題與數橋/地雷同式）
+        const size = cSizeDef.size;
+        const CS = 40, pw = size * CS;
         return (
-            <div className="w-full h-full p-2 md:p-4 overflow-y-auto bg-slate-900 border-t-4 border-slate-800 grid gap-2 md:gap-4 auto-rows-max" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${Math.min(300, Math.max(150, 600 / Math.max(1, Math.ceil(activePlayers.length / 2))))}px, 1fr))` }}>
-                {activePlayers.map(p => {
-                    const size = cSizeDef.size;
-                    const pw = size * 22;
-                    return (
-                        <div key={p.id} className="flex flex-col items-center bg-slate-800 rounded-lg p-2 border-[3px] shadow-[4px_4px_0px_rgba(0,0,0,0.5)]" style={{ borderColor: p.color === 'rainbow' ? '#ffcc00' : p.color }}>
-                            <div className="text-white font-black mb-2 flex items-center gap-2 text-sm uppercase tracking-wider">
-                                <span className="w-3 h-3 rounded-full shadow-inner" style={{ background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></span>
-                                {p.name} {p.isHost && '👑'}
-                                {stateRef.current.brawlWinners.some(w => w.id === p.id) && <span className="ml-1 text-[10px] bg-yellow-400 text-slate-800 px-1.5 py-0.5 rounded font-black shadow-[1px_1px_0px_#000]">已完成</span>}
-                            </div>
-                            <svg viewBox={`0 0 ${pw} ${pw}`} className="w-full h-auto max-w-[400px]" style={{ aspectRatio: '1/1', background: '#1e293b', borderRadius: '4px' }}>
-                                {cells.map(cell => {
-                                    const cx = cell.x * 22;
-                                    const cy = cell.y * 22;
-                                    let isFilled = false;
-                                    let color = "rgba(255,255,255,0.05)";
-                                    let val = "";
-
-                                    if (cell.isGiven || cell.isSystemRevealed) {
-                                        isFilled = true; color = "#475569"; val = cell.value;
-                                    } else if (ghostHints[cell.id] && ghostHints[cell.id][p.id]) {
-                                        isFilled = true;
-                                        const hint = ghostHints[cell.id][p.id];
-                                        color = typeof hint === 'object' ? hint.color : hint;
-                                        val = typeof hint === 'object' ? hint.value : "";
-                                    }
-
-                                    return (
-                                        <g key={cell.id}>
-                                            <rect x={cx + 1} y={cy + 1} width="20" height="20" fill={color} fillOpacity={(isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode)) ? "0.3" : "1"} rx="2" />
-                                            {isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) && (
-                                                <text x={cx + 11} y={cy + 15} textAnchor="middle" fill="white" className="font-black" style={{ fontSize: '12px' }}>{val}</text>
-                                            )}
-                                        </g>
-                                    );
-                                })}
-                                {Array.from({ length: size + 1 }).map((_, i) => {
-                                    const isThickX = i % cSizeDef.boxW === 0;
-                                    const isThickY = i % cSizeDef.boxH === 0;
-                                    return (
-                                        <g key={`god-grid-${i}`} className="pointer-events-none">
-                                            <line x1={i * 22} y1={0} x2={i * 22} y2={pw} stroke="#94a3b8" strokeWidth={isThickX ? 2 : 0.5} strokeOpacity={isThickX ? 1 : 0.3} strokeLinecap={isThickX ? 'square' : 'butt'} />
-                                            <line x1={0} y1={i * 22} x2={pw} y2={i * 22} stroke="#94a3b8" strokeWidth={isThickY ? 2 : 0.5} strokeOpacity={isThickY ? 1 : 0.3} strokeLinecap={isThickY ? 'square' : 'butt'} />
-                                        </g>
-                                    );
-                                })}
-                            </svg>
-                        </div>
-                    );
-                })}
+            <div className="w-full max-w-md mx-auto bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-4 md:p-5 animate-fadeIn my-4">
+                <div className="font-black text-xl text-slate-800 text-center mb-3">{(winner || iFinished) ? '🏁 已完賽・觀戰中' : '👁️ 觀戰中'}</div>
+                <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+                    {watchable.map(p => (
+                        <button key={p.id} onClick={() => setGodUid(p.id)} className={"flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none " + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")}>
+                            <span className="w-3 h-3 rounded-full border border-slate-800 shrink-0" style={{ background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></span>
+                            {p.name} {p.isHost && '👑'} {ghostProgress[p.id] || 0}%
+                        </button>
+                    ))}
+                </div>
+                <svg viewBox={`0 0 ${pw} ${pw}`} className="w-full h-auto" style={{ aspectRatio: '1/1', background: '#1e293b', borderRadius: '8px' }}>
+                    {cells.map(cell => {
+                        const cx = cell.x * CS;
+                        const cy = cell.y * CS;
+                        let isFilled = false;
+                        let color = "rgba(255,255,255,0.05)";
+                        let val = "";
+                        if (cell.isGiven || cell.isSystemRevealed) {
+                            isFilled = true; color = "#475569"; val = cell.value;
+                        } else if (ghostHints[cell.id] && ghostHints[cell.id][sel.id]) {
+                            isFilled = true;
+                            const hint = ghostHints[cell.id][sel.id];
+                            color = typeof hint === 'object' ? hint.color : hint;
+                            val = typeof hint === 'object' ? hint.value : "";
+                        }
+                        return (
+                            <g key={cell.id}>
+                                <rect x={cx + 1} y={cy + 1} width={CS - 2} height={CS - 2} fill={color} fillOpacity={(isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode)) ? "0.3" : "1"} rx="3" />
+                                {isFilled && (cell.isGiven || cell.isSystemRevealed || brawlSettings.showNumbersInGodMode) && (
+                                    <text x={cx + CS / 2} y={cy + CS / 2 + 7} textAnchor="middle" fill="white" className="font-black" style={{ fontSize: '20px' }}>{val}</text>
+                                )}
+                            </g>
+                        );
+                    })}
+                    {Array.from({ length: size + 1 }).map((_, i) => {
+                        const isThickX = i % cSizeDef.boxW === 0;
+                        const isThickY = i % cSizeDef.boxH === 0;
+                        return (
+                            <g key={`god-grid-${i}`} className="pointer-events-none">
+                                <line x1={i * CS} y1={0} x2={i * CS} y2={pw} stroke="#94a3b8" strokeWidth={isThickX ? 3 : 1} strokeOpacity={isThickX ? 1 : 0.3} strokeLinecap={isThickX ? 'square' : 'butt'} />
+                                <line x1={0} y1={i * CS} x2={pw} y2={i * CS} stroke="#94a3b8" strokeWidth={isThickY ? 3 : 1} strokeOpacity={isThickY ? 1 : 0.3} strokeLinecap={isThickY ? 'square' : 'butt'} />
+                            </g>
+                        );
+                    })}
+                </svg>
+                <div className="mt-3 flex items-center justify-center gap-2 font-black text-slate-700 text-sm">
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-800" style={{ background: sel.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : sel.color }}></span>
+                    {sel.name} {sel.isHost && '👑'} 的盤面・進度 {ghostProgress[sel.id] || 0}%
+                    {stateRef.current.brawlWinners.some(w => w.id === sel.id) && <span className="text-[10px] bg-yellow-400 text-slate-800 px-1.5 py-0.5 rounded font-black shadow-[1px_1px_0px_#000]">已完成</span>}
+                </div>
             </div>
         );
     };
-
     // ==========================================
     // 新增：連線狀態蓋板 (v3.8.14)
     // ==========================================
