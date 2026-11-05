@@ -42,6 +42,11 @@ async function main() {
   await sleep(300);
   ok([...d.querySelectorAll('#view-sudoku p')].some(x => x.textContent.includes('答對了')), '數獨：答對有回饋');
   ok(clickBtn(b => b.textContent.includes('跳過'), d.querySelector('#view-sudoku')), '數獨：關教學');
+  // 框框等高（v1.46.3）：四張卡都帶固定高度 class、按鈕列在第 1 頁有佔位（3 格）
+  ok(clickBtn(b => b.textContent.includes('玩法教學'), d.querySelector('#view-sudoku')), '數獨：重開教學驗等高');
+  await sleep(300);
+  ok([...d.querySelectorAll('#view-sudoku div')].filter(x => (x.className || '').includes('h-[400px]')).length === 4, '數獨：四張教學卡同高（h-[400px]）');
+  ok(clickBtn(b => b.textContent.includes('跳過'), d.querySelector('#view-sudoku')), '數獨：再關教學');
 
   // ---------- 踩地雷 ----------
   w.PLAT_show('mines');
@@ -51,6 +56,7 @@ async function main() {
   ok(clickBtn(b => b.textContent.includes('玩法教學'), root), '地雷：開教學');
   await sleep(400);
   const modeCardHidden = () => { const p = [...root.querySelectorAll('p')].find(x => x.textContent.includes('多人競速')); const card = p && p.closest('div.bg-white'); return card ? card.className.includes('hidden') : null; };
+  ok([...root.querySelectorAll('div')].filter(x => (x.className || '').includes('h-[400px]')).length === 4, '地雷：四張教學卡同高（h-[400px]，模式介紹已併入末卡）');
   ok(modeCardHidden() === true, '地雷：模式介紹卡在第 1 頁不出現（只出現一次）');
   ok(demoCells().length === 9, '地雷：卡1 有 9 格可點的 demo 盤（實際 ' + demoCells().length + '）');
   // 踩雷路徑：點第 3 格（index 2 = 雷）
@@ -76,6 +82,14 @@ async function main() {
   for (let s2 = 0; s2 < 3; s2++) { clickBtn(b => b.textContent.includes('下一步'), root); await sleep(200); }
   ok(modeCardHidden() === false, '地雷：模式介紹卡只在最後一頁出現');
   ok(clickBtn(b => b.textContent.includes('開始遊戲'), root), '地雷：步進走到開始遊戲關閉');
+
+  // ---------- 數橋（等高結構） ----------
+  w.PLAT_show('hashi');
+  await waitFor(() => d.querySelector('#view-hashi h1'), 60000, 'hashi home');
+  ok(clickBtn(b => b.textContent.includes('玩法教學'), d.querySelector('#view-hashi')), '數橋：開教學');
+  await sleep(400);
+  ok([...d.querySelectorAll('#view-hashi div')].some(x => (x.className || '').includes('h-[430px]')), '數橋：教學內容區固定高度（h-[430px]）');
+  ok(clickBtn(b => b.textContent.includes('跳過'), d.querySelector('#view-hashi')), '數橋：關教學');
 
   ok(errors.length === 0, '零錯誤' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   console.log('\nRESULT tutdemo: ' + pass + ' pass / ' + fail + ' fail' + (fails.length ? ' FAILS: ' + fails.join('；') : ''));

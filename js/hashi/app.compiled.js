@@ -5328,22 +5328,26 @@ function HashiGame() {
       { className: 'bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-lg animate-popUpCenter' },
       React.createElement(
         'div',
-        { className: 'text-5xl mb-3 text-center' },
-        TUTORIAL_STEPS[tutorialStep].icon
+        { className: 'h-[430px] flex flex-col justify-center' },
+        React.createElement(
+          'div',
+          { className: 'text-5xl mb-3 text-center' },
+          TUTORIAL_STEPS[tutorialStep].icon
+        ),
+        React.createElement(
+          'h2',
+          { className: 'text-xl font-black text-slate-800 mb-2 text-center' },
+          TUTORIAL_STEPS[tutorialStep].title
+        ),
+        React.createElement(
+          'p',
+          { className: 'text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center' },
+          TUTORIAL_STEPS[tutorialStep].body
+        ),
+        TUTORIAL_STEPS[tutorialStep].demo === 'connect' && React.createElement(ConnectDemo, null),
+        TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && React.createElement(BridgeDemo, null),
+        TUTORIAL_STEPS[tutorialStep].demo === 'draft' && React.createElement(DraftDemo, null)
       ),
-      React.createElement(
-        'h2',
-        { className: 'text-xl font-black text-slate-800 mb-2 text-center' },
-        TUTORIAL_STEPS[tutorialStep].title
-      ),
-      React.createElement(
-        'p',
-        { className: 'text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center' },
-        TUTORIAL_STEPS[tutorialStep].body
-      ),
-      TUTORIAL_STEPS[tutorialStep].demo === 'connect' && React.createElement(ConnectDemo, null),
-      TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && React.createElement(BridgeDemo, null),
-      TUTORIAL_STEPS[tutorialStep].demo === 'draft' && React.createElement(DraftDemo, null),
       React.createElement(
         'div',
         { className: 'flex justify-center gap-2 mb-5' },
@@ -5354,13 +5358,13 @@ function HashiGame() {
       React.createElement(
         'div',
         { className: 'flex gap-3' },
-        tutorialStep > 0 && React.createElement(
+        tutorialStep > 0 ? React.createElement(
           'button',
           { onClick: function onClick() {
               window.HASHI_SOUND.play('click');setTutorialStep(tutorialStep - 1);
             }, className: 'flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
           '\u4E0A\u4E00\u6B65'
-        ),
+        ) : React.createElement('div', { className: 'flex-1' }),
         React.createElement(
           'button',
           { onClick: closeTutorial, className: 'flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },

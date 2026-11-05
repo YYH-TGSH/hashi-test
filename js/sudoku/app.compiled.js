@@ -5699,7 +5699,7 @@ function SudokuGame() {
   }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
     className: "text-2xl font-black text-slate-800 border-b-4 border-[#ffcc00] inline-block pb-1 mb-5"
   }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")
+    className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5734,7 +5734,7 @@ function SudokuGame() {
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-bold text-slate-700"
   }, tutDemoVal === 8 ? '✅ 答對了！中間這格就是 8——先點格子、再按數字鍵，就是這樣填的' : tutDemoWrong ? '❌ ' + tutDemoWrong + ' 不對喔，再想想這一格該填多少' : '動手試試：中間發亮的格子該填哪個數字？點下面的數字鍵試試')), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
+    className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5748,7 +5748,7 @@ function SudokuGame() {
   }, "\u270F\uFE0F"))), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-bold text-slate-700"
   }, "\u9084\u4E0D\u78BA\u5B9A\uFF1F\u5148\u958B\u7B46\u8A18\uFF0C\u628A\u53EF\u80FD\u7684\u6578\u5B57\u8A18\u4E0B\u4F86")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
+    className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -5764,7 +5764,7 @@ function SudokuGame() {
   }))), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-bold text-slate-700"
   }, "\u6BCF\u4E00\u884C\u3001\u6BCF\u4E00\u5217\u3001\u6BCF\u500B 3\xD73 \u5BAE\uFF0C1~9 \u90FD\u4E0D\u80FD\u91CD\u8907")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
+    className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-2 mb-3 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
@@ -5782,12 +5782,14 @@ function SudokuGame() {
     });
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-3"
-  }, tutStep > 0 && /*#__PURE__*/React.createElement("button", {
+  }, tutStep > 0 ? /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setTutStep(tutStep - 1);
     },
     className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800"
-  }, "\u4E0A\u4E00\u6B65"), /*#__PURE__*/React.createElement("button", {
+  }, "\u4E0A\u4E00\u6B65") : /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowTutorial(false);
     },

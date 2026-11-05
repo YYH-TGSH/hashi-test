@@ -3398,7 +3398,7 @@ function MinesGame() {
     }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
       className: "text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")
+      className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center mb-3"
     }, /*#__PURE__*/React.createElement("div", {
@@ -3456,7 +3456,7 @@ function MinesGame() {
       },
       className: "px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
     }, "\u21BA \u518D\u8A66\u4E00\u6B21"))), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
+      className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center mb-3"
     }, /*#__PURE__*/React.createElement("div", {
@@ -3475,7 +3475,7 @@ function MinesGame() {
     }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
     }, "\u61F7\u7591\u662F\u5730\u96F7\uFF1F\u5207\u5230\u300C\u63D2\u65D7\u300D\u6A21\u5F0F\u9EDE\u5B83\uFF0C\u6216\u9577\u6309\u683C\u5B50\u505A\u8A18\u865F")), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
+      className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center mb-3"
     }, /*#__PURE__*/React.createElement("div", {
@@ -3597,7 +3597,7 @@ function MinesGame() {
     }, "\uD83D\uDC46"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
     }, "\u6578\u5B57\u65C1\u7684\u65D7\u5B50\u6578\u525B\u597D\u7B49\u65BC\u6578\u5B57\u6642\uFF0C\u518D\u9EDE\u6578\u5B57\u683C\uFF0C\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\u4E00\u6B21\u6316\u958B")), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
+      className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center gap-8 mb-3"
     }, /*#__PURE__*/React.createElement("div", {
@@ -3622,10 +3622,8 @@ function MinesGame() {
       className: "text-xs font-semibold text-slate-400"
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
-    }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F")), /*#__PURE__*/React.createElement("div", {
-      className: "bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
+    }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F"), /*#__PURE__*/React.createElement("div", {
+      className: "mt-3 pt-3 border-t-2 border-slate-200 font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
     }, /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u76F4\u63A5\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002"))), /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center gap-2 mb-5"
     }, [0, 1, 2, 3].map(function (idx) {
@@ -3635,13 +3633,15 @@ function MinesGame() {
       });
     })), /*#__PURE__*/React.createElement("div", {
       className: "flex gap-3"
-    }, tutStep > 0 && /*#__PURE__*/React.createElement("button", {
+    }, tutStep > 0 ? /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         SFX.click();
         setTutStep(tutStep - 1);
       },
       className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800"
-    }, "\u4E0A\u4E00\u6B65"), /*#__PURE__*/React.createElement("button", {
+    }, "\u4E0A\u4E00\u6B65") : /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setShowHelp(false);
       },

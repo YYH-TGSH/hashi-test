@@ -1365,7 +1365,7 @@ function MinesGame() {
               <button onClick={() => setShowHelp(false)} className="absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10">✕</button>
               <h3 className="text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5">❓ 玩法教學</h3>
 
-              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
+              <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="grid grid-cols-3 gap-[3px]">
                     {[0, 1, -1, 0, 1, 1, 0, 0, 0].map((n, i) => {
@@ -1393,7 +1393,7 @@ function MinesGame() {
                 {tutDemoBoom && (<div className="text-center mt-2"><button onClick={() => { setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); }} className="px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none">↺ 再試一次</button></div>)}
               </div>
 
-              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
+              <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20" style={{ background: 'linear-gradient(145deg,#fdba74,#fb923c)' }}>
                     <span className="mtut-flag text-3xl">🚩</span>
@@ -1406,7 +1406,7 @@ function MinesGame() {
                 <p className="text-center font-bold text-slate-700">懷疑是地雷？切到「插旗」模式點它，或長按格子做記號</p>
               </div>
 
-              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")}>
+              <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 2 ? " hidden" : "")}>
                 <div className="flex justify-center mb-3">
                   <div className="relative">
                     <div className="grid grid-cols-3 gap-[3px]">
@@ -1445,7 +1445,7 @@ function MinesGame() {
                 <p className="text-center font-bold text-slate-700">數字旁的旗子數剛好等於數字時，再點數字格，周圍剩下的格子一次挖開</p>
               </div>
 
-              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
+              <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
                 <div className="flex justify-center gap-8 mb-3">
                   <div className="flex flex-col items-center gap-1">
                     <div className="mtut-boom w-14 h-14 flex items-center justify-center text-3xl rounded-[4px] border border-orange-900/20" style={{ background: '#e2e8f0' }}>💣</div>
@@ -1459,10 +1459,7 @@ function MinesGame() {
                   </div>
                 </div>
                 <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
-              </div>
-
-              <div className={"bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-5 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 3 ? " hidden" : "")}>
-                <div className="font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2">
+                <div className="mt-3 pt-3 border-t-2 border-slate-200 font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2">
                   <p>📅 每日一題：每天同一題（9×9），可以回補今年的舊題目，只有今天的會累積連續天數。</p>
                   <p>👥 多人競速：同一個盤面各玩各的，最快清完的人贏；踩到雷直接出局，照當時進度排名。</p>
                 </div>
@@ -1472,7 +1469,7 @@ function MinesGame() {
                     {[0, 1, 2, 3].map(idx => (<div key={idx} className={"w-2.5 h-2.5 rounded-full border-2 border-slate-800 " + (idx === tutStep ? "bg-[#f97316]" : "bg-white")} />))}
                 </div>
                 <div className="flex gap-3">
-                    {tutStep > 0 && (<button onClick={() => { SFX.click(); setTutStep(tutStep - 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800">上一步</button>)}
+                    {tutStep > 0 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep - 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800">上一步</button>) : (<div className="flex-1"></div>)}
                     <button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400">跳過</button>
                     {tutStep < 3 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep + 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#f97316] text-slate-900">下一步</button>) : (<button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
                 </div>

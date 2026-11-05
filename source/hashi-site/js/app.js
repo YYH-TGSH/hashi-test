@@ -3514,21 +3514,23 @@
       const tutorialOverlay = showTutorial ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-lg animate-popUpCenter">
-            <div className="text-5xl mb-3 text-center">{TUTORIAL_STEPS[tutorialStep].icon}</div>
-            <h2 className="text-xl font-black text-slate-800 mb-2 text-center">{TUTORIAL_STEPS[tutorialStep].title}</h2>
-            <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center">{TUTORIAL_STEPS[tutorialStep].body}</p>
-            {TUTORIAL_STEPS[tutorialStep].demo === 'connect' && <ConnectDemo />}
-            {TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && <BridgeDemo />}
-            {TUTORIAL_STEPS[tutorialStep].demo === 'draft' && <DraftDemo />}
+            <div className="h-[430px] flex flex-col justify-center">
+              <div className="text-5xl mb-3 text-center">{TUTORIAL_STEPS[tutorialStep].icon}</div>
+              <h2 className="text-xl font-black text-slate-800 mb-2 text-center">{TUTORIAL_STEPS[tutorialStep].title}</h2>
+              <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center">{TUTORIAL_STEPS[tutorialStep].body}</p>
+              {TUTORIAL_STEPS[tutorialStep].demo === 'connect' && <ConnectDemo />}
+              {TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && <BridgeDemo />}
+              {TUTORIAL_STEPS[tutorialStep].demo === 'draft' && <DraftDemo />}
+            </div>
             <div className="flex justify-center gap-2 mb-5">
               {TUTORIAL_STEPS.map((_, idx) => (
                 <div key={idx} className={`w-2.5 h-2.5 rounded-full border-2 border-slate-800 ${idx === tutorialStep ? 'bg-[#4ade80]' : 'bg-white'}`} />
               ))}
             </div>
             <div className="flex gap-3">
-              {tutorialStep > 0 && (
+              {tutorialStep > 0 ? (
                 <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep - 1); }} className="flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">上一步</button>
-              )}
+              ) : (<div className="flex-1"></div>)}
               <button onClick={closeTutorial} className="flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">跳過</button>
               {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
                 <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep + 1); }} className="flex-1 py-2.5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">下一步</button>
