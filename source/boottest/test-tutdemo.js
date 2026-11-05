@@ -83,13 +83,19 @@ async function main() {
   ok(modeCardHidden() === false, '地雷：模式介紹卡只在最後一頁出現');
   ok(clickBtn(b => b.textContent.includes('開始遊戲'), root), '地雷：步進走到開始遊戲關閉');
 
-  // ---------- 數橋（等高結構） ----------
+  // ---------- 數橋（v1.47.0 與另兩款同骨架：奶油紙面＋標題＋白卡＋同款點/鈕） ----------
   w.PLAT_show('hashi');
   await waitFor(() => d.querySelector('#view-hashi h1'), 60000, 'hashi home');
   ok(clickBtn(b => b.textContent.includes('玩法教學'), d.querySelector('#view-hashi')), '數橋：開教學');
   await sleep(400);
-  ok([...d.querySelectorAll('#view-hashi div')].some(x => (x.className || '').includes('h-[430px]')), '數橋：教學內容區固定高度（h-[430px]）');
-  ok(clickBtn(b => b.textContent.includes('跳過'), d.querySelector('#view-hashi')), '數橋：關教學');
+  const hTut = [...d.querySelectorAll('#view-hashi h2')].find(x => x.textContent.includes('玩法教學'));
+  ok(!!hTut && (hTut.className || '').includes('border-[#4ade80]'), '數橋：教學有同款標題（❓ 玩法教學＋代表色底線）');
+  ok([...d.querySelectorAll('#view-hashi div')].some(x => (x.className || '').includes('h-[400px]') && (x.className || '').includes('bg-white')), '數橋：教學步驟是同款白卡（h-[400px]）');
+  ok([...d.querySelectorAll('#view-hashi button')].some(b => b.textContent.trim() === '✕'), '數橋：教學有同款 ✕ 關閉鈕');
+  let stepsOk = true;
+  for (let i = 0; i < 5; i++) { if (!clickBtn(b => b.textContent.includes('下一步'), d.querySelector('#view-hashi'))) { stepsOk = false; break; } await sleep(200); }
+  ok(stepsOk, '數橋：教學可翻完 6 步');
+  ok(clickBtn(b => b.textContent.includes('開始遊戲'), d.querySelector('#view-hashi')), '數橋：末步開始遊戲關教學');
 
   ok(errors.length === 0, '零錯誤' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
   console.log('\nRESULT tutdemo: ' + pass + ' pass / ' + fail + ' fail' + (fails.length ? ' FAILS: ' + fails.join('；') : ''));

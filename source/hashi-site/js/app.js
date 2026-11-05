@@ -22,7 +22,7 @@
     // === 首次教學導覽步驟 ===
     const TUTORIAL_STEPS = [
       { icon: "🌉", title: "歡迎來到數橋！", body: "每個圓圈是一座「島」，上面的數字代表這座島需要幾座橋。你的任務：用橋把所有島連成一張網！" },
-      { icon: "👆", title: "怎麼架橋？", body: "從島嶼按住拖曳，會看到預覽線跟著手指，放開即架橋；按住不放也會進入拖曳預覽；也可以直接點擊兩座島之間的空白處：點一下架 1 座橋、點兩下架 2 座、點第三下取消。橋只能走直線或橫線，而且橋跟橋之間不能交叉喔！", demo: 'bridge' },
+      { icon: "👆", title: "怎麼架橋？", body: "從島嶼按住拖曳，會看到預覽線跟著手指，放開即架橋；也可以直接點擊兩座島之間的空白處：點一下架 1 座橋、點兩下架 2 座、點第三下取消。橋只能走直線或橫線，而且橋跟橋之間不能交叉喔！", demo: 'bridge' },
       { icon: "✏️", title: "草稿模式", body: "遊戲下方的工具列可以切換到 ✏️ 草稿模式，先用虛線記下不確定的橋，確定後再轉成實線。", demo: 'draft' },
       { icon: "🔍", title: "縮放與操作", body: "雙指開合可以縮放地圖，也可以用右下角的 ＋ － 按鈕。向下滑動畫布可以自動收合上方選單，爭取更多空間。" },
       { icon: "🌐", title: "多人合作", body: "從平台主畫面進入多人連線，一人按「建立房間」拿到 4 位數代碼，朋友按「加入房間」輸入代碼就能一起解題！每個人的橋會用不同顏色顯示。" },
@@ -3512,30 +3512,34 @@
       };
 
       const tutorialOverlay = showTutorial ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-[#f6fdf6] border-4 border-slate-800 rounded-2xl p-6 shadow-[10px_10px_0px_rgba(30,41,59,1)] w-full max-w-lg animate-popUpCenter">
-            <div className="h-[430px] flex flex-col justify-center">
-              <div className="text-5xl mb-3 text-center">{TUTORIAL_STEPS[tutorialStep].icon}</div>
-              <h2 className="text-xl font-black text-slate-800 mb-2 text-center">{TUTORIAL_STEPS[tutorialStep].title}</h2>
-              <p className="text-sm font-bold text-slate-600 leading-relaxed mb-4 text-center">{TUTORIAL_STEPS[tutorialStep].body}</p>
-              {TUTORIAL_STEPS[tutorialStep].demo === 'connect' && <ConnectDemo />}
-              {TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && <BridgeDemo />}
-              {TUTORIAL_STEPS[tutorialStep].demo === 'draft' && <DraftDemo />}
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" onClick={closeTutorial}>
+          <div className="bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={closeTutorial} className="absolute top-3 right-3 w-11 h-11 rounded-full bg-white border-4 border-slate-800 text-xl font-black text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] z-20 flex items-center justify-center">✕</button>
+            <h2 className="text-3xl font-black text-slate-800 border-b-8 border-[#4ade80] pb-2 inline-block mb-5 relative z-10">❓ 玩法教學</h2>
+            <div className="bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)] h-[400px] flex flex-col">
+              <div className="h-[196px] shrink-0 flex items-center justify-center overflow-hidden w-full">
+                {TUTORIAL_STEPS[tutorialStep].demo === 'connect' && <div className="w-full"><ConnectDemo /></div>}
+                {TUTORIAL_STEPS[tutorialStep].demo === 'bridge' && <div className="w-full"><BridgeDemo /></div>}
+                {TUTORIAL_STEPS[tutorialStep].demo === 'draft' && <div className="w-full"><DraftDemo /></div>}
+                {!TUTORIAL_STEPS[tutorialStep].demo && <div className="text-7xl">{TUTORIAL_STEPS[tutorialStep].icon}</div>}
+              </div>
+              <h3 className="text-lg font-black text-slate-800 text-center mt-1">{TUTORIAL_STEPS[tutorialStep].title}</h3>
+              <p className="text-[13px] font-bold text-slate-600 leading-relaxed text-center mt-1">{TUTORIAL_STEPS[tutorialStep].body}</p>
             </div>
             <div className="flex justify-center gap-2 mb-5">
               {TUTORIAL_STEPS.map((_, idx) => (
-                <div key={idx} className={`w-2.5 h-2.5 rounded-full border-2 border-slate-800 ${idx === tutorialStep ? 'bg-[#4ade80]' : 'bg-white'}`} />
+                <div key={idx} className={`w-3.5 h-3.5 rounded-full border-2 border-slate-800 ${idx === tutorialStep ? 'bg-[#4ade80]' : 'bg-white'}`} />
               ))}
             </div>
             <div className="flex gap-3">
               {tutorialStep > 0 ? (
-                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep - 1); }} className="flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">上一步</button>
+                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep - 1); }} className="flex-1 py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">上一步</button>
               ) : (<div className="flex-1"></div>)}
-              <button onClick={closeTutorial} className="flex-1 py-2.5 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">跳過</button>
+              <button onClick={closeTutorial} className="flex-1 py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-400 shadow-[4px_4px_0px_rgba(30,41,59,1)]">跳過</button>
               {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
-                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep + 1); }} className="flex-1 py-2.5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">下一步</button>
+                <button onClick={() => { window.HASHI_SOUND.play('click'); setTutorialStep(tutorialStep + 1); }} className="flex-1 py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">下一步</button>
               ) : (
-                <button onClick={closeTutorial} className="flex-1 py-2.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">開始遊戲 🎮</button>
+                <button onClick={closeTutorial} className="flex-1 py-4 bg-[#34d399] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">開始遊戲 🎮</button>
               )}
             </div>
           </div>
