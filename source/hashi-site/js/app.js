@@ -3557,7 +3557,7 @@
                     <button onClick={startSinglePlayer} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">👤 單機挑戰</button>
                     <button onClick={() => startDailyMode(dailyMenuDate)} className="w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">📅 每日一題</button>
                     <div className="-mt-2 flex items-center justify-center gap-1.5">
-                      <span className="text-slate-500 font-bold text-xs whitespace-nowrap">🕘 以前的題目</span>
+                      <span className="text-slate-500 font-semibold text-xs whitespace-nowrap">🕘 以前的題目</span>
                       <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, -1)))} disabled={dailyMenuDate <= MIN_DAILY_DATE} className="px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none">◀</button>
                       <button onClick={openDailyCal} className="border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none">📅 {dailyMenuDate}</button>
                       <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, 1)))} disabled={dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr()} className="px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none">▶</button>
@@ -3718,7 +3718,7 @@
                       {colorPickerTarget === p.id && (
                         <div className="absolute top-full mt-2 left-0 sm:left-0 bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-3 shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] w-[180px] animate-fadeIn">
                           <div className="flex justify-between items-center mb-2 border-b-2 border-slate-800 pb-1">
-                            <h3 className="text-xs font-black text-slate-800">🎨 選色</h3>
+                            <h3 className="text-xs font-bold text-slate-800">🎨 選色</h3>
                             <button onClick={(e) => { e.stopPropagation(); setColorPickerTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black leading-none">✕</button>
                           </div>
                           <div className="grid grid-cols-5 gap-1.5">
@@ -3860,7 +3860,7 @@
               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={(e) => { e.stopPropagation(); setEditTarget(null); setColorSeq([]); }}>
                 <div className="bg-[#f6fdf6] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2">
-                    <h3 className="text-sm font-black text-slate-800">⚙️ 個人設定</h3>
+                    <h3 className="text-sm font-bold text-slate-800">⚙️ 個人設定</h3>
                     <button onClick={() => { setEditTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black text-lg leading-none">✕</button>
                   </div>
                   <div className="mb-4">
@@ -4281,7 +4281,7 @@
                   <div className="max-w-md mx-auto bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-5 mt-2">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-xl font-black text-[#1e293b]">{raceState === 'spectating' ? '👁️ 觀戰中' : '🏁 已完賽・觀戰中'}</h2>
-                      <span className="text-xs font-black text-slate-400">比賽結束後自動顯示結果</span>
+                      <span className="text-xs font-semibold text-slate-400">比賽結束後自動顯示結果</span>
                     </div>
                     <div className="flex gap-1.5 mb-3 flex-wrap">
                       {raceRacers.filter(uid => raceState === 'spectating' || uid !== myId).map(uid => {
@@ -4350,7 +4350,7 @@
                   <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 max-w-md w-full my-auto mx-auto">
                     <div className="text-center text-4xl mb-1">🏆</div>
                     <div className="font-black text-2xl text-[#1e293b] text-center">錦標賽・{(tournRoundInfo && tournRoundInfo.playoff) ? '加賽' : ('第 ' + ((tournRoundInfo && tournRoundInfo.round) || '?') + ' 局')}</div>
-                    <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：數橋大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
+                    <div className="font-semibold text-slate-400 text-sm text-center mt-1 mb-4">本局：數橋大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
                     <div className="flex flex-col gap-2 mb-4">
                       {playersList.filter(p => !p.isSpectator).map(p => (
                         <div key={p.id} className="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800">
@@ -4366,7 +4366,7 @@
                     {isHostRef.current ? (
                       <div>
                         <button onClick={() => { if (mpModeRef.current === 'race') startRace(); else startCoop(); }} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
-                        <p className="text-xs text-slate-500 font-bold text-center mt-2">{tournStartNote}</p>
+                        <p className="text-xs text-slate-500 font-semibold text-center mt-2">{tournStartNote}</p>
                       </div>
                     ) : (
                       <p className="font-black text-slate-700 animate-pulse text-center">等待房主開始...</p>
@@ -4378,7 +4378,7 @@
                   <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-8 text-center max-w-sm w-full">
                     <div className="text-5xl mb-3">⏳</div>
                     <div className="font-black text-2xl text-[#1e293b] animate-pulse">等房主開始對局…</div>
-                    <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
+                    <div className="font-semibold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
                   </div>
                 </div>
               ) : null}
@@ -4428,7 +4428,7 @@
                       <button onClick={requestLobby} className="px-4 py-3 bg-red-400 text-slate-900 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] transition-all">🏁 回等待室</button>
                       <button onClick={handleGoHome} className="px-4 py-3 bg-white text-slate-800 border-4 border-slate-800 font-black rounded-xl shadow-[4px_4px_0px_#1e293b] hover:translate-y-[2px] transition-all">離開</button>
                     </div>
-                    {!isHostRef.current && <p className="text-xs font-bold text-slate-400 mt-3">再來一局／回等待室都會帶全員一起</p>}
+                    {!isHostRef.current && <p className="text-xs font-semibold text-slate-400 mt-3">再來一局／回等待室都會帶全員一起</p>}
                   </div>
                 </div>
               )}
@@ -4535,7 +4535,7 @@
                       setCurrentLevelId(stateRef.current.levelId);
                   }} className="text-slate-400 hover:text-slate-800 text-2xl font-black">✕</button>
                 </div>
-                <p className="text-xs font-bold text-slate-500 mb-4">輸入專屬長寬（5 ~ 100），生成超大型合作地圖：</p>
+                <p className="text-xs font-semibold text-slate-500 mb-4">輸入專屬長寬（5 ~ 100），生成超大型合作地圖：</p>
                 <div className="flex flex-col gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1">寬度 (橫向島嶼數):</label>
@@ -4579,7 +4579,7 @@
                 {!chatMin && (
                 <React.Fragment>
                 <div ref={chatListRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-                  {chatMsgs.length === 0 && <p className="text-center text-slate-400 text-xs font-bold py-8">還沒有訊息，打個招呼吧！👋</p>}
+                  {chatMsgs.length === 0 && <p className="text-center text-slate-400 text-xs font-semibold py-8">還沒有訊息，打個招呼吧！👋</p>}
                   {chatMsgs.map(m => (
                     <div key={m.id} className={"flex " + (m.mine ? "justify-end" : "justify-start")}>
                       <div className={"max-w-[82%] px-2.5 py-1.5 rounded-xl border-2 border-slate-800 " + (m.mine ? "bg-[#4ade80]" : "bg-white")}>

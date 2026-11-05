@@ -5434,7 +5434,7 @@ function HashiGame() {
               { className: '-mt-2 flex items-center justify-center gap-1.5' },
               React.createElement(
                 'span',
-                { className: 'text-slate-500 font-bold text-xs whitespace-nowrap' },
+                { className: 'text-slate-500 font-semibold text-xs whitespace-nowrap' },
                 '\uD83D\uDD58 \u4EE5\u524D\u7684\u984C\u76EE'
               ),
               React.createElement(
@@ -5852,7 +5852,7 @@ function HashiGame() {
                 { className: 'flex justify-between items-center mb-2 border-b-2 border-slate-800 pb-1' },
                 React.createElement(
                   'h3',
-                  { className: 'text-xs font-black text-slate-800' },
+                  { className: 'text-xs font-bold text-slate-800' },
                   '\uD83C\uDFA8 \u9078\u8272'
                 ),
                 React.createElement(
@@ -6059,7 +6059,7 @@ function HashiGame() {
             { className: 'flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2' },
             React.createElement(
               'h3',
-              { className: 'text-sm font-black text-slate-800' },
+              { className: 'text-sm font-bold text-slate-800' },
               '\u2699\uFE0F \u500B\u4EBA\u8A2D\u5B9A'
             ),
             React.createElement(
@@ -6597,7 +6597,7 @@ function HashiGame() {
               ),
               React.createElement(
                 'span',
-                { className: 'text-xs font-black text-slate-400' },
+                { className: 'text-xs font-semibold text-slate-400' },
                 '\u6BD4\u8CFD\u7D50\u675F\u5F8C\u81EA\u52D5\u986F\u793A\u7D50\u679C'
               )
             ),
@@ -6787,7 +6787,7 @@ function HashiGame() {
             ),
             React.createElement(
               'div',
-              { className: 'font-bold text-slate-400 text-sm text-center mt-1 mb-4' },
+              { className: 'font-semibold text-slate-400 text-sm text-center mt-1 mb-4' },
               '\u672C\u5C40\uFF1A\u6578\u6A4B\u5927\u4E82\u9B25\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB'
             ),
             React.createElement(
@@ -6846,7 +6846,7 @@ function HashiGame() {
               ),
               React.createElement(
                 'p',
-                { className: 'text-xs text-slate-500 font-bold text-center mt-2' },
+                { className: 'text-xs text-slate-500 font-semibold text-center mt-2' },
                 tournStartNote
               )
             ) : React.createElement(
@@ -6873,7 +6873,7 @@ function HashiGame() {
             ),
             React.createElement(
               'div',
-              { className: 'font-bold text-slate-400 text-sm mt-2' },
+              { className: 'font-semibold text-slate-400 text-sm mt-2' },
               '\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB'
             )
           )
@@ -6985,7 +6985,7 @@ function HashiGame() {
             ),
             !isHostRef.current && React.createElement(
               'p',
-              { className: 'text-xs font-bold text-slate-400 mt-3' },
+              { className: 'text-xs font-semibold text-slate-400 mt-3' },
               '\u518D\u4F86\u4E00\u5C40\uFF0F\u56DE\u7B49\u5F85\u5BA4\u90FD\u6703\u5E36\u5168\u54E1\u4E00\u8D77'
             )
           )
@@ -7218,7 +7218,7 @@ function HashiGame() {
         ),
         React.createElement(
           'p',
-          { className: 'text-xs font-bold text-slate-500 mb-4' },
+          { className: 'text-xs font-semibold text-slate-500 mb-4' },
           '\u8F38\u5165\u5C08\u5C6C\u9577\u5BEC\uFF085 ~ 100\uFF09\uFF0C\u751F\u6210\u8D85\u5927\u578B\u5408\u4F5C\u5730\u5716\uFF1A'
         ),
         React.createElement(
@@ -7346,7 +7346,7 @@ function HashiGame() {
             { ref: chatListRef, className: 'flex-1 overflow-y-auto px-3 py-2 space-y-2' },
             chatMsgs.length === 0 && React.createElement(
               'p',
-              { className: 'text-center text-slate-400 text-xs font-bold py-8' },
+              { className: 'text-center text-slate-400 text-xs font-semibold py-8' },
               '\u9084\u6C92\u6709\u8A0A\u606F\uFF0C\u6253\u500B\u62DB\u547C\u5427\uFF01\uD83D\uDC4B'
             ),
             chatMsgs.map(function (m) {

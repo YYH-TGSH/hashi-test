@@ -8926,9 +8926,9 @@ function SudokuGame() {
       onClick: cancelConnection,
       className: "w-full py-4 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_#1e293b] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all animate-bounce"
     }, "\u274C \u53D6\u6D88\u9023\u7DDA\u4E26\u8FD4\u56DE") : /*#__PURE__*/React.createElement("div", {
-      className: "py-4 text-slate-400 font-bold text-sm animate-pulse italic"
+      className: "py-4 text-slate-400 font-semibold text-sm animate-pulse italic"
     }, "\u8ACB\u7A0D\u5019\uFF0C\u6B63\u52AA\u529B\u5C0B\u627E\u4E3B\u6A5F\u4E2D..."), /*#__PURE__*/React.createElement("p", {
-      className: "text-[10px] text-slate-400 font-bold uppercase tracking-widest"
+      className: "text-[10px] text-slate-400 font-semibold uppercase tracking-widest"
     }, "Connection ID: ", myId.substring(0, 6)))));
   }
   var tutorialOverlay = showTutorial ? /*#__PURE__*/React.createElement("div", {
@@ -9133,7 +9133,7 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform rotate-1"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+    className: "font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2 h-2 bg-amber-400 rounded-full animate-pulse"
   }), " \uD83D\uDCD0 \u9078\u64C7\u7248\u578B"), /*#__PURE__*/React.createElement("div", {
@@ -9149,7 +9149,7 @@ function SudokuGame() {
   }))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform -rotate-1"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+    className: "font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2 h-2 bg-emerald-400 rounded-full animate-pulse"
   }), " \uD83D\uDD25 \u6311\u6230\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", {
@@ -9175,7 +9175,7 @@ function SudokuGame() {
   }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-2xl text-slate-800 text-center"
   }, "\u9326\u6A19\u8CFD\u30FB", tournRoundInfo && tournRoundInfo.playoff ? '加賽' : '第 ' + (tournRoundInfo && tournRoundInfo.round || '?') + ' 局'), /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-slate-400 text-sm text-center mt-1 mb-4"
+    className: "font-semibold text-slate-400 text-sm text-center mt-1 mb-4"
   }, "\u672C\u5C40\uFF1A\u6578\u7368\u5927\u4E82\u9B25\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 mb-4"
   }, playersList.filter(function (p) {
@@ -9208,7 +9208,7 @@ function SudokuGame() {
     disabled: !tournCanStart,
     className: "w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
   }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs text-slate-500 font-bold text-center mt-2"
+    className: "text-xs text-slate-500 font-semibold text-center mt-2"
   }, tournStartNote)) : /*#__PURE__*/React.createElement("p", {
     className: "font-black text-slate-700 animate-pulse text-center"
   }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...")) : platHub ? /*#__PURE__*/React.createElement("div", {
@@ -9218,7 +9218,7 @@ function SudokuGame() {
   }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-2xl text-slate-800 animate-pulse"
   }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-slate-400 text-sm mt-2"
+    className: "font-semibold text-slate-400 text-sm mt-2"
   }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB")) : null), resultsDismissedUi && isBrawlMode && matchPhase === 'finished' && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       resultsDismissRef.current = null;
@@ -10223,7 +10223,7 @@ function SudokuGame() {
       }, medal), /*#__PURE__*/React.createElement("span", {
         className: "w-1 h-full shrink-0 bg-slate-300 rounded-full self-stretch"
       }), /*#__PURE__*/React.createElement("span", {
-        className: "font-bold text-slate-400 flex-1 italic text-sm"
+        className: "font-semibold text-slate-400 flex-1 italic text-sm"
       }, "\u7B49\u5F85\u7B2C ", i + 1, " \u540D\u5B8C\u6210...")));
     }
     return placeholders;
@@ -10262,7 +10262,7 @@ function SudokuGame() {
     },
     className: "flex-1 px-3 py-3 bg-purple-100 text-purple-700 border-[4px] border-purple-700 font-black rounded-xl shadow-[4px_4px_0px_#6d28d9] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\uD83D\uDC41\uFE0F \u8F49\u8B8A\u70BA\u4E0A\u5E1D\u6A21\u5F0F (\u89C0\u6230)"), /*#__PURE__*/React.createElement("div", {
-    className: "w-full text-xs font-bold text-slate-400 mt-2 animate-pulse"
+    className: "w-full text-xs font-semibold text-slate-400 mt-2 animate-pulse"
   }, "\u6BD4\u8CFD\u5C1A\u672A\u7D50\u675F\uFF0C\u60A8\u53EF\u4EE5\u5148\u8F49\u70BA\u89C0\u6230\u6A21\u5F0F...")))))), (isWon || isBrawlMode && winner) && hideVictoryModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute bottom-20 inset-x-0 flex flex-col items-center gap-3 z-50 pointer-events-none"
   }, /*#__PURE__*/React.createElement("div", {
@@ -10351,7 +10351,7 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "text-sm font-black text-slate-800"
+    className: "text-sm font-bold text-slate-800"
   }, "\u2699\uFE0F \u500B\u4EBA\u8A2D\u5B9A"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setColorPickerTarget(null);
@@ -16027,7 +16027,7 @@ function HashiGame() {
               { className: '-mt-2 flex items-center justify-center gap-1.5' },
               React.createElement(
                 'span',
-                { className: 'text-slate-500 font-bold text-xs whitespace-nowrap' },
+                { className: 'text-slate-500 font-semibold text-xs whitespace-nowrap' },
                 '\uD83D\uDD58 \u4EE5\u524D\u7684\u984C\u76EE'
               ),
               React.createElement(
@@ -16445,7 +16445,7 @@ function HashiGame() {
                 { className: 'flex justify-between items-center mb-2 border-b-2 border-slate-800 pb-1' },
                 React.createElement(
                   'h3',
-                  { className: 'text-xs font-black text-slate-800' },
+                  { className: 'text-xs font-bold text-slate-800' },
                   '\uD83C\uDFA8 \u9078\u8272'
                 ),
                 React.createElement(
@@ -16652,7 +16652,7 @@ function HashiGame() {
             { className: 'flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2' },
             React.createElement(
               'h3',
-              { className: 'text-sm font-black text-slate-800' },
+              { className: 'text-sm font-bold text-slate-800' },
               '\u2699\uFE0F \u500B\u4EBA\u8A2D\u5B9A'
             ),
             React.createElement(
@@ -17190,7 +17190,7 @@ function HashiGame() {
               ),
               React.createElement(
                 'span',
-                { className: 'text-xs font-black text-slate-400' },
+                { className: 'text-xs font-semibold text-slate-400' },
                 '\u6BD4\u8CFD\u7D50\u675F\u5F8C\u81EA\u52D5\u986F\u793A\u7D50\u679C'
               )
             ),
@@ -17380,7 +17380,7 @@ function HashiGame() {
             ),
             React.createElement(
               'div',
-              { className: 'font-bold text-slate-400 text-sm text-center mt-1 mb-4' },
+              { className: 'font-semibold text-slate-400 text-sm text-center mt-1 mb-4' },
               '\u672C\u5C40\uFF1A\u6578\u6A4B\u5927\u4E82\u9B25\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB'
             ),
             React.createElement(
@@ -17439,7 +17439,7 @@ function HashiGame() {
               ),
               React.createElement(
                 'p',
-                { className: 'text-xs text-slate-500 font-bold text-center mt-2' },
+                { className: 'text-xs text-slate-500 font-semibold text-center mt-2' },
                 tournStartNote
               )
             ) : React.createElement(
@@ -17466,7 +17466,7 @@ function HashiGame() {
             ),
             React.createElement(
               'div',
-              { className: 'font-bold text-slate-400 text-sm mt-2' },
+              { className: 'font-semibold text-slate-400 text-sm mt-2' },
               '\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB'
             )
           )
@@ -17578,7 +17578,7 @@ function HashiGame() {
             ),
             !isHostRef.current && React.createElement(
               'p',
-              { className: 'text-xs font-bold text-slate-400 mt-3' },
+              { className: 'text-xs font-semibold text-slate-400 mt-3' },
               '\u518D\u4F86\u4E00\u5C40\uFF0F\u56DE\u7B49\u5F85\u5BA4\u90FD\u6703\u5E36\u5168\u54E1\u4E00\u8D77'
             )
           )
@@ -17811,7 +17811,7 @@ function HashiGame() {
         ),
         React.createElement(
           'p',
-          { className: 'text-xs font-bold text-slate-500 mb-4' },
+          { className: 'text-xs font-semibold text-slate-500 mb-4' },
           '\u8F38\u5165\u5C08\u5C6C\u9577\u5BEC\uFF085 ~ 100\uFF09\uFF0C\u751F\u6210\u8D85\u5927\u578B\u5408\u4F5C\u5730\u5716\uFF1A'
         ),
         React.createElement(
@@ -17939,7 +17939,7 @@ function HashiGame() {
             { ref: chatListRef, className: 'flex-1 overflow-y-auto px-3 py-2 space-y-2' },
             chatMsgs.length === 0 && React.createElement(
               'p',
-              { className: 'text-center text-slate-400 text-xs font-bold py-8' },
+              { className: 'text-center text-slate-400 text-xs font-semibold py-8' },
               '\u9084\u6C92\u6709\u8A0A\u606F\uFF0C\u6253\u500B\u62DB\u547C\u5427\uFF01\uD83D\uDC4B'
             ),
             chatMsgs.map(function (m) {
@@ -21213,7 +21213,7 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("h2", {
       className: "font-black text-2xl text-slate-800 mb-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("p", {
-      className: "font-bold text-slate-400 text-sm mb-5"
+      className: "font-semibold text-slate-400 text-sm mb-5"
     }, "\u9078\u4E00\u500B\u76E4\u9762\u5927\u5C0F\u958B\u59CB"), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-3"
     }, [9, 16].map(function (sz) {
@@ -21239,7 +21239,7 @@ function MinesGame() {
     }, custOpen ? '▾ 收起' : '▸ 展開')), custOpen && /*#__PURE__*/React.createElement("div", {
       className: "mt-3 flex flex-col gap-2"
     }, /*#__PURE__*/React.createElement("label", {
-      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+      className: "flex items-center justify-between font-bold text-slate-600 text-sm"
     }, "\u5BEC\u5EA6\uFF08\u5DE6\u53F3\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
       type: "number",
       min: "8",
@@ -21254,7 +21254,7 @@ function MinesGame() {
       },
       className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
     })), /*#__PURE__*/React.createElement("label", {
-      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+      className: "flex items-center justify-between font-bold text-slate-600 text-sm"
     }, "\u9AD8\u5EA6\uFF08\u4E0A\u4E0B\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
       type: "number",
       min: "8",
@@ -21269,7 +21269,7 @@ function MinesGame() {
       },
       className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
     })), /*#__PURE__*/React.createElement("label", {
-      className: "flex items-center justify-between font-black text-slate-600 text-sm"
+      className: "flex items-center justify-between font-bold text-slate-600 text-sm"
     }, "\u5730\u96F7\u6578", /*#__PURE__*/React.createElement("input", {
       type: "number",
       min: "5",
@@ -21283,7 +21283,7 @@ function MinesGame() {
       },
       className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
     })), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold text-slate-400 leading-relaxed"
+      className: "text-xs font-semibold text-slate-400 leading-relaxed"
     }, "\u7BC4\u570D\uFF1A\u5BEC 8\u201330\u3001\u9AD8 8\u201324\u3001\u96F7 5\u2013", effC.w * effC.h - 9, "\uFF08\u4F9D\u76EE\u524D\u5BEC\u9AD8\uFF1B\u9996\u9EDE\u4FDD\u8B77\u9700\u7559 9 \u683C\u7A7A\u767D\uFF09\u3002\u8D85\u51FA\u7BC4\u570D\u6703\u81EA\u52D5\u4FEE\u6B63\uFF0C\u958B\u59CB\u9215\u986F\u793A\u7684\u5C31\u662F\u5BE6\u969B\u6703\u958B\u7684\u76E4\u3002"), /*#__PURE__*/React.createElement("button", {
       onClick: startCustom,
       className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
@@ -21608,7 +21608,7 @@ function MinesGame() {
         background: '#e2e8f0'
       }
     }, "\uD83D\uDCA3"), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-black text-slate-400"
+      className: "text-xs font-semibold text-slate-400"
     }, "\u8E29\u5230\u96F7")), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col items-center gap-1"
     }, /*#__PURE__*/React.createElement("div", {
@@ -21619,7 +21619,7 @@ function MinesGame() {
     }, /*#__PURE__*/React.createElement("span", {
       className: "mtut-trophy text-3xl"
     }, "\uD83C\uDFC6")), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-black text-slate-400"
+      className: "text-xs font-semibold text-slate-400"
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
     }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F")), /*#__PURE__*/React.createElement("div", {
@@ -21677,7 +21677,7 @@ function MinesGame() {
       }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
         className: "font-black text-2xl text-slate-800 animate-pulse"
       }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
-        className: "font-bold text-slate-400 text-sm mt-2"
+        className: "font-semibold text-slate-400 text-sm mt-2"
       }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB"))));
     }
     var racersW = players.filter(function (p) {
@@ -21708,7 +21708,7 @@ function MinesGame() {
     }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
       className: "font-black text-2xl text-slate-800 text-center"
     }, "\u9326\u6A19\u8CFD\u30FB\u7B2C ", tInfo.round || '?', " \u5C40"), /*#__PURE__*/React.createElement("div", {
-      className: "font-bold text-slate-400 text-sm text-center mt-1 mb-4"
+      className: "font-semibold text-slate-400 text-sm text-center mt-1 mb-4"
     }, "\u672C\u5C40\uFF1A\u8E29\u5730\u96F7\u7AF6\u901F\u30FB", szName, "\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB"), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col gap-2 mb-4"
     }, players.map(function (p) {
@@ -21745,7 +21745,7 @@ function MinesGame() {
       onClick: startMatch,
       className: "w-full py-3 bg-[#f97316] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
     }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), startNoteW && /*#__PURE__*/React.createElement("p", {
-      className: "text-xs text-slate-500 font-bold text-center mt-2"
+      className: "text-xs text-slate-500 font-semibold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
       className: "font-black text-slate-700 animate-pulse text-center"
     }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB..."))));
@@ -21794,7 +21794,7 @@ function MinesGame() {
   }, /*#__PURE__*/React.createElement("h3", {
     className: "text-sm md:text-base font-black mb-1 border-b-[3px] border-[#f97316] inline-block pb-0.5"
   }, "\uD83D\uDCDC \u904A\u6232\u898F\u5247"), /*#__PURE__*/React.createElement("ol", {
-    className: "list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold"
+    className: "list-decimal list-outside ml-4 space-y-1 text-xs md:text-sm leading-relaxed font-bold"
   }, /*#__PURE__*/React.createElement("li", null, "\u9EDE\u683C\u5B50\u6316\u958B\uFF1A\u6578\u5B57\u4EE3\u8868\u5468\u570D 8 \u683C\u7684\u5730\u96F7\u6578\uFF0C\u7A7A\u767D\u683C\u6703\u81EA\u52D5\u5C55\u958B\u3002"), /*#__PURE__*/React.createElement("li", null, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\uFF0B\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u5730\u96F7\uFF0C\u653E\u5FC3\u958B\u59CB\u3002"), /*#__PURE__*/React.createElement("li", null, "\u89BA\u5F97\u662F\u96F7\u5C31\u63D2\u65D7\uFF1A\u5207\u5230 \uD83D\uDEA9 \u63D2\u65D7\u6A21\u5F0F\u518D\u9EDE\u683C\u5B50\uFF0C\u6216\u9577\u6309\u683C\u5B50\u76F4\u63A5\u63D2\u65D7\u3002"), /*#__PURE__*/React.createElement("li", null, "\u6578\u5B57\u548C\u5468\u570D\u7684\u65D7\u6578\u4E00\u6A23\u6642\uFF0C\u518D\u9EDE\u90A3\u500B\u6578\u5B57\uFF0C\u53EF\u4E00\u6B21\u6316\u958B\u5468\u570D\u5269\u4E0B\u7684\u683C\u5B50\uFF08\u6316\u958B\uFF0F\u63D2\u65D7\u6A21\u5F0F\u90FD\u53EF\u4EE5\uFF09\u3002")))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-2 w-full"
   }, mpOn ? /*#__PURE__*/React.createElement("span", {
@@ -21993,7 +21993,7 @@ function MinesGame() {
   }, "\u2699\uFE0F \u81EA\u8A02\u76E4\u9762"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2"
   }, /*#__PURE__*/React.createElement("label", {
-    className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    className: "flex items-center justify-between font-bold text-slate-600 text-sm"
   }, "\u5BEC\u5EA6\uFF08\u5DE6\u53F3\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
     type: "number",
     min: "8",
@@ -22008,7 +22008,7 @@ function MinesGame() {
     },
     className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
   })), /*#__PURE__*/React.createElement("label", {
-    className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    className: "flex items-center justify-between font-bold text-slate-600 text-sm"
   }, "\u9AD8\u5EA6\uFF08\u4E0A\u4E0B\u683C\u6578\uFF09", /*#__PURE__*/React.createElement("input", {
     type: "number",
     min: "8",
@@ -22023,7 +22023,7 @@ function MinesGame() {
     },
     className: "w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none"
   })), /*#__PURE__*/React.createElement("label", {
-    className: "flex items-center justify-between font-black text-slate-600 text-sm"
+    className: "flex items-center justify-between font-bold text-slate-600 text-sm"
   }, "\u5730\u96F7\u6578", /*#__PURE__*/React.createElement("input", {
     type: "number",
     min: "5",
@@ -22517,7 +22517,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.44.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.45.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。

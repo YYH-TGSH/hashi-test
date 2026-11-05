@@ -3017,11 +3017,11 @@ function SudokuGame() {
                                 ❌ 取消連線並返回
                             </button>
                         ) : (
-                            <div className="py-4 text-slate-400 font-bold text-sm animate-pulse italic">
+                            <div className="py-4 text-slate-400 font-semibold text-sm animate-pulse italic">
                                 請稍候，正努力尋找主機中...
                             </div>
                         )}
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Connection ID: {myId.substring(0, 6)}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Connection ID: {myId.substring(0, 6)}</p>
                     </div>
                 </div>
             </div>
@@ -3153,7 +3153,7 @@ function SudokuGame() {
                                 <div className="flex flex-col gap-6 mb-8 text-left">
                                     {/* 版型設定卡片 */}
                                     <div className="bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform rotate-1">
-                                        <h3 className="font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                        <h3 className="font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                                             <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span> 📐 選擇版型
                                         </h3>
                                         <div className="grid grid-cols-2 gap-3">
@@ -3167,7 +3167,7 @@ function SudokuGame() {
 
                                     {/* 難度設定卡片 */}
                                     <div className="bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform -rotate-1">
-                                        <h3 className="font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                        <h3 className="font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                                             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> 🔥 挑戰難度
                                         </h3>
                                         <div className="grid grid-cols-2 gap-3">
@@ -3193,7 +3193,7 @@ function SudokuGame() {
                     <div className="bg-[#fffaf0] rounded-2xl p-6 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-xl w-full my-auto max-h-full overflow-y-auto">
                         <div className="text-center text-4xl mb-1">🏆</div>
                         <div className="font-black text-2xl text-slate-800 text-center">錦標賽・{(tournRoundInfo && tournRoundInfo.playoff) ? '加賽' : ('第 ' + ((tournRoundInfo && tournRoundInfo.round) || '?') + ' 局')}</div>
-                        <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：數獨大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
+                        <div className="font-semibold text-slate-400 text-sm text-center mt-1 mb-4">本局：數獨大亂鬥・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
                         <div className="flex flex-col gap-2 mb-4">
                             {playersList.filter(p => !p.isSpectator).map(p => (
                                 <div key={p.id} className="flex items-center gap-2 bg-white border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800">
@@ -3209,7 +3209,7 @@ function SudokuGame() {
                         {isHost ? (
                             <div>
                                 <button onClick={handleForceStart} disabled={!tournCanStart} className="w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed">🏁 開始本局</button>
-                                <p className="text-xs text-slate-500 font-bold text-center mt-2">{tournStartNote}</p>
+                                <p className="text-xs text-slate-500 font-semibold text-center mt-2">{tournStartNote}</p>
                             </div>
                         ) : (
                             <p className="font-black text-slate-700 animate-pulse text-center">等待房主開始...</p>
@@ -3219,7 +3219,7 @@ function SudokuGame() {
                     <div className="bg-[#fffaf0] rounded-2xl p-8 border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] text-center max-w-xl w-full my-auto">
                         <div className="text-5xl mb-3">⏳</div>
                         <div className="font-black text-2xl text-slate-800 animate-pulse">等房主開始對局…</div>
-                        <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
+                        <div className="font-semibold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
                     </div>
                     ) : null}
                 </div>
@@ -3893,7 +3893,7 @@ function SudokuGame() {
                                                         <div key={`wait-${i}`} className="flex items-center gap-3 bg-slate-100/50 border-2 border-slate-100 border-dashed rounded-xl px-3 py-2 opacity-50">
                                                             <span className="text-2xl w-8 shrink-0 text-center filter grayscale">{medal}</span>
                                                             <span className="w-1 h-full shrink-0 bg-slate-300 rounded-full self-stretch"></span>
-                                                            <span className="font-bold text-slate-400 flex-1 italic text-sm">等待第 {i + 1} 名完成...</span>
+                                                            <span className="font-semibold text-slate-400 flex-1 italic text-sm">等待第 {i + 1} 名完成...</span>
                                                         </div>
                                                     );
                                                 }
@@ -3935,7 +3935,7 @@ function SudokuGame() {
                                                         toggleSpectator(myId, true, true);
                                                         showToast("👁️ 已轉變為上帝模式，您可以繼續觀看其他玩家比賽");
                                                     }} className="flex-1 px-3 py-3 bg-purple-100 text-purple-700 border-[4px] border-purple-700 font-black rounded-xl shadow-[4px_4px_0px_#6d28d9] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base">👁️ 轉變為上帝模式 (觀戰)</button>
-                                                    <div className="w-full text-xs font-bold text-slate-400 mt-2 animate-pulse">比賽尚未結束，您可以先轉為觀戰模式...</div>
+                                                    <div className="w-full text-xs font-semibold text-slate-400 mt-2 animate-pulse">比賽尚未結束，您可以先轉為觀戰模式...</div>
                                                 </React.Fragment>
                                             )}
                                         </React.Fragment>
@@ -3994,7 +3994,7 @@ function SudokuGame() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto animate-fadeIn" onClick={(e) => { e.stopPropagation(); setColorPickerTarget(null); setColorSeq([]); }}>
                     <div className="bg-[#fffdfa] border-[3px] border-slate-800 rounded-xl p-4 shadow-[10px_10px_0px_rgba(30,41,59,1)] animate-popUpCenter max-w-[280px] w-full mx-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2">
-                            <h3 className="text-sm font-black text-slate-800">⚙️ 個人設定</h3>
+                            <h3 className="text-sm font-bold text-slate-800">⚙️ 個人設定</h3>
                             <button onClick={() => { setColorPickerTarget(null); setColorSeq([]); }} className="text-slate-400 hover:text-slate-800 font-black text-lg leading-none">✕</button>
                         </div>
 

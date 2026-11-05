@@ -5664,9 +5664,9 @@ function SudokuGame() {
       onClick: cancelConnection,
       className: "w-full py-4 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_#1e293b] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all animate-bounce"
     }, "\u274C \u53D6\u6D88\u9023\u7DDA\u4E26\u8FD4\u56DE") : /*#__PURE__*/React.createElement("div", {
-      className: "py-4 text-slate-400 font-bold text-sm animate-pulse italic"
+      className: "py-4 text-slate-400 font-semibold text-sm animate-pulse italic"
     }, "\u8ACB\u7A0D\u5019\uFF0C\u6B63\u52AA\u529B\u5C0B\u627E\u4E3B\u6A5F\u4E2D..."), /*#__PURE__*/React.createElement("p", {
-      className: "text-[10px] text-slate-400 font-bold uppercase tracking-widest"
+      className: "text-[10px] text-slate-400 font-semibold uppercase tracking-widest"
     }, "Connection ID: ", myId.substring(0, 6)))));
   }
   var tutorialOverlay = showTutorial ? /*#__PURE__*/React.createElement("div", {
@@ -5871,7 +5871,7 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform rotate-1"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+    className: "font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2 h-2 bg-amber-400 rounded-full animate-pulse"
   }), " \uD83D\uDCD0 \u9078\u64C7\u7248\u578B"), /*#__PURE__*/React.createElement("div", {
@@ -5887,7 +5887,7 @@ function SudokuGame() {
   }))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white border-[3px] border-slate-800 rounded-2xl p-5 shadow-[4px_4px_0px_#1e293b] transform -rotate-1"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-black text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
+    className: "font-semibold text-slate-400 text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2 h-2 bg-emerald-400 rounded-full animate-pulse"
   }), " \uD83D\uDD25 \u6311\u6230\u96E3\u5EA6"), /*#__PURE__*/React.createElement("div", {
@@ -5913,7 +5913,7 @@ function SudokuGame() {
   }, "\uD83C\uDFC6"), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-2xl text-slate-800 text-center"
   }, "\u9326\u6A19\u8CFD\u30FB", tournRoundInfo && tournRoundInfo.playoff ? '加賽' : '第 ' + (tournRoundInfo && tournRoundInfo.round || '?') + ' 局'), /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-slate-400 text-sm text-center mt-1 mb-4"
+    className: "font-semibold text-slate-400 text-sm text-center mt-1 mb-4"
   }, "\u672C\u5C40\uFF1A\u6578\u7368\u5927\u4E82\u9B25\u30FB\u5168\u54E1\u6E96\u5099\u597D\u623F\u4E3B\u624D\u80FD\u958B\u59CB\uFF0C\u6216\u7B49\u6EFF 1 \u5206\u9418\u5F37\u5236\u958B\u59CB"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 mb-4"
   }, playersList.filter(function (p) {
@@ -5946,7 +5946,7 @@ function SudokuGame() {
     disabled: !tournCanStart,
     className: "w-full py-3 bg-red-500 text-white border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
   }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs text-slate-500 font-bold text-center mt-2"
+    className: "text-xs text-slate-500 font-semibold text-center mt-2"
   }, tournStartNote)) : /*#__PURE__*/React.createElement("p", {
     className: "font-black text-slate-700 animate-pulse text-center"
   }, "\u7B49\u5F85\u623F\u4E3B\u958B\u59CB...")) : platHub ? /*#__PURE__*/React.createElement("div", {
@@ -5956,7 +5956,7 @@ function SudokuGame() {
   }, "\u23F3"), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-2xl text-slate-800 animate-pulse"
   }, "\u7B49\u623F\u4E3B\u958B\u59CB\u5C0D\u5C40\u2026"), /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-slate-400 text-sm mt-2"
+    className: "font-semibold text-slate-400 text-sm mt-2"
   }, "\u6E96\u5099\u548C\u8A2D\u5B9A\u90FD\u5728\u623F\u9593\u9801\u5B8C\u6210\u4E86\uFF0C\u99AC\u4E0A\u958B\u59CB")) : null), resultsDismissedUi && isBrawlMode && matchPhase === 'finished' && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       resultsDismissRef.current = null;
@@ -6961,7 +6961,7 @@ function SudokuGame() {
       }, medal), /*#__PURE__*/React.createElement("span", {
         className: "w-1 h-full shrink-0 bg-slate-300 rounded-full self-stretch"
       }), /*#__PURE__*/React.createElement("span", {
-        className: "font-bold text-slate-400 flex-1 italic text-sm"
+        className: "font-semibold text-slate-400 flex-1 italic text-sm"
       }, "\u7B49\u5F85\u7B2C ", i + 1, " \u540D\u5B8C\u6210...")));
     }
     return placeholders;
@@ -7000,7 +7000,7 @@ function SudokuGame() {
     },
     className: "flex-1 px-3 py-3 bg-purple-100 text-purple-700 border-[4px] border-purple-700 font-black rounded-xl shadow-[4px_4px_0px_#6d28d9] hover:translate-y-[2px] hover:shadow-none transition-all text-sm sm:text-base"
   }, "\uD83D\uDC41\uFE0F \u8F49\u8B8A\u70BA\u4E0A\u5E1D\u6A21\u5F0F (\u89C0\u6230)"), /*#__PURE__*/React.createElement("div", {
-    className: "w-full text-xs font-bold text-slate-400 mt-2 animate-pulse"
+    className: "w-full text-xs font-semibold text-slate-400 mt-2 animate-pulse"
   }, "\u6BD4\u8CFD\u5C1A\u672A\u7D50\u675F\uFF0C\u60A8\u53EF\u4EE5\u5148\u8F49\u70BA\u89C0\u6230\u6A21\u5F0F...")))))), (isWon || isBrawlMode && winner) && hideVictoryModal && /*#__PURE__*/React.createElement("div", {
     className: "absolute bottom-20 inset-x-0 flex flex-col items-center gap-3 z-50 pointer-events-none"
   }, /*#__PURE__*/React.createElement("div", {
@@ -7089,7 +7089,7 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-between items-center mb-3 border-b-2 border-slate-800 pb-2"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "text-sm font-black text-slate-800"
+    className: "text-sm font-bold text-slate-800"
   }, "\u2699\uFE0F \u500B\u4EBA\u8A2D\u5B9A"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setColorPickerTarget(null);

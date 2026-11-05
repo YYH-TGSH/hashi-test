@@ -1288,7 +1288,7 @@ function MinesGame() {
       <div key="setup" className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden">
         <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 md:p-8 relative z-10 animate-fadeIn">
           <h2 className="font-black text-2xl text-slate-800 mb-1">👤 單機挑戰</h2>
-          <p className="font-bold text-slate-400 text-sm mb-5">選一個盤面大小開始</p>
+          <p className="font-semibold text-slate-400 text-sm mb-5">選一個盤面大小開始</p>
           <div className="flex flex-col gap-3">
             {[9, 16].map(sz => (
               <button key={sz} onClick={() => { SFX.click(); newGame(sz); }}
@@ -1302,16 +1302,16 @@ function MinesGame() {
                 <span>⚙️ 自訂盤面</span><span className="text-sm text-slate-400">{custOpen ? '▾ 收起' : '▸ 展開'}</span>
               </button>
               {custOpen && (<div className="mt-3 flex flex-col gap-2">
-                <label className="flex items-center justify-between font-black text-slate-600 text-sm">寬度（左右格數）
+                <label className="flex items-center justify-between font-bold text-slate-600 text-sm">寬度（左右格數）
                   <input type="number" min="8" max="30" value={custCfg.w} onChange={e => setCustCfg(c => Object.assign({}, c, { w: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                 </label>
-                <label className="flex items-center justify-between font-black text-slate-600 text-sm">高度（上下格數）
+                <label className="flex items-center justify-between font-bold text-slate-600 text-sm">高度（上下格數）
                   <input type="number" min="8" max="24" value={custCfg.h} onChange={e => setCustCfg(c => Object.assign({}, c, { h: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                 </label>
-                <label className="flex items-center justify-between font-black text-slate-600 text-sm">地雷數
+                <label className="flex items-center justify-between font-bold text-slate-600 text-sm">地雷數
                   <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                 </label>
-                <div className="text-xs font-bold text-slate-400 leading-relaxed">範圍：寬 8–30、高 8–24、雷 5–{effC.w * effC.h - 9}（依目前寬高；首點保護需留 9 格空白）。超出範圍會自動修正，開始鈕顯示的就是實際會開的盤。</div>
+                <div className="text-xs font-semibold text-slate-400 leading-relaxed">範圍：寬 8–30、高 8–24、雷 5–{effC.w * effC.h - 9}（依目前寬高；首點保護需留 9 格空白）。超出範圍會自動修正，開始鈕顯示的就是實際會開的盤。</div>
                 <button onClick={startCustom} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 開始：{effC.w}×{effC.h}・{effC.mines} 雷</button>
               </div>)}
             </div>
@@ -1442,13 +1442,13 @@ function MinesGame() {
                 <div className="flex justify-center gap-8 mb-3">
                   <div className="flex flex-col items-center gap-1">
                     <div className="mtut-boom w-14 h-14 flex items-center justify-center text-3xl rounded-[4px] border border-orange-900/20" style={{ background: '#e2e8f0' }}>💣</div>
-                    <span className="text-xs font-black text-slate-400">踩到雷</span>
+                    <span className="text-xs font-semibold text-slate-400">踩到雷</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-14 h-14 flex items-center justify-center rounded-[4px] border border-orange-900/20" style={{ background: '#f8fafc' }}>
                       <span className="mtut-trophy text-3xl">🏆</span>
                     </div>
-                    <span className="text-xs font-black text-slate-400">全部挖開</span>
+                    <span className="text-xs font-semibold text-slate-400">全部挖開</span>
                   </div>
                 </div>
                 <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
@@ -1487,7 +1487,7 @@ function MinesGame() {
             <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-8 text-center max-w-sm w-full animate-fadeIn">
               <div className="text-5xl mb-3">⏳</div>
               <div className="font-black text-2xl text-slate-800 animate-pulse">等房主開始對局…</div>
-              <div className="font-bold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
+              <div className="font-semibold text-slate-400 text-sm mt-2">準備和設定都在房間頁完成了，馬上開始</div>
             </div>
           </div>
         </div>
@@ -1507,7 +1507,7 @@ function MinesGame() {
         <div className="w-full max-w-md bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 z-10 animate-fadeIn">
           <div className="text-center text-4xl mb-1">🏆</div>
           <div className="font-black text-2xl text-slate-800 text-center">錦標賽・第 {tInfo.round || '?'} 局</div>
-          <div className="font-bold text-slate-400 text-sm text-center mt-1 mb-4">本局：踩地雷競速・{szName}・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
+          <div className="font-semibold text-slate-400 text-sm text-center mt-1 mb-4">本局：踩地雷競速・{szName}・全員準備好房主才能開始，或等滿 1 分鐘強制開始</div>
           <div className="flex flex-col gap-2 mb-4">
             {players.map(p => (
               <div key={p.id} className="flex items-center gap-2 bg-slate-50 border-2 border-slate-800 rounded-xl px-3 py-2 font-black text-slate-800">
@@ -1524,7 +1524,7 @@ function MinesGame() {
           {M.isHost ? (
             <div>
               <button disabled={!canStartW} onClick={startMatch} className="w-full py-3 bg-[#f97316] text-slate-900 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
-              {startNoteW && <p className="text-xs text-slate-500 font-bold text-center mt-2">{startNoteW}</p>}
+              {startNoteW && <p className="text-xs text-slate-500 font-semibold text-center mt-2">{startNoteW}</p>}
             </div>
           ) : (
             <p className="font-black text-slate-700 animate-pulse text-center">等待房主開始...</p>
@@ -1554,7 +1554,7 @@ function MinesGame() {
           <div className={"w-full overflow-hidden transition-all duration-500 ease-in-out origin-top flex flex-col gap-2 " + (hdrOpen ? 'max-h-[500px] opacity-100 scale-y-100' : 'max-h-0 opacity-0 scale-y-95')}>
             <div className="bg-white border-[3px] border-slate-800 rounded-xl p-2 md:p-3 text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">
               <h3 className="text-sm md:text-base font-black mb-1 border-b-[3px] border-[#f97316] inline-block pb-0.5">📜 遊戲規則</h3>
-              <ol className="list-decimal list-outside ml-4 space-y-1 text-[10px] md:text-sm leading-relaxed font-bold">
+              <ol className="list-decimal list-outside ml-4 space-y-1 text-xs md:text-sm leading-relaxed font-bold">
                 <li>點格子挖開：數字代表周圍 8 格的地雷數，空白格會自動展開。</li>
                 <li>第一下點的格子＋周圍 8 格保證沒有地雷，放心開始。</li>
                 <li>覺得是雷就插旗：切到 🚩 插旗模式再點格子，或長按格子直接插旗。</li>
@@ -1614,13 +1614,13 @@ function MinesGame() {
                 <div className="w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]">
                   <div className="font-black text-slate-800 mb-2">⚙️ 自訂盤面</div>
                   <div className="flex flex-col gap-2">
-                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">寬度（左右格數）
+                    <label className="flex items-center justify-between font-bold text-slate-600 text-sm">寬度（左右格數）
                       <input type="number" min="8" max="30" value={custCfg.w} onChange={e => setCustCfg(c => Object.assign({}, c, { w: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                     </label>
-                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">高度（上下格數）
+                    <label className="flex items-center justify-between font-bold text-slate-600 text-sm">高度（上下格數）
                       <input type="number" min="8" max="24" value={custCfg.h} onChange={e => setCustCfg(c => Object.assign({}, c, { h: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                     </label>
-                    <label className="flex items-center justify-between font-black text-slate-600 text-sm">地雷數
+                    <label className="flex items-center justify-between font-bold text-slate-600 text-sm">地雷數
                       <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                     </label>
                     <button onClick={() => { setShowSettingsModal(false); startCustom(); }} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 以自訂盤開始</button>
