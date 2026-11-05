@@ -5377,8 +5377,12 @@ function SudokuGame() {
     if (stateRef.current.brawlWinners.some(function (w) {
       return w.id === myId;
     })) return false;
-    var remaining = playersListRef.current.filter(function (p) {
-      return !p.isSpectator && !stateRef.current.brawlWinners.some(function (w) {
+    var entrants = playersListRef.current.filter(function (p) {
+      return !p.isSpectator;
+    });
+    if (entrants.length < 2) return false; // 至少 2 位選手才有「最後一位」：房間頁遊戲被預載、名單只有房主一人時 remaining==1 會誤判（2026-11-05 實機回報；數橋 racers<2、地雷 entrants>1 本來就有這道守衛，數獨漏了）
+    var remaining = entrants.filter(function (p) {
+      return !stateRef.current.brawlWinners.some(function (w) {
         return w.id === p.id;
       });
     });
@@ -22544,7 +22548,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.46.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.46.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。

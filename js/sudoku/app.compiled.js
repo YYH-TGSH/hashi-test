@@ -2115,8 +2115,12 @@ function SudokuGame() {
     if (stateRef.current.brawlWinners.some(function (w) {
       return w.id === myId;
     })) return false;
-    var remaining = playersListRef.current.filter(function (p) {
-      return !p.isSpectator && !stateRef.current.brawlWinners.some(function (w) {
+    var entrants = playersListRef.current.filter(function (p) {
+      return !p.isSpectator;
+    });
+    if (entrants.length < 2) return false; // 至少 2 位選手才有「最後一位」：房間頁遊戲被預載、名單只有房主一人時 remaining==1 會誤判（2026-11-05 實機回報；數橋 racers<2、地雷 entrants>1 本來就有這道守衛，數獨漏了）
+    var remaining = entrants.filter(function (p) {
+      return !stateRef.current.brawlWinners.some(function (w) {
         return w.id === p.id;
       });
     });

@@ -1221,7 +1221,9 @@ function SudokuGame() {
     const amLastPlayer = () => {
         if (isSpectator) return false;
         if (stateRef.current.brawlWinners.some(w => w.id === myId)) return false;
-        const remaining = playersListRef.current.filter(p => !p.isSpectator && !stateRef.current.brawlWinners.some(w => w.id === p.id));
+        const entrants = playersListRef.current.filter(p => !p.isSpectator);
+        if (entrants.length < 2) return false; // 至少 2 位選手才有「最後一位」：房間頁遊戲被預載、名單只有房主一人時 remaining==1 會誤判（2026-11-05 實機回報；數橋 racers<2、地雷 entrants>1 本來就有這道守衛，數獨漏了）
+        const remaining = entrants.filter(p => !stateRef.current.brawlWinners.some(w => w.id === p.id));
         return remaining.length === 1 && remaining[0].id === myId;
     };
     handleReceiveWeaponRef.current = (ev) => {
