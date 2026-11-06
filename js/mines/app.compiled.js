@@ -4196,9 +4196,9 @@ function MinesGame() {
   }, "\uD83C\uDFE0", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline ml-1"
   }, "\u4E3B\u9078\u55AE"))))), /*#__PURE__*/React.createElement("div", {
-    className: "w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2"
+    className: "w-full flex flex-wrap items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-x-2 gap-y-1"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0"
+    className: "font-black text-base md:text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-2 md:px-3 py-1 shrink-0"
   }, "\uD83D\uDCA3 ", spec.mines - flagsUsed, Math.floor(spec.mines / 10) > 0 && /*#__PURE__*/React.createElement("span", {
     className: "ml-1",
     style: {
@@ -4222,7 +4222,7 @@ function MinesGame() {
     onClick: function onClick() {
       return setInputMode('dig');
     },
-    className: "px-4 py-1.5",
+    className: "px-2.5 md:px-4 py-1.5 text-sm md:text-base",
     style: inputMode === 'dig' ? {
       background: ACCENT,
       color: '#fff'
@@ -4234,27 +4234,15 @@ function MinesGame() {
     onClick: function onClick() {
       return setInputMode('flag');
     },
-    className: "px-4 py-1.5",
+    className: "px-2.5 md:px-4 py-1.5 text-sm md:text-base",
     style: inputMode === 'flag' ? {
       background: '#dc2626',
       color: '#fff'
     } : {
       color: '#64748b'
     }
-  }, "\uD83D\uDEA9 \u63D2\u65D7"), /*#__PURE__*/React.createElement("button", {
-    "data-mode": "draw",
-    onClick: function onClick() {
-      return setInputMode('draw');
-    },
-    className: "px-4 py-1.5",
-    style: inputMode === 'draw' ? {
-      background: '#34d399',
-      color: '#0f172a'
-    } : {
-      color: '#64748b'
-    }
-  }, "\uD83D\uDD8C\uFE0F \u5857\u9D09")), /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none",
+  }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
+    className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto",
     onClick: toggleProgMode
   }, progMode === 'bv' ? '進度（3BV）' + Math.floor(effProg * 100) + '%' : '開格 ' + Math.floor(progress * 100) + '%', /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"

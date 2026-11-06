@@ -1659,14 +1659,13 @@ function MinesGame() {
             </div>
           </div>
         </div>
-        <div className="w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2">
-          <div className="font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0">💣 {spec.mines - flagsUsed}{Math.floor(spec.mines / 10) > 0 && (<span className="ml-1" style={{ fontSize: 13 }} title="愛心＝還能踩錯的命（容錯次數＋1）：踩到雷少一顆、變灰，歸零後再踩就出局">{Array.from({ length: Math.floor(spec.mines / 10) + 1 }).map((_, hi) => (<span key={hi} style={hi < mistLeft + 1 ? undefined : { filter: 'grayscale(1)', opacity: 0.35 }}>❤️</span>))}</span>)}</div>
+        <div className="w-full flex flex-wrap items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-x-2 gap-y-1">
+          <div className="font-black text-base md:text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-2 md:px-3 py-1 shrink-0">💣 {spec.mines - flagsUsed}{Math.floor(spec.mines / 10) > 0 && (<span className="ml-1" style={{ fontSize: 13 }} title="愛心＝還能踩錯的命（容錯次數＋1）：踩到雷少一顆、變灰，歸零後再踩就出局">{Array.from({ length: Math.floor(spec.mines / 10) + 1 }).map((_, hi) => (<span key={hi} style={hi < mistLeft + 1 ? undefined : { filter: 'grayscale(1)', opacity: 0.35 }}>❤️</span>))}</span>)}</div>
           <div className="flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black shrink-0">
-            <button data-mode="dig" onClick={() => setInputMode('dig')} className="px-4 py-1.5" style={inputMode === 'dig' ? { background: ACCENT, color: '#fff' } : { color: '#64748b' }}>⛏️ 挖開</button>
-            <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-4 py-1.5" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
-            <button data-mode="draw" onClick={() => setInputMode('draw')} className="px-4 py-1.5" style={inputMode === 'draw' ? { background: '#34d399', color: '#0f172a' } : { color: '#64748b' }}>🖌️ 塗鴉</button>
+            <button data-mode="dig" onClick={() => setInputMode('dig')} className="px-2.5 md:px-4 py-1.5 text-sm md:text-base" style={inputMode === 'dig' ? { background: ACCENT, color: '#fff' } : { color: '#64748b' }}>⛏️ 挖開</button>
+            <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-2.5 md:px-4 py-1.5 text-sm md:text-base" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
           </div>
-          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none" onClick={toggleProgMode}>{progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%')}<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
+          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto" onClick={toggleProgMode}>{progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%')}<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
         </div>
         {showExitMenu && mpOn && (
           <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>

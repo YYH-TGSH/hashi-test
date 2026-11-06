@@ -40,9 +40,11 @@ function drawStroke(p) {
   clickBtnS(b => b.textContent.includes('單機挑戰')); await sleep(250);
   clickBtnS(b => b.textContent.includes('9×9'));
   ok(!!(await waitFor(() => P.document.querySelectorAll('#mines-root button[data-cell]').length === 81 ? true : null, 30000, 'solo cells')), '單機 9×9 開局');
-  ok(clickBtnS(b => b.getAttribute('data-mode') === 'draw'), '卡內有塗鴉模式鈕');
-  await sleep(300);
-  ok(dbgS().inputMode === 'draw', '已切換塗鴉模式');
+  ok(!P.document.querySelector('#mines-root [data-mode="draw"]'), '上方模式鈕組沒有塗鴉（使用者指示：塗鴉走右下角模式鈕）');
+  const mpS = () => P.document.querySelector('#view-mines [data-pb="mode-press"]');
+  ok(!!mpS(), '右下角有 PlatBar 模式鈕');
+  mpS().click(); await sleep(200); mpS().click(); await sleep(300); // 挖開→插旗→塗鴉
+  ok(dbgS().inputMode === 'draw', '模式鈕循環切到塗鴉模式', 'mode=' + (dbgS() && dbgS().inputMode));
   ok(drawStroke(P), '在覆蓋層拖一筆');
   await sleep(300);
   ok(dbgS().strokes === 1, '單機塗鴉留下一筆', 'strokes=' + (dbgS() && dbgS().strokes));
@@ -79,9 +81,10 @@ function drawStroke(p) {
   clickEl(H, startB);
   const playing = await waitFor(() => { const a = dbg(H), b = dbg(G); return (a.mp && a.mp.phase === 'playing' && b.mp && b.mp.phase === 'playing') ? true : null; }, 90000, 'coop playing');
   ok(!!playing, '合作開局雙邊 playing');
-  // 來賓切塗鴉、畫一筆
-  const gDrawBtn = [...G.document.querySelectorAll('#mines-root button')].find(b => b.getAttribute('data-mode') === 'draw');
-  if (gDrawBtn) gDrawBtn.click(); await sleep(300);
+  // 來賓切塗鴉（右下角模式鈕循環兩下）、畫一筆
+  const mpG = () => G.document.querySelector('#view-mines [data-pb="mode-press"]');
+  if (mpG()) { mpG().click(); await sleep(200); mpG().click(); }
+  await sleep(300);
   ok(dbg(G).inputMode === 'draw', '來賓切到塗鴉模式');
   drawStroke(G); await sleep(300);
   ok(dbg(G).strokes === 1, '來賓本地一筆');
