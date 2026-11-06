@@ -268,6 +268,50 @@ function countOpened(cells) {
   for (var i = 0; i < cells.length; i++) if (cells[i] === 'o') c++;
   return c;
 }
+// 3BV 加權（v1.50.0 規格報告）：一個數字 0 連通區＋其邊界數字格＝1 單位（洪水一下領滿）、孤立數字格各 1 單位；單位格權重＝1/單位格數，雷格 0
+function computeBVWeights(w, h, L, N) {
+  var total = w * h,
+    unitOf = new Array(total).fill(-1),
+    sizes = [];
+  for (var s0 = 0; s0 < total; s0++) {
+    if (L[s0] || N[s0] !== 0 || unitOf[s0] >= 0) continue;
+    var uid = sizes.length,
+      cnt = 1,
+      q = [s0],
+      head = 0;
+    unitOf[s0] = uid;
+    while (head < q.length) {
+      var c = q[head++],
+        nb = neighborsOf(w, h, c);
+      for (var j = 0; j < nb.length; j++) {
+        var m = nb[j];
+        if (!L[m] && unitOf[m] < 0) {
+          unitOf[m] = uid;
+          cnt++;
+          if (N[m] === 0) q.push(m);
+        }
+      }
+    }
+    sizes.push(cnt);
+  }
+  for (var i2 = 0; i2 < total; i2++) if (!L[i2] && unitOf[i2] < 0) {
+    unitOf[i2] = sizes.length;
+    sizes.push(1);
+  }
+  var weights = new Array(total);
+  for (var i3 = 0; i3 < total; i3++) weights[i3] = L[i3] ? 0 : 1 / sizes[unitOf[i3]];
+  return {
+    weights: weights,
+    bv: sizes.length
+  };
+}
+function effProgressOf(cellsArr, weights, bv) {
+  if (!bv || !weights) return 0;
+  var sm = 0;
+  for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') sm += weights[i];
+  var e = sm / bv;
+  return e > 1 ? 1 : e;
+}
 function countFlags(cells) {
   var c = 0;
   for (var i = 0; i < cells.length; i++) if (cells[i] === 'f' || cells[i] === 'L' || cells[i] === 'x') c++;
@@ -431,28 +475,34 @@ function MinesGame() {
     _useState42 = _slicedToArray(_useState41, 2),
     drawTool = _useState42[0],
     setDrawTool = _useState42[1]; // pen | eraser（PlatBar 塗鴉子選單控制，比照數獨 drawSubMode）
-  var _useState43 = useState(null),
+  var _useState43 = useState('bv'),
     _useState44 = _slicedToArray(_useState43, 2),
-    livePts = _useState44[0],
-    setLivePts = _useState44[1]; // 正在畫的這一筆（即時預覽）
-  var drawStateRef = useRef(null); // 手勢中的一筆 {pts} 或 {erasing:true}
-  var doodleSvgRef = useRef(null);
+    progMode = _useState44[0],
+    setProgMode = _useState44[1]; // 進度顯示：'bv'（3BV，預設）| 'open'（開格 %）；只存 session、不持久化（v1.50.0 規格 5.1）
+  var progModeRef = useRef('bv');
+  var bvCacheRef = useRef(null); // {layout, weights, bv}：以 layout 陣列參照為 cache key（規格 7.2：不逐開局路徑掛計算）
   var _useState45 = useState(null),
     _useState46 = _slicedToArray(_useState45, 2),
-    startedAt = _useState46[0],
-    setStartedAt = _useState46[1];
-  var _useState47 = useState(0),
+    livePts = _useState46[0],
+    setLivePts = _useState46[1]; // 正在畫的這一筆（即時預覽）
+  var drawStateRef = useRef(null); // 手勢中的一筆 {pts} 或 {erasing:true}
+  var doodleSvgRef = useRef(null);
+  var _useState47 = useState(null),
     _useState48 = _slicedToArray(_useState47, 2),
-    elapsed = _useState48[0],
-    setElapsed = _useState48[1];
-  var _useState49 = useState(null),
+    startedAt = _useState48[0],
+    setStartedAt = _useState48[1];
+  var _useState49 = useState(0),
     _useState50 = _slicedToArray(_useState49, 2),
-    dailyDate = _useState50[0],
-    setDailyDate = _useState50[1]; // 非 null = 每日一題模式（日期字串）
-  var _useState51 = useState(todayStr()),
+    elapsed = _useState50[0],
+    setElapsed = _useState50[1];
+  var _useState51 = useState(null),
     _useState52 = _slicedToArray(_useState51, 2),
-    dailySel = _useState52[0],
-    setDailySel = _useState52[1]; // 主畫面每日一題目前選取日期
+    dailyDate = _useState52[0],
+    setDailyDate = _useState52[1]; // 非 null = 每日一題模式（日期字串）
+  var _useState53 = useState(todayStr()),
+    _useState54 = _slicedToArray(_useState53, 2),
+    dailySel = _useState54[0],
+    setDailySel = _useState54[1]; // 主畫面每日一題目前選取日期
   var firstRef = useRef(true); // 本局是否還沒挖第一下（首點保護/計時起點）
   var statusRef = useRef('ready');
   statusRef.current = status;
@@ -473,43 +523,43 @@ function MinesGame() {
     return cells ? countFlags(cells) : 0;
   }, [cells]);
   // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
-  var _useState53 = useState({
+  var _useState55 = useState({
       question: 0,
       backfill: 0,
       gift: 0
     }),
-    _useState54 = _slicedToArray(_useState53, 2),
-    myItems = _useState54[0],
-    setMyItems = _useState54[1];
+    _useState56 = _slicedToArray(_useState55, 2),
+    myItems = _useState56[0],
+    setMyItems = _useState56[1];
   var itemsRef = useRef({
     question: 0,
     backfill: 0,
     gift: 0
   });
-  var _useState55 = useState({}),
-    _useState56 = _slicedToArray(_useState55, 2),
-    questionFx = _useState56[0],
-    setQuestionFx = _useState56[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
-  var questionFxRef = useRef({});
-  var _useState57 = useState(null),
+  var _useState57 = useState({}),
     _useState58 = _slicedToArray(_useState57, 2),
-    itemToast = _useState58[0],
-    setItemToast = _useState58[1];
-  var itemToastTimerRef = useRef(null);
-  var _useState59 = useState(0),
+    questionFx = _useState58[0],
+    setQuestionFx = _useState58[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
+  var questionFxRef = useRef({});
+  var _useState59 = useState(null),
     _useState60 = _slicedToArray(_useState59, 2),
-    mistLeft = _useState60[0],
-    setMistLeft = _useState60[1]; // 競速容錯剩餘次數（顯示用）
-  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
-  var _useState61 = useState(1),
+    itemToast = _useState60[0],
+    setItemToast = _useState60[1];
+  var itemToastTimerRef = useRef(null);
+  var _useState61 = useState(0),
     _useState62 = _slicedToArray(_useState61, 2),
-    zoom = _useState62[0],
-    setZoom = _useState62[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
-  var _useState63 = useState(false),
+    mistLeft = _useState62[0],
+    setMistLeft = _useState62[1]; // 競速容錯剩餘次數（顯示用）
+  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
+  var _useState63 = useState(1),
     _useState64 = _slicedToArray(_useState63, 2),
-    zoomOpen = _useState64[0],
-    setZoomOpen = _useState64[1];
-  var _useState65 = useState(function () {
+    zoom = _useState64[0],
+    setZoom = _useState64[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
+  var _useState65 = useState(false),
+    _useState66 = _slicedToArray(_useState65, 2),
+    zoomOpen = _useState66[0],
+    setZoomOpen = _useState66[1];
+  var _useState67 = useState(function () {
       try {
         var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null');
         if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines);
@@ -520,13 +570,13 @@ function MinesGame() {
         mines: 40
       };
     }),
-    _useState66 = _slicedToArray(_useState65, 2),
-    custCfg = _useState66[0],
-    setCustCfg = _useState66[1]; // 單機自訂盤面（寬/高/雷），持久化
-  var _useState67 = useState(false),
     _useState68 = _slicedToArray(_useState67, 2),
-    custOpen = _useState68[0],
-    setCustOpen = _useState68[1];
+    custCfg = _useState68[0],
+    setCustCfg = _useState68[1]; // 單機自訂盤面（寬/高/雷），持久化
+  var _useState69 = useState(false),
+    _useState70 = _slicedToArray(_useState69, 2),
+    custOpen = _useState70[0],
+    setCustOpen = _useState70[1];
   var boardScrollRef = useRef(null); // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
   var fadeRRef = useRef(null),
     fadeBRef = useRef(null),
@@ -722,6 +772,8 @@ function MinesGame() {
     }
   }
   var progress = totalSafe ? openedSafe / totalSafe : 0;
+  var bvDisp = layout && cells ? bvOfLayout(layout, nums) : null; // 合作來賓無 layout → null → eff fallback 開格（規格 5.3 註記）
+  var effProg = bvDisp ? effProgressOf(cells, bvDisp.weights, bvDisp.bv) : progress;
   var dbgRef = useRef(null); // 唯讀狀態快照（測試/除錯用，掛在 hooks.debug）
   dbgRef.current = {
     layout: layout,
@@ -741,6 +793,9 @@ function MinesGame() {
     },
     strokes: strokes.length,
     inputMode: inputMode,
+    effProgress: effProg,
+    bv: bvDisp ? bvDisp.bv : 0,
+    progMode: progMode,
     giftCredit: giftCreditRef.current,
     qfx: questionFx,
     milestones: milestoneRef.current,
@@ -1201,62 +1256,62 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState69 = useState(false),
-    _useState70 = _slicedToArray(_useState69, 2),
-    mpOn = _useState70[0],
-    setMpOn = _useState70[1];
-  var _useState71 = useState('off'),
+  var _useState71 = useState(false),
     _useState72 = _slicedToArray(_useState71, 2),
-    mpPhase = _useState72[0],
-    setMpPhase = _useState72[1]; // off|waiting|countdown|playing|done
-  var _useState73 = useState([]),
+    mpOn = _useState72[0],
+    setMpOn = _useState72[1];
+  var _useState73 = useState('off'),
     _useState74 = _slicedToArray(_useState73, 2),
-    players = _useState74[0],
-    setPlayers = _useState74[1];
-  var _useState75 = useState(false),
+    mpPhase = _useState74[0],
+    setMpPhase = _useState74[1]; // off|waiting|countdown|playing|done
+  var _useState75 = useState([]),
     _useState76 = _slicedToArray(_useState75, 2),
-    myReadySt = _useState76[0],
-    setMyReadySt = _useState76[1];
-  var _useState77 = useState({}),
+    players = _useState76[0],
+    setPlayers = _useState76[1];
+  var _useState77 = useState(false),
     _useState78 = _slicedToArray(_useState77, 2),
-    godBoards = _useState78[0],
-    setGodBoards = _useState78[1];
-  var _useState79 = useState(null),
+    myReadySt = _useState78[0],
+    setMyReadySt = _useState78[1];
+  var _useState79 = useState({}),
     _useState80 = _slicedToArray(_useState79, 2),
-    godUid = _useState80[0],
-    setGodUid = _useState80[1];
+    godBoards = _useState80[0],
+    setGodBoards = _useState80[1];
   var _useState81 = useState(null),
     _useState82 = _slicedToArray(_useState81, 2),
-    raceFinal = _useState82[0],
-    setRaceFinal = _useState82[1];
+    godUid = _useState82[0],
+    setGodUid = _useState82[1];
   var _useState83 = useState(null),
     _useState84 = _slicedToArray(_useState83, 2),
-    myOutcome = _useState84[0],
-    setMyOutcome = _useState84[1]; // 'finished'|'boom'
-  var _useState85 = useState(false),
+    raceFinal = _useState84[0],
+    setRaceFinal = _useState84[1];
+  var _useState85 = useState(null),
     _useState86 = _slicedToArray(_useState85, 2),
-    leaveArm = _useState86[0],
-    setLeaveArm = _useState86[1];
+    myOutcome = _useState86[0],
+    setMyOutcome = _useState86[1]; // 'finished'|'boom'
   var _useState87 = useState(false),
     _useState88 = _slicedToArray(_useState87, 2),
-    showExitMenu = _useState88[0],
-    setShowExitMenu = _useState88[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+    leaveArm = _useState88[0],
+    setLeaveArm = _useState88[1];
   var _useState89 = useState(false),
     _useState90 = _slicedToArray(_useState89, 2),
-    hdrOpen = _useState90[0],
-    setHdrOpen = _useState90[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
-  var _useState91 = useState(''),
+    showExitMenu = _useState90[0],
+    setShowExitMenu = _useState90[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState91 = useState(false),
     _useState92 = _slicedToArray(_useState91, 2),
-    coopBoomBy = _useState92[0],
-    setCoopBoomBy = _useState92[1];
-  var _useState93 = useState(null),
+    hdrOpen = _useState92[0],
+    setHdrOpen = _useState92[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState93 = useState(''),
     _useState94 = _slicedToArray(_useState93, 2),
-    cdNum = _useState94[0],
-    setCdNum = _useState94[1];
-  var _useState95 = useState(0),
+    coopBoomBy = _useState94[0],
+    setCoopBoomBy = _useState94[1];
+  var _useState95 = useState(null),
     _useState96 = _slicedToArray(_useState95, 2),
-    waitTick = _useState96[0],
-    setWaitTick = _useState96[1];
+    cdNum = _useState96[0],
+    setCdNum = _useState96[1];
+  var _useState97 = useState(0),
+    _useState98 = _slicedToArray(_useState97, 2),
+    waitTick = _useState98[0],
+    setWaitTick = _useState98[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -1505,8 +1560,11 @@ function MinesGame() {
     var opened = openedSafeOf(cellsArr, layoutArr);
     var total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
     var prog = total ? opened / total : 0;
+    var bvI = bvOfLayout(layoutArr, numsArr);
+    var eff = bvI ? effProgressOf(cellsArr, bvI.weights, bvI.bv) : prog;
     godSet(myId, {
-      progress: prog
+      progress: prog,
+      effProgress: eff
     });
     var pi = Math.floor(prog * 100);
     if (pi !== lastProgRef.current) {
@@ -1514,7 +1572,8 @@ function MinesGame() {
       mpSend({
         type: 'MINE_PROGRESS',
         uid: myId,
-        progress: prog
+        progress: prog,
+        eff: eff
       });
     }
     stateArgsRef.current = [cellsArr, numsArr, layoutArr];
@@ -1540,23 +1599,28 @@ function MinesGame() {
       uid: myId,
       cells: cellsArr.join(''),
       nums: sparse,
-      progress: prog
+      progress: prog,
+      eff: eff
     });
     godSet(myId, {
       cells: cellsArr.join(''),
       nums: sparse,
-      progress: prog
+      progress: prog,
+      effProgress: eff
     });
     saveResume(); // 回座存檔跟著每次狀態送出更新（節流後實際寫入頻率與 MINE_STATE 同步）
-    // 里程碑（每 5% 一段）：通報房主發放道具；被回填打回去再重跨不重報（milestoneRef 只增不減）
+    // 里程碑（3BV eff 每 5% 一段）：逐格補報（v1.50.0 比照數獨/數橋定版，取代舊「只發 1 次其餘吞掉」）；被回填打回去再重跨不重報（milestoneRef 只增不減）
     if (mpRef.current.itemsAllow && mpRef.current.phase === 'playing' && !outcomeRef.current && !iAmSpecRef.current) {
-      var band = Math.floor(prog * 20);
+      var band = Math.floor(eff * 20);
       if (band > milestoneRef.current) {
+        var mFrom = milestoneRef.current;
         milestoneRef.current = band;
-        if (mpRef.current.isHost) hostHandleMilestone(myId);else mpSend({
-          type: 'MINE_MILESTONE',
-          uid: myId
-        });
+        for (var mb = mFrom + 1; mb <= band; mb++) {
+          if (mpRef.current.isHost) hostHandleMilestone(myId);else mpSend({
+            type: 'MINE_MILESTONE',
+            uid: myId
+          });
+        }
       }
     }
   }
@@ -1586,15 +1650,18 @@ function MinesGame() {
         total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
       var prog = total ? opened / total : 0;
       raceSendState(cellsArr, numsArr, layoutArr, true);
+      var effB = effOfCells(cellsArr, layoutArr, numsArr);
       godSet(myId, {
         state: 'boom',
         progress: prog,
+        effProgress: effB != null ? effB : prog,
         boomAt: Date.now()
       });
       mpSend({
         type: 'MINE_BOOM',
         uid: myId,
-        progress: prog
+        progress: prog,
+        eff: effB != null ? effB : prog
       });
       checkRaceEnd();
     } else {
@@ -1606,6 +1673,40 @@ function MinesGame() {
     var g = godRef.current[uid];
     return g ? g.progress || 0 : 0;
   }
+  function bvOfLayout(layoutArr, numsArr) {
+    if (!layoutArr) return null;
+    var c = bvCacheRef.current;
+    if (c && c.layout === layoutArr) return c;
+    var sp = specRef.current || SIZES[9];
+    var N = numsArr || computeNums(sp.w, sp.h, layoutArr);
+    var r = computeBVWeights(sp.w, sp.h, layoutArr, N);
+    bvCacheRef.current = {
+      layout: layoutArr,
+      weights: r.weights,
+      bv: r.bv
+    };
+    return bvCacheRef.current;
+  }
+  function effOfCells(cellsArr, layoutArr, numsArr) {
+    var b = bvOfLayout(layoutArr, numsArr);
+    if (!b || !cellsArr) return null;
+    return effProgressOf(cellsArr, b.weights, b.bv);
+  }
+  function effOfGod(g) {
+    if (!g) return 0;
+    return typeof g.effProgress === 'number' && isFinite(g.effProgress) ? g.effProgress : g.progress || 0;
+  } // 混版 fallback：舊版來賓無 eff → 用開格 %（不得 NaN）
+  function effOfMine(uid) {
+    return effOfGod(godRef.current[uid]);
+  }
+  function dispFracOf(g) {
+    return progModeRef.current === 'bv' ? effOfGod(g) : g ? g.progress || 0 : 0;
+  } // 結算字串用（handler 內讀 ref 鏡像）
+  function toggleProgMode() {
+    var nx = progModeRef.current === 'bv' ? 'open' : 'bv';
+    progModeRef.current = nx;
+    setProgMode(nx);
+  } // 點進度文字切換（規格 5.1/5.2：純文字、不做成按鈕）
   function unfinishedRacers() {
     return playersRef.current.filter(function (p) {
       if (p.spectator || p.pending) return false;
@@ -1666,8 +1767,8 @@ function MinesGame() {
       return;
     } // 只剩一人：里程碑直接發禮物
     var rec = pickWeightedMine(pool, function (p) {
-      return Math.pow(1 - progOfMine(p.id), 2) + 0.1;
-    }); // 發放權重（扶弱）定版公式
+      return Math.pow(1 - effOfMine(p.id), 2) + 0.1;
+    }); // 發放權重（扶弱）定版公式（v1.50.0 改用 3BV eff）
     var item = Math.random() < 0.5 ? 'question' : 'backfill';
     sendItemMsg({
       type: 'MINE_GRANT',
@@ -1761,13 +1862,13 @@ function MinesGame() {
     // 禮物額度滿 1：送給比自己弱的未完賽對手（sqrt 差距加權，比照數獨）；沒有對象就存著
     if (!itemsLive() || outcomeRef.current || iAmSpecRef.current || mpRef.current.phase !== 'playing') return;
     while (giftCreditRef.current >= 1) {
-      var myP = progOfMine(myId);
+      var myP = effOfMine(myId);
       var weaker = unfinishedRacers().filter(function (p) {
-        return p.id !== myId && progOfMine(p.id) < myP;
+        return p.id !== myId && effOfMine(p.id) < myP;
       });
       if (!weaker.length) return;
       var tgt = pickWeightedMine(weaker, function (p) {
-        return Math.sqrt((myP - progOfMine(p.id)) * 100 + 1);
+        return Math.sqrt((myP - effOfMine(p.id)) * 100 + 1);
       });
       giftCreditRef.current -= 1;
       sendItemMsg({
@@ -1791,8 +1892,8 @@ function MinesGame() {
       return;
     }
     var tgt = pickWeightedMine(tgts, function (p) {
-      return Math.pow(progOfMine(p.id), 2) + 0.1;
-    }); // 攻擊權重（打強者）定版公式
+      return Math.pow(effOfMine(p.id), 2) + 0.1;
+    }); // 攻擊權重（打強者）定版公式（v1.50.0 改用 3BV eff）
     var ni = Object.assign({}, itemsRef.current);
     ni[kind] -= 1;
     itemsRef.current = ni;
@@ -1993,10 +2094,10 @@ function MinesGame() {
       return (a.g.timeMs || 0) - (b.g.timeMs || 0);
     });
     booms.sort(function (a, b) {
-      return (b.g.progress || 0) - (a.g.progress || 0) || (a.g.boomAt || 0) - (b.g.boomAt || 0);
-    });
+      return effOfGod(b.g) - effOfGod(a.g) || (a.g.boomAt || 0) - (b.g.boomAt || 0);
+    }); // 爆雷/未完賽排名改用 3BV（規格 5.4）
     rest.sort(function (a, b) {
-      return (b.g.progress || 0) - (a.g.progress || 0);
+      return effOfGod(b.g) - effOfGod(a.g);
     });
     var entries = fins.concat(booms, rest).map(function (e) {
       return {
@@ -2004,7 +2105,7 @@ function MinesGame() {
         name: e.name,
         color: e.color,
         isMe: e.isMe,
-        right: e.g.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000)) : e.g.state === 'boom' ? '💥 ' + Math.floor((e.g.progress || 0) * 100) + '%' : '未完成・' + Math.floor((e.g.progress || 0) * 100) + '%'
+        right: e.g.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000)) : e.g.state === 'boom' ? '💥 ' + Math.floor(dispFracOf(e.g) * 100) + '%' : '未完成・' + Math.floor(dispFracOf(e.g) * 100) + '%'
       };
     });
     var fin = {
@@ -2345,40 +2446,53 @@ function MinesGame() {
         }
         break;
       case 'MINE_PROGRESS':
-        godSet(m.uid, {
-          progress: m.progress || 0
-        });
-        if (H) hostBroadcast(m, conn);
-        checkRaceEnd();
-        break;
+        {
+          var pp1 = {
+            progress: m.progress || 0
+          };
+          if (typeof m.eff === 'number') pp1.effProgress = m.eff;
+          godSet(m.uid, pp1);
+          if (H) hostBroadcast(m, conn);
+          checkRaceEnd();
+          break;
+        }
       case 'MINE_STATE':
-        godSet(m.uid, {
-          cells: m.cells,
-          nums: m.nums || {},
-          progress: m.progress || 0
-        });
-        if (H) hostBroadcast(m, conn);
-        break;
+        {
+          var pp2 = {
+            cells: m.cells,
+            nums: m.nums || {},
+            progress: m.progress || 0
+          };
+          if (typeof m.eff === 'number') pp2.effProgress = m.eff;
+          godSet(m.uid, pp2);
+          if (H) hostBroadcast(m, conn);
+          break;
+        }
       case 'MINE_FINISH':
         godSet(m.uid, {
           state: 'finished',
           timeMs: m.timeMs,
-          progress: 1
+          progress: 1,
+          effProgress: 1
         });
         if (H) hostBroadcast(m, conn);
         checkRaceEnd();
         tryConvertLastOne();
         break;
       case 'MINE_BOOM':
-        godSet(m.uid, {
-          state: 'boom',
-          progress: m.progress || 0,
-          boomAt: Date.now()
-        });
-        if (H) hostBroadcast(m, conn);
-        checkRaceEnd();
-        tryConvertLastOne();
-        break;
+        {
+          var pp3 = {
+            state: 'boom',
+            progress: m.progress || 0,
+            boomAt: Date.now()
+          };
+          if (typeof m.eff === 'number') pp3.effProgress = m.eff;
+          godSet(m.uid, pp3);
+          if (H) hostBroadcast(m, conn);
+          checkRaceEnd();
+          tryConvertLastOne();
+          break;
+        }
       case 'MINE_MILESTONE':
         if (H) hostHandleMilestone(m.uid);
         break;
@@ -3022,7 +3136,7 @@ function MinesGame() {
         return e.g.state === 'finished' || e.g.state === 'boom';
       });
       res2.sort(function (a, b) {
-        return (a.g.state === 'finished' ? 0 : 1) - (b.g.state === 'finished' ? 0 : 1) || (a.g.state === 'finished' ? (a.g.timeMs || 0) - (b.g.timeMs || 0) : (b.g.progress || 0) - (a.g.progress || 0));
+        return (a.g.state === 'finished' ? 0 : 1) - (b.g.state === 'finished' ? 0 : 1) || (a.g.state === 'finished' ? (a.g.timeMs || 0) - (b.g.timeMs || 0) : effOfGod(b.g) - effOfGod(a.g));
       });
       specR = {
         accent: ACCENT,
@@ -3034,7 +3148,7 @@ function MinesGame() {
             name: e.p.name,
             color: e.p.color,
             isMe: e.p.id === myId,
-            right: e.g.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000)) : '💥 ' + Math.floor((e.g.progress || 0) * 100) + '%'
+            right: e.g.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000)) : '💥 ' + Math.floor(dispFracOf(e.g) * 100) + '%'
           };
         }),
         verdict: myOutcome === 'finished' ? '🏁 你已完賽，先看看大家的盤面吧' : '💥 你踩到雷出局了，先看看大家的盤面吧',
@@ -3396,7 +3510,7 @@ function MinesGame() {
         style: {
           background: p.color
         }
-      }), p.name, " ", gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((gg.progress || 0) * 100) + '%' : Math.floor((gg.progress || 0) * 100) + '%');
+      }), p.name, " ", gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((progMode === 'bv' ? effOfGod(gg) : gg.progress || 0) * 100) + '%' : Math.floor((progMode === 'bv' ? effOfGod(gg) : gg.progress || 0) * 100) + '%');
     })), g.cells ? /*#__PURE__*/React.createElement("div", {
       style: {
         overflowX: 'auto',
@@ -4140,8 +4254,9 @@ function MinesGame() {
       color: '#64748b'
     }
   }, "\uD83D\uDD8C\uFE0F \u5857\u9D09")), /*#__PURE__*/React.createElement("div", {
-    className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0"
-  }, "\u9032\u5EA6 ", Math.floor(progress * 100), "%", /*#__PURE__*/React.createElement("span", {
+    className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none",
+    onClick: toggleProgMode
+  }, progMode === 'bv' ? '進度（3BV）' + Math.floor(effProg * 100) + '%' : '開格 ' + Math.floor(progress * 100) + '%', /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
@@ -4574,12 +4689,12 @@ function MinesGame() {
       style: {
         background: p.color
       }
-    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%'), /*#__PURE__*/React.createElement("span", {
+    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%'), /*#__PURE__*/React.createElement("span", {
       className: "block h-1.5 rounded-full bg-slate-200 overflow-hidden"
     }, /*#__PURE__*/React.createElement("span", {
       className: "block h-full transition-all duration-300",
       style: {
-        width: Math.floor((g.progress || 0) * 100) + '%',
+        width: Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%',
         background: p.color
       }
     })));
@@ -4596,7 +4711,7 @@ function MinesGame() {
     className: "font-black text-2xl text-slate-800 mb-1"
   }, status === 'won' ? '全部排完了！' : '踩到地雷！'), /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-slate-500 mb-4"
-  }, status === 'won' ? '用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '') : '進度 ' + Math.floor(progress * 100) + '%'), /*#__PURE__*/React.createElement("div", {
+  }, status === 'won' ? '用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '') : progMode === 'bv' ? '進度（3BV）' + Math.floor(effProg * 100) + '%' : '開格 ' + Math.floor(progress * 100) + '%'), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {

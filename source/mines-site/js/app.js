@@ -100,6 +100,25 @@ function revealFrom(w, h, L, N, cells, from) {
   return { cells: NC, hit: -1, opened: opened };
 }
 function countOpened(cells) { var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'o') c++; return c; }
+// 3BV 加權（v1.50.0 規格報告）：一個數字 0 連通區＋其邊界數字格＝1 單位（洪水一下領滿）、孤立數字格各 1 單位；單位格權重＝1/單位格數，雷格 0
+function computeBVWeights(w, h, L, N) {
+  var total = w * h, unitOf = new Array(total).fill(-1), sizes = [];
+  for (var s0 = 0; s0 < total; s0++) {
+    if (L[s0] || N[s0] !== 0 || unitOf[s0] >= 0) continue;
+    var uid = sizes.length, cnt = 1, q = [s0], head = 0;
+    unitOf[s0] = uid;
+    while (head < q.length) {
+      var c = q[head++], nb = neighborsOf(w, h, c);
+      for (var j = 0; j < nb.length; j++) { var m = nb[j]; if (!L[m] && unitOf[m] < 0) { unitOf[m] = uid; cnt++; if (N[m] === 0) q.push(m); } }
+    }
+    sizes.push(cnt);
+  }
+  for (var i2 = 0; i2 < total; i2++) if (!L[i2] && unitOf[i2] < 0) { unitOf[i2] = sizes.length; sizes.push(1); }
+  var weights = new Array(total);
+  for (var i3 = 0; i3 < total; i3++) weights[i3] = L[i3] ? 0 : 1 / sizes[unitOf[i3]];
+  return { weights: weights, bv: sizes.length };
+}
+function effProgressOf(cellsArr, weights, bv) { if (!bv || !weights) return 0; var sm = 0; for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') sm += weights[i]; var e = sm / bv; return e > 1 ? 1 : e; }
 function countFlags(cells) { var c = 0; for (var i = 0; i < cells.length; i++) if (cells[i] === 'f' || cells[i] === 'L' || cells[i] === 'x') c++; return c; } // 'L'＝禮物鎖定旗、'x'＝容錯踩雷格（皆計入旗數/剩餘雷數扣減）
 
 // ---------- 極簡音效（WebAudio，靜音鍵 mines_muted） ----------
@@ -155,6 +174,9 @@ function MinesGame() {
   const [strokes, setStrokes] = useState([]);       // 塗鴉筆跡 [{id, uid, color, pts:[[x,y],...]}]：座標正規化 x 0..1000、y 0..1000*h/w（縮放/捲動都不跑位）
   const strokesRef = useRef([]);
   const [drawTool, setDrawTool] = useState('pen');  // pen | eraser（PlatBar 塗鴉子選單控制，比照數獨 drawSubMode）
+  const [progMode, setProgMode] = useState('bv');   // 進度顯示：'bv'（3BV，預設）| 'open'（開格 %）；只存 session、不持久化（v1.50.0 規格 5.1）
+  const progModeRef = useRef('bv');
+  const bvCacheRef = useRef(null);                  // {layout, weights, bv}：以 layout 陣列參照為 cache key（規格 7.2：不逐開局路徑掛計算）
   const [livePts, setLivePts] = useState(null);     // 正在畫的這一筆（即時預覽）
   const drawStateRef = useRef(null);                // 手勢中的一筆 {pts} 或 {erasing:true}
   const doodleSvgRef = useRef(null);
@@ -215,8 +237,10 @@ function MinesGame() {
   function onDoodleUp() { var ds = drawStateRef.current; drawStateRef.current = null; setLivePts(null); if (ds && ds.pts && ds.pts.length) addStroke(ds.pts); }
   function resetItems() { itemsRef.current = { question: 0, backfill: 0, gift: 0 }; setMyItems({ question: 0, backfill: 0, gift: 0 }); questionFxRef.current = {}; setQuestionFx({}); giftCreditRef.current = 0; creditedMinesRef.current = {}; milestoneRef.current = 0; lastOneDoneRef.current = false; if (autoItemIvRef.current) { clearInterval(autoItemIvRef.current); autoItemIvRef.current = null; } if (autoGiftIvRef.current) { clearInterval(autoGiftIvRef.current); autoGiftIvRef.current = null; } }
   const progress = totalSafe ? openedSafe / totalSafe : 0;
+  const bvDisp = (layout && cells) ? bvOfLayout(layout, nums) : null; // 合作來賓無 layout → null → eff fallback 開格（規格 5.3 註記）
+  const effProg = bvDisp ? effProgressOf(cells, bvDisp.weights, bvDisp.bv) : progress;
   const dbgRef = useRef(null); // 唯讀狀態快照（測試/除錯用，掛在 hooks.debug）
-  dbgRef.current = { layout: layout, cells: cells, nums: nums, owners: ownArr, status: status, sizeId: sizeId, progress: progress, openedSafe: openedSafe, seed: curSeed, screen: screen, items: { question: myItems.question, backfill: myItems.backfill, gift: myItems.gift }, strokes: strokes.length, inputMode: inputMode, giftCredit: giftCreditRef.current, qfx: questionFx, milestones: milestoneRef.current, mistakes: mistakesRef.current, mistLeft: mistLeft, zoom: zoom };
+  dbgRef.current = { layout: layout, cells: cells, nums: nums, owners: ownArr, status: status, sizeId: sizeId, progress: progress, openedSafe: openedSafe, seed: curSeed, screen: screen, items: { question: myItems.question, backfill: myItems.backfill, gift: myItems.gift }, strokes: strokes.length, inputMode: inputMode, effProgress: effProg, bv: bvDisp ? bvDisp.bv : 0, progMode: progMode, giftCredit: giftCreditRef.current, qfx: questionFx, milestones: milestoneRef.current, mistakes: mistakesRef.current, mistLeft: mistLeft, zoom: zoom };
 
   useEffect(() => { if (typeof window === 'undefined') return; const f = () => setVpW(window.innerWidth || 390); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
   // ---------- 計時 ----------
@@ -568,9 +592,11 @@ function MinesGame() {
     var opened = openedSafeOf(cellsArr, layoutArr);
     var total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
     var prog = total ? opened / total : 0;
-    godSet(myId, { progress: prog });
+    var bvI = bvOfLayout(layoutArr, numsArr);
+    var eff = bvI ? effProgressOf(cellsArr, bvI.weights, bvI.bv) : prog;
+    godSet(myId, { progress: prog, effProgress: eff });
     var pi = Math.floor(prog * 100);
-    if (pi !== lastProgRef.current) { lastProgRef.current = pi; mpSend({ type: 'MINE_PROGRESS', uid: myId, progress: prog }); }
+    if (pi !== lastProgRef.current) { lastProgRef.current = pi; mpSend({ type: 'MINE_PROGRESS', uid: myId, progress: prog, eff: eff }); }
     stateArgsRef.current = [cellsArr, numsArr, layoutArr];
     boardRef.current = { layout: layoutArr, nums: numsArr, cells: cellsArr, owners: boardRef.current.owners }; // 競速本地盤面鏡像（道具效果/禮物在本機盤面運算，靠它拿最新盤面）
     var now = Date.now();
@@ -581,13 +607,13 @@ function MinesGame() {
     stateAtRef.current = now;
     var sparse = {};
     for (var i = 0; i < cellsArr.length; i++) if (cellsArr[i] === 'o') sparse[i] = numsArr[i];
-    mpSend({ type: 'MINE_STATE', uid: myId, cells: cellsArr.join(''), nums: sparse, progress: prog });
-    godSet(myId, { cells: cellsArr.join(''), nums: sparse, progress: prog });
+    mpSend({ type: 'MINE_STATE', uid: myId, cells: cellsArr.join(''), nums: sparse, progress: prog, eff: eff });
+    godSet(myId, { cells: cellsArr.join(''), nums: sparse, progress: prog, effProgress: eff });
     saveResume(); // 回座存檔跟著每次狀態送出更新（節流後實際寫入頻率與 MINE_STATE 同步）
-    // 里程碑（每 5% 一段）：通報房主發放道具；被回填打回去再重跨不重報（milestoneRef 只增不減）
+    // 里程碑（3BV eff 每 5% 一段）：逐格補報（v1.50.0 比照數獨/數橋定版，取代舊「只發 1 次其餘吞掉」）；被回填打回去再重跨不重報（milestoneRef 只增不減）
     if (mpRef.current.itemsAllow && mpRef.current.phase === 'playing' && !outcomeRef.current && !iAmSpecRef.current) {
-      var band = Math.floor(prog * 20);
-      if (band > milestoneRef.current) { milestoneRef.current = band; if (mpRef.current.isHost) hostHandleMilestone(myId); else mpSend({ type: 'MINE_MILESTONE', uid: myId }); }
+      var band = Math.floor(eff * 20);
+      if (band > milestoneRef.current) { var mFrom = milestoneRef.current; milestoneRef.current = band; for (var mb = mFrom + 1; mb <= band; mb++) { if (mpRef.current.isHost) hostHandleMilestone(myId); else mpSend({ type: 'MINE_MILESTONE', uid: myId }); } }
     }
   }
   function afterRaceAction(cellsArr, numsArr, layoutArr) {
@@ -605,8 +631,9 @@ function MinesGame() {
       var opened = openedSafeOf(cellsArr, layoutArr), total = layoutArr.length - (SIZES[mpRef.current.sizeId] || SIZES[9]).mines;
       var prog = total ? opened / total : 0;
       raceSendState(cellsArr, numsArr, layoutArr, true);
-      godSet(myId, { state: 'boom', progress: prog, boomAt: Date.now() });
-      mpSend({ type: 'MINE_BOOM', uid: myId, progress: prog });
+      var effB = effOfCells(cellsArr, layoutArr, numsArr);
+      godSet(myId, { state: 'boom', progress: prog, effProgress: effB != null ? effB : prog, boomAt: Date.now() });
+      mpSend({ type: 'MINE_BOOM', uid: myId, progress: prog, eff: effB != null ? effB : prog });
       checkRaceEnd();
     } else {
       raceSendState(cellsArr, numsArr, layoutArr, false);
@@ -614,6 +641,12 @@ function MinesGame() {
   }
   // ----- 競速道具/禮物核心（v1.30） -----
   function progOfMine(uid) { var g = godRef.current[uid]; return g ? (g.progress || 0) : 0; }
+  function bvOfLayout(layoutArr, numsArr) { if (!layoutArr) return null; var c = bvCacheRef.current; if (c && c.layout === layoutArr) return c; var sp = specRef.current || SIZES[9]; var N = numsArr || computeNums(sp.w, sp.h, layoutArr); var r = computeBVWeights(sp.w, sp.h, layoutArr, N); bvCacheRef.current = { layout: layoutArr, weights: r.weights, bv: r.bv }; return bvCacheRef.current; }
+  function effOfCells(cellsArr, layoutArr, numsArr) { var b = bvOfLayout(layoutArr, numsArr); if (!b || !cellsArr) return null; return effProgressOf(cellsArr, b.weights, b.bv); }
+  function effOfGod(g) { if (!g) return 0; return (typeof g.effProgress === 'number' && isFinite(g.effProgress)) ? g.effProgress : (g.progress || 0); } // 混版 fallback：舊版來賓無 eff → 用開格 %（不得 NaN）
+  function effOfMine(uid) { return effOfGod(godRef.current[uid]); }
+  function dispFracOf(g) { return progModeRef.current === 'bv' ? effOfGod(g) : (g ? (g.progress || 0) : 0); } // 結算字串用（handler 內讀 ref 鏡像）
+  function toggleProgMode() { var nx = progModeRef.current === 'bv' ? 'open' : 'bv'; progModeRef.current = nx; setProgMode(nx); } // 點進度文字切換（規格 5.1/5.2：純文字、不做成按鈕）
   function unfinishedRacers() { return playersRef.current.filter(p => { if (p.spectator || p.pending) return false; if (p.id === myId) return !outcomeRef.current; var g = godRef.current[p.id]; return !g || g.state === 'playing'; }); }
   function amLastOne() { var u = unfinishedRacers(); return u.length === 1 && u[0].id === myId && playersRef.current.filter(p => !p.spectator && !p.pending).length > 1; }
   function pickWeightedMine(list, wfn) { var tot = 0, ws = list.map(p => { var w = Math.max(0.0001, wfn(p)); tot += w; return w; }); var r = Math.random() * tot; for (var i = 0; i < list.length; i++) { r -= ws[i]; if (r <= 0) return list[i]; } return list[list.length - 1]; }
@@ -631,7 +664,7 @@ function MinesGame() {
     if (Date.now() - (mpRef.current.startAt || 0) < (mpRef.current.itemDelay || 0) * 1000) return; // 道具延遲（比照數獨 weaponStartTime：延遲內跨的里程碑不發）
     var pool = unfinishedRacers(); if (!pool.length) return;
     if (pool.length === 1) { sendItemMsg({ type: 'MINE_GRANT', uid: myId, toUid: pool[0].id, item: 'gift' }); return; } // 只剩一人：里程碑直接發禮物
-    var rec = pickWeightedMine(pool, p => Math.pow(1 - progOfMine(p.id), 2) + 0.1); // 發放權重（扶弱）定版公式
+    var rec = pickWeightedMine(pool, p => Math.pow(1 - effOfMine(p.id), 2) + 0.1); // 發放權重（扶弱）定版公式（v1.50.0 改用 3BV eff）
     var item = Math.random() < 0.5 ? 'question' : 'backfill';
     sendItemMsg({ type: 'MINE_GRANT', uid: myId, toUid: rec.id, item: item });
   }
@@ -677,10 +710,10 @@ function MinesGame() {
   function trySendGift() { // 禮物額度滿 1：送給比自己弱的未完賽對手（sqrt 差距加權，比照數獨）；沒有對象就存著
     if (!itemsLive() || outcomeRef.current || iAmSpecRef.current || mpRef.current.phase !== 'playing') return;
     while (giftCreditRef.current >= 1) {
-      var myP = progOfMine(myId);
-      var weaker = unfinishedRacers().filter(p => p.id !== myId && progOfMine(p.id) < myP);
+      var myP = effOfMine(myId);
+      var weaker = unfinishedRacers().filter(p => p.id !== myId && effOfMine(p.id) < myP);
       if (!weaker.length) return;
-      var tgt = pickWeightedMine(weaker, p => Math.sqrt((myP - progOfMine(p.id)) * 100 + 1));
+      var tgt = pickWeightedMine(weaker, p => Math.sqrt((myP - effOfMine(p.id)) * 100 + 1));
       giftCreditRef.current -= 1;
       sendItemMsg({ type: 'MINE_GIFT', uid: myId, fromUid: myId, fromName: (myPlayer() || {}).name || '', toUid: tgt.id });
       // 不提示送出：跳「你送了禮物」等於間接告訴送禮者他剛才那支旗插對了（使用者 2026-11-02 指示）——額度消耗與送禮都靜默進行
@@ -691,7 +724,7 @@ function MinesGame() {
     if ((itemsRef.current[kind] || 0) <= 0) return;
     var tgts = unfinishedRacers().filter(p => p.id !== myId);
     if (!tgts.length) { itemSay('目前沒有可攻擊的對手'); return; }
-    var tgt = pickWeightedMine(tgts, p => Math.pow(progOfMine(p.id), 2) + 0.1); // 攻擊權重（打強者）定版公式
+    var tgt = pickWeightedMine(tgts, p => Math.pow(effOfMine(p.id), 2) + 0.1); // 攻擊權重（打強者）定版公式（v1.50.0 改用 3BV eff）
     var ni = Object.assign({}, itemsRef.current); ni[kind] -= 1; itemsRef.current = ni; setMyItems(ni);
     sendItemMsg({ type: 'MINE_HIT', uid: myId, fromUid: myId, fromName: (myPlayer() || {}).name || '', toUid: tgt.id, kind: kind });
     SFX.click();
@@ -765,11 +798,11 @@ function MinesGame() {
       if (g.state === 'finished') fins.push(e); else if (g.state === 'boom') booms.push(e); else rest.push(e);
     });
     fins.sort((a, b) => (a.g.timeMs || 0) - (b.g.timeMs || 0));
-    booms.sort((a, b) => ((b.g.progress || 0) - (a.g.progress || 0)) || ((a.g.boomAt || 0) - (b.g.boomAt || 0)));
-    rest.sort((a, b) => (b.g.progress || 0) - (a.g.progress || 0));
+    booms.sort((a, b) => (effOfGod(b.g) - effOfGod(a.g)) || ((a.g.boomAt || 0) - (b.g.boomAt || 0))); // 爆雷/未完賽排名改用 3BV（規格 5.4）
+    rest.sort((a, b) => effOfGod(b.g) - effOfGod(a.g));
     var entries = fins.concat(booms, rest).map(e => ({
       key: e.key, name: e.name, color: e.color, isMe: e.isMe,
-      right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : (e.g.state === 'boom' ? ('💥 ' + Math.floor((e.g.progress || 0) * 100) + '%') : ('未完成・' + Math.floor((e.g.progress || 0) * 100) + '%'))
+      right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : (e.g.state === 'boom' ? ('💥 ' + Math.floor(dispFracOf(e.g) * 100) + '%') : ('未完成・' + Math.floor(dispFracOf(e.g) * 100) + '%'))
     }));
     var fin = { entries: entries, winnerUid: fins.length ? fins[0].key : null };
     finalRef.current = fin; setRaceFinal(fin);
@@ -901,10 +934,10 @@ function MinesGame() {
       case 'READY': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { ready: !!m.ready }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
       case 'SPEC': if (H) { setPlayersBoth(playersRef.current.map(p => p.id === m.uid ? Object.assign({}, p, { spectator: !!m.spectator }) : p)); hostBroadcast({ type: 'PLAYERS_UPDATE', players: playersRef.current }); } break;
       case 'MINE_START': if (!H) { if (m.sizeId === 'custom') regCustomSpec(m.custom); startMatchLocal(m.seed, m.sizeId, m.startAt); } break;
-      case 'MINE_PROGRESS': godSet(m.uid, { progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); break;
-      case 'MINE_STATE': godSet(m.uid, { cells: m.cells, nums: m.nums || {}, progress: m.progress || 0 }); if (H) hostBroadcast(m, conn); break;
-      case 'MINE_FINISH': godSet(m.uid, { state: 'finished', timeMs: m.timeMs, progress: 1 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
-      case 'MINE_BOOM': godSet(m.uid, { state: 'boom', progress: m.progress || 0, boomAt: Date.now() }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
+      case 'MINE_PROGRESS': { var pp1 = { progress: m.progress || 0 }; if (typeof m.eff === 'number') pp1.effProgress = m.eff; godSet(m.uid, pp1); if (H) hostBroadcast(m, conn); checkRaceEnd(); break; }
+      case 'MINE_STATE': { var pp2 = { cells: m.cells, nums: m.nums || {}, progress: m.progress || 0 }; if (typeof m.eff === 'number') pp2.effProgress = m.eff; godSet(m.uid, pp2); if (H) hostBroadcast(m, conn); break; }
+      case 'MINE_FINISH': godSet(m.uid, { state: 'finished', timeMs: m.timeMs, progress: 1, effProgress: 1 }); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break;
+      case 'MINE_BOOM': { var pp3 = { state: 'boom', progress: m.progress || 0, boomAt: Date.now() }; if (typeof m.eff === 'number') pp3.effProgress = m.eff; godSet(m.uid, pp3); if (H) hostBroadcast(m, conn); checkRaceEnd(); tryConvertLastOne(); break; }
       case 'MINE_MILESTONE': if (H) hostHandleMilestone(m.uid); break;
       case 'MINE_GRANT': if (!H) processItemMsg(m); break; // 房主發出時已在 sendItemMsg 內本地處理；來賓鍛造的 GRANT 房主不受理
       case 'MINE_GIFT': if (H) hostBroadcast(m, conn); processItemMsg(m); break;
@@ -1166,9 +1199,9 @@ function MinesGame() {
         buttons: stdBtns, onAction: acts };
     } else if (stage === 'wait') {
       var res2 = playersRef.current.filter(p => !p.spectator && !p.pending).map(p => ({ p: p, g: godRef.current[p.id] || { progress: 0, state: 'playing' } })).filter(e => e.g.state === 'finished' || e.g.state === 'boom');
-      res2.sort((a, b) => ((a.g.state === 'finished' ? 0 : 1) - (b.g.state === 'finished' ? 0 : 1)) || (a.g.state === 'finished' ? (a.g.timeMs || 0) - (b.g.timeMs || 0) : (b.g.progress || 0) - (a.g.progress || 0)));
+      res2.sort((a, b) => ((a.g.state === 'finished' ? 0 : 1) - (b.g.state === 'finished' ? 0 : 1)) || (a.g.state === 'finished' ? (a.g.timeMs || 0) - (b.g.timeMs || 0) : effOfGod(b.g) - effOfGod(a.g)));
       specR = { accent: ACCENT, title: '本場成績', waitingText: '等待其他玩家完成…',
-        entries: res2.map(e => ({ key: e.p.id, name: e.p.name, color: e.p.color, isMe: e.p.id === myId, right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : ('💥 ' + Math.floor((e.g.progress || 0) * 100) + '%') })),
+        entries: res2.map(e => ({ key: e.p.id, name: e.p.name, color: e.p.color, isMe: e.p.id === myId, right: e.g.state === 'finished' ? ('⏱ ' + fmtTime(Math.floor((e.g.timeMs || 0) / 1000))) : ('💥 ' + Math.floor(dispFracOf(e.g) * 100) + '%') })),
         verdict: myOutcome === 'finished' ? '🏁 你已完賽，先看看大家的盤面吧' : '💥 你踩到雷出局了，先看看大家的盤面吧',
         buttons: [{ id: 'watch', label: '👁️ 轉變為上帝模式（觀戰）', kind: 'primary' }, homeBtn], onAction: acts };
     } else {
@@ -1314,7 +1347,7 @@ function MinesGame() {
         <div className="flex flex-wrap gap-1.5 mb-2">
           {opps.map(p => { var gg = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
             <button key={p.id} onClick={() => setGodUid(p.id)} className="text-xs font-black px-2 py-1 rounded-full border-2 flex items-center gap-1 active:translate-y-[1px]" style={p.id === sel ? { background: '#1e293b', color: '#fff', borderColor: '#1e293b' } : { background: '#fff', color: '#334155', borderColor: '#cbd5e1' }}>
-              <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((gg.progress || 0) * 100) + '%' : Math.floor((gg.progress || 0) * 100) + '%'}
+              <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {gg.state === 'finished' ? '⏱ ' + fmtTime(Math.floor((gg.timeMs || 0) / 1000)) : gg.state === 'boom' ? '💥 ' + Math.floor((progMode === 'bv' ? effOfGod(gg) : (gg.progress || 0)) * 100) + '%' : Math.floor((progMode === 'bv' ? effOfGod(gg) : (gg.progress || 0)) * 100) + '%'}
             </button>); })}
         </div>
         {g.cells ? <div style={{ overflowX: 'auto', maxWidth: '100%' }}>{renderGodBoard(g, mpRef.current.sizeId)}</div> : <p className="font-bold text-slate-400 text-center py-3">等待 {selP ? selP.name : '對手'} 的盤面…</p>}
@@ -1633,7 +1666,7 @@ function MinesGame() {
             <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-4 py-1.5" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
             <button data-mode="draw" onClick={() => setInputMode('draw')} className="px-4 py-1.5" style={inputMode === 'draw' ? { background: '#34d399', color: '#0f172a' } : { color: '#64748b' }}>🖌️ 塗鴉</button>
           </div>
-          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0">進度 {Math.floor(progress * 100)}%<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
+          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none" onClick={toggleProgMode}>{progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%')}<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
         </div>
         {showExitMenu && mpOn && (
           <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
@@ -1741,9 +1774,9 @@ function MinesGame() {
           {players.filter(p => !p.spectator && !p.pending && p.id !== myId).map(p => { const g = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
             <span key={p.id} className="text-xs font-black px-2 py-1 rounded-xl border-2 border-slate-300 bg-white flex flex-col gap-1 min-w-[84px]">
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((g.progress || 0) * 100) + '%'}
+                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100) + '%'}
               </span>
-              <span className="block h-1.5 rounded-full bg-slate-200 overflow-hidden"><span className="block h-full transition-all duration-300" style={{ width: Math.floor((g.progress || 0) * 100) + '%', background: p.color }}></span></span>
+              <span className="block h-1.5 rounded-full bg-slate-200 overflow-hidden"><span className="block h-full transition-all duration-300" style={{ width: Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100) + '%', background: p.color }}></span></span>
             </span>); })}
         </div>
       )}
@@ -1755,7 +1788,7 @@ function MinesGame() {
           <div className="bg-white border-4 border-slate-800 rounded-xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-sm w-full p-6 text-center animate-popIn">
             <div className="text-5xl mb-2">{status === 'won' ? '🎉' : '💥'}</div>
             <h3 className="font-black text-2xl text-slate-800 mb-1">{status === 'won' ? '全部排完了！' : '踩到地雷！'}</h3>
-            <p className="font-bold text-slate-500 mb-4">{status === 'won' ? ('用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '')) : ('進度 ' + Math.floor(progress * 100) + '%')}</p>
+            <p className="font-bold text-slate-500 mb-4">{status === 'won' ? ('用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '')) : (progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%'))}</p>
             <div className="flex flex-col gap-2">
               <button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🔁 再來一局</button>
               <button onClick={() => setScreen('home')} className="w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">回主選單</button>
