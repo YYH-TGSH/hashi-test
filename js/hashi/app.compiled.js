@@ -17,9 +17,27 @@ var _React = React,
     useEffect = _React.useEffect,
     useMemo = _React.useMemo,
     useRef = _React.useRef;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, { value: v, suffix: '%' });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return React.createElement(
+    'span',
+    null,
+    v,
+    '%'
+  );
+  return React.createElement('span', { ref: ref });
+}
 
 // === 20 色票 ===
-
 var COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
 
 // === 關卡設定 ===
@@ -6051,14 +6069,13 @@ function HashiGame() {
                 React.createElement(
                   'span',
                   { className: 'text-emerald-600 font-mono ml-1' },
-                  pct,
-                  '%'
+                  React.createElement(PlatPct, { value: pct })
                 )
               ),
               React.createElement(
                 'div',
                 { className: 'w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300' },
-                React.createElement('div', { className: 'h-full transition-all duration-300', style: { width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } })
+                React.createElement('div', { className: 'h-full plat-pbar', style: { width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } })
               )
             );
           })

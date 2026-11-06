@@ -1,4 +1,16 @@
 /* 平台殼樣式（body 背景由 build 依各遊戲 body 規則產生 data-view 版本） */
+
+/* ===== 物理感動畫 token（v1.53.0 規格：Stageshow 紀律——曲線分工、非對稱按壓、重量分級）=====
+   全平台共用，三款 CSS 與遊戲內樣式一律引用這些變數，不再各寫各的。 */
+:root {
+  --plat-ease-travel: cubic-bezier(0.45, 0, 0.1, 1);
+  --plat-ease-settle: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --plat-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --plat-ease-press-in: cubic-bezier(0.3, 0.7, 0.4, 1);
+  --plat-press-in: 80ms;
+  --plat-press-out: 220ms;
+  --plat-stagger: 60ms;
+}
 body[data-view="home"] {
   overscroll-behavior-y: none;
   background-color: #edf2f8;
@@ -8,10 +20,13 @@ body[data-view="home"] {
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
 .plat-view { display: none; }
-.plat-view.active { display: block; animation: platViewIn .26s ease-out; }
+.plat-view.active { display: block; animation: platViewIn .26s var(--plat-ease-settle); }
+.plat-view.plat-view-out { display: block; opacity: 0; transition: opacity 90ms var(--plat-ease-travel); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .plat-view.plat-view-out { transition: none; } }
 /* 畫面轉場 Fade Through（美學稽核 V-02）：切換不再瞬斷，舊畫面換新畫面時淡入＋微縮放，約 260ms */
 @keyframes platViewIn { from { opacity: 0; transform: scale(.996) translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .plat-view.active { animation: none; } }
+
 #plat-back {
   position: fixed; top: 10px; left: 10px; z-index: 9999;
   background: #fff; border: 3px solid #1e293b; border-radius: 9999px;
@@ -131,7 +146,7 @@ body[data-view="lobby"] {
 #slot-display.slot-land { animation: slotLand .35s ease-out; }
 
 @keyframes platCountPulse { from { transform: scale(1); } to { transform: scale(1.07); } }
-.lob-tab { flex: 1; padding: 8px 4px; background: #fff; border: 3px solid #1e293b; border-radius: 12px; font-weight: 900; color: #475569; box-shadow: 3px 3px 0 rgba(30,41,59,1); transition: all .1s; cursor: pointer; }
+.lob-tab { flex: 1; padding: 8px 4px; background: #fff; border: 3px solid #1e293b; border-radius: 12px; font-weight: 900; color: #475569; box-shadow: 3px 3px 0 rgba(30,41,59,1); transition: background-color 150ms ease, color 150ms ease, transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring); cursor: pointer; }
 .lob-tab:active { transform: translate(2px,2px); box-shadow: none; }
 .lob-tab-on { background: #1e293b; color: #fff; }
 @keyframes podIn { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -153,8 +168,37 @@ body.plat-room-on[data-view="mines"] {
    用 :where() 壓低特異度：已有 Tailwind transition/active 效果的按鈕以自身樣式為準（同特異度時其樣式表較晚載入勝出），
    本規則只補齊沒寫按壓效果的按鈕；transform 不撐版面，盤面格子按鈕也適用 */
 :where(button) { -webkit-tap-highlight-color: transparent; }
-:where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
-:where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+:where(button):not(:disabled) { transition: transform var(--plat-press-out) var(--plat-ease-spring), filter var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
+:where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); transition-duration: var(--plat-press-in); transition-timing-function: var(--plat-ease-press-in); }
+@media (prefers-reduced-motion: reduce) { :where(button):not(:disabled) { transition: none; } }
+
+/* 硬陰影主力鈕（.plat-btn-hard）：位移與影子同步壓縮——按下時影子隨位移一起縮到 0（禁止瞬跳 none），
+   放開以 spring 曲線回程。靜止外觀（影子距離/顏色）由各鈕原有 class 決定，本 class 只管動畫過程。
+   --ph-press 為按壓位移量（大鈕可 inline 調大）。 */
+.plat-btn-hard { --ph-press: 2px; transition: transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease, border-color 150ms ease !important; }
+.plat-btn-hard:not(:disabled):active { transform: translate(var(--ph-press), var(--ph-press)); box-shadow: 0 0 0 rgba(30,41,59,1) !important; transition-duration: var(--plat-press-in) !important; transition-timing-function: var(--plat-ease-press-in) !important; }
+@media (hover: hover) { .plat-btn-hard:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--ph-sh, 4px) + 1px) calc(var(--ph-sh, 4px) + 1px) 0 rgba(30,41,59,1) !important; transition-duration: 150ms; transition-timing-function: var(--plat-ease-travel); } }
+@media (prefers-reduced-motion: reduce) { .plat-btn-hard { transition: none !important; } }
+
+/* 進度條同步（.plat-pbar）：width 以 travel 曲線 400ms 移動，與 PlatCount 滾字同窗啟動同向同幅 */
+.plat-pbar { transition: width 400ms var(--plat-ease-travel) !important; }
+@media (prefers-reduced-motion: reduce) { .plat-pbar { transition: none !important; } }
+
+/* ===== PlatCount 數字滾輪（殼層共用元件，JS 在 shell.js）===== */
+.plat-count { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; }
+.plat-count .pc-digit { display: inline-block; overflow: hidden; height: 1em; line-height: 1; width: 0.62em; text-align: center; }
+.plat-count .pc-strip { display: block; transition: transform 380ms var(--plat-ease-spring); will-change: transform; }
+.plat-count .pc-strip > span { display: block; height: 1em; line-height: 1; }
+.plat-count .pc-unit { display: inline-block; margin-left: 0.08em; }
+@media (prefers-reduced-motion: reduce) { .plat-count .pc-strip { transition: none; } }
+/* PlatLite：小計數的 Roll-lite 換字（新字 spring 彈入） */
+@keyframes platLiteIn { 0% { transform: translateY(55%) scale(1.18); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.plat-lite-in { display: inline-block; animation: platLiteIn 240ms var(--plat-ease-spring); }
+@media (prefers-reduced-motion: reduce) { .plat-lite-in { animation: none; } }
+/* 倒數 Roll 換位（PlatCountdown 升級）：每位數字由下滾入＋spring 落定 */
+@keyframes platCountRoll { 0% { transform: translateY(38%) scale(1.22); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.plat-count-roll { animation: platCountRoll 300ms var(--plat-ease-spring), platCountPulse .45s ease-in-out .3s infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .plat-count-roll { animation: platCountPulse .45s ease-in-out infinite alternate; } }
 
 /* 房間頁懸浮操作列（使用者 2026-10-31 指示）：準備/開始固定在畫面底部，不隨設定捲動；朋友常漏按準備是主因 */
 .pr-actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 240; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(253,245,230,.95); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border-top: 3px solid #1e293b; }

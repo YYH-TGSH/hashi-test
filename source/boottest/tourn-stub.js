@@ -92,8 +92,8 @@ const cells16 = Array.from({ length: 16 }, (_, i) => ({ id: i, isGiven: i < 10, 
   await waitFor(() => host.D.querySelector('#lob-step-nick').style.display === 'block', 60000, 'host nick');
   setInput(host.w, host.D.querySelector('#lob-name'), '阿主');
   click(host.w, host.D.querySelector('#lob-confirm'));
-  await waitFor(() => (host.D.querySelector('#lob-room-code') || { textContent: '' }).textContent.trim().length === 4, 60000, 'host room');
-  const code = host.D.querySelector('#lob-room-code').textContent.trim();
+  await waitFor(() => (host.D.querySelector('[data-pr-region="code"]') || { textContent: '' }).textContent.trim().length === 4, 60000, 'host room');
+  const code = host.D.querySelector('[data-pr-region="code"]').textContent.trim();
   // 來賓加入
   guest.w.PLAT_show('lobby');
   click(guest.w, guest.D.querySelector('#lob-go-join'));
@@ -101,7 +101,7 @@ const cells16 = Array.from({ length: 16 }, (_, i) => ({ id: i, isGiven: i < 10, 
   setInput(guest.w, guest.D.querySelector('#lob-name'), '阿客');
   setInput(guest.w, guest.D.querySelector('#lob-code'), code);
   click(guest.w, guest.D.querySelector('#lob-confirm'));
-  await waitFor(() => (guest.D.querySelector('#lob-room-code') || { textContent: '' }).textContent.trim().length === 4, 60000, 'guest room');
+  await waitFor(() => (guest.D.querySelector('[data-pr-region="code"]') || { textContent: '' }).textContent.trim().length === 4, 60000, 'guest room');
   const hostPid = host.w.__PLAT_NET.myPid, guestPid = guest.w.__PLAT_NET.myPid;
   const hostUid = host.w.__PLAT_NET.myUid, guestUid = guest.w.__PLAT_NET.myUid;
   check('兩人進房', !!hostPid && !!guestPid && hostPid !== guestPid);
@@ -111,9 +111,12 @@ const cells16 = Array.from({ length: 16 }, (_, i) => ({ id: i, isGiven: i < 10, 
   // 比照真遊戲：host 收到 JOIN 後廣播 PLAYERS_UPDATE（殼靠它學 host 的 game uid 映射）
   host.stub.onJoin = () => hostSend(host, { type: 'PLAYERS_UPDATE', players: [{ id: 'sH', name: '阿主' }, { id: 'sG', name: '阿客' }] });
   // 開賽設定：數獨 4x4 簡單，其餘預設（交替數獨先、5 分鐘）
-  host.D.querySelector('#t-s-size').value = '4';
-  host.D.querySelector('#t-s-diff').value = 'easy';
+  click(host.w, host.D.querySelector('[data-rtab="tourn"]')); // 設定卡只在錦標賽分頁顯示（roomTab==='tourn'）
+  await waitFor(() => host.D.querySelector('#lob-tourn-setup').style.display === 'block', 30000, 'tourn setup visible');
+  host.D.querySelector('#ts-size').value = '4';
+  host.D.querySelector('#ts-diff').value = 'easy';
   check('開賽卡房主可見', host.D.querySelector('#lob-tourn-setup').style.display === 'block');
+  await waitFor(() => host.D.querySelector('#lob-step-room [data-pr="ready"]') && guest.D.querySelector('#lob-step-room [data-pr="ready"]'), 30000, 'ready btns'); // 等名單卡準備鈕渲染出來再點（早點會點空）
   click(host.w, host.D.querySelector('#lob-step-room [data-pr="ready"]'));
   click(guest.w, guest.D.querySelector('#lob-step-room [data-pr="ready"]'));
   const tCardStartS = await waitFor(() => { const b = host.D.querySelector('#lob-step-room [data-pr="start"]'); return (b && !b.disabled && b.textContent.includes('開賽')) ? b : null; }, 30000, 'tourn card start');

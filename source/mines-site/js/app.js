@@ -3,6 +3,21 @@
 // 規則（使用者 2026-10-28 拍板）：多人競速踩到雷直接出局、照當時進度%排名；盤面 9×9・10雷（預設）/16×16・40雷；
 // 第一版不做大亂鬥道具（純競速）；第一次點擊永遠不踩雷；觀戰只看已挖開/插旗狀態、不洩漏雷位。
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, { value: v, suffix: '%' });
+      else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return <span>{v}%</span>;
+  return <span ref={ref}></span>;
+}
+
 
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
 function platTimeOffset() { try { return (window.__PLAT_NET && window.__PLAT_NET.timeOffset) || 0; } catch (e) { return 0; } } // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
@@ -1665,7 +1680,7 @@ function MinesGame() {
             <button data-mode="dig" onClick={() => setInputMode('dig')} className="px-2.5 md:px-4 py-1.5 text-sm md:text-base" style={inputMode === 'dig' ? { background: ACCENT, color: '#fff' } : { color: '#64748b' }}>⛏️ 挖開</button>
             <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-2.5 md:px-4 py-1.5 text-sm md:text-base" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
           </div>
-          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto" onClick={toggleProgMode}>{progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%')}<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
+          <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto" onClick={toggleProgMode}>{progMode === 'bv' ? '進度（3BV）' : '開格 '}<PlatPct value={Math.floor((progMode === 'bv' ? effProg : progress) * 100)} /><span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
         </div>
         {showExitMenu && mpOn && (
           <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4" onClick={() => setShowExitMenu(false)}>
@@ -1773,9 +1788,9 @@ function MinesGame() {
           {players.filter(p => !p.spectator && !p.pending && p.id !== myId).map(p => { const g = godBoards[p.id] || { progress: 0, state: 'playing' }; return (
             <span key={p.id} className="text-xs font-black px-2 py-1 rounded-xl border-2 border-slate-300 bg-white flex flex-col gap-1 min-w-[84px]">
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100) + '%'}
+                <span className="w-2.5 h-2.5 rounded-full border border-slate-800" style={{ background: p.color }}></span>{p.name} {g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : <PlatPct value={Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100)} />}
               </span>
-              <span className="block h-1.5 rounded-full bg-slate-200 overflow-hidden"><span className="block h-full transition-all duration-300" style={{ width: Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100) + '%', background: p.color }}></span></span>
+              <span className="block h-1.5 rounded-full bg-slate-200 overflow-hidden"><span className="block h-full plat-pbar" style={{ width: Math.floor((progMode === 'bv' ? effOfGod(g) : (g.progress || 0)) * 100) + '%', background: p.color }}></span></span>
             </span>); })}
         </div>
       )}

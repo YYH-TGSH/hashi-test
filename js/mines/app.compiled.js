@@ -20,6 +20,24 @@ var _React = React,
   useRef = _React.useRef,
   useMemo = _React.useMemo,
   useCallback = _React.useCallback;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, {
+        value: v,
+        suffix: '%'
+      });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return /*#__PURE__*/React.createElement("span", null, v, "%");
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
 
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
 function platTimeOffset() {
@@ -4244,7 +4262,9 @@ function MinesGame() {
   }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto",
     onClick: toggleProgMode
-  }, progMode === 'bv' ? '進度（3BV）' + Math.floor(effProg * 100) + '%' : '開格 ' + Math.floor(progress * 100) + '%', /*#__PURE__*/React.createElement("span", {
+  }, progMode === 'bv' ? '進度（3BV）' : '開格 ', /*#__PURE__*/React.createElement(PlatPct, {
+    value: Math.floor((progMode === 'bv' ? effProg : progress) * 100)
+  }), /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
@@ -4677,10 +4697,12 @@ function MinesGame() {
       style: {
         background: p.color
       }
-    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%'), /*#__PURE__*/React.createElement("span", {
+    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : /*#__PURE__*/React.createElement(PlatPct, {
+      value: Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100)
+    })), /*#__PURE__*/React.createElement("span", {
       className: "block h-1.5 rounded-full bg-slate-200 overflow-hidden"
     }, /*#__PURE__*/React.createElement("span", {
-      className: "block h-full transition-all duration-300",
+      className: "block h-full plat-pbar",
       style: {
         width: Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%',
         background: p.color

@@ -1976,6 +1976,12 @@ button { transition: all 150ms ease; }
 :where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
 :where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
 
+/* v1.53.0 物理感：地雷格按壓改 C 類（不位移以免破格線，scale .96＋變暗，in 70ms／out spring 200ms） */
+.mine-cell { transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 120ms ease; }
+.mine-cell:active { transform: scale(0.96); filter: brightness(0.92); transition-duration: 70ms; transition-timing-function: cubic-bezier(0.3, 0.7, 0.4, 1); }
+/* 模式段位鈕（挖開/插旗）選取填色 150ms 滑入滑出，不硬切 */
+#view-mines [data-mode] { transition: background-color 150ms ease, color 150ms ease; }
+
 body[data-view="sudoku"] {
 overscroll-behavior-y: none;
         background-color: #fdf5e6;
@@ -2004,6 +2010,18 @@ overscroll-behavior-y: none;
 
 /* === 平台殼 css === */
 /* 平台殼樣式（body 背景由 build 依各遊戲 body 規則產生 data-view 版本） */
+
+/* ===== 物理感動畫 token（v1.53.0 規格：Stageshow 紀律——曲線分工、非對稱按壓、重量分級）=====
+   全平台共用，三款 CSS 與遊戲內樣式一律引用這些變數，不再各寫各的。 */
+:root {
+  --plat-ease-travel: cubic-bezier(0.45, 0, 0.1, 1);
+  --plat-ease-settle: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --plat-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --plat-ease-press-in: cubic-bezier(0.3, 0.7, 0.4, 1);
+  --plat-press-in: 80ms;
+  --plat-press-out: 220ms;
+  --plat-stagger: 60ms;
+}
 body[data-view="home"] {
   overscroll-behavior-y: none;
   background-color: #edf2f8;
@@ -2013,10 +2031,13 @@ body[data-view="home"] {
   font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
 }
 .plat-view { display: none; }
-.plat-view.active { display: block; animation: platViewIn .26s ease-out; }
+.plat-view.active { display: block; animation: platViewIn .26s var(--plat-ease-settle); }
+.plat-view.plat-view-out { display: block; opacity: 0; transition: opacity 90ms var(--plat-ease-travel); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .plat-view.plat-view-out { transition: none; } }
 /* 畫面轉場 Fade Through（美學稽核 V-02）：切換不再瞬斷，舊畫面換新畫面時淡入＋微縮放，約 260ms */
 @keyframes platViewIn { from { opacity: 0; transform: scale(.996) translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .plat-view.active { animation: none; } }
+
 #plat-back {
   position: fixed; top: 10px; left: 10px; z-index: 9999;
   background: #fff; border: 3px solid #1e293b; border-radius: 9999px;
@@ -2136,7 +2157,7 @@ body[data-view="lobby"] {
 #slot-display.slot-land { animation: slotLand .35s ease-out; }
 
 @keyframes platCountPulse { from { transform: scale(1); } to { transform: scale(1.07); } }
-.lob-tab { flex: 1; padding: 8px 4px; background: #fff; border: 3px solid #1e293b; border-radius: 12px; font-weight: 900; color: #475569; box-shadow: 3px 3px 0 rgba(30,41,59,1); transition: all .1s; cursor: pointer; }
+.lob-tab { flex: 1; padding: 8px 4px; background: #fff; border: 3px solid #1e293b; border-radius: 12px; font-weight: 900; color: #475569; box-shadow: 3px 3px 0 rgba(30,41,59,1); transition: background-color 150ms ease, color 150ms ease, transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring); cursor: pointer; }
 .lob-tab:active { transform: translate(2px,2px); box-shadow: none; }
 .lob-tab-on { background: #1e293b; color: #fff; }
 @keyframes podIn { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -2158,8 +2179,37 @@ body.plat-room-on[data-view="mines"] {
    用 :where() 壓低特異度：已有 Tailwind transition/active 效果的按鈕以自身樣式為準（同特異度時其樣式表較晚載入勝出），
    本規則只補齊沒寫按壓效果的按鈕；transform 不撐版面，盤面格子按鈕也適用 */
 :where(button) { -webkit-tap-highlight-color: transparent; }
-:where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
-:where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+:where(button):not(:disabled) { transition: transform var(--plat-press-out) var(--plat-ease-spring), filter var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
+:where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); transition-duration: var(--plat-press-in); transition-timing-function: var(--plat-ease-press-in); }
+@media (prefers-reduced-motion: reduce) { :where(button):not(:disabled) { transition: none; } }
+
+/* 硬陰影主力鈕（.plat-btn-hard）：位移與影子同步壓縮——按下時影子隨位移一起縮到 0（禁止瞬跳 none），
+   放開以 spring 曲線回程。靜止外觀（影子距離/顏色）由各鈕原有 class 決定，本 class 只管動畫過程。
+   --ph-press 為按壓位移量（大鈕可 inline 調大）。 */
+.plat-btn-hard { --ph-press: 2px; transition: transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease, border-color 150ms ease !important; }
+.plat-btn-hard:not(:disabled):active { transform: translate(var(--ph-press), var(--ph-press)); box-shadow: 0 0 0 rgba(30,41,59,1) !important; transition-duration: var(--plat-press-in) !important; transition-timing-function: var(--plat-ease-press-in) !important; }
+@media (hover: hover) { .plat-btn-hard:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--ph-sh, 4px) + 1px) calc(var(--ph-sh, 4px) + 1px) 0 rgba(30,41,59,1) !important; transition-duration: 150ms; transition-timing-function: var(--plat-ease-travel); } }
+@media (prefers-reduced-motion: reduce) { .plat-btn-hard { transition: none !important; } }
+
+/* 進度條同步（.plat-pbar）：width 以 travel 曲線 400ms 移動，與 PlatCount 滾字同窗啟動同向同幅 */
+.plat-pbar { transition: width 400ms var(--plat-ease-travel) !important; }
+@media (prefers-reduced-motion: reduce) { .plat-pbar { transition: none !important; } }
+
+/* ===== PlatCount 數字滾輪（殼層共用元件，JS 在 shell.js）===== */
+.plat-count { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; }
+.plat-count .pc-digit { display: inline-block; overflow: hidden; height: 1em; line-height: 1; width: 0.62em; text-align: center; }
+.plat-count .pc-strip { display: block; transition: transform 380ms var(--plat-ease-spring); will-change: transform; }
+.plat-count .pc-strip > span { display: block; height: 1em; line-height: 1; }
+.plat-count .pc-unit { display: inline-block; margin-left: 0.08em; }
+@media (prefers-reduced-motion: reduce) { .plat-count .pc-strip { transition: none; } }
+/* PlatLite：小計數的 Roll-lite 換字（新字 spring 彈入） */
+@keyframes platLiteIn { 0% { transform: translateY(55%) scale(1.18); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.plat-lite-in { display: inline-block; animation: platLiteIn 240ms var(--plat-ease-spring); }
+@media (prefers-reduced-motion: reduce) { .plat-lite-in { animation: none; } }
+/* 倒數 Roll 換位（PlatCountdown 升級）：每位數字由下滾入＋spring 落定 */
+@keyframes platCountRoll { 0% { transform: translateY(38%) scale(1.22); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.plat-count-roll { animation: platCountRoll 300ms var(--plat-ease-spring), platCountPulse .45s ease-in-out .3s infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .plat-count-roll { animation: platCountPulse .45s ease-in-out infinite alternate; } }
 
 /* 房間頁懸浮操作列（使用者 2026-10-31 指示）：準備/開始固定在畫面底部，不隨設定捲動；朋友常漏按準備是主因 */
 .pr-actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 240; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(253,245,230,.95); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border-top: 3px solid #1e293b; }
@@ -2205,10 +2255,10 @@ body.plat-room-on[data-view="mines"] {
           </h1>
           <div class="font-black text-base md:text-lg tracking-[0.25em] mb-8"><span class="text-[#d97706]">數獨</span><span class="text-slate-300 mx-0.5">・</span><span class="text-green-600">數橋</span><span class="text-slate-300 mx-0.5">・</span><span class="text-orange-600">踩地雷</span></div>
           <div class="flex flex-col gap-5">
-            <button onclick="PLAT_show('sudoku')" class="w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">🔢 數獨 Sudoku</button>
-            <button onclick="PLAT_show('hashi')" class="w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">🌉 數橋 Hashi</button>
-            <button onclick="PLAT_show('mines')" class="w-full py-5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">💣 踩地雷 Minesweeper</button>
-            <button onclick="PLAT_show('lobby')" class="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">👥 多人連線（先進大廳）</button>
+            <button onclick="PLAT_show('sudoku')" class="plat-btn-hard w-full py-5 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">🔢 數獨 Sudoku</button>
+            <button onclick="PLAT_show('hashi')" class="plat-btn-hard w-full py-5 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform -rotate-1">🌉 數橋 Hashi</button>
+            <button onclick="PLAT_show('mines')" class="plat-btn-hard w-full py-5 bg-[#fb923c] border-4 border-slate-800 rounded-xl font-black text-2xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">💣 踩地雷 Minesweeper</button>
+            <button onclick="PLAT_show('lobby')" class="plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">👥 多人連線（先進大廳）</button>
           </div>
         </div>
       </div>
@@ -2224,16 +2274,16 @@ body.plat-room-on[data-view="mines"] {
 
         <div id="lob-step-entry">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button id="lob-go-create" class="bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left">
+            <button id="lob-go-create" style="--ph-press:3px;--ph-sh:6px" class="plat-btn-hard bg-blue-500 text-white border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] text-left">
               <div class="font-black text-2xl mb-1">🏠 建立房間</div>
               <div class="text-xs font-bold opacity-90 leading-relaxed">你是房主！代碼固定不變，朋友用同一組代碼加入</div>
             </button>
-            <button id="lob-go-join" class="bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all text-left">
+            <button id="lob-go-join" style="--ph-press:3px;--ph-sh:6px" class="plat-btn-hard bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl p-6 shadow-[6px_6px_0px_rgba(30,41,59,1)] text-left">
               <div class="font-black text-2xl mb-1">🚪 加入房間</div>
               <div class="text-xs font-bold opacity-80 leading-relaxed">輸入朋友給你的 4 位數代碼</div>
             </button>
           </div>
-          <button id="lob-rejoin" style="display:none" class="w-full mt-4 py-3 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">↩ 回到房間 <span id="lob-rejoin-code"></span></button>
+          <button id="lob-rejoin" style="display:none" class="plat-btn-hard w-full mt-4 py-3 bg-sky-300 border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">↩ 回到房間 <span id="lob-rejoin-code"></span></button>
           <p class="mt-4 text-sm font-bold text-slate-400 text-center">跟朋友約好，一個人建立房間、其他人輸入房號加入</p>
           <button onclick="PLAT_show('home')" class="w-full mt-4 text-slate-400 font-bold hover:text-slate-800 hover:underline text-center">取消返回主選單</button>
         </div>
@@ -2246,17 +2296,17 @@ body.plat-room-on[data-view="mines"] {
           <label class="font-black text-slate-700 text-sm">你的暱稱（拉霸機選一個，或自己輸入）</label>
           <div id="slot-display">🎰</div>
           <div class="flex gap-2 mb-3">
-            <button id="slot-spin" class="flex-1 py-2.5 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎰 拉霸</button>
+            <button id="slot-spin" class="plat-btn-hard flex-1 py-2.5 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">🎰 拉霸</button>
             <input id="lob-name" maxlength="12" placeholder="或自己輸入暱稱" class="flex-1 min-w-0 px-3 py-2 border-[3px] border-slate-800 rounded-lg font-bold text-lg">
           </div>
           <label class="font-black text-slate-700 text-sm">代表色（摩天輪決定）</label>
           <div class="text-xs font-bold text-slate-400 mt-0.5">按確認進房時，沒轉過會跟暱稱一樣自動用摩天輪決定</div>
           <div class="flex items-center gap-2 mt-1 mb-2">
             <span id="lob-color-dot" class="w-9 h-9 rounded-full border-[3px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] inline-block shrink-0"></span>
-            <button id="lob-color-spin" class="flex-1 py-2 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 摩天輪選色</button>
+            <button id="lob-color-spin" class="plat-btn-hard flex-1 py-2 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-base text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">🎡 摩天輪選色</button>
           </div>
           <div id="lob-wheel-wrap"></div>
-          <button id="lob-confirm" class="w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">✅ 確認，進房間</button>
+          <button id="lob-confirm" class="plat-btn-hard w-full py-3.5 bg-emerald-400 border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">✅ 確認，進房間</button>
           <button id="lob-back" class="w-full mt-3 font-bold text-slate-400 underline">← 返回</button>
           <div id="lob-msg" class="mt-3 text-sm font-bold text-rose-500 min-h-[20px]"></div>
         </div>
@@ -2420,7 +2470,7 @@ body.plat-room-on[data-view="mines"] {
       </div>
       <div class="text-xs font-bold text-slate-400 mb-1">轉到哪台車廂，就是你的代表色（連按 5 次有驚喜）</div>
       <div id="plat-pick-wheel"></div>
-      <button id="plat-pick-spin" class="w-full py-2.5 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🎡 轉！</button>
+      <button id="plat-pick-spin" class="plat-btn-hard w-full py-2.5 bg-[#60a5fa] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">🎡 轉！</button>
     </div>
   </div>
 
@@ -3311,6 +3361,24 @@ var _React = React,
   useEffect = _React.useEffect,
   useMemo = _React.useMemo,
   useRef = _React.useRef;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, {
+        value: v,
+        suffix: '%'
+      });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return /*#__PURE__*/React.createElement("span", null, v, "%");
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
 function GameTimer(_ref) {
   var startTime = _ref.startTime,
     endTime = _ref.endTime,
@@ -9697,10 +9765,12 @@ function SudokuGame() {
       className: "flex items-center gap-1 text-[10px] md:text-xs font-bold text-slate-800 pl-1.5 whitespace-nowrap"
     }, p.name, " ", p.isHost && '👑', " ", p.isSpectator && ' 👁️', " ", isMe && '(你)', /*#__PURE__*/React.createElement("span", {
       className: "text-emerald-600 font-mono ml-1"
-    }, pct, "%")), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(PlatPct, {
+      value: pct
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300 relative overflow-hidden",
+      className: "h-full plat-pbar relative overflow-hidden",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: isRainbow ? 'transparent' : p.color
@@ -9799,10 +9869,12 @@ function SudokuGame() {
       }
     }), p.name, " ", p.isHost && '👑'), /*#__PURE__*/React.createElement("span", {
       className: "text-emerald-600 font-mono text-lg"
-    }, pct, "%")), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(PlatPct, {
+      value: pct
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "w-full h-5 bg-slate-100 rounded-full overflow-hidden border-2 border-slate-800 shadow-inner"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300",
+      className: "h-full plat-pbar",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: p.color === 'rainbow' ? '#ffcc00' : p.color
@@ -10667,9 +10739,27 @@ var _React = React,
     useEffect = _React.useEffect,
     useMemo = _React.useMemo,
     useRef = _React.useRef;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, { value: v, suffix: '%' });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return React.createElement(
+    'span',
+    null,
+    v,
+    '%'
+  );
+  return React.createElement('span', { ref: ref });
+}
 
 // === 20 色票 ===
-
 var COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
 
 // === 關卡設定 ===
@@ -16701,14 +16791,13 @@ function HashiGame() {
                 React.createElement(
                   'span',
                   { className: 'text-emerald-600 font-mono ml-1' },
-                  pct,
-                  '%'
+                  React.createElement(PlatPct, { value: pct })
                 )
               ),
               React.createElement(
                 'div',
                 { className: 'w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300' },
-                React.createElement('div', { className: 'h-full transition-all duration-300', style: { width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } })
+                React.createElement('div', { className: 'h-full plat-pbar', style: { width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color } })
               )
             );
           })
@@ -18106,6 +18195,24 @@ var _React = React,
   useRef = _React.useRef,
   useMemo = _React.useMemo,
   useCallback = _React.useCallback;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, {
+        value: v,
+        suffix: '%'
+      });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return /*#__PURE__*/React.createElement("span", null, v, "%");
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
 
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
 function platTimeOffset() {
@@ -22330,7 +22437,9 @@ function MinesGame() {
   }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0 cursor-pointer select-none ml-auto",
     onClick: toggleProgMode
-  }, progMode === 'bv' ? '進度（3BV）' + Math.floor(effProg * 100) + '%' : '開格 ' + Math.floor(progress * 100) + '%', /*#__PURE__*/React.createElement("span", {
+  }, progMode === 'bv' ? '進度（3BV）' : '開格 ', /*#__PURE__*/React.createElement(PlatPct, {
+    value: Math.floor((progMode === 'bv' ? effProg : progress) * 100)
+  }), /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''))), showExitMenu && mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
@@ -22763,10 +22872,12 @@ function MinesGame() {
       style: {
         background: p.color
       }
-    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%'), /*#__PURE__*/React.createElement("span", {
+    }), p.name, " ", g.state === 'finished' ? '🏁' : g.state === 'boom' ? '💥' : /*#__PURE__*/React.createElement(PlatPct, {
+      value: Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100)
+    })), /*#__PURE__*/React.createElement("span", {
       className: "block h-1.5 rounded-full bg-slate-200 overflow-hidden"
     }, /*#__PURE__*/React.createElement("span", {
-      className: "block h-full transition-all duration-300",
+      className: "block h-full plat-pbar",
       style: {
         width: Math.floor((progMode === 'bv' ? effOfGod(g) : g.progress || 0) * 100) + '%',
         background: p.color
@@ -22943,7 +23054,13 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     }
     currentView = name;
     ['home', 'sudoku', 'hashi', 'mines', 'lobby'].forEach(function (v) {
-      var vel = document.getElementById('view-' + v); if (vel) vel.classList.toggle('active', v === name); // 防空：混版快取（新殼+舊頁面缺某款 view）不能讓整個切換死掉（v1.14.1 實機事故：房主開數獨整面空白）
+      var vel = document.getElementById('view-' + v); if (!vel) return; // 防空：混版快取（新殼+舊頁面缺某款 view）不能讓整個切換死掉（v1.14.1 實機事故：房主開數獨整面空白）
+      if (v === name) { if (vel._outT) { clearTimeout(vel._outT); vel._outT = null; } vel.classList.remove('plat-view-out'); vel.classList.add('active'); }
+      else if (vel.classList.contains('active')) { // 退場補強（v1.53.0）：舊畫面 90ms 淡出後才卸載，與新畫面淡入組成 crossfade，不再瞬斷
+        vel.classList.add('plat-view-out');
+        if (vel._outT) clearTimeout(vel._outT);
+        vel._outT = setTimeout(function () { vel.classList.remove('active'); vel.classList.remove('plat-view-out'); vel._outT = null; }, 90);
+      } else vel.classList.remove('active');
     });
     document.body.setAttribute('data-view', name);
     // 先 boot 遊戲、再做裝飾更新：dock/rejoin 只是外觀與探測，萬一丟錯絕不能擋住遊戲載入（v1.19.0 靈魂拷問盤點）
@@ -22964,7 +23081,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.52.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.53.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -23095,8 +23212,8 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   }
   function sysChat(text) { appendChat({ sys: true, text: text }); }
   function renderUnread() {
-    var b = $('dock-chat-badge'); if (b) { b.style.display = Net.unread > 0 ? 'flex' : 'none'; b.textContent = Net.unread > 99 ? '99+' : Net.unread; }
-    var u = $('plat-chat-unread'); if (u) { u.style.display = (Net.chatOpen && Net.chatMin && Net.unread > 0) ? 'inline-block' : 'none'; u.textContent = Net.unread > 99 ? '99+' : Net.unread; }
+    var b = $('dock-chat-badge'); if (b) { b.style.display = Net.unread > 0 ? 'flex' : 'none'; window.PlatLite(b, Net.unread > 99 ? '99+' : Net.unread); }
+    var u = $('plat-chat-unread'); if (u) { u.style.display = (Net.chatOpen && Net.chatMin && Net.unread > 0) ? 'inline-block' : 'none'; window.PlatLite(u, Net.unread > 99 ? '99+' : Net.unread); }
     if (window.PlatDock) window.PlatDock._emit();
   }
   function openChat() {
@@ -24722,7 +24839,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         t.history[r].placements.forEach(function (x) { if (x.uid ? x.uid === e.uid : x.pid === e.pid) pl = x; });
         cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
       }
-      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800"><span data-pc="' + (t.totals[e.uid] || 0) + '" data-pc-key="tourn-' + e.uid + '">' + (t.totals[e.uid] || 0) + '</span> 分</td></tr>';
     });
     html += '</tbody></table>';
     var last = t.history[t.history.length - 1];
@@ -24737,6 +24854,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     if (!Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<div class="text-center text-slate-400 font-bold text-xs mt-2">⏳ 等待房主開始下一局…</div>';
     html += '</div></div>';
     panel.innerHTML = html;
+    platCountify(panel); // v1.53.0：總分以滾輪續滾到新值（跨局不重畫歸零）
     var feb = panel.querySelector('#t-forceend'); if (feb) feb.onclick = function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); };
     var nb = panel.querySelector('#t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
     var pb = panel.querySelector('#t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
@@ -25017,7 +25135,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       }
       if (st.start) {
         var sk = st.start.kind === 'danger' ? 'background:#f87171;color:#0f172a' : 'background:' + ac + ';color:#0f172a';
-        c += '<button data-pr="start"' + (st.start.disabled ? ' disabled' : '') + ' class="w-full py-3.5 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed" style="' + sk + '">' + pbEsc(st.start.label || '開始') + '</button>';
+        c += '<button data-pr="start"' + (st.start.disabled ? ' disabled' : '') + ' class="plat-btn-hard w-full py-3.5 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:cursor-not-allowed" style="' + sk + '">' + pbEsc(st.start.label || '開始') + '</button>';
         if (st.start.note) c += '<p class="text-xs text-slate-500 font-bold text-center mt-2">' + pbEsc(st.start.note) + '</p>';
       } else if (st.waitingText) {
         c += '<p class="font-black text-slate-700 animate-pulse text-center">' + pbEsc(st.waitingText) + '</p>';
@@ -25066,6 +25184,76 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     else if (k === 'start' && tryTransportStart()) { /* 已改道：帶大家去選定的遊戲 */ }
     else prAct(k);
   }
+  // ===== PlatCount：三款共用數字滾輪（v1.53.0 物理感規格）=====
+  // 只滾變動位數、個位先滾（每位 stagger 40ms）、可中斷 retarget（CSS transition 自當前位置續行，不排隊不回跳）、
+  // 禁止逐幀 lerp 數字本體；prefers-reduced-motion 直接換字。單位（% 等）由 suffix 獨立承載、不跟滾。
+  window.PlatCount = (function () {
+    var reduced = false;
+    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    function buildSlots(h) {
+      h.el.innerHTML = '';
+      h.digits = [];
+      var str = String(h.value);
+      for (var i = 0; i < str.length; i++) {
+        var d = document.createElement('span'); d.className = 'pc-digit'; d.setAttribute('aria-hidden', 'true');
+        var strip = document.createElement('span'); strip.className = 'pc-strip';
+        for (var n = 0; n <= 9; n++) { var c = document.createElement('span'); c.textContent = String(n); strip.appendChild(c); }
+        strip.style.transform = 'translateY(-' + str[i] + 'em)';
+        d.appendChild(strip); h.el.appendChild(d); h.digits.push(strip);
+      }
+      if (h.suffix) { var u = document.createElement('span'); u.className = 'pc-unit'; u.setAttribute('aria-hidden', 'true'); u.textContent = h.suffix; h.el.appendChild(u); }
+      h.el.setAttribute('aria-label', String(h.value) + (h.suffix || ''));
+    }
+    function set(h, v) {
+      if (!h) return;
+      v = Math.max(0, Math.round(v));
+      h.el.setAttribute('aria-label', String(v) + (h.suffix || ''));
+      if (reduced) { h.value = v; h.el.textContent = String(v) + (h.suffix || ''); h.digits = null; return; }
+      var str = String(v), os = String(h.value);
+      if (!h.digits || str.length !== os.length) { h.value = v; buildSlots(h); return; }
+      h.value = v;
+      for (var i = 0; i < str.length; i++) {
+        if (str[i] === os[i]) continue;
+        var strip = h.digits[i];
+        strip.style.transitionDelay = ((str.length - 1 - i) * 40) + 'ms'; // 個位先滾、往高位依序錯開
+        strip.style.transform = 'translateY(-' + str[i] + 'em)';
+      }
+    }
+    return {
+      mount: function (el, opts) {
+        opts = opts || {};
+        var h = { el: el, value: (typeof opts.value === 'number') ? opts.value : 0, suffix: opts.suffix || '', digits: null };
+        el.classList.add('plat-count');
+        if (reduced) { el.textContent = String(h.value) + h.suffix; return h; }
+        buildSlots(h);
+        return h;
+      },
+      set: set,
+      _reduced: function () { return reduced; }
+    };
+  })();
+  // PlatLite：小計數的 Roll-lite 換字（新字 spring 彈入、舊字直接讓位）；值沒變不重播
+  window.PlatLite = function (el, v) {
+    if (!el) return;
+    var str = String(v);
+    if (el.textContent === str) return;
+    el.textContent = str;
+    try { el.classList.remove('plat-lite-in'); void el.offsetWidth; el.classList.add('plat-lite-in'); } catch (e) {}
+  };
+  // platCountify：把容器內 [data-pc] 接上滾輪；data-pc-key 跨重渲染記住前值（standings 表格每局重畫也能續滾）
+  var pcPrevByKey = {};
+  function platCountify(root) {
+    if (!root || !root.querySelectorAll || !window.PlatCount) return;
+    var els = root.querySelectorAll('[data-pc]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], v = parseInt(el.getAttribute('data-pc'), 10) || 0, key = el.getAttribute('data-pc-key') || '';
+      var prev = (key && typeof pcPrevByKey[key] === 'number') ? pcPrevByKey[key] : v;
+      var h = window.PlatCount.mount(el, { value: prev });
+      if (key) pcPrevByKey[key] = v;
+      if (prev !== v) (function (hh, vv) { setTimeout(function () { window.PlatCount.set(hh, vv); }, 30); })(h, v);
+    }
+  }
+
   // ===== PlatCountdown：兩款共用倒數 overlay（同一套邏輯，不寫兩遍）=====
   window.PlatCountdown = (function () {
     var el = null, numEl = null;
@@ -25080,7 +25268,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
       document.body.appendChild(el);
     }
     return {
-      show: function (v) { ensure(); el.style.display = 'flex'; numEl.textContent = v; numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = 'platCountPulse .45s ease-in-out infinite alternate'; },
+      show: function (v) { ensure(); el.style.display = 'flex'; numEl.textContent = v; numEl.style.animation = ''; numEl.classList.remove('plat-count-roll'); void numEl.offsetWidth; numEl.classList.add('plat-count-roll'); }, // v1.53.0：Roll 換位（下滾入＋spring 落定）後接呼吸脈衝
       hide: function () { if (el) el.style.display = 'none'; },
       _visible: function () { return !!(el && el.style.display === 'flex'); }
     };
@@ -25274,7 +25462,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     var medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
     var blockH = { 1: 96, 2: 66, 3: 48 };
     var blockBg = { 1: '#fcd34d', 2: '#e2e8f0', 3: '#fed7aa' };
-    var dropDelay = { 1: 0.85, 2: 0.45, 3: 0.15 };
+    var dropDelay = { 1: 14, 2: 8, 3: 3 }; // v1.53.0：以 --plat-stagger(60ms) 的倍數表達（≈0.84/0.48/0.18s，節奏同舊版）
     function chipHtml(r, big) {
       var bg = r.color === 'rainbow' ? '' : r.color;
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:96px">' +
@@ -25283,7 +25471,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
         '<span style="font-weight:900;color:#1e293b;font-size:13px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + pbEsc(r.name) + '</span></div>';
     }
     function colHtml(r) {
-      return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:podDrop .55s cubic-bezier(.2,1.6,.4,1) ' + dropDelay[r.rank] + 's both">' +
+      return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:podDrop .55s cubic-bezier(.2,1.6,.4,1) calc(var(--plat-stagger) * ' + dropDelay[r.rank] + ') both">' +
         chipHtml(r, r.rank === 1) +
         '<div style="width:88px;height:' + blockH[r.rank] + 'px;background:' + blockBg[r.rank] + ';border:3px solid #1e293b;border-bottom:none;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;font-weight:900;font-size:22px;color:#1e293b">' + medal[r.rank] + '</div></div>';
     }
@@ -25320,20 +25508,17 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
     // 分數動畫：+N 浮現 + 總分 0.5s 後開始滾動累加（1.15 秒）
     var plus = el.querySelectorAll('.pod-plus');
     setTimeout(function () { plus.forEach(function (s) { s.style.animation = 'podPlus 1.2s ease-out both'; }); }, 450);
+    // v1.53.0：分數改走 PlatCount 位數滾輪（只滾變動位數、個位先滾），取代舊逐幀 lerp；+N 浮現後 0.5s 起滾
     var scores = el.querySelectorAll('.pod-score');
-    var t0 = Date.now() + 500;
-    if (POD.tick) clearInterval(POD.tick);
-    POD.tick = setInterval(function () {
-      var elap = Date.now() - t0;
-      if (elap < 0) return;
-      var p = Math.min(1, elap / 1150);
-      var e = 1 - Math.pow(1 - p, 3);
-      scores.forEach(function (s) {
-        var f = Number(s.getAttribute('data-from')), to = Number(s.getAttribute('data-to'));
-        s.textContent = String(Math.round(f + (to - f) * e));
+    if (POD.tick) { clearInterval(POD.tick); POD.tick = null; }
+    if (POD._pcT) clearTimeout(POD._pcT);
+    POD._pcT = setTimeout(function () {
+      scores.forEach(function (sp2) {
+        var f = parseInt(sp2.getAttribute('data-from'), 10) || 0, to = parseInt(sp2.getAttribute('data-to'), 10) || 0;
+        var hh = window.PlatCount.mount(sp2, { value: f });
+        window.PlatCount.set(hh, to);
       });
-      if (p >= 1) { clearInterval(POD.tick); POD.tick = null; }
-    }, 40);
+    }, 500);
     if (POD.timer) clearTimeout(POD.timer);
     POD.timer = setTimeout(podHide, 5600);
   }

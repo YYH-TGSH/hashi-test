@@ -138,7 +138,13 @@
     }
     currentView = name;
     ['home', 'sudoku', 'hashi', 'mines', 'lobby'].forEach(function (v) {
-      var vel = document.getElementById('view-' + v); if (vel) vel.classList.toggle('active', v === name); // 防空：混版快取（新殼+舊頁面缺某款 view）不能讓整個切換死掉（v1.14.1 實機事故：房主開數獨整面空白）
+      var vel = document.getElementById('view-' + v); if (!vel) return; // 防空：混版快取（新殼+舊頁面缺某款 view）不能讓整個切換死掉（v1.14.1 實機事故：房主開數獨整面空白）
+      if (v === name) { if (vel._outT) { clearTimeout(vel._outT); vel._outT = null; } vel.classList.remove('plat-view-out'); vel.classList.add('active'); }
+      else if (vel.classList.contains('active')) { // 退場補強（v1.53.0）：舊畫面 90ms 淡出後才卸載，與新畫面淡入組成 crossfade，不再瞬斷
+        vel.classList.add('plat-view-out');
+        if (vel._outT) clearTimeout(vel._outT);
+        vel._outT = setTimeout(function () { vel.classList.remove('active'); vel.classList.remove('plat-view-out'); vel._outT = null; }, 90);
+      } else vel.classList.remove('active');
     });
     document.body.setAttribute('data-view', name);
     // 先 boot 遊戲、再做裝飾更新：dock/rejoin 只是外觀與探測，萬一丟錯絕不能擋住遊戲載入（v1.19.0 靈魂拷問盤點）
@@ -159,7 +165,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.52.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.53.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -290,8 +296,8 @@
   }
   function sysChat(text) { appendChat({ sys: true, text: text }); }
   function renderUnread() {
-    var b = $('dock-chat-badge'); if (b) { b.style.display = Net.unread > 0 ? 'flex' : 'none'; b.textContent = Net.unread > 99 ? '99+' : Net.unread; }
-    var u = $('plat-chat-unread'); if (u) { u.style.display = (Net.chatOpen && Net.chatMin && Net.unread > 0) ? 'inline-block' : 'none'; u.textContent = Net.unread > 99 ? '99+' : Net.unread; }
+    var b = $('dock-chat-badge'); if (b) { b.style.display = Net.unread > 0 ? 'flex' : 'none'; window.PlatLite(b, Net.unread > 99 ? '99+' : Net.unread); }
+    var u = $('plat-chat-unread'); if (u) { u.style.display = (Net.chatOpen && Net.chatMin && Net.unread > 0) ? 'inline-block' : 'none'; window.PlatLite(u, Net.unread > 99 ? '99+' : Net.unread); }
     if (window.PlatDock) window.PlatDock._emit();
   }
   function openChat() {
@@ -1917,7 +1923,7 @@
         t.history[r].placements.forEach(function (x) { if (x.uid ? x.uid === e.uid : x.pid === e.pid) pl = x; });
         cells += '<td class="text-center px-1">' + (pl ? pl.pts : '–') + '</td>';
       }
-      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800">' + (t.totals[e.uid] || 0) + ' 分</td></tr>';
+      html += '<tr><td class="py-1">' + (ri + 1) + '. <span' + (e.color === 'rainbow' ? ' class="plat-rainbow-anim"' : '') + ' style="display:inline-block;width:10px;height:10px;border-radius:99px;' + (e.color === 'rainbow' ? '' : 'background:' + platSafeColor(e.color) + ';') + 'vertical-align:middle"></span> ' + esc(e.name) + (e.uid === Net.myUid ? '（你）' : '') + (t.wins[e.uid] ? ' <span class="text-xs text-slate-400">👑×' + t.wins[e.uid] + '</span>' : '') + '</td>' + cells + '<td class="text-right font-black text-slate-800"><span data-pc="' + (t.totals[e.uid] || 0) + '" data-pc-key="tourn-' + e.uid + '">' + (t.totals[e.uid] || 0) + '</span> 分</td></tr>';
     });
     html += '</tbody></table>';
     var last = t.history[t.history.length - 1];
@@ -1932,6 +1938,7 @@
     if (!Net.isHost && (t.phase === 'standings' || t.phase === 'playoff-pending')) html += '<div class="text-center text-slate-400 font-bold text-xs mt-2">⏳ 等待房主開始下一局…</div>';
     html += '</div></div>';
     panel.innerHTML = html;
+    platCountify(panel); // v1.53.0：總分以滾輪續滾到新值（跨局不重畫歸零）
     var feb = panel.querySelector('#t-forceend'); if (feb) feb.onclick = function () { if (Net.tourn && !Net.tourn.settled) tournSettle(); };
     var nb = panel.querySelector('#t-next'); if (nb) nb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round++; tt.phase = 'playing'; tournStartRound(); };
     var pb = panel.querySelector('#t-playoff'); if (pb) pb.onclick = function () { var tt = Net.tourn; if (!tt) return; tt.round = tt.totalRounds + 1; tt.phase = 'playoff'; tournStartRound(); };
@@ -2212,7 +2219,7 @@
       }
       if (st.start) {
         var sk = st.start.kind === 'danger' ? 'background:#f87171;color:#0f172a' : 'background:' + ac + ';color:#0f172a';
-        c += '<button data-pr="start"' + (st.start.disabled ? ' disabled' : '') + ' class="w-full py-3.5 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed" style="' + sk + '">' + pbEsc(st.start.label || '開始') + '</button>';
+        c += '<button data-pr="start"' + (st.start.disabled ? ' disabled' : '') + ' class="plat-btn-hard w-full py-3.5 border-4 border-slate-800 rounded-xl font-black text-lg shadow-[4px_4px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:cursor-not-allowed" style="' + sk + '">' + pbEsc(st.start.label || '開始') + '</button>';
         if (st.start.note) c += '<p class="text-xs text-slate-500 font-bold text-center mt-2">' + pbEsc(st.start.note) + '</p>';
       } else if (st.waitingText) {
         c += '<p class="font-black text-slate-700 animate-pulse text-center">' + pbEsc(st.waitingText) + '</p>';
@@ -2261,6 +2268,76 @@
     else if (k === 'start' && tryTransportStart()) { /* 已改道：帶大家去選定的遊戲 */ }
     else prAct(k);
   }
+  // ===== PlatCount：三款共用數字滾輪（v1.53.0 物理感規格）=====
+  // 只滾變動位數、個位先滾（每位 stagger 40ms）、可中斷 retarget（CSS transition 自當前位置續行，不排隊不回跳）、
+  // 禁止逐幀 lerp 數字本體；prefers-reduced-motion 直接換字。單位（% 等）由 suffix 獨立承載、不跟滾。
+  window.PlatCount = (function () {
+    var reduced = false;
+    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    function buildSlots(h) {
+      h.el.innerHTML = '';
+      h.digits = [];
+      var str = String(h.value);
+      for (var i = 0; i < str.length; i++) {
+        var d = document.createElement('span'); d.className = 'pc-digit'; d.setAttribute('aria-hidden', 'true');
+        var strip = document.createElement('span'); strip.className = 'pc-strip';
+        for (var n = 0; n <= 9; n++) { var c = document.createElement('span'); c.textContent = String(n); strip.appendChild(c); }
+        strip.style.transform = 'translateY(-' + str[i] + 'em)';
+        d.appendChild(strip); h.el.appendChild(d); h.digits.push(strip);
+      }
+      if (h.suffix) { var u = document.createElement('span'); u.className = 'pc-unit'; u.setAttribute('aria-hidden', 'true'); u.textContent = h.suffix; h.el.appendChild(u); }
+      h.el.setAttribute('aria-label', String(h.value) + (h.suffix || ''));
+    }
+    function set(h, v) {
+      if (!h) return;
+      v = Math.max(0, Math.round(v));
+      h.el.setAttribute('aria-label', String(v) + (h.suffix || ''));
+      if (reduced) { h.value = v; h.el.textContent = String(v) + (h.suffix || ''); h.digits = null; return; }
+      var str = String(v), os = String(h.value);
+      if (!h.digits || str.length !== os.length) { h.value = v; buildSlots(h); return; }
+      h.value = v;
+      for (var i = 0; i < str.length; i++) {
+        if (str[i] === os[i]) continue;
+        var strip = h.digits[i];
+        strip.style.transitionDelay = ((str.length - 1 - i) * 40) + 'ms'; // 個位先滾、往高位依序錯開
+        strip.style.transform = 'translateY(-' + str[i] + 'em)';
+      }
+    }
+    return {
+      mount: function (el, opts) {
+        opts = opts || {};
+        var h = { el: el, value: (typeof opts.value === 'number') ? opts.value : 0, suffix: opts.suffix || '', digits: null };
+        el.classList.add('plat-count');
+        if (reduced) { el.textContent = String(h.value) + h.suffix; return h; }
+        buildSlots(h);
+        return h;
+      },
+      set: set,
+      _reduced: function () { return reduced; }
+    };
+  })();
+  // PlatLite：小計數的 Roll-lite 換字（新字 spring 彈入、舊字直接讓位）；值沒變不重播
+  window.PlatLite = function (el, v) {
+    if (!el) return;
+    var str = String(v);
+    if (el.textContent === str) return;
+    el.textContent = str;
+    try { el.classList.remove('plat-lite-in'); void el.offsetWidth; el.classList.add('plat-lite-in'); } catch (e) {}
+  };
+  // platCountify：把容器內 [data-pc] 接上滾輪；data-pc-key 跨重渲染記住前值（standings 表格每局重畫也能續滾）
+  var pcPrevByKey = {};
+  function platCountify(root) {
+    if (!root || !root.querySelectorAll || !window.PlatCount) return;
+    var els = root.querySelectorAll('[data-pc]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], v = parseInt(el.getAttribute('data-pc'), 10) || 0, key = el.getAttribute('data-pc-key') || '';
+      var prev = (key && typeof pcPrevByKey[key] === 'number') ? pcPrevByKey[key] : v;
+      var h = window.PlatCount.mount(el, { value: prev });
+      if (key) pcPrevByKey[key] = v;
+      if (prev !== v) (function (hh, vv) { setTimeout(function () { window.PlatCount.set(hh, vv); }, 30); })(h, v);
+    }
+  }
+
   // ===== PlatCountdown：兩款共用倒數 overlay（同一套邏輯，不寫兩遍）=====
   window.PlatCountdown = (function () {
     var el = null, numEl = null;
@@ -2275,7 +2352,7 @@
       document.body.appendChild(el);
     }
     return {
-      show: function (v) { ensure(); el.style.display = 'flex'; numEl.textContent = v; numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = 'platCountPulse .45s ease-in-out infinite alternate'; },
+      show: function (v) { ensure(); el.style.display = 'flex'; numEl.textContent = v; numEl.style.animation = ''; numEl.classList.remove('plat-count-roll'); void numEl.offsetWidth; numEl.classList.add('plat-count-roll'); }, // v1.53.0：Roll 換位（下滾入＋spring 落定）後接呼吸脈衝
       hide: function () { if (el) el.style.display = 'none'; },
       _visible: function () { return !!(el && el.style.display === 'flex'); }
     };
@@ -2469,7 +2546,7 @@
     var medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
     var blockH = { 1: 96, 2: 66, 3: 48 };
     var blockBg = { 1: '#fcd34d', 2: '#e2e8f0', 3: '#fed7aa' };
-    var dropDelay = { 1: 0.85, 2: 0.45, 3: 0.15 };
+    var dropDelay = { 1: 14, 2: 8, 3: 3 }; // v1.53.0：以 --plat-stagger(60ms) 的倍數表達（≈0.84/0.48/0.18s，節奏同舊版）
     function chipHtml(r, big) {
       var bg = r.color === 'rainbow' ? '' : r.color;
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;max-width:96px">' +
@@ -2478,7 +2555,7 @@
         '<span style="font-weight:900;color:#1e293b;font-size:13px;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + pbEsc(r.name) + '</span></div>';
     }
     function colHtml(r) {
-      return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:podDrop .55s cubic-bezier(.2,1.6,.4,1) ' + dropDelay[r.rank] + 's both">' +
+      return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:podDrop .55s cubic-bezier(.2,1.6,.4,1) calc(var(--plat-stagger) * ' + dropDelay[r.rank] + ') both">' +
         chipHtml(r, r.rank === 1) +
         '<div style="width:88px;height:' + blockH[r.rank] + 'px;background:' + blockBg[r.rank] + ';border:3px solid #1e293b;border-bottom:none;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;font-weight:900;font-size:22px;color:#1e293b">' + medal[r.rank] + '</div></div>';
     }
@@ -2515,20 +2592,17 @@
     // 分數動畫：+N 浮現 + 總分 0.5s 後開始滾動累加（1.15 秒）
     var plus = el.querySelectorAll('.pod-plus');
     setTimeout(function () { plus.forEach(function (s) { s.style.animation = 'podPlus 1.2s ease-out both'; }); }, 450);
+    // v1.53.0：分數改走 PlatCount 位數滾輪（只滾變動位數、個位先滾），取代舊逐幀 lerp；+N 浮現後 0.5s 起滾
     var scores = el.querySelectorAll('.pod-score');
-    var t0 = Date.now() + 500;
-    if (POD.tick) clearInterval(POD.tick);
-    POD.tick = setInterval(function () {
-      var elap = Date.now() - t0;
-      if (elap < 0) return;
-      var p = Math.min(1, elap / 1150);
-      var e = 1 - Math.pow(1 - p, 3);
-      scores.forEach(function (s) {
-        var f = Number(s.getAttribute('data-from')), to = Number(s.getAttribute('data-to'));
-        s.textContent = String(Math.round(f + (to - f) * e));
+    if (POD.tick) { clearInterval(POD.tick); POD.tick = null; }
+    if (POD._pcT) clearTimeout(POD._pcT);
+    POD._pcT = setTimeout(function () {
+      scores.forEach(function (sp2) {
+        var f = parseInt(sp2.getAttribute('data-from'), 10) || 0, to = parseInt(sp2.getAttribute('data-to'), 10) || 0;
+        var hh = window.PlatCount.mount(sp2, { value: f });
+        window.PlatCount.set(hh, to);
       });
-      if (p >= 1) { clearInterval(POD.tick); POD.tick = null; }
-    }, 40);
+    }, 500);
     if (POD.timer) clearTimeout(POD.timer);
     POD.timer = setTimeout(podHide, 5600);
   }

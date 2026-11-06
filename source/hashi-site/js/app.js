@@ -1,5 +1,20 @@
 
     const { useState, useEffect, useMemo, useRef } = React;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, { value: v, suffix: '%' });
+      else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return <span>{v}%</span>;
+  return <span ref={ref}></span>;
+}
+
 
     // === 20 色票 ===
     const COLORS = [
@@ -3843,10 +3858,10 @@
                         <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-[1px]" style={{ background: isRainbow ? 'linear-gradient(180deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></div>
                         <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-slate-800 pl-1.5 whitespace-nowrap">
                           {p.name} {p.isHost && '👑'} {p.isSpectator && ' 👁️'} {isMe && '(你)'}
-                          <span className="text-emerald-600 font-mono ml-1">{pct}%</span>
+                          <span className="text-emerald-600 font-mono ml-1"><PlatPct value={pct} /></span>
                         </div>
                         <div className="w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300">
-                          <div className="h-full transition-all duration-300" style={{ width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></div>
+                          <div className="h-full plat-pbar" style={{ width: pct + '%', background: isRainbow ? 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></div>
                         </div>
                       </div>
                     );

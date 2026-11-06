@@ -32,7 +32,7 @@ async function soloPart() {
   clickBtn(b => b.textContent.includes('單機挑戰')); await sleep(250);
   clickBtn(b => b.textContent.includes('9×9'));
   ok(!!(await waitFor(() => P.document.querySelectorAll('#mines-root button[data-cell]').length === 81 ? true : null, 30000, 'cells')), '單機開局');
-  const progEl = () => [...P.document.querySelectorAll('#mines-root div')].find(x => x.children.length <= 1 && (x.textContent.startsWith('進度（3BV）') || x.textContent.startsWith('開格 ')));
+  const progEl = () => [...P.document.querySelectorAll('#mines-root div')].find(x => x.children.length <= 2 && (x.textContent.startsWith('進度（3BV）') || x.textContent.startsWith('開格 ')));
   const el0 = progEl();
   ok(!!el0, '進度文字存在且預設 3BV', el0 ? el0.textContent : 'none');
   ok(el0 && el0.tagName !== 'BUTTON' && !/border|bg-/.test(el0.className), '鐵則：進度文字不是按鈕、無邊框/底色 class', el0 ? el0.tagName + '/' + el0.className : '');
@@ -45,10 +45,10 @@ async function soloPart() {
   ok(s2.effProgress > 0 && s2.effProgress < s2.progress, '洪水後 eff 明顯小於開格 %（3BV 折價）', 'eff=' + s2.effProgress.toFixed(3) + ' open=' + s2.progress.toFixed(3));
   ok(s2.bv >= 2 && s2.progMode === 'bv', 'dbg 有 bv/progMode', 'bv=' + s2.bv);
   const el1 = progEl();
-  ok(!!el1 && el1.textContent.includes('進度（3BV）' + Math.floor(s2.effProgress * 100) + '%'), '顯示數字 = 3BV eff', el1 ? el1.textContent : '');
+  ok(!!el1 && el1.textContent.startsWith('進度（3BV）') && el1.querySelector('.plat-count') && el1.querySelector('.plat-count').getAttribute('aria-label') === Math.floor(s2.effProgress * 100) + '%', '顯示數字 = 3BV eff（滾輪 aria-label 語意值）', el1 ? el1.textContent.slice(0, 30) : '');
   el1.click(); await sleep(250);
   const el2 = progEl();
-  ok(!!el2 && el2.textContent.includes('開格 ' + Math.floor(s2.progress * 100) + '%'), '點一下 → 開格 %', el2 ? el2.textContent : '');
+  ok(!!el2 && el2.textContent.startsWith('開格 ') && el2.querySelector('.plat-count') && el2.querySelector('.plat-count').getAttribute('aria-label') === Math.floor(s2.progress * 100) + '%', '點一下 → 開格 %（滾輪語意值）', el2 ? el2.textContent.slice(0, 30) : '');
   el2.click(); await sleep(250);
   const el3 = progEl();
   ok(!!el3 && el3.textContent.includes('進度（3BV）'), '再點一下 → 回 3BV');

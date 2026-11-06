@@ -57,3 +57,9 @@ body {
 :where(button) { -webkit-tap-highlight-color: transparent; }
 :where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
 :where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+
+/* v1.53.0 物理感：地雷格按壓改 C 類（不位移以免破格線，scale .96＋變暗，in 70ms／out spring 200ms） */
+.mine-cell { transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 120ms ease; }
+.mine-cell:active { transform: scale(0.96); filter: brightness(0.92); transition-duration: 70ms; transition-timing-function: cubic-bezier(0.3, 0.7, 0.4, 1); }
+/* 模式段位鈕（挖開/插旗）選取填色 150ms 滑入滑出，不硬切 */
+#view-mines [data-mode] { transition: background-color 150ms ease, color 150ms ease; }

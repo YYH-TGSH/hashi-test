@@ -28,6 +28,24 @@ var _React = React,
   useEffect = _React.useEffect,
   useMemo = _React.useMemo,
   useRef = _React.useRef;
+// PlatPct：進度 % 滾字（v1.53.0 物理感規格）——殼層 PlatCount 的 React 包裝；獨立版（無 PlatCount）退回純文字
+function PlatPct(props) {
+  var ref = useRef(null);
+  var hRef = useRef(null);
+  var v = Math.max(0, Math.min(100, Math.round(props.value) || 0));
+  useEffect(function () {
+    if (window.PlatCount && ref.current) {
+      if (!hRef.current) hRef.current = window.PlatCount.mount(ref.current, {
+        value: v,
+        suffix: '%'
+      });else window.PlatCount.set(hRef.current, v);
+    }
+  }, [v]);
+  if (!window.PlatCount) return /*#__PURE__*/React.createElement("span", null, v, "%");
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
 function GameTimer(_ref) {
   var startTime = _ref.startTime,
     endTime = _ref.endTime,
@@ -6414,10 +6432,12 @@ function SudokuGame() {
       className: "flex items-center gap-1 text-[10px] md:text-xs font-bold text-slate-800 pl-1.5 whitespace-nowrap"
     }, p.name, " ", p.isHost && '👑', " ", p.isSpectator && ' 👁️', " ", isMe && '(你)', /*#__PURE__*/React.createElement("span", {
       className: "text-emerald-600 font-mono ml-1"
-    }, pct, "%")), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(PlatPct, {
+      value: pct
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "w-24 md:w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden ml-1.5 relative border border-slate-300"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300 relative overflow-hidden",
+      className: "h-full plat-pbar relative overflow-hidden",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: isRainbow ? 'transparent' : p.color
@@ -6516,10 +6536,12 @@ function SudokuGame() {
       }
     }), p.name, " ", p.isHost && '👑'), /*#__PURE__*/React.createElement("span", {
       className: "text-emerald-600 font-mono text-lg"
-    }, pct, "%")), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(PlatPct, {
+      value: pct
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "w-full h-5 bg-slate-100 rounded-full overflow-hidden border-2 border-slate-800 shadow-inner"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full transition-all duration-300",
+      className: "h-full plat-pbar",
       style: {
         width: "".concat(pct, "%"),
         backgroundColor: p.color === 'rainbow' ? '#ffcc00' : p.color
