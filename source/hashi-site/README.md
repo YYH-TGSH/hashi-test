@@ -2,7 +2,7 @@
 
 手機瀏覽器可直接玩的數橋拼圖遊戲，零伺服器成本（GitHub Pages 靜態託管＋PeerJS 公用信令做多人連線）。
 
-線上玩：https://yyh-tgsh.github.io/hashi-test/
+線上玩：https://yyh-tgsh.github.io/puzzle/
 
 ## 專案結構
 

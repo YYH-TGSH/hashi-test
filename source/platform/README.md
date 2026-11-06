@@ -1,7 +1,7 @@
 # 數獨 × 數橋 × 踩地雷 — 整合平台
 
 三款遊戲共用同一個網站、同一套大廳/房間框架（PeerJS 點對點連線，零伺服器成本）。
-正式站：https://yyh-tgsh.github.io/hashi-test/（GitHub repo `YYH-TGSH/hashi-test`）
+正式站：https://yyh-tgsh.github.io/puzzle/（GitHub repo `YYH-TGSH/puzzle`，2026-11-07 自 hashi-test 改名）
 
 ## 部署形狀（重要）
 
