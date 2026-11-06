@@ -421,23 +421,38 @@ function MinesGame() {
   var _useState37 = useState('dig'),
     _useState38 = _slicedToArray(_useState37, 2),
     inputMode = _useState38[0],
-    setInputMode = _useState38[1]; // dig | flag
-  var _useState39 = useState(null),
+    setInputMode = _useState38[1]; // dig | flag | draw（v1.49.0 塗鴉比照數獨/數橋補上——之前獨缺，使用者指示）
+  var _useState39 = useState([]),
     _useState40 = _slicedToArray(_useState39, 2),
-    startedAt = _useState40[0],
-    setStartedAt = _useState40[1];
-  var _useState41 = useState(0),
+    strokes = _useState40[0],
+    setStrokes = _useState40[1]; // 塗鴉筆跡 [{id, uid, color, pts:[[x,y],...]}]：座標正規化 x 0..1000、y 0..1000*h/w（縮放/捲動都不跑位）
+  var strokesRef = useRef([]);
+  var _useState41 = useState('pen'),
     _useState42 = _slicedToArray(_useState41, 2),
-    elapsed = _useState42[0],
-    setElapsed = _useState42[1];
+    drawTool = _useState42[0],
+    setDrawTool = _useState42[1]; // pen | eraser（PlatBar 塗鴉子選單控制，比照數獨 drawSubMode）
   var _useState43 = useState(null),
     _useState44 = _slicedToArray(_useState43, 2),
-    dailyDate = _useState44[0],
-    setDailyDate = _useState44[1]; // 非 null = 每日一題模式（日期字串）
-  var _useState45 = useState(todayStr()),
+    livePts = _useState44[0],
+    setLivePts = _useState44[1]; // 正在畫的這一筆（即時預覽）
+  var drawStateRef = useRef(null); // 手勢中的一筆 {pts} 或 {erasing:true}
+  var doodleSvgRef = useRef(null);
+  var _useState45 = useState(null),
     _useState46 = _slicedToArray(_useState45, 2),
-    dailySel = _useState46[0],
-    setDailySel = _useState46[1]; // 主畫面每日一題目前選取日期
+    startedAt = _useState46[0],
+    setStartedAt = _useState46[1];
+  var _useState47 = useState(0),
+    _useState48 = _slicedToArray(_useState47, 2),
+    elapsed = _useState48[0],
+    setElapsed = _useState48[1];
+  var _useState49 = useState(null),
+    _useState50 = _slicedToArray(_useState49, 2),
+    dailyDate = _useState50[0],
+    setDailyDate = _useState50[1]; // 非 null = 每日一題模式（日期字串）
+  var _useState51 = useState(todayStr()),
+    _useState52 = _slicedToArray(_useState51, 2),
+    dailySel = _useState52[0],
+    setDailySel = _useState52[1]; // 主畫面每日一題目前選取日期
   var firstRef = useRef(true); // 本局是否還沒挖第一下（首點保護/計時起點）
   var statusRef = useRef('ready');
   statusRef.current = status;
@@ -458,43 +473,43 @@ function MinesGame() {
     return cells ? countFlags(cells) : 0;
   }, [cells]);
   // ----- 競速道具/禮物狀態（v1.30：僅 race；經濟比照數獨/數橋定版）——必須宣告在 dbgRef 快照之前（快照在 render 期讀這些值，TDZ 會讓整個 root 掛掉） -----
-  var _useState47 = useState({
+  var _useState53 = useState({
       question: 0,
       backfill: 0,
       gift: 0
     }),
-    _useState48 = _slicedToArray(_useState47, 2),
-    myItems = _useState48[0],
-    setMyItems = _useState48[1];
+    _useState54 = _slicedToArray(_useState53, 2),
+    myItems = _useState54[0],
+    setMyItems = _useState54[1];
   var itemsRef = useRef({
     question: 0,
     backfill: 0,
     gift: 0
   });
-  var _useState49 = useState({}),
-    _useState50 = _slicedToArray(_useState49, 2),
-    questionFx = _useState50[0],
-    setQuestionFx = _useState50[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
-  var questionFxRef = useRef({});
-  var _useState51 = useState(null),
-    _useState52 = _slicedToArray(_useState51, 2),
-    itemToast = _useState52[0],
-    setItemToast = _useState52[1];
-  var itemToastTimerRef = useRef(null);
-  var _useState53 = useState(0),
-    _useState54 = _slicedToArray(_useState53, 2),
-    mistLeft = _useState54[0],
-    setMistLeft = _useState54[1]; // 競速容錯剩餘次數（顯示用）
-  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
-  var _useState55 = useState(1),
+  var _useState55 = useState({}),
     _useState56 = _slicedToArray(_useState55, 2),
-    zoom = _useState56[0],
-    setZoom = _useState56[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
-  var _useState57 = useState(false),
+    questionFx = _useState56[0],
+    setQuestionFx = _useState56[1]; // idx -> 到期時間戳（問號干擾，本地渲染狀態、不同步）
+  var questionFxRef = useRef({});
+  var _useState57 = useState(null),
     _useState58 = _slicedToArray(_useState57, 2),
-    zoomOpen = _useState58[0],
-    setZoomOpen = _useState58[1];
-  var _useState59 = useState(function () {
+    itemToast = _useState58[0],
+    setItemToast = _useState58[1];
+  var itemToastTimerRef = useRef(null);
+  var _useState59 = useState(0),
+    _useState60 = _slicedToArray(_useState59, 2),
+    mistLeft = _useState60[0],
+    setMistLeft = _useState60[1]; // 競速容錯剩餘次數（顯示用）
+  var mistakesRef = useRef(0); // 競速已用掉的容錯次數
+  var _useState61 = useState(1),
+    _useState62 = _slicedToArray(_useState61, 2),
+    zoom = _useState62[0],
+    setZoom = _useState62[1]; // 盤面縮放（比照數獨：1=適應螢幕，展開後 －/＋/適應）——卡片內 🔍 與殼 PlatBar 左下角縮放組共用這一顆 state（單一真相）
+  var _useState63 = useState(false),
+    _useState64 = _slicedToArray(_useState63, 2),
+    zoomOpen = _useState64[0],
+    setZoomOpen = _useState64[1];
+  var _useState65 = useState(function () {
       try {
         var c0 = JSON.parse(sGet('mines_custom_cfg') || 'null');
         if (c0) return clampCustomSpec(c0.w, c0.h, c0.mines);
@@ -505,13 +520,13 @@ function MinesGame() {
         mines: 40
       };
     }),
-    _useState60 = _slicedToArray(_useState59, 2),
-    custCfg = _useState60[0],
-    setCustCfg = _useState60[1]; // 單機自訂盤面（寬/高/雷），持久化
-  var _useState61 = useState(false),
-    _useState62 = _slicedToArray(_useState61, 2),
-    custOpen = _useState62[0],
-    setCustOpen = _useState62[1];
+    _useState66 = _slicedToArray(_useState65, 2),
+    custCfg = _useState66[0],
+    setCustCfg = _useState66[1]; // 單機自訂盤面（寬/高/雷），持久化
+  var _useState67 = useState(false),
+    _useState68 = _slicedToArray(_useState67, 2),
+    custOpen = _useState68[0],
+    setCustOpen = _useState68[1];
   var boardScrollRef = useRef(null); // 盤面捲動容器（邊緣虛化/自製卷軸指示條依它的捲動量更新）
   var fadeRRef = useRef(null),
     fadeBRef = useRef(null),
@@ -538,6 +553,148 @@ function MinesGame() {
       return setItemToast(null);
     }, 3400);
   } // 平台內統一走殼 toast（美學稽核 V-07：三款一式）；獨立版才用本地 pill
+  // ---------- 塗鴉（v1.49.0，比照數獨/數橋）：合作模式同步共享（溝通畫圖）、競速/錦標賽/單機只留本地（防偷看） ----------
+  function myStrokeColor() {
+    var me = playersRef.current.find(function (pp) {
+      return pp.id === myId;
+    });
+    if (me && me.color) return me.color === 'rainbow' ? '#e879f9' : me.color;
+    return '#f97316';
+  }
+  function doodleSync(msg) {
+    if (!(mpRef.current.on && mpRef.current.mode === 'coop')) return;
+    if (mpRef.current.isHost) hostBroadcast(msg);else mpSend(msg);
+  }
+  function setStrokesBoth(ns) {
+    strokesRef.current = ns;
+    setStrokes(ns);
+  }
+  function addStroke(pts) {
+    if (!pts || !pts.length) return;
+    var pp = pts.length === 1 ? [pts[0], pts[0]] : pts;
+    var st = {
+      id: Date.now() + '-' + myId,
+      uid: myId,
+      color: myStrokeColor(),
+      pts: pp
+    };
+    setStrokesBoth(strokesRef.current.concat([st]));
+    doodleSync({
+      type: 'MINE_DOODLE',
+      op: 'add',
+      uid: myId,
+      stroke: st
+    });
+  }
+  function clearOwnStrokes() {
+    var ns = strokesRef.current.filter(function (sv) {
+      return sv.uid !== myId;
+    });
+    if (ns.length === strokesRef.current.length) return;
+    setStrokesBoth(ns);
+    doodleSync({
+      type: 'MINE_DOODLE',
+      op: 'clearUid',
+      uid: myId
+    });
+    itemSay('🗑️ 已清除你所有的塗鴉');
+  }
+  function clearAllStrokes() {
+    if (!strokesRef.current.length) return;
+    setStrokesBoth([]);
+    doodleSync({
+      type: 'MINE_DOODLE',
+      op: 'clearAll',
+      uid: myId
+    });
+    itemSay('🗑️ 已清空塗鴉');
+  }
+  function applyDoodleMsg(m) {
+    if (m.op === 'add' && m.stroke && m.stroke.pts) setStrokesBoth(strokesRef.current.concat([m.stroke]));else if (m.op === 'clearUid') setStrokesBoth(strokesRef.current.filter(function (sv) {
+      return sv.uid !== m.uid;
+    }));else if (m.op === 'clearAll') setStrokesBoth([]);else if (m.op === 'erase' && m.ids) setStrokesBoth(strokesRef.current.filter(function (sv) {
+      return m.ids.indexOf(sv.id) < 0;
+    }));
+  }
+  function doodlePoint(e) {
+    var el = doodleSvgRef.current;
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    var sp = specRef.current || SIZES[9];
+    var vbH = 1000 * sp.h / sp.w;
+    return {
+      x: Math.round((e.clientX - r.left) / r.width * 1000 * 10) / 10,
+      y: Math.round((e.clientY - r.top) / r.height * vbH * 10) / 10
+    };
+  }
+  function eraseAtDoodle(p) {
+    var removed = [];
+    var ns = strokesRef.current.filter(function (sv) {
+      if (sv.uid !== myId) return true;
+      for (var i = 0; i < sv.pts.length; i++) {
+        if (Math.hypot(sv.pts[i][0] - p.x, sv.pts[i][1] - p.y) < 26) {
+          removed.push(sv.id);
+          return false;
+        }
+      }
+      return true;
+    });
+    if (removed.length) {
+      setStrokesBoth(ns);
+      doodleSync({
+        type: 'MINE_DOODLE',
+        op: 'erase',
+        uid: myId,
+        ids: removed
+      });
+    }
+  }
+  function onDoodleDown(e) {
+    if (inputMode !== 'draw') return;
+    if (statusRef.current === 'won' || statusRef.current === 'lost') return;
+    if (mpRef.current.on && iAmSpecRef.current) return;
+    if (e && e.preventDefault) e.preventDefault();
+    var p = doodlePoint(e);
+    if (!p) return;
+    if (drawTool === 'eraser') {
+      eraseAtDoodle(p);
+      drawStateRef.current = {
+        erasing: true
+      };
+    } else {
+      drawStateRef.current = {
+        pts: [[p.x, p.y]]
+      };
+      setLivePts([[p.x, p.y]]);
+    }
+    if (e.target && e.target.setPointerCapture && e.pointerId != null) {
+      try {
+        e.target.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+  }
+  function onDoodleMove(e) {
+    var ds = drawStateRef.current;
+    if (!ds) return;
+    var p = doodlePoint(e);
+    if (!p) return;
+    if (ds.erasing) {
+      eraseAtDoodle(p);
+      return;
+    }
+    var last = ds.pts[ds.pts.length - 1];
+    if (Math.hypot(p.x - last[0], p.y - last[1]) >= 6) {
+      ds.pts.push([p.x, p.y]);
+      setLivePts(ds.pts.slice());
+    }
+  }
+  function onDoodleUp() {
+    var ds = drawStateRef.current;
+    drawStateRef.current = null;
+    setLivePts(null);
+    if (ds && ds.pts && ds.pts.length) addStroke(ds.pts);
+  }
   function resetItems() {
     itemsRef.current = {
       question: 0,
@@ -582,6 +739,8 @@ function MinesGame() {
       backfill: myItems.backfill,
       gift: myItems.gift
     },
+    strokes: strokes.length,
+    inputMode: inputMode,
     giftCredit: giftCreditRef.current,
     qfx: questionFx,
     milestones: milestoneRef.current,
@@ -633,6 +792,9 @@ function MinesGame() {
     setLayout(L);
     setNums(computeNums(sp.w, sp.h, L));
     setCells(new Array(sp.w * sp.h).fill('h'));
+    mistakesRef.current = 0;
+    setMistLeft(Math.floor(sp.mines / 10)); // 容錯重置（v1.49.0 單機/每日也有愛心）
+    setStrokesBoth([]); // 新局清塗鴉（比照數獨/數橋開局 strokes 清空）
     setStatus('ready');
     statusRef.current = 'ready';
     setHitIdx(-1);
@@ -668,8 +830,8 @@ function MinesGame() {
     }
     var r = revealFrom(sp.w, sp.h, L, N, C, from);
     if (r.hit >= 0) {
-      // 競速容錯（使用者定案：容錯次數＝雷數 10%，10 雷 1 次、40 雷 4 次）：額度內踩雷不算出局——
-      // 照樣引爆，但那格改記 'x'（✗、確認是雷），玩家續玩；和弦與旗數都把 'x' 當已知雷。單機/合作不適用。
+      // 容錯（使用者定案：容錯次數＝雷數 10%，10 雷 1 次、40 雷 4 次）：額度內踩雷不算出局——
+      // 照樣引爆，但那格改記 'x'（✗、確認是雷），玩家續玩；和弦與旗數都把 'x' 當已知雷。全模式適用（v1.49.0 起單機/每日/合作比照競速；合作走 processCoopAct 的共用額度）。
       var allow = mistakeAllowance();
       if (allow > 0 && !outcomeRef.current && mistakesRef.current < allow) {
         mistakesRef.current += 1;
@@ -828,7 +990,7 @@ function MinesGame() {
         L.push(isM);
         if (isM) mc++;
         var ch = data.cells[i];
-        if ('hof'.indexOf(ch) < 0) throw new Error('bad');
+        if ('hofx'.indexOf(ch) < 0) throw new Error('bad'); // x＝容錯記號（v1.49.0 單機也有容錯後補上）
         if (ch === 'o') opened++;
       }
       if (mc !== sp.mines) throw new Error('bad');
@@ -837,6 +999,10 @@ function MinesGame() {
       setLayout(L);
       setNums(computeNums(sp.w, sp.h, L));
       setCells(data.cells.split(''));
+      var mistLd = 0;
+      for (var mi2 = 0; mi2 < n; mi2++) if (data.cells[mi2] === 'x') mistLd++;
+      mistakesRef.current = mistLd;
+      setMistLeft(Math.max(0, Math.floor(sp.mines / 10) - mistLd)); // 載入代碼：容錯用量照盤面 ✗ 數還原
       var st = opened > 0 ? 'playing' : 'ready';
       setStatus(st);
       statusRef.current = st;
@@ -1035,62 +1201,62 @@ function MinesGame() {
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   var myId = myGameId();
-  var _useState63 = useState(false),
-    _useState64 = _slicedToArray(_useState63, 2),
-    mpOn = _useState64[0],
-    setMpOn = _useState64[1];
-  var _useState65 = useState('off'),
-    _useState66 = _slicedToArray(_useState65, 2),
-    mpPhase = _useState66[0],
-    setMpPhase = _useState66[1]; // off|waiting|countdown|playing|done
-  var _useState67 = useState([]),
-    _useState68 = _slicedToArray(_useState67, 2),
-    players = _useState68[0],
-    setPlayers = _useState68[1];
   var _useState69 = useState(false),
     _useState70 = _slicedToArray(_useState69, 2),
-    myReadySt = _useState70[0],
-    setMyReadySt = _useState70[1];
-  var _useState71 = useState({}),
+    mpOn = _useState70[0],
+    setMpOn = _useState70[1];
+  var _useState71 = useState('off'),
     _useState72 = _slicedToArray(_useState71, 2),
-    godBoards = _useState72[0],
-    setGodBoards = _useState72[1];
-  var _useState73 = useState(null),
+    mpPhase = _useState72[0],
+    setMpPhase = _useState72[1]; // off|waiting|countdown|playing|done
+  var _useState73 = useState([]),
     _useState74 = _slicedToArray(_useState73, 2),
-    godUid = _useState74[0],
-    setGodUid = _useState74[1];
-  var _useState75 = useState(null),
+    players = _useState74[0],
+    setPlayers = _useState74[1];
+  var _useState75 = useState(false),
     _useState76 = _slicedToArray(_useState75, 2),
-    raceFinal = _useState76[0],
-    setRaceFinal = _useState76[1];
-  var _useState77 = useState(null),
+    myReadySt = _useState76[0],
+    setMyReadySt = _useState76[1];
+  var _useState77 = useState({}),
     _useState78 = _slicedToArray(_useState77, 2),
-    myOutcome = _useState78[0],
-    setMyOutcome = _useState78[1]; // 'finished'|'boom'
-  var _useState79 = useState(false),
+    godBoards = _useState78[0],
+    setGodBoards = _useState78[1];
+  var _useState79 = useState(null),
     _useState80 = _slicedToArray(_useState79, 2),
-    leaveArm = _useState80[0],
-    setLeaveArm = _useState80[1];
-  var _useState81 = useState(false),
+    godUid = _useState80[0],
+    setGodUid = _useState80[1];
+  var _useState81 = useState(null),
     _useState82 = _slicedToArray(_useState81, 2),
-    showExitMenu = _useState82[0],
-    setShowExitMenu = _useState82[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
-  var _useState83 = useState(false),
+    raceFinal = _useState82[0],
+    setRaceFinal = _useState82[1];
+  var _useState83 = useState(null),
     _useState84 = _slicedToArray(_useState83, 2),
-    hdrOpen = _useState84[0],
-    setHdrOpen = _useState84[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
-  var _useState85 = useState(''),
+    myOutcome = _useState84[0],
+    setMyOutcome = _useState84[1]; // 'finished'|'boom'
+  var _useState85 = useState(false),
     _useState86 = _slicedToArray(_useState85, 2),
-    coopBoomBy = _useState86[0],
-    setCoopBoomBy = _useState86[1];
-  var _useState87 = useState(null),
+    leaveArm = _useState86[0],
+    setLeaveArm = _useState86[1];
+  var _useState87 = useState(false),
     _useState88 = _slicedToArray(_useState87, 2),
-    cdNum = _useState88[0],
-    setCdNum = _useState88[1];
-  var _useState89 = useState(0),
+    showExitMenu = _useState88[0],
+    setShowExitMenu = _useState88[1]; // 離開選單（比照數獨/數橋：退出鈕開選單，內含結束本局/回等待室/退出回大廳）
+  var _useState89 = useState(false),
     _useState90 = _slicedToArray(_useState89, 2),
-    waitTick = _useState90[0],
-    setWaitTick = _useState90[1];
+    hdrOpen = _useState90[0],
+    setHdrOpen = _useState90[1]; // 標頭規則面板展開（比照數獨：單機/每日開始展開、多人進場收合）
+  var _useState91 = useState(''),
+    _useState92 = _slicedToArray(_useState91, 2),
+    coopBoomBy = _useState92[0],
+    setCoopBoomBy = _useState92[1];
+  var _useState93 = useState(null),
+    _useState94 = _slicedToArray(_useState93, 2),
+    cdNum = _useState94[0],
+    setCdNum = _useState94[1];
+  var _useState95 = useState(0),
+    _useState96 = _slicedToArray(_useState95, 2),
+    waitTick = _useState96[0],
+    setWaitTick = _useState96[1];
   var mpRef = useRef({
     on: false,
     isHost: false,
@@ -1472,8 +1638,9 @@ function MinesGame() {
     return mpRef.current.on && mpRef.current.mode === 'race' && mpRef.current.itemsAllow;
   }
   function mistakeAllowance() {
-    return mpRef.current.on && mpRef.current.mode === 'race' ? Math.floor((SIZES[mpRef.current.sizeId] || SIZES[9]).mines / 10) : 0;
-  } // 競速容錯＝雷數 10%（10 雷→1、40 雷→4）；單機/合作回 0
+    var sp = specRef.current || SIZES[9];
+    return Math.floor((sp.mines || 0) / 10);
+  } // 容錯＝雷數 10%（10 雷→1、40 雷→4），全模式適用（v1.49.0 使用者指示：單機/每日/合作比照競速）
   function sendItemMsg(m) {
     if (mpRef.current.isHost) {
       hostBroadcast(m);
@@ -1895,7 +2062,18 @@ function MinesGame() {
       var prevC = C;
       C = r.cells;
       hit = r.hit;
-      if (hit >= 0) stAfter = 'lost';else if (openedSafeOf(C, L) >= sp.w * sp.h - sp.mines) stAfter = 'won';
+      var forgivenAt = -1; // 合作共用容錯（v1.49.0）：全隊共用雷數 10% 額度，額度以盤面 'x' 數為準（房主權威計算、隨 cells 同步）
+      if (hit >= 0) {
+        var allowC = mistakeAllowance(),
+          xCnt0 = 0;
+        for (var xi0 = 0; xi0 < prevC.length; xi0++) if (prevC[xi0] === 'x') xCnt0++;
+        if (allowC > 0 && xCnt0 < allowC) {
+          C = C.slice();
+          C[hit] = 'x';
+          forgivenAt = hit;
+          hit = -1;
+        } else stAfter = 'lost';
+      } else if (openedSafeOf(C, L) >= sp.w * sp.h - sp.mines) stAfter = 'won';
       var aIdx = playersRef.current.findIndex(function (p) {
         return p.id === byUid;
       }); // 貢獻歸屬：這次動作新開的格（含洪泛展開＋踩到的雷）都算動作玩家開啟
@@ -1919,6 +2097,7 @@ function MinesGame() {
       sparse: coopSparse(C, N),
       hit: hit,
       statusAfter: stAfter,
+      forgivenAt: forgivenAt >= 0 ? forgivenAt : undefined,
       reloc: reloc || undefined,
       own: kind === 'flag' ? undefined : encOwners(OWN),
       mines: stAfter === 'lost' ? L.map(function (v, i) {
@@ -1966,6 +2145,14 @@ function MinesGame() {
     };
     if (m.own) setOwnArr(OA);
     setCells(arr);
+    var xCnt2 = 0;
+    for (var xj2 = 0; xj2 < arr.length; xj2++) if (arr[xj2] === 'x') xCnt2++; // 合作愛心＝盤面 ✗ 數推導，全員一致
+    mistakesRef.current = xCnt2;
+    setMistLeft(Math.max(0, mistakeAllowance() - xCnt2));
+    if (m.forgivenAt != null && m.forgivenAt >= 0) {
+      SFX.boom();
+      itemSay('💥 ' + (m.byName || '有人') + ' 踩到雷！這格記 ✗——愛心還剩 ' + (mistakeAllowance() - xCnt2 + 1) + ' 顆');
+    }
     setNums(function (prev) {
       var N = prev ? prev.slice() : new Array(arr.length).fill(0);
       for (var k in m.sparse) N[+k] = m.sparse[k];
@@ -1995,7 +2182,7 @@ function MinesGame() {
     } else {
       setStatus('playing');
       statusRef.current = 'playing';
-      if (m.kind === 'reveal') SFX.dig();else SFX.flag();
+      if (m.forgivenAt != null && m.forgivenAt >= 0) {/* 引爆音效已在上方播 */} else if (m.kind === 'reveal') SFX.dig();else SFX.flag();
     }
   }
 
@@ -2046,6 +2233,7 @@ function MinesGame() {
     resetItems();
     mistakesRef.current = 0;
     setMistLeft(Math.floor((SIZES[szId] || SIZES[9]).mines / 10)); // 容錯額度＝雷數 10%
+    setStrokesBoth([]); // 新比賽清塗鴉
     setMyReadySt(false);
     myReadyRef.current = false;
     var spec2 = iAmSpec();
@@ -2109,7 +2297,7 @@ function MinesGame() {
     if (!m || !m.type) return;
     var H = mpRef.current.isHost;
     // 房主端驗寄件者：連線在 JOIN 時已綁 conn.__uid，之後帶 uid 的訊息必須相符，冒名把對手打成出局/完賽一律丟棄（稽核修）
-    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH', 'MINE_MILESTONE', 'MINE_GRANT', 'MINE_GIFT', 'MINE_HIT'].indexOf(m.type) >= 0) return;
+    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH', 'MINE_MILESTONE', 'MINE_GRANT', 'MINE_GIFT', 'MINE_HIT', 'MINE_DOODLE'].indexOf(m.type) >= 0) return;
     switch (m.type) {
       case 'JOIN':
         if (H) hostOnJoin(m, conn);
@@ -2218,6 +2406,13 @@ function MinesGame() {
       case 'MINE_DO':
         if (!H && mpRef.current.mode === 'coop') adoptCoopDo(m);
         break;
+      case 'MINE_DOODLE':
+        if (mpRef.current.mode === 'coop') {
+          applyDoodleMsg(m);
+          if (H) hostBroadcast(m, conn);
+        }
+        break;
+      // 塗鴉只在合作同步；房主套用後轉發全場
       case 'REQ_LOBBY':
         if (H) {
           if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit');
@@ -2597,9 +2792,15 @@ function MinesGame() {
     onAction: function onAction(name) {
       if (name === 'mode-press') {
         setInputMode(function (m) {
-          return m === 'dig' ? 'flag' : 'dig';
+          return m === 'dig' ? 'flag' : m === 'flag' ? 'draw' : 'dig';
         });
         SFX.click();
+      } else if (name === 'draw-tool') {
+        setDrawTool(payload);
+      } else if (name === 'draw-erase-dbl') {
+        clearOwnStrokes();
+      } else if (name === 'draw-clear') {
+        clearAllStrokes();
       }
       // 殼 PlatBar 左下角縮放組（＋/－/循環）：v1.31 只做了卡片內 🔍 那組、這組沒人接線 → 按了沒反應（使用者 2026-11-04 截圖回報）。
       // 接到與卡片內 🔍 相同的 zoom state，兩組永遠同步；數獨/數橋的 PlatBar 本來就有接，只有地雷漏了。
@@ -2644,21 +2845,25 @@ function MinesGame() {
     if (typeof window === 'undefined' || typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
     if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'mines') return;
     window.PlatBar.update({
-      mode: inputMode === 'flag' ? 1 : 0,
+      mode: inputMode === 'flag' ? 1 : inputMode === 'draw' ? 2 : 0,
       modes: [{
         icon: '⛏️',
         label: '挖開'
       }, {
         icon: '🚩',
         label: '插旗'
+      }, {
+        icon: '🖌️',
+        label: '塗鴉'
       }],
-      modeTitle: '切換模式（挖開/插旗）',
+      modeTitle: '切換模式（挖開/插旗/塗鴉）',
       zoomLabel: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔍',
       zoomGlyph: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔲',
       showInput: false,
       inputMode: 'num',
-      showDraw: false,
-      showHostClear: false
+      showDraw: inputMode === 'draw',
+      drawTool: drawTool,
+      showHostClear: !!(mpOn && mpRef.current.mode === 'coop' && mpRef.current.isHost)
     });
   });
 
@@ -3622,9 +3827,9 @@ function MinesGame() {
       className: "text-xs font-semibold text-slate-400"
     }, "\u5168\u90E8\u6316\u958B"))), /*#__PURE__*/React.createElement("p", {
       className: "text-center font-bold text-slate-700"
-    }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF0C\u6316\u5230\u96F7\u5C31\u7D50\u675F"), /*#__PURE__*/React.createElement("div", {
+    }, "\u7B2C\u4E00\u4E0B\u9EDE\u7684\u683C\u5B50\u8DDF\u5468\u570D 8 \u683C\u4FDD\u8B49\u6C92\u6709\u96F7\uFF1B\u4E0D\u662F\u96F7\u7684\u683C\u5B50\u5168\u6316\u958B\u5C31\u8D0F\uFF1B\u6316\u5230\u96F7\u5148\u6263\u4E00\u9846 \u2764\uFE0F\uFF0C\u611B\u5FC3\u7528\u5B8C\u624D\u7D50\u675F"), /*#__PURE__*/React.createElement("div", {
       className: "mt-3 pt-3 border-t-2 border-slate-200 font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2"
-    }, /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u76F4\u63A5\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002"))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("p", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C\uFF1A\u6BCF\u5929\u540C\u4E00\u984C\uFF089\xD79\uFF09\uFF0C\u53EF\u4EE5\u56DE\u88DC\u4ECA\u5E74\u7684\u820A\u984C\u76EE\uFF0C\u53EA\u6709\u4ECA\u5929\u7684\u6703\u7D2F\u7A4D\u9023\u7E8C\u5929\u6578\u3002"), /*#__PURE__*/React.createElement("p", null, "\uD83D\uDC65 \u591A\u4EBA\u7AF6\u901F\uFF1A\u540C\u4E00\u500B\u76E4\u9762\u5404\u73A9\u5404\u7684\uFF0C\u6700\u5FEB\u6E05\u5B8C\u7684\u4EBA\u8D0F\uFF1B\u8E29\u5230\u96F7\u5148\u6263 \u2764\uFE0F\u3001\u611B\u5FC3\u7528\u5B8C\u624D\u51FA\u5C40\uFF0C\u7167\u7576\u6642\u9032\u5EA6\u6392\u540D\u3002"))), /*#__PURE__*/React.createElement("div", {
       className: "flex justify-center gap-2 mb-5"
     }, [0, 1, 2, 3].map(function (idx) {
       return /*#__PURE__*/React.createElement("div", {
@@ -3880,7 +4085,7 @@ function MinesGame() {
     className: "w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0"
-  }, "\uD83D\uDCA3 ", spec.mines - flagsUsed, mpOn && mpRef.current.mode === 'race' && Math.floor(spec.mines / 10) > 0 && /*#__PURE__*/React.createElement("span", {
+  }, "\uD83D\uDCA3 ", spec.mines - flagsUsed, Math.floor(spec.mines / 10) > 0 && /*#__PURE__*/React.createElement("span", {
     className: "ml-1",
     style: {
       fontSize: 13
@@ -3922,7 +4127,19 @@ function MinesGame() {
     } : {
       color: '#64748b'
     }
-  }, "\uD83D\uDEA9 \u63D2\u65D7")), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDEA9 \u63D2\u65D7"), /*#__PURE__*/React.createElement("button", {
+    "data-mode": "draw",
+    onClick: function onClick() {
+      return setInputMode('draw');
+    },
+    className: "px-4 py-1.5",
+    style: inputMode === 'draw' ? {
+      background: '#34d399',
+      color: '#0f172a'
+    } : {
+      color: '#64748b'
+    }
+  }, "\uD83D\uDD8C\uFE0F \u5857\u9D09")), /*#__PURE__*/React.createElement("div", {
     className: "font-black text-slate-500 text-sm whitespace-nowrap shrink-0"
   }, "\u9032\u5EA6 ", Math.floor(progress * 100), "%", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
@@ -4104,9 +4321,50 @@ function MinesGame() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 'max-content',
-      margin: '0 auto'
+      margin: '0 auto',
+      position: 'relative'
     }
-  }, renderBoard())), /*#__PURE__*/React.createElement("div", {
+  }, renderBoard(), /*#__PURE__*/React.createElement("svg", {
+    ref: doodleSvgRef,
+    viewBox: '0 0 1000 ' + 1000 * spec.h / spec.w,
+    preserveAspectRatio: "none",
+    style: {
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: inputMode === 'draw' ? 'auto' : 'none',
+      touchAction: 'none',
+      zIndex: 5
+    },
+    onPointerDown: onDoodleDown,
+    onPointerMove: onDoodleMove,
+    onPointerUp: onDoodleUp,
+    onPointerCancel: onDoodleUp
+  }, strokes.map(function (sv) {
+    return /*#__PURE__*/React.createElement("path", {
+      key: sv.id,
+      d: 'M ' + sv.pts.map(function (pt) {
+        return pt[0] + ' ' + pt[1];
+      }).join(' L '),
+      fill: "none",
+      stroke: sv.color,
+      strokeOpacity: mpOn && sv.uid !== myId ? 0.55 : 0.9,
+      strokeWidth: "18",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    });
+  }), livePts && livePts.length > 1 && /*#__PURE__*/React.createElement("path", {
+    d: 'M ' + livePts.map(function (pt) {
+      return pt[0] + ' ' + pt[1];
+    }).join(' L '),
+    fill: "none",
+    stroke: myStrokeColor(),
+    strokeOpacity: "0.9",
+    strokeWidth: "18",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  })))), /*#__PURE__*/React.createElement("div", {
     ref: fadeRRef,
     style: {
       position: 'absolute',

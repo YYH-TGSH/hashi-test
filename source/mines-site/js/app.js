@@ -151,7 +151,13 @@ function MinesGame() {
   const [curSeed, setCurSeed] = useState(0);
   const [status, setStatus] = useState('ready');    // ready | playing | won | lost
   const [hitIdx, setHitIdx] = useState(-1);
-  const [inputMode, setInputMode] = useState('dig'); // dig | flag
+  const [inputMode, setInputMode] = useState('dig'); // dig | flag | draw（v1.49.0 塗鴉比照數獨/數橋補上——之前獨缺，使用者指示）
+  const [strokes, setStrokes] = useState([]);       // 塗鴉筆跡 [{id, uid, color, pts:[[x,y],...]}]：座標正規化 x 0..1000、y 0..1000*h/w（縮放/捲動都不跑位）
+  const strokesRef = useRef([]);
+  const [drawTool, setDrawTool] = useState('pen');  // pen | eraser（PlatBar 塗鴉子選單控制，比照數獨 drawSubMode）
+  const [livePts, setLivePts] = useState(null);     // 正在畫的這一筆（即時預覽）
+  const drawStateRef = useRef(null);                // 手勢中的一筆 {pts} 或 {erasing:true}
+  const doodleSvgRef = useRef(null);
   const [startedAt, setStartedAt] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [dailyDate, setDailyDate] = useState(null);  // 非 null = 每日一題模式（日期字串）
@@ -189,10 +195,28 @@ function MinesGame() {
   const autoItemIvRef = useRef(null);
   const autoGiftIvRef = useRef(null);
   function itemSay(msg) { if (typeof window !== 'undefined' && window.__PLAT_TOAST) { window.__PLAT_TOAST(msg); return; } setItemToast(msg); if (itemToastTimerRef.current) clearTimeout(itemToastTimerRef.current); itemToastTimerRef.current = setTimeout(() => setItemToast(null), 3400); } // 平台內統一走殼 toast（美學稽核 V-07：三款一式）；獨立版才用本地 pill
+  // ---------- 塗鴉（v1.49.0，比照數獨/數橋）：合作模式同步共享（溝通畫圖）、競速/錦標賽/單機只留本地（防偷看） ----------
+  function myStrokeColor() { var me = playersRef.current.find(pp => pp.id === myId); if (me && me.color) return me.color === 'rainbow' ? '#e879f9' : me.color; return '#f97316'; }
+  function doodleSync(msg) { if (!(mpRef.current.on && mpRef.current.mode === 'coop')) return; if (mpRef.current.isHost) hostBroadcast(msg); else mpSend(msg); }
+  function setStrokesBoth(ns) { strokesRef.current = ns; setStrokes(ns); }
+  function addStroke(pts) { if (!pts || !pts.length) return; var pp = pts.length === 1 ? [pts[0], pts[0]] : pts; var st = { id: Date.now() + '-' + myId, uid: myId, color: myStrokeColor(), pts: pp }; setStrokesBoth(strokesRef.current.concat([st])); doodleSync({ type: 'MINE_DOODLE', op: 'add', uid: myId, stroke: st }); }
+  function clearOwnStrokes() { var ns = strokesRef.current.filter(sv => sv.uid !== myId); if (ns.length === strokesRef.current.length) return; setStrokesBoth(ns); doodleSync({ type: 'MINE_DOODLE', op: 'clearUid', uid: myId }); itemSay('🗑️ 已清除你所有的塗鴉'); }
+  function clearAllStrokes() { if (!strokesRef.current.length) return; setStrokesBoth([]); doodleSync({ type: 'MINE_DOODLE', op: 'clearAll', uid: myId }); itemSay('🗑️ 已清空塗鴉'); }
+  function applyDoodleMsg(m) {
+    if (m.op === 'add' && m.stroke && m.stroke.pts) setStrokesBoth(strokesRef.current.concat([m.stroke]));
+    else if (m.op === 'clearUid') setStrokesBoth(strokesRef.current.filter(sv => sv.uid !== m.uid));
+    else if (m.op === 'clearAll') setStrokesBoth([]);
+    else if (m.op === 'erase' && m.ids) setStrokesBoth(strokesRef.current.filter(sv => m.ids.indexOf(sv.id) < 0));
+  }
+  function doodlePoint(e) { var el = doodleSvgRef.current; if (!el) return null; var r = el.getBoundingClientRect(); if (!r.width || !r.height) return null; var sp = specRef.current || SIZES[9]; var vbH = 1000 * sp.h / sp.w; return { x: Math.round((e.clientX - r.left) / r.width * 1000 * 10) / 10, y: Math.round((e.clientY - r.top) / r.height * vbH * 10) / 10 }; }
+  function eraseAtDoodle(p) { var removed = []; var ns = strokesRef.current.filter(sv => { if (sv.uid !== myId) return true; for (var i = 0; i < sv.pts.length; i++) { if (Math.hypot(sv.pts[i][0] - p.x, sv.pts[i][1] - p.y) < 26) { removed.push(sv.id); return false; } } return true; }); if (removed.length) { setStrokesBoth(ns); doodleSync({ type: 'MINE_DOODLE', op: 'erase', uid: myId, ids: removed }); } }
+  function onDoodleDown(e) { if (inputMode !== 'draw') return; if (statusRef.current === 'won' || statusRef.current === 'lost') return; if (mpRef.current.on && iAmSpecRef.current) return; if (e && e.preventDefault) e.preventDefault(); var p = doodlePoint(e); if (!p) return; if (drawTool === 'eraser') { eraseAtDoodle(p); drawStateRef.current = { erasing: true }; } else { drawStateRef.current = { pts: [[p.x, p.y]] }; setLivePts([[p.x, p.y]]); } if (e.target && e.target.setPointerCapture && e.pointerId != null) { try { e.target.setPointerCapture(e.pointerId); } catch (err) {} } }
+  function onDoodleMove(e) { var ds = drawStateRef.current; if (!ds) return; var p = doodlePoint(e); if (!p) return; if (ds.erasing) { eraseAtDoodle(p); return; } var last = ds.pts[ds.pts.length - 1]; if (Math.hypot(p.x - last[0], p.y - last[1]) >= 6) { ds.pts.push([p.x, p.y]); setLivePts(ds.pts.slice()); } }
+  function onDoodleUp() { var ds = drawStateRef.current; drawStateRef.current = null; setLivePts(null); if (ds && ds.pts && ds.pts.length) addStroke(ds.pts); }
   function resetItems() { itemsRef.current = { question: 0, backfill: 0, gift: 0 }; setMyItems({ question: 0, backfill: 0, gift: 0 }); questionFxRef.current = {}; setQuestionFx({}); giftCreditRef.current = 0; creditedMinesRef.current = {}; milestoneRef.current = 0; lastOneDoneRef.current = false; if (autoItemIvRef.current) { clearInterval(autoItemIvRef.current); autoItemIvRef.current = null; } if (autoGiftIvRef.current) { clearInterval(autoGiftIvRef.current); autoGiftIvRef.current = null; } }
   const progress = totalSafe ? openedSafe / totalSafe : 0;
   const dbgRef = useRef(null); // 唯讀狀態快照（測試/除錯用，掛在 hooks.debug）
-  dbgRef.current = { layout: layout, cells: cells, nums: nums, owners: ownArr, status: status, sizeId: sizeId, progress: progress, openedSafe: openedSafe, seed: curSeed, screen: screen, items: { question: myItems.question, backfill: myItems.backfill, gift: myItems.gift }, giftCredit: giftCreditRef.current, qfx: questionFx, milestones: milestoneRef.current, mistakes: mistakesRef.current, mistLeft: mistLeft, zoom: zoom };
+  dbgRef.current = { layout: layout, cells: cells, nums: nums, owners: ownArr, status: status, sizeId: sizeId, progress: progress, openedSafe: openedSafe, seed: curSeed, screen: screen, items: { question: myItems.question, backfill: myItems.backfill, gift: myItems.gift }, strokes: strokes.length, inputMode: inputMode, giftCredit: giftCreditRef.current, qfx: questionFx, milestones: milestoneRef.current, mistakes: mistakesRef.current, mistLeft: mistLeft, zoom: zoom };
 
   useEffect(() => { if (typeof window === 'undefined') return; const f = () => setVpW(window.innerWidth || 390); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
   // ---------- 計時 ----------
@@ -212,6 +236,8 @@ function MinesGame() {
     var L = makeLayout(sp.w, sp.h, sp.mines, sd);
     setSizeId(sp.id); setCurSeed(sd); setLayout(L); setNums(computeNums(sp.w, sp.h, L));
     setCells(new Array(sp.w * sp.h).fill('h'));
+    mistakesRef.current = 0; setMistLeft(Math.floor(sp.mines / 10)); // 容錯重置（v1.49.0 單機/每日也有愛心）
+    setStrokesBoth([]); // 新局清塗鴉（比照數獨/數橋開局 strokes 清空）
     setStatus('ready'); statusRef.current = 'ready';
     setHitIdx(-1); setInputMode('dig'); setStartedAt(null); setElapsed(0);
     setDailyDate(daily || null);
@@ -232,8 +258,8 @@ function MinesGame() {
     }
     var r = revealFrom(sp.w, sp.h, L, N, C, from);
     if (r.hit >= 0) {
-      // 競速容錯（使用者定案：容錯次數＝雷數 10%，10 雷 1 次、40 雷 4 次）：額度內踩雷不算出局——
-      // 照樣引爆，但那格改記 'x'（✗、確認是雷），玩家續玩；和弦與旗數都把 'x' 當已知雷。單機/合作不適用。
+      // 容錯（使用者定案：容錯次數＝雷數 10%，10 雷 1 次、40 雷 4 次）：額度內踩雷不算出局——
+      // 照樣引爆，但那格改記 'x'（✗、確認是雷），玩家續玩；和弦與旗數都把 'x' 當已知雷。全模式適用（v1.49.0 起單機/每日/合作比照競速；合作走 processCoopAct 的共用額度）。
       var allow = mistakeAllowance();
       if (allow > 0 && !outcomeRef.current && mistakesRef.current < allow) {
         mistakesRef.current += 1;
@@ -313,12 +339,14 @@ function MinesGame() {
       for (var i = 0; i < n; i++) {
         var isM = data.lay[i] === '1'; L.push(isM); if (isM) mc++;
         var ch = data.cells[i];
-        if ('hof'.indexOf(ch) < 0) throw new Error('bad');
+        if ('hofx'.indexOf(ch) < 0) throw new Error('bad'); // x＝容錯記號（v1.49.0 單機也有容錯後補上）
         if (ch === 'o') opened++;
       }
       if (mc !== sp.mines) throw new Error('bad');
       setSizeId(sp.id); setCurSeed((data.seed || 0) >>> 0); setLayout(L); setNums(computeNums(sp.w, sp.h, L));
       setCells(data.cells.split(''));
+      var mistLd = 0; for (var mi2 = 0; mi2 < n; mi2++) if (data.cells[mi2] === 'x') mistLd++;
+      mistakesRef.current = mistLd; setMistLeft(Math.max(0, Math.floor(sp.mines / 10) - mistLd)); // 載入代碼：容錯用量照盤面 ✗ 數還原
       var st = opened > 0 ? 'playing' : 'ready';
       setStatus(st); statusRef.current = st;
       firstRef.current = opened === 0;
@@ -590,7 +618,7 @@ function MinesGame() {
   function amLastOne() { var u = unfinishedRacers(); return u.length === 1 && u[0].id === myId && playersRef.current.filter(p => !p.spectator && !p.pending).length > 1; }
   function pickWeightedMine(list, wfn) { var tot = 0, ws = list.map(p => { var w = Math.max(0.0001, wfn(p)); tot += w; return w; }); var r = Math.random() * tot; for (var i = 0; i < list.length; i++) { r -= ws[i]; if (r <= 0) return list[i]; } return list[list.length - 1]; }
   function itemsLive() { return mpRef.current.on && mpRef.current.mode === 'race' && mpRef.current.itemsAllow; }
-  function mistakeAllowance() { return (mpRef.current.on && mpRef.current.mode === 'race') ? Math.floor((SIZES[mpRef.current.sizeId] || SIZES[9]).mines / 10) : 0; } // 競速容錯＝雷數 10%（10 雷→1、40 雷→4）；單機/合作回 0
+  function mistakeAllowance() { var sp = specRef.current || SIZES[9]; return Math.floor((sp.mines || 0) / 10); } // 容錯＝雷數 10%（10 雷→1、40 雷→4），全模式適用（v1.49.0 使用者指示：單機/每日/合作比照競速）
   function sendItemMsg(m) { if (mpRef.current.isHost) { hostBroadcast(m); processItemMsg(m); } else mpSend(m); } // 房主：廣播＋本地處理（自己也可能是目標）；來賓：送房主中繼
   function processItemMsg(m) {
     if (m.type === 'MINE_GRANT' && m.toUid === myId) applyItemGrant(m.item);
@@ -770,13 +798,18 @@ function MinesGame() {
       }
       var r = revealFrom(sp.w, sp.h, L, N, C, idx);
       var prevC = C; C = r.cells; hit = r.hit;
-      if (hit >= 0) stAfter = 'lost';
+      var forgivenAt = -1; // 合作共用容錯（v1.49.0）：全隊共用雷數 10% 額度，額度以盤面 'x' 數為準（房主權威計算、隨 cells 同步）
+      if (hit >= 0) {
+        var allowC = mistakeAllowance(), xCnt0 = 0; for (var xi0 = 0; xi0 < prevC.length; xi0++) if (prevC[xi0] === 'x') xCnt0++;
+        if (allowC > 0 && xCnt0 < allowC) { C = C.slice(); C[hit] = 'x'; forgivenAt = hit; hit = -1; }
+        else stAfter = 'lost';
+      }
       else if (openedSafeOf(C, L) >= sp.w * sp.h - sp.mines) stAfter = 'won';
       var aIdx = playersRef.current.findIndex(p => p.id === byUid); // 貢獻歸屬：這次動作新開的格（含洪泛展開＋踩到的雷）都算動作玩家開啟
       if (aIdx >= 0) { for (var oi = 0; oi < C.length; oi++) if (prevC[oi] !== 'o' && C[oi] === 'o') OWN[oi] = aIdx; }
     }
     boardRef.current = { layout: L, nums: N, cells: C, owners: OWN };
-    var msg = { type: 'MINE_DO', kind: kind, idx: idx, uid: byUid, byName: byName || '', cells: C.join(''), sparse: coopSparse(C, N), hit: hit, statusAfter: stAfter, reloc: reloc || undefined, own: kind === 'flag' ? undefined : encOwners(OWN),
+    var msg = { type: 'MINE_DO', kind: kind, idx: idx, uid: byUid, byName: byName || '', cells: C.join(''), sparse: coopSparse(C, N), hit: hit, statusAfter: stAfter, forgivenAt: forgivenAt >= 0 ? forgivenAt : undefined, reloc: reloc || undefined, own: kind === 'flag' ? undefined : encOwners(OWN),
       mines: stAfter === 'lost' ? L.map((v, i) => v ? i : -1).filter(v => v >= 0) : undefined };
     hostBroadcast(msg);
     adoptCoopDo(msg);
@@ -791,6 +824,9 @@ function MinesGame() {
     boardRef.current = { layout: bL, nums: bN, cells: arr.slice(), owners: OA };
     if (m.own) setOwnArr(OA);
     setCells(arr);
+    var xCnt2 = 0; for (var xj2 = 0; xj2 < arr.length; xj2++) if (arr[xj2] === 'x') xCnt2++; // 合作愛心＝盤面 ✗ 數推導，全員一致
+    mistakesRef.current = xCnt2; setMistLeft(Math.max(0, mistakeAllowance() - xCnt2));
+    if (m.forgivenAt != null && m.forgivenAt >= 0) { SFX.boom(); itemSay('💥 ' + (m.byName || '有人') + ' 踩到雷！這格記 ✗——愛心還剩 ' + (mistakeAllowance() - xCnt2 + 1) + ' 顆'); }
     setNums(prev => { var N = prev ? prev.slice() : new Array(arr.length).fill(0); for (var k in m.sparse) N[+k] = m.sparse[k]; return N; });
     if (m.hit >= 0) setHitIdx(m.hit);
     if (m.statusAfter === 'lost') {
@@ -800,7 +836,7 @@ function MinesGame() {
     } else if (m.statusAfter === 'won') {
       setStatus('won'); statusRef.current = 'won'; SFX.win();
       mpRef.current.phase = 'done'; setMpPhase('done');
-    } else { setStatus('playing'); statusRef.current = 'playing'; if (m.kind === 'reveal') SFX.dig(); else SFX.flag(); }
+    } else { setStatus('playing'); statusRef.current = 'playing'; if (m.forgivenAt != null && m.forgivenAt >= 0) { /* 引爆音效已在上方播 */ } else if (m.kind === 'reveal') SFX.dig(); else SFX.flag(); }
   }
 
   // ----- 開局 -----
@@ -823,6 +859,7 @@ function MinesGame() {
     setGodBoards({}); godRef.current = {}; dismissRef.current = null; setGodUid(null); setCoopBoomBy('');
     resetItems();
     mistakesRef.current = 0; setMistLeft(Math.floor((SIZES[szId] || SIZES[9]).mines / 10)); // 容錯額度＝雷數 10%
+    setStrokesBoth([]); // 新比賽清塗鴉
     setMyReadySt(false); myReadyRef.current = false;
     var spec2 = iAmSpec();
     iAmSpecRef.current = spec2;
@@ -856,7 +893,7 @@ function MinesGame() {
     if (!m || !m.type) return;
     var H = mpRef.current.isHost;
     // 房主端驗寄件者：連線在 JOIN 時已綁 conn.__uid，之後帶 uid 的訊息必須相符，冒名把對手打成出局/完賽一律丟棄（稽核修）
-    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH', 'MINE_MILESTONE', 'MINE_GRANT', 'MINE_GIFT', 'MINE_HIT'].indexOf(m.type) >= 0) return;
+    if (H && conn && conn.__uid && m.uid && m.uid !== conn.__uid && ['MINE_FINISH', 'MINE_BOOM', 'MINE_STATE', 'MINE_PROGRESS', 'MINE_ACT', 'READY', 'SPEC', 'REQ_REMATCH', 'MINE_MILESTONE', 'MINE_GRANT', 'MINE_GIFT', 'MINE_HIT', 'MINE_DOODLE'].indexOf(m.type) >= 0) return;
     switch (m.type) {
       case 'JOIN': if (H) hostOnJoin(m, conn); break;
       case 'INIT': if (!H) guestOnInit(m); break;
@@ -874,6 +911,7 @@ function MinesGame() {
       case 'MINE_HIT': if (H) hostBroadcast(m, conn); processItemMsg(m); break;
       case 'MINE_ACT': if (H && mpRef.current.mode === 'coop') { var pl = playersRef.current.find(p => p.id === m.uid); if (pl && !pl.spectator && mpRef.current.phase === 'playing') processCoopAct(m.kind, m.idx, m.uid, pl.name); } break; // 觀戰者/倒數期間的 ACT 不受理：adoptCoopDo 會把全員 status 設成 playing 偷跑盤面（稽核修）
       case 'MINE_DO': if (!H && mpRef.current.mode === 'coop') adoptCoopDo(m); break;
+      case 'MINE_DOODLE': if (mpRef.current.mode === 'coop') { applyDoodleMsg(m); if (H) hostBroadcast(m, conn); } break; // 塗鴉只在合作同步；房主套用後轉發全場
       case 'REQ_LOBBY': if (H) { if (window.__PLAT_NOTIFY) window.__PLAT_NOTIFY('game-exit'); } break;
       case 'REQ_REMATCH': if (H) startMatch(); break;
       case 'HOST_LEFT': if (!H) onHostLeft(m); break;
@@ -1032,7 +1070,10 @@ function MinesGame() {
   platBarCfgRef.current = {
     accent: ACCENT,
     onAction: (name) => {
-      if (name === 'mode-press') { setInputMode(m => (m === 'dig' ? 'flag' : 'dig')); SFX.click(); }
+      if (name === 'mode-press') { setInputMode(m => (m === 'dig' ? 'flag' : m === 'flag' ? 'draw' : 'dig')); SFX.click(); }
+      else if (name === 'draw-tool') { setDrawTool(payload); }
+      else if (name === 'draw-erase-dbl') { clearOwnStrokes(); }
+      else if (name === 'draw-clear') { clearAllStrokes(); }
       // 殼 PlatBar 左下角縮放組（＋/－/循環）：v1.31 只做了卡片內 🔍 那組、這組沒人接線 → 按了沒反應（使用者 2026-11-04 截圖回報）。
       // 接到與卡片內 🔍 相同的 zoom state，兩組永遠同步；數獨/數橋的 PlatBar 本來就有接，只有地雷漏了。
       else if (name === 'zoom-in') { setZoom(z => Math.min(2.5, Math.round((z + 0.25) * 100) / 100)); SFX.click(); }
@@ -1054,12 +1095,12 @@ function MinesGame() {
     if (typeof window === 'undefined' || typeof window.PlatBar === 'undefined' || !window.PlatBar.isAttached()) return;
     if (window.__PLAT_NET && window.__PLAT_NET.inMatch && window.__PLAT_NET.inMatch !== 'mines') return;
     window.PlatBar.update({
-      mode: inputMode === 'flag' ? 1 : 0,
-      modes: [{ icon: '⛏️', label: '挖開' }, { icon: '🚩', label: '插旗' }],
-      modeTitle: '切換模式（挖開/插旗）',
+      mode: inputMode === 'flag' ? 1 : inputMode === 'draw' ? 2 : 0,
+      modes: [{ icon: '⛏️', label: '挖開' }, { icon: '🚩', label: '插旗' }, { icon: '🖌️', label: '塗鴉' }],
+      modeTitle: '切換模式（挖開/插旗/塗鴉）',
       zoomLabel: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔍',
       zoomGlyph: zoom > 1 ? Math.round(zoom * 100) + '%' : '🔲',
-      showInput: false, inputMode: 'num', showDraw: false, showHostClear: false
+      showInput: false, inputMode: 'num', showDraw: inputMode === 'draw', drawTool: drawTool, showHostClear: !!(mpOn && mpRef.current.mode === 'coop' && mpRef.current.isHost)
     });
   });
 
@@ -1458,10 +1499,10 @@ function MinesGame() {
                     <span className="text-xs font-semibold text-slate-400">全部挖開</span>
                   </div>
                 </div>
-                <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏，挖到雷就結束</p>
+                <p className="text-center font-bold text-slate-700">第一下點的格子跟周圍 8 格保證沒有雷；不是雷的格子全挖開就贏；挖到雷先扣一顆 ❤️，愛心用完才結束</p>
                 <div className="mt-3 pt-3 border-t-2 border-slate-200 font-bold text-slate-600 leading-relaxed text-left flex flex-col gap-2">
                   <p>📅 每日一題：每天同一題（9×9），可以回補今年的舊題目，只有今天的會累積連續天數。</p>
-                  <p>👥 多人競速：同一個盤面各玩各的，最快清完的人贏；踩到雷直接出局，照當時進度排名。</p>
+                  <p>👥 多人競速：同一個盤面各玩各的，最快清完的人贏；踩到雷先扣 ❤️、愛心用完才出局，照當時進度排名。</p>
                 </div>
               </div>
 
@@ -1586,10 +1627,11 @@ function MinesGame() {
           </div>
         </div>
         <div className="w-full flex items-center justify-between px-2 md:px-3 py-1.5 bg-white/60 border-b-2 border-slate-200 shrink-0 gap-2">
-          <div className="font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0">💣 {spec.mines - flagsUsed}{mpOn && mpRef.current.mode === 'race' && Math.floor(spec.mines / 10) > 0 && (<span className="ml-1" style={{ fontSize: 13 }} title="愛心＝還能踩錯的命（容錯次數＋1）：踩到雷少一顆、變灰，歸零後再踩就出局">{Array.from({ length: Math.floor(spec.mines / 10) + 1 }).map((_, hi) => (<span key={hi} style={hi < mistLeft + 1 ? undefined : { filter: 'grayscale(1)', opacity: 0.35 }}>❤️</span>))}</span>)}</div>
+          <div className="font-black text-lg text-slate-800 bg-white border-2 border-slate-800 rounded-lg px-3 py-1 shrink-0">💣 {spec.mines - flagsUsed}{Math.floor(spec.mines / 10) > 0 && (<span className="ml-1" style={{ fontSize: 13 }} title="愛心＝還能踩錯的命（容錯次數＋1）：踩到雷少一顆、變灰，歸零後再踩就出局">{Array.from({ length: Math.floor(spec.mines / 10) + 1 }).map((_, hi) => (<span key={hi} style={hi < mistLeft + 1 ? undefined : { filter: 'grayscale(1)', opacity: 0.35 }}>❤️</span>))}</span>)}</div>
           <div className="flex bg-white border-2 border-slate-800 rounded-lg overflow-hidden font-black shrink-0">
             <button data-mode="dig" onClick={() => setInputMode('dig')} className="px-4 py-1.5" style={inputMode === 'dig' ? { background: ACCENT, color: '#fff' } : { color: '#64748b' }}>⛏️ 挖開</button>
             <button data-mode="flag" onClick={() => setInputMode('flag')} className="px-4 py-1.5" style={inputMode === 'flag' ? { background: '#dc2626', color: '#fff' } : { color: '#64748b' }}>🚩 插旗</button>
+            <button data-mode="draw" onClick={() => setInputMode('draw')} className="px-4 py-1.5" style={inputMode === 'draw' ? { background: '#34d399', color: '#0f172a' } : { color: '#64748b' }}>🖌️ 塗鴉</button>
           </div>
           <div className="font-black text-slate-500 text-sm whitespace-nowrap shrink-0">進度 {Math.floor(progress * 100)}%<span className="hidden sm:inline">{status === 'ready' ? '・點任意格開始' : status === 'playing' ? '・排雷中…' : ''}</span></div>
         </div>
@@ -1657,7 +1699,12 @@ function MinesGame() {
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full">
           <div className="relative shrink-0" style={{ maxWidth: '100%' }}>
             <div ref={boardScrollRef} onScroll={updScrollUi} className="mines-board-scroll bg-white/70 border-[3px] border-slate-800 rounded-xl p-2.5 shadow-[4px_4px_0px_rgba(30,41,59,1)] animate-fadeIn" style={{ maxWidth: '100%', overflowX: 'auto', overflowY: zoom > 1 ? 'auto' : 'visible', maxHeight: zoom > 1 ? '68vh' : 'none' }}>
-              <div style={{ width: 'max-content', margin: '0 auto' }}>{renderBoard()}</div>
+              <div style={{ width: 'max-content', margin: '0 auto', position: 'relative' }}>{renderBoard()}
+                <svg ref={doodleSvgRef} viewBox={'0 0 1000 ' + (1000 * spec.h / spec.w)} preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: inputMode === 'draw' ? 'auto' : 'none', touchAction: 'none', zIndex: 5 }} onPointerDown={onDoodleDown} onPointerMove={onDoodleMove} onPointerUp={onDoodleUp} onPointerCancel={onDoodleUp}>
+                  {strokes.map(sv => (<path key={sv.id} d={'M ' + sv.pts.map(pt => pt[0] + ' ' + pt[1]).join(' L ')} fill="none" stroke={sv.color} strokeOpacity={mpOn && sv.uid !== myId ? 0.55 : 0.9} strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />))}
+                  {livePts && livePts.length > 1 && (<path d={'M ' + livePts.map(pt => pt[0] + ' ' + pt[1]).join(' L ')} fill="none" stroke={myStrokeColor()} strokeOpacity="0.9" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />)}
+                </svg>
+              </div>
             </div>
             <div ref={fadeRRef} style={{ position: 'absolute', top: 3, right: 3, bottom: 3, width: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to right, rgba(255,251,243,0), rgba(255,251,243,.96))', borderTopRightRadius: 9, borderBottomRightRadius: 9 }}></div>
             <div ref={fadeBRef} style={{ position: 'absolute', left: 3, right: 3, bottom: 3, height: 30, pointerEvents: 'none', opacity: 0, transition: 'opacity .25s', background: 'linear-gradient(to bottom, rgba(255,251,243,0), rgba(255,251,243,.96))', borderBottomLeftRadius: 9, borderBottomRightRadius: 9 }}></div>

@@ -125,7 +125,14 @@ async function main() {
   cellEls()[aMine].click();
   await new Promise(r => setTimeout(r, 300));
   snap = dbg();
-  ok(snap.status === 'lost', '第二下踩雷 → lost');
+  // v1.49.0：單機也有 10% 容錯（10 雷→1 次）——第一顆雷被原諒：記 ✗、愛心少一顆、續玩
+  ok(snap.status === 'playing' && snap.cells[aMine] === 'x' && snap.mistakes === 1 && snap.mistLeft === 0, '單機第一顆雷被容錯原諒（記 ✗、續玩）');
+  ok((d.querySelector('#mines-root').textContent.match(/❤️/g) || []).length >= 1, '單機狀態列有愛心顯示');
+  const bMine = snap.layout.findIndex((v, i) => v && snap.cells[i] === 'h');
+  cellEls()[bMine].click();
+  await new Promise(r => setTimeout(r, 300));
+  snap = dbg();
+  ok(snap.status === 'lost', '容錯用完再踩雷 → lost');
   ok(!![...d.querySelectorAll('#mines-root div')].find(x => x.textContent.includes('踩到地雷')), '出局結算卡出現');
 
   // --- 全清獲勝（再來一局，照 layout 把安全格全點開） ---

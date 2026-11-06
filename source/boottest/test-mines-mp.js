@@ -157,7 +157,11 @@ function clickCell(p, idx) {
   check('合作貢獻：畫面出現貢獻統計（阿主/阿客 開了 N 格）', minesViewTxt.includes('開了') && minesViewTxt.includes('阿主') && minesViewTxt.includes('阿客'), minesViewTxt.slice(0, 120));
   const mineIdx = dbg(H2).layout.findIndex(v => v);
   clickCell(G2, mineIdx); await sleep(1000);
-  check('合作：來賓踩雷→雙邊同敗 status=lost', dbg(H2).status === 'lost' && dbg(G2).status === 'lost', 'H=' + dbg(H2).status + ' G=' + dbg(G2).status);
+  // v1.49.0：合作也有 10% 共用容錯（10 雷→1 次）——第一顆雷全隊被原諒：記 ✗、雙邊愛心同步、續玩
+  check('合作：來賓踩第一顆雷→容錯原諒（雙邊記 ✗、續玩）', dbg(H2).status === 'playing' && dbg(G2).status === 'playing' && dbg(H2).cells[mineIdx] === 'x' && dbg(G2).cells[mineIdx] === 'x' && dbg(H2).mistLeft === 0 && dbg(G2).mistLeft === 0, 'H=' + dbg(H2).status + '/' + dbg(H2).cells[mineIdx] + ' G=' + dbg(G2).status + '/' + dbg(G2).cells[mineIdx]);
+  const mine2 = dbg(H2).layout.findIndex((v, i) => v && dbg(H2).cells[i] === 'h');
+  clickCell(G2, mine2); await sleep(1000);
+  check('合作：來賓踩第二顆雷→雙邊同敗 status=lost', dbg(H2).status === 'lost' && dbg(G2).status === 'lost', 'H=' + dbg(H2).status + ' G=' + dbg(G2).status);
   check('合作：雙邊 phase=done', dbg(H2).mp.phase === 'done' && dbg(G2).mp.phase === 'done');
   await sleep(800);
   const h2ResTxt = (H2.document.querySelector('#plat-results') || { textContent: '' }).textContent;

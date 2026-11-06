@@ -159,7 +159,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.48.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.49.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -294,7 +294,7 @@
     $('plat-chat').style.display = 'block'; $('plat-chat-body').style.display = 'flex'; $('plat-chat-min').textContent = '🔽';
     var list = $('plat-chat-list'); if (list) list.scrollTop = list.scrollHeight;
   }
-  function closeChat() { Net.chatOpen = false; $('plat-chat').style.display = 'none'; }
+  function closeChat() { Net.chatOpen = false; $('plat-chat').style.display = 'none'; var ep = $('plat-chat-emojis'); if (ep) ep.style.display = 'none'; }
   function sendChat() {
     var inp = $('plat-chat-input'); var text = (inp.value || '').trim().slice(0, 200); if (!text || !Net.active) return; // 送出端也截斷（B-06，不只靠 HTML maxlength）
     inp.value = '';
@@ -2862,6 +2862,14 @@
     };
     $('plat-chat-head').onclick = function () { $('plat-chat-min').click(); };
     $('plat-chat-send').onclick = sendChat;
+    // 表情符號鍵盤（v1.49.0，聊天室朋友建議）：😊 開合面板，點表情插入輸入框游標處（可連點多個）
+    var PLAT_EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤩','😜','😝','🙂','😉','😌','😴','🤔','😱','😭','😡','🥳','👍','👎','👏','🙏','💪','🙌','👋','✌️','🤞','❤️','💔','🔥','✨','🎉','🏆','💯','🎮','💣','🚩','🌉','🧩','🍀','⭐','☀️','🌈','🍕','🍔','🍟','☕','🍺','⚽','🎵','💡','⏰','🚀','🐶','🐱','🐼','🦄','👻','🤖','👑'];
+    var emojiPanel = $('plat-chat-emojis');
+    if (emojiPanel && !$('plat-chat-emoji').dataset.bound) {
+      $('plat-chat-emoji').dataset.bound = '1';
+      PLAT_EMOJIS.forEach(function (em) { var b = document.createElement('button'); b.type = 'button'; b.className = 'plat-emoji-btn'; b.textContent = em; b.onclick = function () { var inp = $('plat-chat-input'); var st = (inp.selectionStart != null) ? inp.selectionStart : inp.value.length; var en = (inp.selectionEnd != null) ? inp.selectionEnd : inp.value.length; if (inp.value.length + em.length > 200) return; inp.value = inp.value.slice(0, st) + em + inp.value.slice(en); try { inp.setSelectionRange(st + em.length, st + em.length); } catch (e2) {} inp.focus(); }; emojiPanel.appendChild(b); });
+      $('plat-chat-emoji').onclick = function (e) { e.stopPropagation(); emojiPanel.style.display = emojiPanel.style.display === 'none' ? 'grid' : 'none'; };
+    }
     $('plat-chat-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
     $('plat-speak-yes').onclick = function () { if (!Net.speakerOn) toggleSpeaker(); $('plat-speak').style.display = 'none'; Net.speakPid = null; };
     $('plat-speak-no').onclick = function () { $('plat-speak').style.display = 'none'; Net.speakPid = null; };

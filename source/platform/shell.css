@@ -74,6 +74,10 @@ body[data-view="lobby"] {
 #plat-chat-inputrow { display: flex; gap: 8px; padding: 8px 10px; border-top: 2px solid rgba(30,41,59,.15); }
 #plat-chat-input { flex: 1; min-width: 0; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 10px; font-weight: 700; }
 #plat-chat-send { background: #60a5fa; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 16px; font-weight: 900; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
+#plat-chat-emoji { background: #fff; border: 2px solid #1e293b; border-radius: 10px; padding: 7px 10px; font-size: 16px; line-height: 1; cursor: pointer; box-shadow: 2px 2px 0 rgba(30,41,59,1); }
+#plat-chat-emojis { grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 8px 10px; border-top: 2px solid rgba(30,41,59,.15); max-height: 168px; overflow-y: auto; background: rgba(255,255,255,.65); }
+.plat-emoji-btn { background: transparent; border: none; font-size: 21px; line-height: 1.25; padding: 3px 0; cursor: pointer; border-radius: 8px; }
+.plat-emoji-btn:active { background: rgba(96,165,250,.35); }
 .plat-unread { background: #ef4444; color: #fff; border-radius: 9999px; font-size: 10px; padding: 1px 7px; font-weight: 900; }
 /* 大廳 */
 /* 代表色摩天輪（v1.22.0 工廠化：大廳與選色覆蓋層共用 .fw-* 一份樣式；動畫由 JS 逐格驅動以維持車廂正立。
