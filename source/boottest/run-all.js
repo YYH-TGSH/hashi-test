@@ -47,6 +47,7 @@ const SUITES = [
   ['test-mines-doodle.js', {}],
   ['test-chat-emoji.js', {}],
   ['test-mines-3bv.js', {}],
+  ['test-invite.js', {}],
   ['test-mines-mp.js', {}],
   ['test-mines-tourn.js', {}],
   ['test-mines-items.js', {}],

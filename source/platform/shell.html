@@ -122,6 +122,19 @@
 
         <div id="lob-step-room" style="display:none">
           <div id="hub-resume" style="display:none"></div>
+          <div id="hub-invite" style="display:none">
+            <div class="bg-white border-[3px] border-slate-800 rounded-xl shadow-[4px_4px_0px_rgba(30,41,59,1)] p-3 mb-3 flex items-center gap-3">
+              <canvas id="hub-invite-qr" width="120" height="120" style="background:#fff" class="shrink-0 rounded-lg border-2 border-slate-200"></canvas>
+              <div class="flex-1 min-w-0">
+                <div class="font-black text-slate-800">🔗 邀請朋友進房</div>
+                <div class="text-xs font-bold text-slate-500 mb-1.5">朋友掃 QR 或點連結，房號自動帶好，確認暱稱就能進房。</div>
+                <div class="flex gap-1.5">
+                  <input id="hub-invite-link" readonly class="flex-1 min-w-0 bg-slate-50 border-2 border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-600">
+                  <button id="hub-invite-copy" class="shrink-0 bg-blue-500 text-white border-2 border-slate-800 rounded-lg px-3 py-1.5 font-black text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none">📋 複製</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div id="hub-room"></div>
         </div>
 

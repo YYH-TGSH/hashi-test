@@ -178,3 +178,5 @@ body.plat-room-on[data-view="mines"] {
 #plat-errbar button { flex-shrink: 0; border: 2px solid #991b1b; background: #fff; color: #991b1b; border-radius: 8px; padding: 3px 8px; font-weight: 900; cursor: pointer; }
 /* 鍵盤焦點可見（稽核 F-03 快修：原本全站無 :focus-visible，鍵盤/開關操作看不到焦點） */
 :focus-visible { outline: 3px solid #2563eb !important; outline-offset: 2px; }
+
+#hub-invite-qr { image-rendering: pixelated; }
