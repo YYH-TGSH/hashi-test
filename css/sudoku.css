@@ -409,3 +409,8 @@
 :where(button) { -webkit-tap-highlight-color: transparent; }
 :where(button):not(:disabled) { transition: transform 70ms ease, filter 70ms ease; }
 :where(button):not(:disabled):active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+
+/* v1.54.0 C 類按壓（數獨格）：按下覆蓋 70ms 淡入變暗、放開即卸載由格底 300ms 填色過渡接回，不位移不縮放（SVG 格以覆蓋層呈現壓感） */
+@keyframes sudokuCellPress { from { opacity: 0; } to { opacity: .18; } }
+.sudoku-pressfx { animation: sudokuCellPress 70ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { .sudoku-pressfx { animation: none; opacity: .18; } }

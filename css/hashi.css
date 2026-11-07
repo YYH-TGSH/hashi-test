@@ -307,3 +307,9 @@
 @keyframes fxMarkPop { 0% { opacity: 0; transform: scale(0.3); } 25% { opacity: 1; transform: scale(1.3); } 55% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
 .fx-mark-pop { animation: fxMarkPop 0.75s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .fog-box-in, .fx-mark-pop, .fog-cloud-drift { animation: none; } }
+
+/* v1.54.0 C 類按壓（數橋島）：不位移、scale .96＋變暗，in 70ms／out spring 200ms；transform-box 以島自身 bbox 為原點。
+   只作用於島本體 <g>（其子元素用 cx/cy 絕對座標、無 transform 屬性衝突）；橋線與拖曳預覽不在此 class、維持零 transition 跟手。 */
+.hashi-island { transform-box: fill-box; transform-origin: center; transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.hashi-island:active { transform: scale(0.96); filter: brightness(0.92); transition-duration: 70ms; transition-timing-function: cubic-bezier(0.3, 0.7, 0.4, 1); }
+@media (prefers-reduced-motion: reduce) { .hashi-island { transition: none; } .hashi-island:active { transform: none; filter: none; } }

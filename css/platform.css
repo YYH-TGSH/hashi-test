@@ -203,6 +203,15 @@ body.plat-room-on[data-view="mines"] {
    --ph-press 為按壓位移量（大鈕可 inline 調大）。 */
 .plat-btn-hard { --ph-press: 2px; transition: transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease, border-color 150ms ease !important; }
 .plat-btn-hard:not(:disabled):active { transform: translate(var(--ph-press), var(--ph-press)); box-shadow: 0 0 0 rgba(30,41,59,1) !important; transition-duration: var(--plat-press-in) !important; transition-timing-function: var(--plat-ease-press-in) !important; }
+.plat-btn-hard-1 { --ph-sh: 1px; --ph-press: 1px; }
+.plat-btn-hard-2 { --ph-sh: 2px; }
+.plat-btn-hard-3 { --ph-sh: 3px; }
+.plat-btn-hard-6 { --ph-sh: 6px; --ph-press: 3px; }
+/* PlatBar 鈕（v1.54.0，C 批）：PlatBar 以 inline style 切換選取底色——補 background-color/color 150ms 滑動（原只有全域 transform/shadow 過渡、底色硬切）。
+   specificity 高於全域 :where(button)，故把按壓的 transform/box-shadow 過渡一併列回來，不可只寫顏色兩項。 */
+#plat-bar button { transition: transform var(--plat-press-out) var(--plat-ease-spring), box-shadow var(--plat-press-out) var(--plat-ease-spring), background-color 150ms ease, color 150ms ease; }
+/* 選取態填色（.plat-seg）：模式/段位切換鈕的已選填色與文字色 150ms 滑入滑出，不硬切 */
+.plat-seg { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease !important; }
 @media (hover: hover) { .plat-btn-hard:hover { transform: translate(-1px, -1px); box-shadow: calc(var(--ph-sh, 4px) + 1px) calc(var(--ph-sh, 4px) + 1px) 0 rgba(30,41,59,1) !important; transition-duration: 150ms; transition-timing-function: var(--plat-ease-travel); } }
 @media (prefers-reduced-motion: reduce) { .plat-btn-hard { transition: none !important; } }
 

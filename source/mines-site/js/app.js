@@ -18,6 +18,15 @@ function PlatPct(props) {
   return <span ref={ref}></span>;
 }
 
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () { if (window.PlatLite && ref.current) window.PlatLite(ref.current, v); }, [v]);
+  if (!window.PlatLite) return <span>{v}</span>;
+  return <span ref={ref}></span>;
+}
+
 
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
 function platTimeOffset() { try { return (window.__PLAT_NET && window.__PLAT_NET.timeOffset) || 0; } catch (e) { return 0; } } // 房主時鐘偏移（稽核 D-05）：殼以 roster 時間戳估計，房主/單機恆 0
@@ -1383,7 +1392,7 @@ function MinesGame() {
           <div className="flex flex-col gap-3">
             {[9, 16].map(sz => (
               <button key={sz} onClick={() => { SFX.click(); newGame(sz); }}
-                className="w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-between px-4">
+                className="plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex items-center justify-between px-4">
                 <span>{sz === 9 ? '🌱' : '🔥'} {SIZES[sz].name}</span>
                 <span className="text-sm text-slate-700">{bestText(sz)}</span>
               </button>
@@ -1403,10 +1412,10 @@ function MinesGame() {
                   <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                 </label>
                 <div className="text-xs font-semibold text-slate-400 leading-relaxed">範圍：寬 8–30、高 8–24、雷 5–{effC.w * effC.h - 9}（依目前寬高；首點保護需留 9 格空白）。超出範圍會自動修正，開始鈕顯示的就是實際會開的盤。</div>
-                <button onClick={startCustom} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 開始：{effC.w}×{effC.h}・{effC.mines} 雷</button>
+                <button onClick={startCustom} className="plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">▶ 開始：{effC.w}×{effC.h}・{effC.mines} 雷</button>
               </div>)}
             </div>
-            <button onClick={() => setScreen('home')} className="w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">← 返回主選單</button>
+            <button onClick={() => setScreen('home')} className="plat-btn-hard plat-btn-hard-3 w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)]">← 返回主選單</button>
           </div>
         </div>
       </div>
@@ -1428,8 +1437,8 @@ function MinesGame() {
             <p className="text-slate-800 font-black text-xl tracking-widest uppercase italic">Minesweeper</p>
           </div>
           <div className="flex flex-col gap-3">
-            <button onClick={() => { SFX.click(); setScreen('setup'); }} className="w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">👤 單機挑戰</button>
-            <button onClick={() => { SFX.click(); startDaily(dailySel); }} className="w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2">
+            <button onClick={() => { SFX.click(); setScreen('setup'); }} className="plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">👤 單機挑戰</button>
+            <button onClick={() => { SFX.click(); startDaily(dailySel); }} className="plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex items-center justify-center gap-2">
               <span>📅 每日一題</span>{dDone && <span className="text-base bg-white/70 rounded-lg px-2 py-0.5">✓ 已完成</span>}
             </button>
             <div className="flex items-center gap-2">
@@ -1438,20 +1447,20 @@ function MinesGame() {
                 className="flex-1 py-2.5 bg-white border-2 border-slate-800 rounded-lg font-black text-lg text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">📅 {dailySel}{dIsToday ? '（今天）' : ''}</button>
               <button disabled={dailySel >= todayStr()} onClick={() => setDailySel(shiftDate(dailySel, 1))} className="w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]">▶</button>
             </div>
-            <div className="text-sm font-bold text-slate-500 -mt-1">🔥 連續挑戰 {dStreak.count || 0} 天{dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''}</div>
-            <button onClick={() => { setTutStep(0); setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); setShowHelp(true); }} className="w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">❓ 玩法教學</button>
+            <div className="text-sm font-bold text-slate-500 -mt-1">🔥 連續挑戰 <PlatNum value={dStreak.count || 0} /> 天{dBest != null ? <React.Fragment>・這天最佳 <PlatNum value={fmtTime(dBest)} /></React.Fragment> : ''}</div>
+            <button onClick={() => { setTutStep(0); setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); setShowHelp(true); }} className="plat-btn-hard plat-btn-hard-3 w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)]">❓ 玩法教學</button>
           </div>
         </div>
         {isPlat && (
           <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }}
-            className="z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏠 回大廳</button>
+            className="plat-btn-hard z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">🏠 回大廳</button>
         )}
         <div className="shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10">Copyright © 2026 葉大帥. All rights reserved. ({isPlat && window.PLAT_VERSION ? '三磚益智 v' + window.PLAT_VERSION : 'v1.0.0'})</div>
         
         {showHelp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" onClick={() => setShowHelp(false)}>
             <div className="bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative animate-popIn" onClick={e => e.stopPropagation()}>
-              <button onClick={() => setShowHelp(false)} className="absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10">✕</button>
+              <button onClick={() => setShowHelp(false)} className="plat-btn-hard plat-btn-hard-2 absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] z-10">✕</button>
               <h3 className="text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5">❓ 玩法教學</h3>
 
               <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
@@ -1479,7 +1488,7 @@ function MinesGame() {
                   </div>
                 </div>
                 <p className="text-center font-bold text-slate-700">{tutDemoBoom ? '💥 踩到地雷了！先看數字推理，避開最可疑的格子' : (tutDemoOpen.filter(Boolean).length >= 8 ? '✅ 全部挖開了！數字就是周圍 8 格的地雷數，你學會了' : '動手試試：點格子把安全的格子全部挖開——其中有一顆地雷，數字會給你提示')}</p>
-                {tutDemoBoom && (<div className="text-center mt-2"><button onClick={() => { setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); }} className="px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none">↺ 再試一次</button></div>)}
+                {tutDemoBoom && (<div className="text-center mt-2"><button onClick={() => { setTutDemoOpen(new Array(9).fill(false)); setTutDemoBoom(false); }} className="plat-btn-hard plat-btn-hard-2 px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">↺ 再試一次</button></div>)}
               </div>
 
               <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")}>
@@ -1558,9 +1567,9 @@ function MinesGame() {
                     {[0, 1, 2, 3].map(idx => (<div key={idx} className={"w-2.5 h-2.5 rounded-full border-2 border-slate-800 " + (idx === tutStep ? "bg-[#f97316]" : "bg-white")} />))}
                 </div>
                 <div className="flex gap-3">
-                    {tutStep > 0 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep - 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800">上一步</button>) : (<div className="flex-1"></div>)}
-                    <button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400">跳過</button>
-                    {tutStep < 3 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep + 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#f97316] text-slate-900">下一步</button>) : (<button onClick={() => setShowHelp(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
+                    {tutStep > 0 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep - 1); }} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-800">上一步</button>) : (<div className="flex-1"></div>)}
+                    <button onClick={() => setShowHelp(false)} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-400">跳過</button>
+                    {tutStep < 3 ? (<button onClick={() => { SFX.click(); setTutStep(tutStep + 1); }} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-[#f97316] text-slate-900">下一步</button>) : (<button onClick={() => setShowHelp(false)} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
                 </div>
             </div>
           </div>
@@ -1612,11 +1621,11 @@ function MinesGame() {
             {!players.length && <p className="font-bold text-slate-400 text-center py-2">連線中…</p>}
           </div>
           {myEntryW && !myEntryW.pending && !myEntryW.spectator && (
-            <button onClick={toggleMyReady} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+            <button onClick={toggleMyReady} className={"plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
           )}
           {M.isHost ? (
             <div>
-              <button disabled={!canStartW} onClick={startMatch} className="w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
+              <button disabled={!canStartW} onClick={startMatch} className="plat-btn-hard plat-btn-hard-3 w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 disabled:shadow-none">🏁 開始本局</button>
               {startNoteW && <p className="text-xs text-slate-500 font-semibold text-center mt-2">{startNoteW}</p>}
             </div>
           ) : (
@@ -1630,7 +1639,7 @@ function MinesGame() {
 
   // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
   const over = status === 'won' || status === 'lost';
-  const hbtn = "px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-slate-800 shrink-0";
+  const hbtn = "plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 text-slate-800 shrink-0";
   return (
     <div key="game" className="h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative" style={{ backgroundColor: '#fdf3e7', backgroundImage: 'radial-gradient(#f7ddba 2px, transparent 2px)', backgroundSize: '12px 12px' }}>
       <div className="w-full max-w-[1200px] bg-[#fff7ed] rounded-xl border-4 border-slate-800 shadow-[10px_10px_0px_rgba(30,41,59,1)] flex flex-col h-full relative z-10 overflow-hidden">
@@ -1656,7 +1665,7 @@ function MinesGame() {
             </div>
           </div>
           <div className="flex items-center justify-between gap-2 w-full">
-            {mpOn ? (<span className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷</span>) : (<button onClick={() => setShowSettingsModal(true)} title="設定盤面（換大小重開）" className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0 active:translate-y-[1px] active:shadow-none">⚙️ {spec.name}・{spec.mines} 雷 ▾</button>)}
+            {mpOn ? (<span className="bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷</span>) : (<button onClick={() => setShowSettingsModal(true)} title="設定盤面（換大小重開）" className="plat-btn-hard plat-btn-hard-1 bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0">⚙️ {spec.name}・{spec.mines} 雷 ▾</button>)}
             <div className="flex gap-1 items-center shrink-0">
               <button onClick={() => setZoomOpen(!zoomOpen)} className={hbtn} title="調整盤面大小（比照數獨的縮放）">🔍{zoom > 1 && (<span className="ml-0.5 text-[10px]">{Math.round(zoom * 100)}%</span>)}</button>
               {zoomOpen && (<React.Fragment>
@@ -1687,10 +1696,10 @@ function MinesGame() {
             <div className="bg-white border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] p-6 w-full max-w-xs text-center animate-popIn" onClick={e => e.stopPropagation()}>
               <div className="font-black text-xl text-slate-800 mb-4">要離開對局嗎？</div>
               {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
-                <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">⏹️ 結束本局（錦標賽）</button>
+                <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]">⏹️ 結束本局（錦標賽）</button>
               )}
-              <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🏁 回等待室</button>
-              <button onClick={() => { setShowExitMenu(false); leaveMatch(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🚪 退出（回大廳）</button>
+              <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]">🏁 回等待室</button>
+              <button onClick={() => { setShowExitMenu(false); leaveMatch(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]">🚪 退出（回大廳）</button>
               <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
             </div>
           </div>
@@ -1702,7 +1711,7 @@ function MinesGame() {
               <p className="text-sm font-bold text-slate-600 mb-4">選一個盤面大小，會立刻重開一局。</p>
               <div className="flex flex-col gap-2 mb-4">
                 {[9, 16].map(sz => (
-                  <button key={sz} onClick={() => { setShowSettingsModal(false); newGame(sz); }} className={"w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (sizeId === sz ? "bg-[#f97316] text-slate-900" : "bg-white text-slate-800")}>{SIZES[sz].name}</button>
+                  <button key={sz} onClick={() => { setShowSettingsModal(false); newGame(sz); }} className={"plat-btn-hard plat-btn-hard-3 w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (sizeId === sz ? "bg-[#f97316] text-slate-900" : "bg-white text-slate-800")}>{SIZES[sz].name}</button>
                 ))}
                 <div className="w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]">
                   <div className="font-black text-slate-800 mb-2">⚙️ 自訂盤面</div>
@@ -1716,11 +1725,11 @@ function MinesGame() {
                     <label className="flex items-center justify-between font-bold text-slate-600 text-sm">地雷數
                       <input type="number" min="5" value={custCfg.mines} onChange={e => setCustCfg(c => Object.assign({}, c, { mines: e.target.value }))} className="w-24 bg-white border-2 border-slate-800 rounded-lg p-1.5 font-black text-slate-800 text-center outline-none" />
                     </label>
-                    <button onClick={() => { setShowSettingsModal(false); startCustom(); }} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">▶ 以自訂盤開始</button>
+                    <button onClick={() => { setShowSettingsModal(false); startCustom(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">▶ 以自訂盤開始</button>
                   </div>
                 </div>
               </div>
-              <button onClick={() => setShowSettingsModal(false)} className="w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">取消</button>
+              <button onClick={() => setShowSettingsModal(false)} className="plat-btn-hard w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">取消</button>
             </div>
           </div>
         )}
@@ -1730,15 +1739,15 @@ function MinesGame() {
               <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
               <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
               <div className="mb-6">
-                <button onClick={handleSaveCode} className="w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
+                <button onClick={handleSaveCode} className="plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
                 <div className="relative">
                   <textarea id="saveCodeTextarea" value={saveCode} onChange={(e) => setSaveCode(e.target.value)} placeholder="點擊上方按鈕生成，或是手動貼上舊代碼至此處" rows="4" className="w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white" />
-                  <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
+                  <button onClick={handleQuickPaste} className="plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">📋 快速貼上</button>
                 </div>
               </div>
               <div className="flex gap-4">
-                <button onClick={() => setShowSaveModal(false)} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">關閉</button>
-                <button onClick={handleLoadCode} className="flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">載入代碼</button>
+                <button onClick={() => setShowSaveModal(false)} className="plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">關閉</button>
+                <button onClick={handleLoadCode} className="plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]">載入代碼</button>
               </div>
             </div>
           </div>
@@ -1766,9 +1775,9 @@ function MinesGame() {
           </div>
       {mpOn && mpRef.current.mode === 'race' && mpRef.current.itemsAllow && mpPhase === 'playing' && !myOutcome && !iAmSpec() && (
         <div className="w-full mt-2 flex items-center justify-center gap-2 shrink-0" style={{ width: colW, maxWidth: '100%' }}>
-          <button onClick={() => useGift()} disabled={myItems.gift <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="禮物：幫自己把一顆地雷標上旗子並鎖定（自己按才發動）">🎁{myItems.gift > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.gift}</span>)}</button>
-          <button onClick={() => fireItem('question')} disabled={myItems.question <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="問號干擾：把對手 3–6 個還沒確定的數字變成問號（10 秒）">❓{myItems.question > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-violet-600 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.question}</span>)}</button>
-          <button onClick={() => fireItem('backfill')} disabled={myItems.backfill <= 0} className="relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl" title="回填：把對手已打開的一片格子（3×3，連鎖空格整片）蓋回去">⏪{myItems.backfill > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-amber-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center">{myItems.backfill}</span>)}</button>
+          <button onClick={() => useGift()} disabled={myItems.gift <= 0} className="plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl" title="禮物：幫自己把一顆地雷標上旗子並鎖定（自己按才發動）">🎁{myItems.gift > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"><PlatNum value={myItems.gift} /></span>)}</button>
+          <button onClick={() => fireItem('question')} disabled={myItems.question <= 0} className="plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl" title="問號干擾：把對手 3–6 個還沒確定的數字變成問號（10 秒）">❓{myItems.question > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-violet-600 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"><PlatNum value={myItems.question} /></span>)}</button>
+          <button onClick={() => fireItem('backfill')} disabled={myItems.backfill <= 0} className="plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl" title="回填：把對手已打開的一片格子（3×3，連鎖空格整片）蓋回去">⏪{myItems.backfill > 0 && (<span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-amber-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"><PlatNum value={myItems.backfill} /></span>)}</button>
         </div>)}
       {itemToast && (<div className="fixed left-1/2 bottom-24 z-[96] -translate-x-1/2 bg-slate-900/90 text-white font-black text-sm px-4 py-2 rounded-full shadow-lg animate-popIn text-center" style={{ maxWidth: '92vw' }}>{itemToast}</div>)}
       {mpOn && mpRef.current.mode === 'coop' && ownArr && (() => { var cc = players.map((p, ix) => ({ p: p, n: ownArr.reduce((a, o) => a + (o === ix ? 1 : 0), 0) })).filter(c => !c.p.spectator && !c.p.pending); var tot = cc.reduce((a, c) => a + c.n, 0); return (
@@ -1804,8 +1813,8 @@ function MinesGame() {
             <h3 className="font-black text-2xl text-slate-800 mb-1">{status === 'won' ? '全部排完了！' : '踩到地雷！'}</h3>
             <p className="font-bold text-slate-500 mb-4">{status === 'won' ? ('用時 ' + fmtTime(elapsed) + (dailyDate ? '・🔥 連續 ' + (readDailyStreak().count || 0) + ' 天' : '')) : (progMode === 'bv' ? ('進度（3BV）' + Math.floor(effProg * 100) + '%') : ('開格 ' + Math.floor(progress * 100) + '%'))}</p>
             <div className="flex flex-col gap-2">
-              <button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className="w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">🔁 再來一局</button>
-              <button onClick={() => setScreen('home')} className="w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">回主選單</button>
+              <button onClick={() => { if (dailyDate) startDaily(dailyDate); else newGame(sizeId); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]">🔁 再來一局</button>
+              <button onClick={() => setScreen('home')} className="plat-btn-hard plat-btn-hard-3 w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)]">回主選單</button>
             </div>
           </div>
         </div>

@@ -165,7 +165,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.53.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.54.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -302,10 +302,11 @@
   }
   function openChat() {
     Net.chatOpen = true; Net.chatMin = false; Net.unread = 0; renderUnread();
+    platFadeInReset($('plat-chat'));
     $('plat-chat').style.display = 'block'; $('plat-chat-body').style.display = 'flex'; $('plat-chat-min').textContent = '🔽';
     var list = $('plat-chat-list'); if (list) list.scrollTop = list.scrollHeight;
   }
-  function closeChat() { Net.chatOpen = false; $('plat-chat').style.display = 'none'; var ep = $('plat-chat-emojis'); if (ep) ep.style.display = 'none'; }
+  function closeChat() { Net.chatOpen = false; platFadeOut($('plat-chat')); var ep = $('plat-chat-emojis'); if (ep) ep.style.display = 'none'; }
   function sendChat() {
     var inp = $('plat-chat-input'); var text = (inp.value || '').trim().slice(0, 200); if (!text || !Net.active) return; // 送出端也截斷（B-06，不只靠 HTML maxlength）
     inp.value = '';
@@ -2374,9 +2375,24 @@
     }
     return el;
   }
+  // 殼元件退場（v1.54.0，E 批）：關閉先 150ms 淡出、動畫完才真正隱藏，治 pop-out；顯示前 platFadeInReset 取消進行中的退場。
+  function platFadeOut(el, done) {
+    if (!el) { if (done) done(); return; }
+    if (el.style.display === 'none' || el.style.display === '') { if (done) done(); return; }
+    el.style.transition = 'opacity 150ms var(--plat-ease-travel)';
+    el.style.opacity = '0'; el.style.pointerEvents = 'none';
+    if (el._fadeT) clearTimeout(el._fadeT);
+    el._fadeT = setTimeout(function () { el._fadeT = null; el.style.display = 'none'; el.style.opacity = ''; el.style.transition = ''; el.style.pointerEvents = ''; if (done) done(); }, 160);
+  }
+  function platFadeInReset(el) {
+    if (!el) return;
+    if (el._fadeT) { clearTimeout(el._fadeT); el._fadeT = null; }
+    el.style.opacity = ''; el.style.transition = ''; el.style.pointerEvents = '';
+  }
   function pr2Render() {
     var el = pr2El(); var s = PR2.spec;
     if (!s) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    platFadeInReset(el);
     var ac = s.accent || '#ffcc00';
     var medals = ['🥇', '🥈', '🥉'];
     var h = '<div class="bg-white rounded-2xl p-6 md:p-8 border-4 border-slate-800 shadow-[8px_8px_0px_rgba(30,41,59,1)] text-center animate-popUpCenter" style="min-width:300px;max-width:28rem;width:100%;max-height:92vh;overflow-y:auto">';
@@ -2419,7 +2435,7 @@
       if (j && j === PR2.json && PR2.spec) { PR2.spec.onAction = spec.onAction; return; }
       PR2.json = j; PR2.spec = spec; pr2Render();
     },
-    hide: function () { if (!PR2.spec && !PR2.json) return; PR2.spec = null; PR2.json = ''; pr2Render(); },
+    hide: function () { if (!PR2.spec && !PR2.json) return; platFadeOut(pr2El(), function () { PR2.spec = null; PR2.json = ''; pr2Render(); }); },
     _visible: function () { return !!PR2.spec; }
   };
 
@@ -2503,8 +2519,8 @@
       '</div>';
   }
   window.PlatCalendar = {
-    show: function (cfg) { PCAL.cfg = cfg || {}; PCAL.ym = pcalToday().slice(0, 7); pcalRender(); pcalEl().style.display = 'flex'; },
-    hide: function () { if (PCAL.el) PCAL.el.style.display = 'none'; PCAL.cfg = null; },
+    show: function (cfg) { PCAL.cfg = cfg || {}; PCAL.ym = pcalToday().slice(0, 7); pcalRender(); var el = pcalEl(); platFadeInReset(el); el.style.display = 'flex'; },
+    hide: function () { platFadeOut(PCAL.el, function () { PCAL.cfg = null; }); },
     _visible: function () { return !!(PCAL.el && PCAL.el.style.display === 'flex'); }
   };
 
@@ -2521,7 +2537,7 @@
     return el;
   }
   function podHide() {
-    var el = document.getElementById('plat-podium'); if (el) el.style.display = 'none';
+    var el = document.getElementById('plat-podium'); if (el) platFadeOut(el);
     if (POD.timer) { clearTimeout(POD.timer); POD.timer = null; }
     if (POD.tick) { clearInterval(POD.tick); POD.tick = null; }
   }
@@ -2533,7 +2549,7 @@
   function podShow(entry, t) {
     if (!entry || !entry.placements || !entry.placements.length) return;
     POD.shownAt = Date.now();
-    var el = podEl();
+    var el = podEl(); platFadeInReset(el);
     var pls = entry.placements.slice().sort(function (a, b) { return a.rank - b.rank; });
     var totals = t.totals || {}, wins = t.wins || {};
     var rows = pls.map(function (pl) {

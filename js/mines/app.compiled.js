@@ -39,6 +39,19 @@ function PlatPct(props) {
   });
 }
 
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () {
+    if (window.PlatLite && ref.current) window.PlatLite(ref.current, v);
+  }, [v]);
+  if (!window.PlatLite) return /*#__PURE__*/React.createElement("span", null, v);
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
+
 // ---------- 小工具（storage 一律 try/catch：iOS 預覽 webview 會封鎖 localStorage） ----------
 function platTimeOffset() {
   try {
@@ -3573,7 +3586,7 @@ function MinesGame() {
           SFX.click();
           newGame(sz);
         },
-        className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-between px-4"
+        className: "plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex items-center justify-between px-4"
       }, /*#__PURE__*/React.createElement("span", null, sz === 9 ? '🌱' : '🔥', " ", SIZES[sz].name), /*#__PURE__*/React.createElement("span", {
         className: "text-sm text-slate-700"
       }, bestText(sz)));
@@ -3636,12 +3649,12 @@ function MinesGame() {
       className: "text-xs font-semibold text-slate-400 leading-relaxed"
     }, "\u7BC4\u570D\uFF1A\u5BEC 8\u201330\u3001\u9AD8 8\u201324\u3001\u96F7 5\u2013", effC.w * effC.h - 9, "\uFF08\u4F9D\u76EE\u524D\u5BEC\u9AD8\uFF1B\u9996\u9EDE\u4FDD\u8B77\u9700\u7559 9 \u683C\u7A7A\u767D\uFF09\u3002\u8D85\u51FA\u7BC4\u570D\u6703\u81EA\u52D5\u4FEE\u6B63\uFF0C\u958B\u59CB\u9215\u986F\u793A\u7684\u5C31\u662F\u5BE6\u969B\u6703\u958B\u7684\u76E4\u3002"), /*#__PURE__*/React.createElement("button", {
       onClick: startCustom,
-      className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
     }, "\u25B6 \u958B\u59CB\uFF1A", effC.w, "\xD7", effC.h, "\u30FB", effC.mines, " \u96F7"))), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setScreen('home');
       },
-      className: "w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-3 bg-white border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
     }, "\u2190 \u8FD4\u56DE\u4E3B\u9078\u55AE"))));
   }
   if (screen === 'home') {
@@ -3674,13 +3687,13 @@ function MinesGame() {
         SFX.click();
         setScreen('setup');
       },
-      className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         SFX.click();
         startDaily(dailySel);
       },
-      className: "w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-4 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex items-center justify-center gap-2"
     }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C"), dDone && /*#__PURE__*/React.createElement("span", {
       className: "text-base bg-white/70 rounded-lg px-2 py-0.5"
     }, "\u2713 \u5DF2\u5B8C\u6210")), /*#__PURE__*/React.createElement("div", {
@@ -3702,19 +3715,23 @@ function MinesGame() {
       className: "w-11 h-11 shrink-0 rounded-lg border-2 border-slate-800 bg-white font-black text-lg disabled:opacity-30 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\u25B6")), /*#__PURE__*/React.createElement("div", {
       className: "text-sm font-bold text-slate-500 -mt-1"
-    }, "\uD83D\uDD25 \u9023\u7E8C\u6311\u6230 ", dStreak.count || 0, " \u5929", dBest != null ? '・這天最佳 ' + fmtTime(dBest) : ''), /*#__PURE__*/React.createElement("button", {
+    }, "\uD83D\uDD25 \u9023\u7E8C\u6311\u6230 ", /*#__PURE__*/React.createElement(PlatNum, {
+      value: dStreak.count || 0
+    }), " \u5929", dBest != null ? /*#__PURE__*/React.createElement(React.Fragment, null, "\u30FB\u9019\u5929\u6700\u4F73 ", /*#__PURE__*/React.createElement(PlatNum, {
+      value: fmtTime(dBest)
+    })) : ''), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         setTutStep(0);
         setTutDemoOpen(new Array(9).fill(false));
         setTutDemoBoom(false);
         setShowHelp(true);
       },
-      className: "w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-4 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"))), isPlat && /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         if (window.PLAT_show) window.PLAT_show('home');
       },
-      className: "z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '三磚益智 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showHelp && /*#__PURE__*/React.createElement("div", {
@@ -3731,7 +3748,7 @@ function MinesGame() {
       onClick: function onClick() {
         return setShowHelp(false);
       },
-      className: "absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10"
+      className: "plat-btn-hard plat-btn-hard-2 absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] z-10"
     }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
       className: "text-2xl font-black text-slate-800 border-b-4 border-[#f97316] inline-block pb-1 mb-5"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
@@ -3791,7 +3808,7 @@ function MinesGame() {
         setTutDemoOpen(new Array(9).fill(false));
         setTutDemoBoom(false);
       },
-      className: "px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-2 px-4 py-1.5 bg-white border-2 border-slate-800 rounded-lg font-black text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\u21BA \u518D\u8A66\u4E00\u6B21"))), /*#__PURE__*/React.createElement("div", {
       className: "h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 1 ? " hidden" : "")
     }, /*#__PURE__*/React.createElement("div", {
@@ -3975,25 +3992,25 @@ function MinesGame() {
         SFX.click();
         setTutStep(tutStep - 1);
       },
-      className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800"
+      className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-800"
     }, "\u4E0A\u4E00\u6B65") : /*#__PURE__*/React.createElement("div", {
       className: "flex-1"
     }), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setShowHelp(false);
       },
-      className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400"
+      className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-400"
     }, "\u8DF3\u904E"), tutStep < 3 ? /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         SFX.click();
         setTutStep(tutStep + 1);
       },
-      className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#f97316] text-slate-900"
+      className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-[#f97316] text-slate-900"
     }, "\u4E0B\u4E00\u6B65") : /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setShowHelp(false);
       },
-      className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900"
+      className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-emerald-400 text-slate-900"
     }, "\u958B\u59CB\u904A\u6232 \uD83C\uDFAE")))));
   }
 
@@ -4076,11 +4093,11 @@ function MinesGame() {
       className: "font-bold text-slate-400 text-center py-2"
     }, "\u9023\u7DDA\u4E2D\u2026")), myEntryW && !myEntryW.pending && !myEntryW.spectator && /*#__PURE__*/React.createElement("button", {
       onClick: toggleMyReady,
-      className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (myReadySt ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')
     }, myReadySt ? '✅ 已準備（點擊取消）' : '✋ 準備好了'), M.isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
       disabled: !canStartW,
       onClick: startMatch,
-      className: "w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-full py-3 bg-red-500 text-white border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 disabled:shadow-none"
     }, "\uD83C\uDFC1 \u958B\u59CB\u672C\u5C40"), startNoteW && /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-slate-500 font-semibold text-center mt-2"
     }, startNoteW)) : /*#__PURE__*/React.createElement("p", {
@@ -4090,7 +4107,7 @@ function MinesGame() {
 
   // ---------- 對局畫面（外框＋標頭帶比照數獨/數橋：點點外層＋1200px 邊框卡＋主題色標頭帶（列1 logo/計時/模式＋展開規則、列2 尺寸/功能鈕）＋狀態條＋盤面區＋PlatBar） ----------
   var over = status === 'won' || status === 'lost';
-  var hbtn = "px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-slate-800 shrink-0";
+  var hbtn = "plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-slate-800 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] flex items-center gap-1 text-slate-800 shrink-0";
   return /*#__PURE__*/React.createElement("div", {
     key: "game",
     className: "h-screen w-screen p-1 md:p-4 flex flex-col items-center font-sans relative",
@@ -4141,7 +4158,7 @@ function MinesGame() {
       return setShowSettingsModal(true);
     },
     title: "\u8A2D\u5B9A\u76E4\u9762\uFF08\u63DB\u5927\u5C0F\u91CD\u958B\uFF09",
-    className: "bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0 active:translate-y-[1px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-1 bg-white px-1.5 py-0.5 rounded border-2 border-slate-800 font-black text-[10px] md:text-sm shadow-[1px_1px_0px_rgba(30,41,59,1)] whitespace-nowrap shrink-0"
   }, "\u2699\uFE0F ", spec.name, "\u30FB", spec.mines, " \u96F7 \u25BE"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 items-center shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
@@ -4283,19 +4300,19 @@ function MinesGame() {
       setShowExitMenu(false);
       if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
     },
-    className: "w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
       requestLobby();
     },
-    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
       leaveMatch();
     },
-    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowExitMenu(false);
@@ -4324,7 +4341,7 @@ function MinesGame() {
         setShowSettingsModal(false);
         newGame(sz);
       },
-      className: "w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (sizeId === sz ? "bg-[#f97316] text-slate-900" : "bg-white text-slate-800")
+      className: "plat-btn-hard plat-btn-hard-3 w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (sizeId === sz ? "bg-[#f97316] text-slate-900" : "bg-white text-slate-800")
     }, SIZES[sz].name);
   }), /*#__PURE__*/React.createElement("div", {
     className: "w-full bg-white border-[3px] border-slate-800 rounded-xl px-4 py-3 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
@@ -4381,12 +4398,12 @@ function MinesGame() {
       setShowSettingsModal(false);
       startCustom();
     },
-    className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\u25B6 \u4EE5\u81EA\u8A02\u76E4\u958B\u59CB")))), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowSettingsModal(false);
     },
-    className: "w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+    className: "plat-btn-hard w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, "\u53D6\u6D88"))), showSaveModal && !mpOn && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
   }, /*#__PURE__*/React.createElement("div", {
@@ -4399,7 +4416,7 @@ function MinesGame() {
     className: "mb-6"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleSaveCode,
-    className: "w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg"
+    className: "plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg"
   }, "\u7522\u751F\u9032\u5EA6\u4EE3\u78BC (\u81EA\u52D5\u8907\u88FD)"), /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("textarea", {
@@ -4413,17 +4430,17 @@ function MinesGame() {
     className: "w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white"
   }), /*#__PURE__*/React.createElement("button", {
     onClick: handleQuickPaste,
-    className: "absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#f97316] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDCCB \u5FEB\u901F\u8CBC\u4E0A"))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowSaveModal(false);
     },
-    className: "flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+    className: "plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, "\u95DC\u9589"), /*#__PURE__*/React.createElement("button", {
     onClick: handleLoadCode,
-    className: "flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+    className: "plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, "\u8F09\u5165\u4EE3\u78BC")))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto min-h-0 flex flex-col items-center px-2 py-2 w-full"
   }, /*#__PURE__*/React.createElement("div", {
@@ -4604,29 +4621,35 @@ function MinesGame() {
       return useGift();
     },
     disabled: myItems.gift <= 0,
-    className: "relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl",
+    className: "plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl",
     title: "\u79AE\u7269\uFF1A\u5E6B\u81EA\u5DF1\u628A\u4E00\u9846\u5730\u96F7\u6A19\u4E0A\u65D7\u5B50\u4E26\u9396\u5B9A\uFF08\u81EA\u5DF1\u6309\u624D\u767C\u52D5\uFF09"
   }, "\uD83C\uDF81", myItems.gift > 0 && /*#__PURE__*/React.createElement("span", {
     className: "absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"
-  }, myItems.gift)), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: myItems.gift
+  }))), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return fireItem('question');
     },
     disabled: myItems.question <= 0,
-    className: "relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl",
+    className: "plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl",
     title: "\u554F\u865F\u5E72\u64FE\uFF1A\u628A\u5C0D\u624B 3\u20136 \u500B\u9084\u6C92\u78BA\u5B9A\u7684\u6578\u5B57\u8B8A\u6210\u554F\u865F\uFF0810 \u79D2\uFF09"
   }, "\u2753", myItems.question > 0 && /*#__PURE__*/React.createElement("span", {
     className: "absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-violet-600 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"
-  }, myItems.question)), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: myItems.question
+  }))), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return fireItem('backfill');
     },
     disabled: myItems.backfill <= 0,
-    className: "relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none disabled:opacity-40 text-2xl",
+    className: "plat-btn-hard plat-btn-hard-3 relative w-14 h-14 shrink-0 rounded-full bg-white border-[3px] border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] disabled:opacity-40 text-2xl",
     title: "\u56DE\u586B\uFF1A\u628A\u5C0D\u624B\u5DF2\u6253\u958B\u7684\u4E00\u7247\u683C\u5B50\uFF083\xD73\uFF0C\u9023\u9396\u7A7A\u683C\u6574\u7247\uFF09\u84CB\u56DE\u53BB"
   }, "\u23EA", myItems.backfill > 0 && /*#__PURE__*/React.createElement("span", {
     className: "absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-amber-500 text-white text-xs font-black border-2 border-slate-800 flex items-center justify-center"
-  }, myItems.backfill))), itemToast && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: myItems.backfill
+  })))), itemToast && /*#__PURE__*/React.createElement("div", {
     className: "fixed left-1/2 bottom-24 z-[96] -translate-x-1/2 bg-slate-900/90 text-white font-black text-sm px-4 py-2 rounded-full shadow-lg animate-popIn text-center",
     style: {
       maxWidth: '92vw'
@@ -4727,12 +4750,12 @@ function MinesGame() {
     onClick: function onClick() {
       if (dailyDate) startDaily(dailyDate);else newGame(sizeId);
     },
-    className: "w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 bg-[#f97316] border-[3px] border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDD01 \u518D\u4F86\u4E00\u5C40"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setScreen('home');
     },
-    className: "w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-2.5 bg-white border-[3px] border-slate-800 rounded-xl font-black text-slate-700 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
   }, "\u56DE\u4E3B\u9078\u55AE"))))));
 }
 ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createElement(window.PlatBoundary, null, React.createElement(MinesGame)));

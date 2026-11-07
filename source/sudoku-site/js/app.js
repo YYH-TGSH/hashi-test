@@ -17,6 +17,15 @@ function PlatPct(props) {
   return <span ref={ref}></span>;
 }
 
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () { if (window.PlatLite && ref.current) window.PlatLite(ref.current, v); }, [v]);
+  if (!window.PlatLite) return <span>{v}</span>;
+  return <span ref={ref}></span>;
+}
+
 
 function GameTimer({ startTime, endTime, isRunning, matchPhase }) {
     const [now, setNow] = useState(Date.now());
@@ -237,6 +246,7 @@ function SudokuGame() {
     const [showGhostProgress, setShowGhostProgress] = useState(true);
     const [cursors, setCursors] = useState({});
     const [ripples, setRipples] = useState([]);
+    const [pressedCellId, setPressedCellId] = useState(null); // C 類按壓回饋（v1.54.0）：純顯示層覆蓋，不碰選格/輸入/長按邏輯
 
     const isMultiplayer = engine === 'peerjs';
     const svgRef = useRef(null);
@@ -1730,6 +1740,7 @@ function SudokuGame() {
             const cy = Math.floor((pt.y - PADDING) / CELL_SIZE);
             if (cx >= 0 && cx < cSizeDef.size && cy >= 0 && cy < cSizeDef.size) {
                 const cellId = `${cx}-${cy}`;
+                setPressedCellId(cellId);
                 isLongPressTriggered.current = false;
                 touchStartPt.current = pt;
                 const seq = ++tapSeqRef.current;
@@ -1779,6 +1790,7 @@ function SudokuGame() {
     };
 
     const handlePointerUp = (e) => {
+        setPressedCellId(null);
         if (matchPhase !== 'playing' || isSpectator) return;
 
         if (cellLongPressTimer.current) {
@@ -2963,7 +2975,7 @@ function SudokuGame() {
                 <div className="font-black text-xl text-slate-800 text-center mb-3">{(winner || iFinished) ? '🏁 已完賽・觀戰中' : '👁️ 觀戰中'}</div>
                 <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {watchable.map(p => (
-                        <button key={p.id} onClick={() => setGodUid(p.id)} className={"flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none " + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")}>
+                        <button key={p.id} onClick={() => setGodUid(p.id)} className={"plat-btn-hard plat-btn-hard-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)]" + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")}>
                             <span className="w-3 h-3 rounded-full border border-slate-800 shrink-0" style={{ background: p.color === 'rainbow' ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)' : p.color }}></span>
                             {p.name} {p.isHost && '👑'} {ghostProgress[p.id] || 0}%
                         </button>
@@ -3050,7 +3062,7 @@ function SudokuGame() {
     const tutorialOverlay = showTutorial ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4" onClick={() => setShowTutorial(false)}>
             <div className="bg-[#fffaf0] border-4 border-slate-800 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,1)] max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 relative" onClick={(e) => e.stopPropagation()}>
-                <button onClick={() => setShowTutorial(false)} className="absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10">✕</button>
+                <button onClick={() => setShowTutorial(false)} className="plat-btn-hard plat-btn-hard-2 absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] z-10">✕</button>
                 <h3 className="text-2xl font-black text-slate-800 border-b-4 border-[#ffcc00] inline-block pb-1 mb-5">❓ 玩法教學</h3>
 
                 <div className={"h-[400px] flex flex-col justify-center bg-white border-[3px] border-slate-800 rounded-xl p-4 mb-4 shadow-[4px_4px_0px_rgba(30,41,59,1)]" + (tutStep !== 0 ? " hidden" : "")}>
@@ -3065,7 +3077,7 @@ function SudokuGame() {
                     </div>
                     <div className="flex justify-center gap-2 mb-3">
                         {[7, 8, 9].map(n => (
-                            <button key={n} onClick={() => { if (n === 8) { setTutDemoVal(8); setTutDemoWrong(null); } else { setTutDemoVal(null); setTutDemoWrong(n); } }} className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none">{n}</button>
+                            <button key={n} onClick={() => { if (n === 8) { setTutDemoVal(8); setTutDemoWrong(null); } else { setTutDemoVal(null); setTutDemoWrong(n); } }} className="plat-btn-hard plat-btn-hard-3 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)]">{n}</button>
                         ))}
                     </div>
                     <p className="text-center font-bold text-slate-700">{tutDemoVal === 8 ? '✅ 答對了！中間這格就是 8——先點格子、再按數字鍵，就是這樣填的' : tutDemoWrong ? '❌ ' + tutDemoWrong + ' 不對喔，再想想這一格該填多少' : '動手試試：中間發亮的格子該填哪個數字？點下面的數字鍵試試'}</p>
@@ -3103,9 +3115,9 @@ function SudokuGame() {
                     {[0, 1, 2, 3].map(idx => (<div key={idx} className={"w-2.5 h-2.5 rounded-full border-2 border-slate-800 " + (idx === tutStep ? "bg-[#ffcc00]" : "bg-white")} />))}
                 </div>
                 <div className="flex gap-3">
-                    {tutStep > 0 ? (<button onClick={() => { setTutStep(tutStep - 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800">上一步</button>) : (<div className="flex-1"></div>)}
-                    <button onClick={() => setShowTutorial(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400">跳過</button>
-                    {tutStep < 3 ? (<button onClick={() => { setTutStep(tutStep + 1); }} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#ffcc00] text-slate-900">下一步</button>) : (<button onClick={() => setShowTutorial(false)} className="flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
+                    {tutStep > 0 ? (<button onClick={() => { setTutStep(tutStep - 1); }} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-800">上一步</button>) : (<div className="flex-1"></div>)}
+                    <button onClick={() => setShowTutorial(false)} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-400">跳過</button>
+                    {tutStep < 3 ? (<button onClick={() => { setTutStep(tutStep + 1); }} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-[#ffcc00] text-slate-900">下一步</button>) : (<button onClick={() => setShowTutorial(false)} className="plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-emerald-400 text-slate-900">開始遊戲 🎮</button>)}
                 </div>
             </div>
         </div>
@@ -3124,19 +3136,19 @@ function SudokuGame() {
                             <p className="text-slate-800 font-black text-xl tracking-widest uppercase italic">Sudoku Master</p>
                         </div>
                         <div className="flex flex-col gap-5">
-                            <button onClick={startSinglePlayer} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">👤 單機挑戰</button>
-                            <button onClick={() => startDailyGame(dailyPickDate)} className="w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">📅 每日一題{dailyPickDate !== dailyTodayStr() ? '（' + dailyPickDate.slice(5) + '）' : ''}{dailyRecords[dailyPickDate] ? ' ✓' : ''}</button>
+                            <button onClick={startSinglePlayer} className="plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">👤 單機挑戰</button>
+                            <button onClick={() => startDailyGame(dailyPickDate)} className="plat-btn-hard w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">📅 每日一題{dailyPickDate !== dailyTodayStr() ? '（' + dailyPickDate.slice(5) + '）' : ''}{dailyRecords[dailyPickDate] ? ' ✓' : ''}</button>
                             <div className="flex items-center justify-center gap-2 flex-wrap">
-                                <button onClick={() => setDailyPickDate(shiftDateStr(dailyPickDate, -1))} disabled={dailyPickDate <= '2026-01-01'} className="w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30">◀</button>
-                                <button onClick={openDailyCal} className="border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none">📅 {dailyPickDate}</button>
-                                <button onClick={() => setDailyPickDate(shiftDateStr(dailyPickDate, 1))} disabled={dailyPickDate >= dailyTodayStr()} className="w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30">▶</button>
-                                <span className="font-black text-sm text-orange-600">🔥 連續 {dailyStreak.count || 0} 天</span>
-                                {dailyRecords[dailyPickDate] ? <span className="font-black text-sm text-emerald-600">最佳 {formatTime(dailyRecords[dailyPickDate])}</span> : null}
+                                <button onClick={() => setDailyPickDate(shiftDateStr(dailyPickDate, -1))} disabled={dailyPickDate <= '2026-01-01'} className="plat-btn-hard plat-btn-hard-2 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30">◀</button>
+                                <button onClick={openDailyCal} className="plat-btn-hard plat-btn-hard-2 border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]">📅 {dailyPickDate}</button>
+                                <button onClick={() => setDailyPickDate(shiftDateStr(dailyPickDate, 1))} disabled={dailyPickDate >= dailyTodayStr()} className="plat-btn-hard plat-btn-hard-2 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30">▶</button>
+                                <span className="font-black text-sm text-orange-600">🔥 連續 <PlatNum value={dailyStreak.count || 0} /> 天</span>
+                                {dailyRecords[dailyPickDate] ? <span className="font-black text-sm text-emerald-600">最佳 <PlatNum value={formatTime(dailyRecords[dailyPickDate])} /></span> : null}
                             </div>
-                            <button onClick={() => { setTutStep(0); setTutDemoVal(null); setTutDemoWrong(null); setShowTutorial(true); }} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1">❓ 玩法教學</button>
+                            <button onClick={() => { setTutStep(0); setTutDemoVal(null); setTutDemoWrong(null); setShowTutorial(true); }} className="plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform -rotate-1">❓ 玩法教學</button>
                             {(typeof window !== 'undefined' && window.__PLAT_PLATFORM) && (
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠 回大廳</button>
+                                    <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="plat-btn-hard flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">🏠 回大廳</button>
                                     {renderDockCapsule(false)}
                                 </div>
                             )}
@@ -3228,7 +3240,7 @@ function SudokuGame() {
                             ))}
                         </div>
                         {tournMyEntry && !tournMyEntry.pending && (
-                            <button onClick={handleTournReady} className={"w-full py-3 mb-2 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+                            <button onClick={handleTournReady} className={"plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
                         )}
                         {isHost ? (
                             <div>
@@ -3250,7 +3262,7 @@ function SudokuGame() {
             )}
 
             {resultsDismissedUi && isBrawlMode && matchPhase === 'finished' && (
-                <button onClick={() => { resultsDismissRef.current = null; setResultsDismissedUi(false); }} className="fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🏆 結果</button>
+                <button onClick={() => { resultsDismissRef.current = null; setResultsDismissedUi(false); }} className="plat-btn-hard plat-btn-hard-3 fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b]">🏆 結果</button>
             )}
 
             {showExitMenu && (
@@ -3258,10 +3270,10 @@ function SudokuGame() {
                     <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
                         <div className="font-black text-xl text-[#1e293b] mb-4">要離開對局嗎？</div>
                         {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
-                            <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">⏹️ 結束本局（錦標賽）</button>
+                            <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">⏹️ 結束本局（錦標賽）</button>
                         )}
-                        <button onClick={() => { setShowExitMenu(false); handleBackToLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🏁 回等待室</button>
-                        <button onClick={() => { setShowExitMenu(false); handleGoHome('leave'); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🚪 退出（回大廳）</button>
+                        <button onClick={() => { setShowExitMenu(false); handleBackToLobby(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">🏁 回等待室</button>
+                        <button onClick={() => { setShowExitMenu(false); handleGoHome('leave'); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">🚪 退出（回大廳）</button>
                         <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
                     </div>
                 </div>
@@ -3482,7 +3494,7 @@ function SudokuGame() {
                             <button
                                 disabled={isMultiplayer && !isHostRef.current}
                                 onClick={() => { setTempSizeId(sizeId); setTempDiffId(diffId); setShowSetupModal(true); }}
-                                className="px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+                                className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px]"
                                 title="設定題型與難度"
                             >
                                 ⚙️ {SIZES.find(s => s.id === sizeId)?.name.split(' ')[0]} - {DIFFICULTIES.find(d => d.id === diffId)?.name.split(' ')[1] || '難度'}
@@ -3490,12 +3502,12 @@ function SudokuGame() {
                         </div>
 
                         <div className="flex gap-1.5 items-center ml-auto shrink-0">
-                            <button onClick={handlePlayAgain} disabled={isMultiplayer && !isHost} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="新題">🎲<span className="hidden sm:inline">新題</span></button>
-                            {(true) && (<button onClick={handleUndo} disabled={history.length === 0 || isWon || (isMultiplayer && !isBrawlMode)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0" title="復原">↩️<span className="hidden sm:inline">復原</span></button>)}
-                            <button onClick={handleReset} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
-                            <button onClick={() => setShowSaveModal(true)} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
-                            <button onClick={() => { const m = window.SUDOKU_SOUND.toggleMute(); setMuted(m); if (!m) window.SUDOKU_SOUND.play('click'); }} className="px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
-                            <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'sudoku') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
+                            <button onClick={handlePlayAgain} disabled={isMultiplayer && !isHost} className="plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 shrink-0" title="新題">🎲<span className="hidden sm:inline">新題</span></button>
+                            {(true) && (<button onClick={handleUndo} disabled={history.length === 0 || isWon || (isMultiplayer && !isBrawlMode)} className="plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none flex items-center gap-1 text-[#1e293b] shrink-0" title="復原">↩️<span className="hidden sm:inline">復原</span></button>)}
+                            <button onClick={handleReset} className="plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
+                            <button onClick={() => setShowSaveModal(true)} className="plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
+                            <button onClick={() => { const m = window.SUDOKU_SOUND.toggleMute(); setMuted(m); if (!m) window.SUDOKU_SOUND.play('click'); }} className="plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 text-[#1e293b] shrink-0" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
+                            <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'sudoku') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="plat-btn-hard plat-btn-hard-2 bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
                         </div>
                     </div>
                 </div>
@@ -3692,7 +3704,12 @@ function SudokuGame() {
                                             else if (isHighlightZone || isFilledWithOther) fillColor = '#fef8cb';
                                             else if (isSpectator && cell.isGiven) fillColor = '#f1f5f9'; // 上帝視角下的題目背景：淺灰色 (v3.10.12)
                                             
-                                            return <rect key={`bg-${cell.id}`} x={cell.x * CELL_SIZE} y={cell.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={fillColor} className="transition-colors duration-300 pointer-events-none" />;
+                                            return (
+                                                <React.Fragment key={`bg-${cell.id}`}>
+                                                    <rect x={cell.x * CELL_SIZE} y={cell.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={fillColor} className="transition-colors duration-300 pointer-events-none" />
+                                                    {pressedCellId === cell.id && <rect x={cell.x * CELL_SIZE + 1} y={cell.y * CELL_SIZE + 1} width={CELL_SIZE - 2} height={CELL_SIZE - 2} fill="#0f172a" rx="3" className="sudoku-pressfx pointer-events-none" />}
+                                                </React.Fragment>
+                                            );
                                         })}
                                     </g>
 
@@ -4041,7 +4058,7 @@ function SudokuGame() {
                         <label className="block text-[10px] md:text-xs font-bold text-slate-600 mb-1">修改代表色：</label>
                         <div className="grid grid-cols-5 gap-2">
                             {COLORS.map(color => (
-                                <button key={color} onClick={(e) => { e.stopPropagation(); const colorIdx = COLORS.indexOf(color); let newSeq = [...colorSeq, colorIdx]; const targetSeq = [0, 4, 15, 19]; let isValid = true; for (let i = 0; i < newSeq.length; i++) { if (newSeq[i] !== targetSeq[i]) { isValid = false; break; } } if (isValid) { setColorSeq(newSeq); if (newSeq.length === 4) { handlePlayerColorChange(colorPickerTarget, 'rainbow'); setColorPickerTarget(null); showToast("🌈 解鎖隱藏彩色漸變！"); setColorSeq([]); } else handlePlayerColorChange(colorPickerTarget, color); } else { setColorSeq([]); handlePlayerColorChange(colorPickerTarget, color); setColorPickerTarget(null); } }} className="w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[3px_3px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none mx-auto" style={{ backgroundColor: color }} title={color} />
+                                <button key={color} onClick={(e) => { e.stopPropagation(); const colorIdx = COLORS.indexOf(color); let newSeq = [...colorSeq, colorIdx]; const targetSeq = [0, 4, 15, 19]; let isValid = true; for (let i = 0; i < newSeq.length; i++) { if (newSeq[i] !== targetSeq[i]) { isValid = false; break; } } if (isValid) { setColorSeq(newSeq); if (newSeq.length === 4) { handlePlayerColorChange(colorPickerTarget, 'rainbow'); setColorPickerTarget(null); showToast("🌈 解鎖隱藏彩色漸變！"); setColorSeq([]); } else handlePlayerColorChange(colorPickerTarget, color); } else { setColorSeq([]); handlePlayerColorChange(colorPickerTarget, color); setColorPickerTarget(null); } }} className="plat-btn-hard plat-btn-hard-2 w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95 mx-auto" style={{ backgroundColor: color }} title={color} />
                             ))}
                         </div>
                     </div>
@@ -4054,15 +4071,15 @@ function SudokuGame() {
                         <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
                         <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
                         <div className="mb-6">
-                            <button onClick={handleSaveCode} className="w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
+                            <button onClick={handleSaveCode} className="plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
                             <div className="relative">
                                 <textarea id="saveCodeTextarea" value={saveCode} onChange={(e) => setSaveCode(e.target.value)} placeholder="點擊上方按鈕生成，或是手動貼上舊代碼至此處" rows="4" className="w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white" />
-                                <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#ffcc00] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
+                                <button onClick={handleQuickPaste} className="plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#ffcc00] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)]">📋 快速貼上</button>
                             </div>
                         </div>
                         <div className="flex gap-4">
-                            <button onClick={() => setShowSaveModal(false)} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">關閉</button>
-                            <button onClick={handleLoadCode} className="flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">載入代碼</button>
+                            <button onClick={() => setShowSaveModal(false)} className="plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">關閉</button>
+                            <button onClick={handleLoadCode} className="plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]">載入代碼</button>
                         </div>
                     </div>
                 </div>
@@ -4080,18 +4097,18 @@ function SudokuGame() {
                     {matchPhase === 'playing' && (
                         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-row gap-4 items-center pointer-events-none">
                             {unopenedGifts[myId] && unopenedGifts[myId].length > 0 && (
-                                <button id="btn-open-gift" onClick={handleOpenGift} className="pointer-events-auto relative w-14 h-14 bg-pink-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl animate-bounce flex items-center justify-center p-0">
-                                    🎁 <div className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-slate-800">{unopenedGifts[myId].length}</div>
+                                <button id="btn-open-gift" onClick={handleOpenGift} className="plat-btn-hard pointer-events-auto relative w-14 h-14 bg-pink-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl animate-bounce flex items-center justify-center p-0">
+                                    🎁 <div className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-slate-800"><PlatNum value={unopenedGifts[myId].length} /></div>
                                 </button>
                             )}
                             {isBrawlMode && myWeapons.filter(w => w === 'balloon').length > 0 && (
-                                <button onClick={() => handleUseWeapon('balloon')} className="pointer-events-auto relative w-14 h-14 bg-violet-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center">
-                                    💧 {myWeapons.filter(w => w === 'balloon').length > 1 && <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800">{myWeapons.filter(w => w === 'balloon').length}</div>}
+                                <button onClick={() => handleUseWeapon('balloon')} className="plat-btn-hard pointer-events-auto relative w-14 h-14 bg-violet-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center">
+                                    💧 {myWeapons.filter(w => w === 'balloon').length > 1 && <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800"><PlatNum value={myWeapons.filter(w => w === 'balloon').length} /></div>}
                                 </button>
                             )}
                             {isBrawlMode && myWeapons.filter(w => w === 'eraser').length > 0 && (
-                                <button onClick={() => handleUseWeapon('eraser')} className="pointer-events-auto relative w-14 h-14 bg-orange-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center">
-                                    🧹 {myWeapons.filter(w => w === 'eraser').length > 1 && <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800">{myWeapons.filter(w => w === 'eraser').length}</div>}
+                                <button onClick={() => handleUseWeapon('eraser')} className="plat-btn-hard pointer-events-auto relative w-14 h-14 bg-orange-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center">
+                                    🧹 {myWeapons.filter(w => w === 'eraser').length > 1 && <div className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800"><PlatNum value={myWeapons.filter(w => w === 'eraser').length} /></div>}
                                 </button>
                             )}
                         </div>
@@ -4102,14 +4119,14 @@ function SudokuGame() {
                     <div className="bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
                         {/* 左側：縮放（單顆展開式：點開才出現 －/＋/適應） */}
                         <div className="flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative">
-                            <button onClick={() => setZoomOpen(!zoomOpen)} className="w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#ffcc00]" title="縮放（點開/收合）">
+                            <button onClick={() => setZoomOpen(!zoomOpen)} className="plat-btn-hard plat-btn-hard-2 w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] flex items-center justify-center text-base md:text-lg font-black hover:bg-[#ffcc00]" title="縮放（點開/收合）">
                                 {zoomIndicator.visible ? (<span className="text-blue-600 scale-110 text-xs md:text-sm">{zoomIndicator.value.toFixed(1)}X</span>) : '🔍'}
                             </button>
                             {zoomOpen && (
                                 <div className="absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">
-                                    <button onClick={handleZoomIn} className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all" title="放大">＋</button>
-                                    <button onClick={handleZoomOut} className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all" title="縮小">－</button>
-                                    <button onClick={handleCycleZoom} className="w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all" title="循環切換縮放模式（自動適應）">
+                                    <button onClick={handleZoomIn} className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]" title="放大">＋</button>
+                                    <button onClick={handleZoomOut} className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]" title="縮小">－</button>
+                                    <button onClick={handleCycleZoom} className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b]" title="循環切換縮放模式（自動適應）">
                                         {zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'}
                                     </button>
                                 </div>
@@ -4149,7 +4166,7 @@ function SudokuGame() {
                                     <div className="absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto">
                                         <button onClick={(e) => { e.stopPropagation(); setDrawSubMode('pen'); }} className={`w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ${drawSubMode === 'pen' ? 'bg-emerald-100 scale-110 border-emerald-600' : 'bg-white hover:bg-slate-50'}`} title="畫筆模式">🖌️</button>
                                         <button onClick={(e) => { e.stopPropagation(); setDrawSubMode('eraser'); }} onDoubleClick={(e) => { e.stopPropagation(); clearOwnStrokes(); }} className={`w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ${drawSubMode === 'eraser' ? 'bg-orange-100 scale-110 border-orange-600' : 'bg-white hover:bg-slate-50'}`} title="橡皮擦 (雙擊清除自己所有塗鴉)">🧽</button>
-                                        {isHostRef.current && !isBrawlMode && <button onClick={(e) => { e.stopPropagation(); clearAllStrokes(); }} className="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]" title="房主：清除全場塗鴉">🚮</button>}
+                                        {isHostRef.current && !isBrawlMode && <button onClick={(e) => { e.stopPropagation(); clearAllStrokes(); }} className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b]" title="房主：清除全場塗鴉">🚮</button>}
                                     </div>
                                 )}
                         </div>

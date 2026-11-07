@@ -37,6 +37,21 @@ function PlatPct(props) {
   return React.createElement('span', { ref: ref });
 }
 
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () {
+    if (window.PlatLite && ref.current) window.PlatLite(ref.current, v);
+  }, [v]);
+  if (!window.PlatLite) return React.createElement(
+    'span',
+    null,
+    v
+  );
+  return React.createElement('span', { ref: ref });
+}
+
 // === 20 色票 ===
 var COLORS = ['#E3002B', '#F35B00', '#FFC90E', '#D7157A', '#E895C0', '#007A61', '#87D300', '#C4D600', '#8DD1BF', '#616130', '#00538A', '#008CC1', '#00C1D5', '#79C8ED', '#CDBB79', '#41136A', '#935CB9', '#BCA8D1', '#7A0026', '#BC7B70'];
 
@@ -5469,14 +5484,14 @@ function HashiGame() {
             { className: 'flex flex-col gap-5' },
             React.createElement(
               'button',
-              { onClick: startSinglePlayer, className: 'w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1' },
+              { onClick: startSinglePlayer, className: 'plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1' },
               '\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230'
             ),
             React.createElement(
               'button',
               { onClick: function onClick() {
                   return startDailyMode(dailyMenuDate);
-                }, className: 'w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1' },
+                }, className: 'plat-btn-hard w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1' },
               '\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C'
             ),
             React.createElement(
@@ -5493,12 +5508,12 @@ function HashiGame() {
                     return setDailyMenuDate(function (d) {
                       return clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, -1));
                     });
-                  }, disabled: dailyMenuDate <= MIN_DAILY_DATE, className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none' },
+                  }, disabled: dailyMenuDate <= MIN_DAILY_DATE, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5' },
                 '\u25C0'
               ),
               React.createElement(
                 'button',
-                { onClick: openDailyCal, className: 'border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none' },
+                { onClick: openDailyCal, className: 'plat-btn-hard plat-btn-hard-2 border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5' },
                 '\uD83D\uDCC5 ',
                 dailyMenuDate
               ),
@@ -5508,7 +5523,7 @@ function HashiGame() {
                     return setDailyMenuDate(function (d) {
                       return clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, 1));
                     });
-                  }, disabled: dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr(), className: 'px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none' },
+                  }, disabled: dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr(), className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5' },
                 '\u25B6'
               )
             ),
@@ -5520,7 +5535,7 @@ function HashiGame() {
             ),
             React.createElement(
               'button',
-              { onClick: openTutorial, className: 'w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+              { onClick: openTutorial, className: 'plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
               '\u2753 \u73A9\u6CD5\u6559\u5B78'
             ),
             PLAT_MODE && React.createElement(
@@ -5530,7 +5545,7 @@ function HashiGame() {
                 'button',
                 { onClick: function onClick() {
                     if (window.PLAT_show) window.PLAT_show('home');
-                  }, className: 'flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all' },
+                  }, className: 'plat-btn-hard flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
                 '\uD83C\uDFE0 \u56DE\u5927\u5EF3'
               ),
               renderDockCapsule(false)
@@ -5629,7 +5644,7 @@ function HashiGame() {
               'span',
               { className: 'bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#1e293b] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap' },
               '\uD83D\uDD25 x',
-              dailyStreak
+              React.createElement(PlatNum, { value: dailyStreak })
             ),
             !PLAT_MODE && (videoOn || Object.keys(remoteVideos).length > 0) && React.createElement(
               'div',
@@ -5778,7 +5793,7 @@ function HashiGame() {
             { className: 'flex gap-1 md:gap-2 flex-wrap items-center ml-auto' },
             !isWon && hasSolution && !showSolution && !inRace && React.createElement(
               'button',
-              { onClick: handleShowSolution, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#1e293b] border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u89E3\u7B54' },
+              { onClick: handleShowSolution, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#1e293b] border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1', title: '\u89E3\u7B54' },
               '\uD83D\uDCA1',
               React.createElement(
                 'span',
@@ -5788,7 +5803,7 @@ function HashiGame() {
             ),
             !isDailyMode && !inRace && React.createElement(
               'button',
-              { onClick: handleRegenerateRandom, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u65B0\u984C' },
+              { onClick: handleRegenerateRandom, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1', title: '\u65B0\u984C' },
               '\uD83C\uDFB2',
               React.createElement(
                 'span',
@@ -5798,7 +5813,7 @@ function HashiGame() {
             ),
             !isMultiplayer && React.createElement(
               'button',
-              { onClick: handleUndo, disabled: history.length === 0 || isWon, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b]', title: '\u5FA9\u539F' },
+              { onClick: handleUndo, disabled: history.length === 0 || isWon, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none flex items-center gap-1 text-[#1e293b]', title: '\u5FA9\u539F' },
               '\u21A9\uFE0F',
               React.createElement(
                 'span',
@@ -5808,7 +5823,7 @@ function HashiGame() {
             ),
             React.createElement(
               'button',
-              { onClick: handleReset, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u91CD\u7F6E' },
+              { onClick: handleReset, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1', title: '\u91CD\u7F6E' },
               '\uD83D\uDD04',
               React.createElement(
                 'span',
@@ -5820,7 +5835,7 @@ function HashiGame() {
               'button',
               { onClick: function onClick() {
                   return setShowSaveModal(true);
-                }, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u5B58\u6A94/\u8B80\u6A94' },
+                }, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1', title: '\u5B58\u6A94/\u8B80\u6A94' },
               '\uD83D\uDCBE',
               React.createElement(
                 'span',
@@ -5832,14 +5847,14 @@ function HashiGame() {
               'button',
               { onClick: function onClick() {
                   var m = window.HASHI_SOUND.toggleMute();setMuted(m);if (!m) window.HASHI_SOUND.play('click');
-                }, className: 'px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b]', title: muted ? "取消靜音" : "靜音" },
+                }, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 text-[#1e293b]', title: muted ? "取消靜音" : "靜音" },
               muted ? '🔇' : '🔊'
             ),
             React.createElement(
               'button',
               { onClick: function onClick() {
                   var N = typeof window !== 'undefined' ? window.__PLAT_NET : null;if (N && N.inMatch === 'hashi' || typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
-                }, className: 'bg-white text-[#1e293b] border-2 border-[#1e293b] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
+                }, className: 'plat-btn-hard plat-btn-hard-2 bg-white text-[#1e293b] border-2 border-[#1e293b] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1', title: '\u56DE\u9996\u9801/\u65B7\u7DDA' },
               !isMultiplayer ? '🏠' : '🔌',
               React.createElement(
                 'span',
@@ -5948,7 +5963,7 @@ function HashiGame() {
                         setColorPickerTarget(null);
                       }
                     },
-                    className: 'w-6 h-6 rounded-full border-[2px] border-slate-800 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none',
+                    className: 'plat-btn-hard plat-btn-hard-1 w-6 h-6 rounded-full border-[2px] border-slate-800 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95',
                     style: { backgroundColor: color },
                     title: color
                   });
@@ -6087,7 +6102,7 @@ function HashiGame() {
             'button',
             { onClick: function onClick() {
                 var opps = Object.keys(brawlBoards);if (opps.length) setGodViewUid(opps[0]);
-              }, disabled: Object.keys(brawlBoards).length === 0, className: 'px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40' },
+              }, disabled: Object.keys(brawlBoards).length === 0, className: 'plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-40' },
             '\uD83D\uDC41\uFE0F \u4E0A\u5E1D\u8996\u89D2'
           )
         )
@@ -6171,7 +6186,7 @@ function HashiGame() {
                   } else {
                     setColorSeq([]);handlePlayerColorChange(editTarget, color);setEditTarget(null);
                   }
-                }, className: 'w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[3px_3px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none mx-auto', style: { backgroundColor: color }, title: color });
+                }, className: 'plat-btn-hard plat-btn-hard-2 w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95 mx-auto', style: { backgroundColor: color }, title: color });
             })
           )
         )
@@ -6219,7 +6234,7 @@ function HashiGame() {
               'button',
               { key: k, onClick: function onClick() {
                   return useBrawlItem(k);
-                }, disabled: raceState !== 'racing', className: 'anim-item relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center active:translate-y-[2px] active:shadow-none disabled:opacity-40 transition-all' },
+                }, disabled: raceState !== 'racing', className: 'plat-btn-hard plat-btn-hard-3 anim-item relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center disabled:opacity-40' },
               React.createElement(
                 'span',
                 { className: 'text-[22px] md:text-2xl leading-none' },
@@ -6233,7 +6248,7 @@ function HashiGame() {
               cnt > 1 && React.createElement(
                 'span',
                 { className: 'absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center' },
-                cnt
+                React.createElement(PlatNum, { value: cnt })
               )
             );
           })
@@ -6504,7 +6519,7 @@ function HashiGame() {
 
                 return React.createElement(
                   'g',
-                  { key: 'island-' + island.id,
+                  { key: 'island-' + island.id, className: 'hashi-island',
                     onPointerEnter: function onPointerEnter(e) {
                       if (e.pointerType === 'mouse' && interactionMode < 2) setHoveredIslandId(island.id);
                     },
@@ -6689,7 +6704,7 @@ function HashiGame() {
                 'button',
                 { onClick: function onClick() {
                     return setZoomOpen(!zoomOpen);
-                  }, title: '\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09', className: 'w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#4ade80]' },
+                  }, title: '\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09', className: 'plat-btn-hard plat-btn-hard-2 w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] flex items-center justify-center text-base md:text-lg font-black hover:bg-[#4ade80]' },
                 '\uD83D\uDD0D'
               ),
               zoomOpen && React.createElement(
@@ -6697,17 +6712,17 @@ function HashiGame() {
                 { className: 'absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50' },
                 React.createElement(
                   'button',
-                  { onClick: handleZoomIn, title: '\u653E\u5927', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  { onClick: handleZoomIn, title: '\u653E\u5927', className: 'plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]' },
                   '\uFF0B'
                 ),
                 React.createElement(
                   'button',
-                  { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  { onClick: handleZoomOut, title: '\u7E2E\u5C0F', className: 'plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]' },
                   '\uFF0D'
                 ),
                 React.createElement(
                   'button',
-                  { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09', className: 'w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                  { onClick: handleCycleZoom, title: '\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09', className: 'plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b]' },
                   zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'
                 )
               )
@@ -6757,7 +6772,7 @@ function HashiGame() {
                 ),
                 isHostRef.current && React.createElement(
                   'button',
-                  { onClick: clearAllStrokes, className: 'w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]', title: '\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09' },
+                  { onClick: clearAllStrokes, className: 'plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b]', title: '\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09' },
                   '\uD83D\uDEAE'
                 )
               )
@@ -6769,7 +6784,7 @@ function HashiGame() {
           'button',
           { onClick: function onClick() {
               resultsDismissRef.current = null;setResultsDismissedUi(false);
-            }, className: 'fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+            }, className: 'plat-btn-hard plat-btn-hard-3 fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b]' },
           '\uD83C\uDFC6 \u7D50\u679C'
         ),
         showExitMenu && React.createElement(
@@ -6791,21 +6806,21 @@ function HashiGame() {
               'button',
               { onClick: function onClick() {
                   setShowExitMenu(false);if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
-                }, className: 'w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                }, className: 'plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]' },
               '\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09'
             ),
             React.createElement(
               'button',
               { onClick: function onClick() {
                   setShowExitMenu(false);requestLobby();
-                }, className: 'w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                }, className: 'plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]' },
               '\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4'
             ),
             React.createElement(
               'button',
               { onClick: function onClick() {
                   setShowExitMenu(false);handleGoHome('leave');
-                }, className: 'w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all' },
+                }, className: 'plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]' },
               '\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09'
             ),
             React.createElement(
@@ -6880,7 +6895,7 @@ function HashiGame() {
               'button',
               { onClick: function onClick() {
                   return setMyReady(!(tournMyEntry && tournMyEntry.isReady));
-                }, className: "w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500') },
+                }, className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500') },
               tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'
             ),
             isHostRef.current ? React.createElement(
@@ -7161,7 +7176,7 @@ function HashiGame() {
           { className: 'mb-6' },
           React.createElement(
             'button',
-            { onClick: handleSaveCode, className: 'w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg' },
+            { onClick: handleSaveCode, className: 'plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg' },
             '\u7522\u751F\u9032\u5EA6\u4EE3\u78BC (\u81EA\u52D5\u8907\u88FD)'
           ),
           React.createElement(
@@ -7172,7 +7187,7 @@ function HashiGame() {
               }, placeholder: '\u9EDE\u64CA\u4E0A\u65B9\u6309\u9215\u751F\u6210\uFF0C\u6216\u662F\u624B\u52D5\u8CBC\u4E0A\u820A\u4EE3\u78BC\u81F3\u6B64\u8655', rows: '4', className: 'w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white' }),
             React.createElement(
               'button',
-              { onClick: handleQuickPaste, className: 'absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none' },
+              { onClick: handleQuickPaste, className: 'plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)]' },
               '\uD83D\uDCCB \u5FEB\u901F\u8CBC\u4E0A'
             )
           )
@@ -7184,12 +7199,12 @@ function HashiGame() {
             'button',
             { onClick: function onClick() {
                 return setShowSaveModal(false);
-              }, className: 'flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+              }, className: 'plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
             '\u95DC\u9589'
           ),
           React.createElement(
             'button',
-            { onClick: handleLoadCode, className: 'flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+            { onClick: handleLoadCode, className: 'plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
             '\u8F09\u5165\u4EE3\u78BC'
           )
         )
@@ -7223,7 +7238,7 @@ function HashiGame() {
               'button',
               { key: level.id, onClick: function onClick() {
                   setShowSettingsModal(false);handleLevelChange(level.id === 'custom' ? 'custom' : level.id);
-                }, className: "w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800") },
+                }, className: "plat-btn-hard plat-btn-hard-3 w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800") },
               level.name,
               React.createElement(
                 'span',
@@ -7237,7 +7252,7 @@ function HashiGame() {
           'button',
           { onClick: function onClick() {
               return setShowSettingsModal(false);
-            }, className: 'w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all' },
+            }, className: 'plat-btn-hard w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]' },
           '\u53D6\u6D88'
         )
       )
@@ -7306,12 +7321,12 @@ function HashiGame() {
             { onClick: function onClick() {
                 setShowCustomModal(false);
                 setCurrentLevelId(stateRef.current.levelId);
-              }, className: 'flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300 active:translate-y-1 active:shadow-none transition-all' },
+              }, className: 'plat-btn-hard plat-btn-hard-2 flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300' },
             '\u53D6\u6D88'
           ),
           React.createElement(
             'button',
-            { onClick: handleCustomGenerate, className: 'flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800] active:translate-y-1 active:shadow-none transition-all' },
+            { onClick: handleCustomGenerate, className: 'plat-btn-hard plat-btn-hard-2 flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800]' },
             '\u7522\u751F'
           )
         )
@@ -7436,7 +7451,7 @@ function HashiGame() {
             }),
             React.createElement(
               'button',
-              { onClick: sendChat, className: 'px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none shrink-0' },
+              { onClick: sendChat, className: 'plat-btn-hard plat-btn-hard-2 px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] shrink-0' },
               '\u9001\u51FA'
             )
           )

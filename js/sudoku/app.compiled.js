@@ -46,6 +46,19 @@ function PlatPct(props) {
     ref: ref
   });
 }
+
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () {
+    if (window.PlatLite && ref.current) window.PlatLite(ref.current, v);
+  }, [v]);
+  if (!window.PlatLite) return /*#__PURE__*/React.createElement("span", null, v);
+  return /*#__PURE__*/React.createElement("span", {
+    ref: ref
+  });
+}
 function GameTimer(_ref) {
   var startTime = _ref.startTime,
     endTime = _ref.endTime,
@@ -667,6 +680,11 @@ function SudokuGame() {
     _useState176 = _slicedToArray(_useState175, 2),
     ripples = _useState176[0],
     setRipples = _useState176[1];
+  var _useState177 = useState(null),
+    _useState178 = _slicedToArray(_useState177, 2),
+    pressedCellId = _useState178[0],
+    setPressedCellId = _useState178[1]; // C 類按壓回饋（v1.54.0）：純顯示層覆蓋，不碰選格/輸入/長按邏輯
+
   var isMultiplayer = engine === 'peerjs';
   var svgRef = useRef(null);
   var lastCursorSend = useRef(0);
@@ -2814,6 +2832,7 @@ function SudokuGame() {
       var cy = Math.floor((pt.y - PADDING) / CELL_SIZE);
       if (cx >= 0 && cx < cSizeDef.size && cy >= 0 && cy < cSizeDef.size) {
         var cellId = "".concat(cx, "-").concat(cy);
+        setPressedCellId(cellId);
         isLongPressTriggered.current = false;
         touchStartPt.current = pt;
         var seq = ++tapSeqRef.current;
@@ -2893,6 +2912,7 @@ function SudokuGame() {
     }
   };
   var handlePointerUp = function handlePointerUp(e) {
+    setPressedCellId(null);
     if (matchPhase !== 'playing' || isSpectator) return;
     if (cellLongPressTimer.current) {
       clearTimeout(cellLongPressTimer.current);
@@ -4651,14 +4671,14 @@ function SudokuGame() {
   handleRegenerateRandomRef.current = function () {
     return generateAndSync(sizeId, diffId);
   };
-  var _useState177 = useState(false),
-    _useState178 = _slicedToArray(_useState177, 2),
-    platTournLock = _useState178[0],
-    setPlatTournLock = _useState178[1];
   var _useState179 = useState(false),
     _useState180 = _slicedToArray(_useState179, 2),
-    platHub = _useState180[0],
-    setPlatHub = _useState180[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
+    platTournLock = _useState180[0],
+    setPlatTournLock = _useState180[1];
+  var _useState181 = useState(false),
+    _useState182 = _slicedToArray(_useState181, 2),
+    platHub = _useState182[0],
+    setPlatHub = _useState182[1]; // v1.11.0：本局由殼房間框架啟動（等待室改在殼端，本遊戲不顯示自己的等待室）
   var platHubRef = useRef(false);
   var platSessRef = useRef(null); // 殼 launch 的原始 sess（hub 判斷與代表色 sess.color 的來源；exit 時清空）
   var isShellColor = function isShellColor(c) {
@@ -4666,14 +4686,14 @@ function SudokuGame() {
   }; // 殼代表色合法值：20 色之一或彩虹
   var hubStartTimerRef = useRef(null);
   var joinRetryRef = useRef(null); // 來賓 JOIN 重送計時器：JOIN 只送一次時，訊息一掉就永遠進不了局（2026-10-31 卡死案）
-  var _useState181 = useState(null),
-    _useState182 = _slicedToArray(_useState181, 2),
-    tournRoundInfo = _useState182[0],
-    setTournRoundInfo = _useState182[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
-  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
-  var _useState183 = useState(0),
+  var _useState183 = useState(null),
     _useState184 = _slicedToArray(_useState183, 2),
-    setTournTick = _useState184[1];
+    tournRoundInfo = _useState184[0],
+    setTournRoundInfo = _useState184[1]; // 錦標賽本局資訊（第幾局/共幾局/加賽/應到人數），每局等待卡顯示與門檻用
+  var tournWaitSinceRef = useRef(null); // 本局等待起點（等滿 1 分鐘房主可強制開始）
+  var _useState185 = useState(0),
+    _useState186 = _slicedToArray(_useState185, 2),
+    setTournTick = _useState186[1];
   useEffect(function () {
     if (!(platHub && platTournLock)) return;
     var t = setInterval(function () {
@@ -5577,7 +5597,7 @@ function SudokuGame() {
         onClick: function onClick() {
           return setGodUid(p.id);
         },
-        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none " + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")
+        className: "plat-btn-hard plat-btn-hard-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 border-slate-800 font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)]" + (sel.id === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-700")
       }, /*#__PURE__*/React.createElement("span", {
         className: "w-3 h-3 rounded-full border border-slate-800 shrink-0",
         style: {
@@ -5713,7 +5733,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setShowTutorial(false);
     },
-    className: "absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none z-10"
+    className: "plat-btn-hard plat-btn-hard-2 absolute top-3 right-3 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-full font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] z-10"
   }, "\u2715"), /*#__PURE__*/React.createElement("h3", {
     className: "text-2xl font-black text-slate-800 border-b-4 border-[#ffcc00] inline-block pb-1 mb-5"
   }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), /*#__PURE__*/React.createElement("div", {
@@ -5747,7 +5767,7 @@ function SudokuGame() {
           setTutDemoWrong(n);
         }
       },
-      className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-3 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)]"
     }, n);
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-center font-bold text-slate-700"
@@ -5804,24 +5824,24 @@ function SudokuGame() {
     onClick: function onClick() {
       setTutStep(tutStep - 1);
     },
-    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-800"
+    className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-800"
   }, "\u4E0A\u4E00\u6B65") : /*#__PURE__*/React.createElement("div", {
     className: "flex-1"
   }), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowTutorial(false);
     },
-    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-white text-slate-400"
+    className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-white text-slate-400"
   }, "\u8DF3\u904E"), tutStep < 3 ? /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setTutStep(tutStep + 1);
     },
-    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-[#ffcc00] text-slate-900"
+    className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-[#ffcc00] text-slate-900"
   }, "\u4E0B\u4E00\u6B65") : /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowTutorial(false);
     },
-    className: "flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all bg-emerald-400 text-slate-900"
+    className: "plat-btn-hard flex-1 py-2.5 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] bg-emerald-400 text-slate-900"
   }, "\u958B\u59CB\u904A\u6232 \uD83C\uDFAE")))) : null;
   if (screen === 'home') {
     return /*#__PURE__*/React.createElement("div", {
@@ -5844,12 +5864,12 @@ function SudokuGame() {
       className: "flex flex-col gap-5"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: startSinglePlayer,
-      className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
+      className: "plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1"
     }, "\uD83D\uDC64 \u55AE\u6A5F\u6311\u6230"), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return startDailyGame(dailyPickDate);
       },
-      className: "w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1"
+      className: "plat-btn-hard w-full py-4 bg-[#ffcc00] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1"
     }, "\uD83D\uDCC5 \u6BCF\u65E5\u4E00\u984C", dailyPickDate !== dailyTodayStr() ? '（' + dailyPickDate.slice(5) + '）' : '', dailyRecords[dailyPickDate] ? ' ✓' : ''), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center justify-center gap-2 flex-wrap"
     }, /*#__PURE__*/React.createElement("button", {
@@ -5857,35 +5877,39 @@ function SudokuGame() {
         return setDailyPickDate(shiftDateStr(dailyPickDate, -1));
       },
       disabled: dailyPickDate <= '2026-01-01',
-      className: "w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
+      className: "plat-btn-hard plat-btn-hard-2 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30"
     }, "\u25C0"), /*#__PURE__*/React.createElement("button", {
       onClick: openDailyCal,
-      className: "border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none"
+      className: "plat-btn-hard plat-btn-hard-2 border-[3px] border-slate-800 rounded-lg px-2 py-1.5 font-black bg-white text-sm text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)]"
     }, "\uD83D\uDCC5 ", dailyPickDate), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return setDailyPickDate(shiftDateStr(dailyPickDate, 1));
       },
       disabled: dailyPickDate >= dailyTodayStr(),
-      className: "w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-30"
+      className: "plat-btn-hard plat-btn-hard-2 w-9 h-9 bg-white border-[3px] border-slate-800 rounded-lg font-black shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30"
     }, "\u25B6"), /*#__PURE__*/React.createElement("span", {
       className: "font-black text-sm text-orange-600"
-    }, "\uD83D\uDD25 \u9023\u7E8C ", dailyStreak.count || 0, " \u5929"), dailyRecords[dailyPickDate] ? /*#__PURE__*/React.createElement("span", {
+    }, "\uD83D\uDD25 \u9023\u7E8C ", /*#__PURE__*/React.createElement(PlatNum, {
+      value: dailyStreak.count || 0
+    }), " \u5929"), dailyRecords[dailyPickDate] ? /*#__PURE__*/React.createElement("span", {
       className: "font-black text-sm text-emerald-600"
-    }, "\u6700\u4F73 ", formatTime(dailyRecords[dailyPickDate])) : null), /*#__PURE__*/React.createElement("button", {
+    }, "\u6700\u4F73 ", /*#__PURE__*/React.createElement(PlatNum, {
+      value: formatTime(dailyRecords[dailyPickDate])
+    })) : null), /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         setTutStep(0);
         setTutDemoVal(null);
         setTutDemoWrong(null);
         setShowTutorial(true);
       },
-      className: "w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform -rotate-1"
+      className: "plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform -rotate-1"
     }, "\u2753 \u73A9\u6CD5\u6559\u5B78"), typeof window !== 'undefined' && window.__PLAT_PLATFORM && /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         if (window.PLAT_show) window.PLAT_show('home');
       },
-      className: "flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all"
+      className: "plat-btn-hard flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), renderDockCapsule(false))))), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pb-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
     }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved.", ' (v' + (window.PLAT_VERSION || '3.13.4') + ')'), tutorialOverlay);
@@ -5994,7 +6018,7 @@ function SudokuGame() {
     }, "\u672A\u6E96\u5099")));
   })), tournMyEntry && !tournMyEntry.pending && /*#__PURE__*/React.createElement("button", {
     onClick: handleTournReady,
-    className: "w-full py-3 mb-2 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 border-[3px] border-slate-800 rounded-xl font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')
   }, tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'), isHost ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
     onClick: handleForceStart,
     disabled: !tournCanStart,
@@ -6016,7 +6040,7 @@ function SudokuGame() {
       resultsDismissRef.current = null;
       setResultsDismissedUi(false);
     },
-    className: "fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+    className: "plat-btn-hard plat-btn-hard-3 fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b]"
   }, "\uD83C\uDFC6 \u7D50\u679C"), showExitMenu && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4",
     onClick: function onClick() {
@@ -6034,19 +6058,19 @@ function SudokuGame() {
       setShowExitMenu(false);
       if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND();
     },
-    className: "w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]"
   }, "\u23F9\uFE0F \u7D50\u675F\u672C\u5C40\uFF08\u9326\u6A19\u8CFD\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
       handleBackToLobby();
     },
-    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]"
   }, "\uD83C\uDFC1 \u56DE\u7B49\u5F85\u5BA4"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       setShowExitMenu(false);
       handleGoHome('leave');
     },
-    className: "w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"
+    className: "plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]"
   }, "\uD83D\uDEAA \u9000\u51FA\uFF08\u56DE\u5927\u5EF3\uFF09"), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowExitMenu(false);
@@ -6331,7 +6355,7 @@ function SudokuGame() {
       setTempDiffId(diffId);
       setShowSetupModal(true);
     },
-    className: "px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    className: "plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 rounded border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-[10px] md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 hover:translate-y-[1px]",
     title: "\u8A2D\u5B9A\u984C\u578B\u8207\u96E3\u5EA6"
   }, "\u2699\uFE0F ", (_SIZES$find = SIZES.find(function (s) {
     return s.id === sizeId;
@@ -6342,20 +6366,20 @@ function SudokuGame() {
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handlePlayAgain,
     disabled: isMultiplayer && !isHost,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 shrink-0",
     title: "\u65B0\u984C"
   }, "\uD83C\uDFB2", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u65B0\u984C")), true && /*#__PURE__*/React.createElement("button", {
     onClick: handleUndo,
     disabled: history.length === 0 || isWon || isMultiplayer && !isBrawlMode,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] disabled:opacity-50 disabled:shadow-none flex items-center gap-1 text-[#1e293b] shrink-0",
     title: "\u5FA9\u539F"
   }, "\u21A9\uFE0F", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
   }, "\u5FA9\u539F")), /*#__PURE__*/React.createElement("button", {
     onClick: handleReset,
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0",
     title: "\u91CD\u7F6E"
   }, "\uD83D\uDD04", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
@@ -6363,7 +6387,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setShowSaveModal(true);
     },
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0",
     title: "\u5B58\u6A94/\u8B80\u6A94"
   }, "\uD83D\uDCBE", /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
@@ -6373,14 +6397,14 @@ function SudokuGame() {
       setMuted(m);
       if (!m) window.SUDOKU_SOUND.play('click');
     },
-    className: "px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b] shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 px-1.5 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 text-[#1e293b] shrink-0",
     title: muted ? "取消靜音" : "靜音"
   }, muted ? '🔇' : '🔊'), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       var N = typeof window !== 'undefined' ? window.__PLAT_NET : null;
       if (N && N.inMatch === 'sudoku' || typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) setShowExitMenu(true);else handleGoHome();
     },
-    className: "bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 shrink-0",
+    className: "plat-btn-hard plat-btn-hard-2 bg-white text-[#1e293b] border-2 border-[#1e293b] px-1.5 py-1 md:px-3 md:py-1.5 rounded font-bold text-[10px] md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 shrink-0",
     title: "\u56DE\u9996\u9801/\u65B7\u7DDA"
   }, !isMultiplayer ? '🏠' : '🔌', /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline ml-1"
@@ -6638,15 +6662,24 @@ function SudokuGame() {
     var fillColor = '#ffffff';
     if (hasConflict) fillColor = '#fee2e2';else if (inputMode === 'cell' && selectedCellId === cell.id) fillColor = '#bae6fd';else if (isExactMatch) fillColor = '#fde047';else if (isHighlightZone || isFilledWithOther) fillColor = '#fef8cb';else if (isSpectator && cell.isGiven) fillColor = '#f1f5f9'; // 上帝視角下的題目背景：淺灰色 (v3.10.12)
 
-    return /*#__PURE__*/React.createElement("rect", {
-      key: "bg-".concat(cell.id),
+    return /*#__PURE__*/React.createElement(React.Fragment, {
+      key: "bg-".concat(cell.id)
+    }, /*#__PURE__*/React.createElement("rect", {
       x: cell.x * CELL_SIZE,
       y: cell.y * CELL_SIZE,
       width: CELL_SIZE,
       height: CELL_SIZE,
       fill: fillColor,
       className: "transition-colors duration-300 pointer-events-none"
-    });
+    }), pressedCellId === cell.id && /*#__PURE__*/React.createElement("rect", {
+      x: cell.x * CELL_SIZE + 1,
+      y: cell.y * CELL_SIZE + 1,
+      width: CELL_SIZE - 2,
+      height: CELL_SIZE - 2,
+      fill: "#0f172a",
+      rx: "3",
+      className: "sudoku-pressfx pointer-events-none"
+    }));
   })), strokes.map(function (s) {
     var strokeUid = s.uid || s.id.split('-')[1];
     var isOwnStroke = strokeUid === myId;
@@ -7214,7 +7247,7 @@ function SudokuGame() {
           setColorPickerTarget(null);
         }
       },
-      className: "w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[3px_3px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none mx-auto",
+      className: "plat-btn-hard plat-btn-hard-2 w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95 mx-auto",
       style: {
         backgroundColor: color
       },
@@ -7232,7 +7265,7 @@ function SudokuGame() {
     className: "mb-6"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleSaveCode,
-    className: "w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg"
+    className: "plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg"
   }, "\u7522\u751F\u9032\u5EA6\u4EE3\u78BC (\u81EA\u52D5\u8907\u88FD)"), /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("textarea", {
@@ -7246,17 +7279,17 @@ function SudokuGame() {
     className: "w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white"
   }), /*#__PURE__*/React.createElement("button", {
     onClick: handleQuickPaste,
-    className: "absolute bottom-3 right-3 bg-[#ffcc00] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none"
+    className: "plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#ffcc00] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)]"
   }, "\uD83D\uDCCB \u5FEB\u901F\u8CBC\u4E0A"))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setShowSaveModal(false);
     },
-    className: "flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+    className: "plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, "\u95DC\u9589"), /*#__PURE__*/React.createElement("button", {
     onClick: handleLoadCode,
-    className: "flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all"
+    className: "plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]"
   }, "\u8F09\u5165\u4EE3\u78BC")))), toastMsg && /*#__PURE__*/React.createElement("div", {
     className: "fixed top-10 left-1/2 transform -translate-x-1/2 bg-white text-slate-800 px-6 py-3 rounded-xl border-[3px] border-slate-800 font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] z-[100] animate-slideUpFade flex items-center justify-center gap-2 whitespace-pre-line text-center"
   }, toastMsg), !isSpectator && screen === 'game' && /*#__PURE__*/React.createElement("div", {
@@ -7266,36 +7299,42 @@ function SudokuGame() {
   }, unopenedGifts[myId] && unopenedGifts[myId].length > 0 && /*#__PURE__*/React.createElement("button", {
     id: "btn-open-gift",
     onClick: handleOpenGift,
-    className: "pointer-events-auto relative w-14 h-14 bg-pink-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl animate-bounce flex items-center justify-center p-0"
+    className: "plat-btn-hard pointer-events-auto relative w-14 h-14 bg-pink-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl animate-bounce flex items-center justify-center p-0"
   }, "\uD83C\uDF81 ", /*#__PURE__*/React.createElement("div", {
     className: "absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-slate-800"
-  }, unopenedGifts[myId].length)), isBrawlMode && myWeapons.filter(function (w) {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: unopenedGifts[myId].length
+  }))), isBrawlMode && myWeapons.filter(function (w) {
     return w === 'balloon';
   }).length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return handleUseWeapon('balloon');
     },
-    className: "pointer-events-auto relative w-14 h-14 bg-violet-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center"
+    className: "plat-btn-hard pointer-events-auto relative w-14 h-14 bg-violet-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center"
   }, "\uD83D\uDCA7 ", myWeapons.filter(function (w) {
     return w === 'balloon';
   }).length > 1 && /*#__PURE__*/React.createElement("div", {
     className: "absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800"
-  }, myWeapons.filter(function (w) {
-    return w === 'balloon';
-  }).length)), isBrawlMode && myWeapons.filter(function (w) {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: myWeapons.filter(function (w) {
+      return w === 'balloon';
+    }).length
+  }))), isBrawlMode && myWeapons.filter(function (w) {
     return w === 'eraser';
   }).length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return handleUseWeapon('eraser');
     },
-    className: "pointer-events-auto relative w-14 h-14 bg-orange-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center"
+    className: "plat-btn-hard pointer-events-auto relative w-14 h-14 bg-orange-500 rounded-full border-[3px] border-slate-800 shadow-[4px_4px_0px_#1e293b] text-3xl anim-weapon flex items-center justify-center"
   }, "\uD83E\uDDF9 ", myWeapons.filter(function (w) {
     return w === 'eraser';
   }).length > 1 && /*#__PURE__*/React.createElement("div", {
     className: "absolute -top-1.5 -right-1.5 bg-yellow-400 text-slate-900 font-black text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-800"
-  }, myWeapons.filter(function (w) {
-    return w === 'eraser';
-  }).length))), typeof window.PlatBar !== 'undefined' ? /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(PlatNum, {
+    value: myWeapons.filter(function (w) {
+      return w === 'eraser';
+    }).length
+  })))), typeof window.PlatBar !== 'undefined' ? /*#__PURE__*/React.createElement("div", {
     ref: platBarRef
   }) : /*#__PURE__*/React.createElement(React.Fragment, null, ")}", /*#__PURE__*/React.createElement("div", {
     className: "bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
@@ -7305,7 +7344,7 @@ function SudokuGame() {
     onClick: function onClick() {
       return setZoomOpen(!zoomOpen);
     },
-    className: "w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#ffcc00]",
+    className: "plat-btn-hard plat-btn-hard-2 w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] flex items-center justify-center text-base md:text-lg font-black hover:bg-[#ffcc00]",
     title: "\u7E2E\u653E\uFF08\u9EDE\u958B/\u6536\u5408\uFF09"
   }, zoomIndicator.visible ? /*#__PURE__*/React.createElement("span", {
     className: "text-blue-600 scale-110 text-xs md:text-sm"
@@ -7313,15 +7352,15 @@ function SudokuGame() {
     className: "absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleZoomIn,
-    className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    className: "plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]",
     title: "\u653E\u5927"
   }, "\uFF0B"), /*#__PURE__*/React.createElement("button", {
     onClick: handleZoomOut,
-    className: "w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    className: "plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]",
     title: "\u7E2E\u5C0F"
   }, "\uFF0D"), /*#__PURE__*/React.createElement("button", {
     onClick: handleCycleZoom,
-    className: "w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all",
+    className: "plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b]",
     title: "\u5FAA\u74B0\u5207\u63DB\u7E2E\u653E\u6A21\u5F0F\uFF08\u81EA\u52D5\u9069\u61C9\uFF09"
   }, zoomModeIdx === 0 ? '1X' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner",
@@ -7375,7 +7414,7 @@ function SudokuGame() {
       e.stopPropagation();
       clearAllStrokes();
     },
-    className: "w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]",
+    className: "plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b]",
     title: "\u623F\u4E3B\uFF1A\u6E05\u9664\u5168\u5834\u5857\u9D09"
   }, "\uD83D\uDEAE"))), renderDockCapsule(false)))));
 }

@@ -15,6 +15,15 @@ function PlatPct(props) {
   return <span ref={ref}></span>;
 }
 
+// PlatNum：小數字 Roll-lite 包裝（v1.54.0，B 批）——有殼 PlatLite 時新值 spring 彈入換字；無殼（獨立版）退純文字。寫法比照 PlatPct。
+function PlatNum(props) {
+  var ref = useRef(null);
+  var v = String(props.value);
+  useEffect(function () { if (window.PlatLite && ref.current) window.PlatLite(ref.current, v); }, [v]);
+  if (!window.PlatLite) return <span>{v}</span>;
+  return <span ref={ref}></span>;
+}
+
 
     // === 20 色票 ===
     const COLORS = [
@@ -3575,13 +3584,13 @@ function PlatPct(props) {
                     <p className="text-slate-800 font-black text-xl tracking-widest uppercase italic">Hashi Puzzle</p>
                  </div>
                  <div className="flex flex-col gap-5">
-                    <button onClick={startSinglePlayer} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">👤 單機挑戰</button>
-                    <button onClick={() => startDailyMode(dailyMenuDate)} className="w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all transform rotate-1">📅 每日一題</button>
+                    <button onClick={startSinglePlayer} className="plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">👤 單機挑戰</button>
+                    <button onClick={() => startDailyMode(dailyMenuDate)} className="plat-btn-hard w-full py-4 bg-[#4ade80] border-4 border-slate-800 rounded-xl font-black text-xl text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] transform rotate-1">📅 每日一題</button>
                     <div className="-mt-2 flex items-center justify-center gap-1.5">
                       <span className="text-slate-500 font-semibold text-xs whitespace-nowrap">🕘 以前的題目</span>
-                      <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, -1)))} disabled={dailyMenuDate <= MIN_DAILY_DATE} className="px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none">◀</button>
-                      <button onClick={openDailyCal} className="border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5 active:shadow-none">📅 {dailyMenuDate}</button>
-                      <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, 1)))} disabled={dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr()} className="px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5 active:shadow-none">▶</button>
+                      <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, -1)))} disabled={dailyMenuDate <= MIN_DAILY_DATE} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5">◀</button>
+                      <button onClick={openDailyCal} className="plat-btn-hard plat-btn-hard-2 border-2 border-slate-800 rounded-md px-2 py-1 font-bold text-sm bg-white text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-0.5">📅 {dailyMenuDate}</button>
+                      <button onClick={() => setDailyMenuDate(d => clampDailyDate(HASHI_PUZZLE.shiftDateStr(d, 1)))} disabled={dailyMenuDate >= HASHI_PUZZLE.getDailyDateStr()} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-white border-2 border-slate-800 rounded-md font-black text-xs text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-30 active:translate-y-0.5">▶</button>
                     </div>
                     {dailyStatus && (
                       <p className="text-slate-600 font-bold text-sm -mt-2">
@@ -3589,10 +3598,10 @@ function PlatPct(props) {
                         {dailyStatus.streak > 1 ? `  🔥 連擊 x${dailyStatus.streak}` : ''}
                       </p>
                     )}
-                    <button onClick={openTutorial} className="w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">❓ 玩法教學</button>
+                    <button onClick={openTutorial} className="plat-btn-hard w-full py-4 bg-white border-4 border-slate-800 rounded-xl font-black text-xl text-slate-600 shadow-[4px_4px_0px_rgba(30,41,59,1)]">❓ 玩法教學</button>
                   {PLAT_MODE && (
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all">🏠 回大廳</button>
+                      <button onClick={() => { if (window.PLAT_show) window.PLAT_show('home'); }} className="plat-btn-hard flex-1 py-3 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)]">🏠 回大廳</button>
                       {renderDockCapsule(false)}
                     </div>
                   )}
@@ -3640,7 +3649,7 @@ function PlatPct(props) {
                        <span>📅 {dailyDateStr}</span>
                        <button onClick={() => startDailyMode(HASHI_PUZZLE.shiftDateStr(dailyDateStr, 1))} disabled={dailyDateStr >= HASHI_PUZZLE.getDailyDateStr()} className="disabled:opacity-30 px-1" title="後一天的題目">▶</button>
                      </span> )}
-                     {isDailyMode && dailyStreak > 0 && ( <span className="bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#1e293b] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">🔥 x{dailyStreak}</span> )}
+                     {isDailyMode && dailyStreak > 0 && ( <span className="bg-red-500 text-white px-2 py-1 rounded-md border-2 border-[#1e293b] font-black text-xs md:text-sm shadow-[2px_2px_0px_rgba(0,0,0,0.3)] whitespace-nowrap">🔥 x<PlatNum value={dailyStreak} /></span> )}
                      {!PLAT_MODE && (videoOn || Object.keys(remoteVideos).length > 0) && (
               <div className="px-4 py-2 bg-slate-800 flex gap-3 items-start overflow-x-auto shrink-0">
                 <div className="flex flex-col items-center shrink-0">
@@ -3696,13 +3705,13 @@ function PlatPct(props) {
                   <button disabled={isDailyMode || inRace || (isMultiplayer && !isHostRef.current)} onClick={() => setShowSettingsModal(true)} title="設定難度" className="px-1 py-1 md:px-2 md:py-1.5 rounded-md border-2 border-[#1e293b] font-bold bg-white text-[#1e293b] text-xs md:text-sm outline-none shadow-[2px_2px_0px_#1e293b] w-auto cursor-pointer max-w-[150px] sm:max-w-none truncate disabled:opacity-60 disabled:cursor-not-allowed">{(currentLevelId === 'custom' && randomLevelData) ? `⚙️ 自訂 (${randomLevelData.width}x${randomLevelData.height})` : ((LEVELS.find(l => String(l.id) === String(currentLevelId)) || {}).name || '')} ▾</button>
 
                   <div className="flex gap-1 md:gap-2 flex-wrap items-center ml-auto">
-                     {!isWon && hasSolution && !showSolution && !inRace && ( <button onClick={handleShowSolution} className="px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#1e293b] border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="解答">💡<span className="hidden sm:inline">解答</span></button> )}
-                     {!isDailyMode && !inRace && ( <button onClick={handleRegenerateRandom} className="px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="新題">🎲<span className="hidden sm:inline">新題</span></button> )}
-                     {!isMultiplayer && ( <button onClick={handleUndo} disabled={history.length === 0 || isWon} className="px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b]" title="復原">↩️<span className="hidden sm:inline">復原</span></button> )}
-                     <button onClick={handleReset} className="px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
-                     <button onClick={() => setShowSaveModal(true)} className="px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
-                     <button onClick={() => { const m = window.HASHI_SOUND.toggleMute(); setMuted(m); if (!m) window.HASHI_SOUND.play('click'); }} className="px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1 text-[#1e293b]" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
-                     <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'hashi') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="bg-white text-[#1e293b] border-2 border-[#1e293b] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-1" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
+                     {!isWon && hasSolution && !showSolution && !inRace && ( <button onClick={handleShowSolution} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-green-400 text-[#1e293b] border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1" title="解答">💡<span className="hidden sm:inline">解答</span></button> )}
+                     {!isDailyMode && !inRace && ( <button onClick={handleRegenerateRandom} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1" title="新題">🎲<span className="hidden sm:inline">新題</span></button> )}
+                     {!isMultiplayer && ( <button onClick={handleUndo} disabled={history.length === 0 || isWon} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-50 disabled:shadow-none flex items-center gap-1 text-[#1e293b]" title="復原">↩️<span className="hidden sm:inline">復原</span></button> )}
+                     <button onClick={handleReset} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-red-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1" title="重置">🔄<span className="hidden sm:inline">重置</span></button>
+                     <button onClick={() => setShowSaveModal(true)} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-blue-500 text-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1" title="存檔/讀檔">💾<span className="hidden sm:inline">存檔</span></button>
+                     <button onClick={() => { const m = window.HASHI_SOUND.toggleMute(); setMuted(m); if (!m) window.HASHI_SOUND.play('click'); }} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 md:px-3 md:py-1.5 bg-white border-2 border-[#1e293b] rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1 text-[#1e293b]" title={muted ? "取消靜音" : "靜音"}>{muted ? '🔇' : '🔊'}</button>
+                     <button onClick={() => { const N = typeof window !== 'undefined' ? window.__PLAT_NET : null; if ((N && N.inMatch === 'hashi') || (typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND())) setShowExitMenu(true); else handleGoHome(); }} className="plat-btn-hard plat-btn-hard-2 bg-white text-[#1e293b] border-2 border-[#1e293b] px-2 py-1 md:px-3 md:py-1.5 rounded-md font-bold text-xs md:text-sm shadow-[2px_2px_0px_#1e293b] flex items-center gap-1" title="回首頁/斷線">{!isMultiplayer ? '🏠' : '🔌'}<span className="hidden sm:inline ml-1">{!isMultiplayer ? '回首頁' : '退出'}</span></button>
                   </div>
                </div>
             </div>
@@ -3773,7 +3782,7 @@ function PlatPct(props) {
                                       setColorPickerTarget(null);
                                   }
                                 }}
-                                className="w-6 h-6 rounded-full border-[2px] border-slate-800 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none"
+                                className="plat-btn-hard plat-btn-hard-1 w-6 h-6 rounded-full border-[2px] border-slate-800 shadow-[1px_1px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95"
                                 style={{ backgroundColor: color }}
                                 title={color}
                               />
@@ -3869,7 +3878,7 @@ function PlatPct(props) {
                 </div>
                 {raceState === 'finished' && (
                   <div className="px-4 pb-1.5 flex items-center gap-1.5 flex-wrap">
-                    <button onClick={() => { const opps = Object.keys(brawlBoards); if (opps.length) setGodViewUid(opps[0]); }} disabled={Object.keys(brawlBoards).length === 0} className="px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-40">👁️ 上帝視角</button>
+                    <button onClick={() => { const opps = Object.keys(brawlBoards); if (opps.length) setGodViewUid(opps[0]); }} disabled={Object.keys(brawlBoards).length === 0} className="plat-btn-hard plat-btn-hard-2 px-2 py-1 bg-slate-800 text-white border-2 border-slate-800 rounded-lg font-black text-xs shadow-[2px_2px_0px_rgba(30,41,59,1)] disabled:opacity-40">👁️ 上帝視角</button>
                   </div>
                 )}
               </div>
@@ -3902,7 +3911,7 @@ function PlatPct(props) {
                   <label className="block text-[10px] md:text-xs font-bold text-slate-600 mb-1">修改代表色：</label>
                   <div className="grid grid-cols-5 gap-2">
                     {COLORS.map(color => (
-                      <button key={color} onClick={(e) => { e.stopPropagation(); const colorIdx = COLORS.indexOf(color); let newSeq = [...colorSeq, colorIdx]; const targetSeq = [0, 4, 15, 19]; let isValid = true; for (let i = 0; i < newSeq.length; i++) { if (newSeq[i] !== targetSeq[i]) { isValid = false; break; } } if (isValid) { setColorSeq(newSeq); if (newSeq.length === 4) { handlePlayerColorChange(editTarget, 'rainbow'); setEditTarget(null); showToast("🌈 解鎖隱藏彩色漸變！"); setColorSeq([]); } else handlePlayerColorChange(editTarget, color); } else { setColorSeq([]); handlePlayerColorChange(editTarget, color); setEditTarget(null); } }} className="w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 hover:shadow-[3px_3px_0px_rgba(30,41,59,1)] transition-all active:scale-95 active:shadow-none mx-auto" style={{ backgroundColor: color }} title={color} />
+                      <button key={color} onClick={(e) => { e.stopPropagation(); const colorIdx = COLORS.indexOf(color); let newSeq = [...colorSeq, colorIdx]; const targetSeq = [0, 4, 15, 19]; let isValid = true; for (let i = 0; i < newSeq.length; i++) { if (newSeq[i] !== targetSeq[i]) { isValid = false; break; } } if (isValid) { setColorSeq(newSeq); if (newSeq.length === 4) { handlePlayerColorChange(editTarget, 'rainbow'); setEditTarget(null); showToast("🌈 解鎖隱藏彩色漸變！"); setColorSeq([]); } else handlePlayerColorChange(editTarget, color); } else { setColorSeq([]); handlePlayerColorChange(editTarget, color); setEditTarget(null); } }} className="plat-btn-hard plat-btn-hard-2 w-8 h-8 rounded-full border-[2px] border-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:scale-110 active:scale-95 mx-auto" style={{ backgroundColor: color }} title={color} />
                     ))}
                   </div>
                 </div>
@@ -3932,10 +3941,10 @@ function PlatPct(props) {
                     const meta = BRAWL_ITEMS.find(x => x.key === k);
                     const cnt = myItems.filter(x => x === k).length;
                     return (
-                      <button key={k} onClick={() => useBrawlItem(k)} disabled={raceState !== 'racing'} className="anim-item relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center active:translate-y-[2px] active:shadow-none disabled:opacity-40 transition-all">
+                      <button key={k} onClick={() => useBrawlItem(k)} disabled={raceState !== 'racing'} className="plat-btn-hard plat-btn-hard-3 anim-item relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-white border-4 border-slate-800 shadow-[3px_3px_0px_rgba(30,41,59,1)] flex flex-col items-center justify-center disabled:opacity-40">
                         <span className="text-[22px] md:text-2xl leading-none">{meta.icon}</span>
                         <span className="text-[9px] font-black text-slate-600 leading-tight mt-0.5">{meta.name}</span>
-                        {cnt > 1 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">{cnt}</span>}
+                        {cnt > 1 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full border-2 border-white flex items-center justify-center"><PlatNum value={cnt} /></span>}
                       </button>
                     );
                   })}
@@ -4187,7 +4196,7 @@ function PlatPct(props) {
                       const isDirectlyHovered = hoveredIslandId === island.id && interactionMode < 2;
 
                       return (
-                        <g key={`island-${island.id}`}
+                        <g key={`island-${island.id}`} className="hashi-island"
                            onPointerEnter={(e) => { if(e.pointerType==='mouse' && interactionMode < 2) setHoveredIslandId(island.id); }}
                            onPointerLeave={(e) => { if(e.pointerType==='mouse' && interactionMode < 2) setHoveredIslandId(null); }}
                            onPointerDown={(e) => handleIslandPointerDown(e, island)}
@@ -4319,12 +4328,12 @@ function PlatPct(props) {
               {/* 底部工具列（比照數獨排列：左縮放 / 右模式切換，繪圖子工具居中） */}
               <div className="shrink-0 bg-[#fffdfa]/95 backdrop-blur-md border-t-[4px] border-slate-800 min-h-[4rem] md:min-h-[5rem] flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1 px-3 md:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] relative z-30">
                 <div className="flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative">
-                  <button onClick={() => setZoomOpen(!zoomOpen)} title="縮放（點開/收合）" className="w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all hover:bg-[#4ade80]">🔍</button>
+                  <button onClick={() => setZoomOpen(!zoomOpen)} title="縮放（點開/收合）" className="plat-btn-hard plat-btn-hard-2 w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] flex items-center justify-center text-base md:text-lg font-black hover:bg-[#4ade80]">🔍</button>
                   {zoomOpen && (
                     <div className="absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">
-                      <button onClick={handleZoomIn} title="放大" className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">＋</button>
-                      <button onClick={handleZoomOut} title="縮小" className="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">－</button>
-                      <button onClick={handleCycleZoom} title="循環切換縮放模式（自動適應）" className="w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">
+                      <button onClick={handleZoomIn} title="放大" className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]">＋</button>
+                      <button onClick={handleZoomOut} title="縮小" className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b]">－</button>
+                      <button onClick={handleCycleZoom} title="循環切換縮放模式（自動適應）" className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b]">
                         {zoomModeIdx === 0 ? '1x' : zoomModeIdx === 1 ? '↔️' : zoomModeIdx === 2 ? '↕️' : '🔲'}
                       </button>
                     </div>
@@ -4340,7 +4349,7 @@ function PlatPct(props) {
                     <div className="absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter pointer-events-auto">
                       <button onClick={() => setDrawSubMode('pen')} className={`w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ${drawSubMode === 'pen' ? 'bg-emerald-100 scale-110 border-emerald-600' : 'bg-white hover:bg-slate-50'}`} title="畫筆模式">🖌️</button>
                       <button onClick={() => setDrawSubMode('eraser')} onDoubleClick={clearOwnStrokes} className={`w-12 h-12 border-[3px] border-slate-800 rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ${drawSubMode === 'eraser' ? 'bg-orange-100 scale-110 border-orange-600' : 'bg-white hover:bg-slate-50'}`} title="橡皮擦 (雙擊清除自己所有塗鴉)">🧽</button>
-                      {isHostRef.current && (<button onClick={clearAllStrokes} className="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]" title="房主：清除全場塗鴉">🚮</button>)}
+                      {isHostRef.current && (<button onClick={clearAllStrokes} className="plat-btn-hard plat-btn-hard-2 w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b]" title="房主：清除全場塗鴉">🚮</button>)}
                     </div>
                   )}
                 </div>
@@ -4349,7 +4358,7 @@ function PlatPct(props) {
               </React.Fragment>)}
 
               {resultsDismissedUi && inRace && raceState === 'finished' && (
-                <button onClick={() => { resultsDismissRef.current = null; setResultsDismissedUi(false); }} className="fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🏆 結果</button>
+                <button onClick={() => { resultsDismissRef.current = null; setResultsDismissedUi(false); }} className="plat-btn-hard plat-btn-hard-3 fixed bottom-24 right-3 z-[56] bg-white border-[3px] border-slate-800 rounded-full px-4 py-2 font-black shadow-[3px_3px_0px_#1e293b]">🏆 結果</button>
               )}
 
               {showExitMenu && (
@@ -4357,10 +4366,10 @@ function PlatPct(props) {
                   <div className="bg-white border-4 border-[#1e293b] rounded-2xl shadow-[10px_10px_0px_#1e293b] p-6 w-full max-w-xs text-center animate-popUpCenter" onClick={e => e.stopPropagation()}>
                     <div className="font-black text-xl text-[#1e293b] mb-4">要離開對局嗎？</div>
                     {(typeof window !== 'undefined' && window.__PLAT_TOURN_CAN_FORCEEND && window.__PLAT_TOURN_CAN_FORCEEND()) && (
-                      <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">⏹️ 結束本局（錦標賽）</button>
+                      <button onClick={() => { setShowExitMenu(false); if (window.__PLAT_TOURN_FORCEEND) window.__PLAT_TOURN_FORCEEND(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-rose-500 text-white border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">⏹️ 結束本局（錦標賽）</button>
                     )}
-                    <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🏁 回等待室</button>
-                    <button onClick={() => { setShowExitMenu(false); handleGoHome('leave'); }} className="w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">🚪 退出（回大廳）</button>
+                    <button onClick={() => { setShowExitMenu(false); requestLobby(); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">🏁 回等待室</button>
+                    <button onClick={() => { setShowExitMenu(false); handleGoHome('leave'); }} className="plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 bg-white text-slate-800 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_#1e293b]">🚪 退出（回大廳）</button>
                     <button onClick={() => setShowExitMenu(false)} className="w-full py-2 text-slate-400 font-bold hover:text-slate-700">取消</button>
                   </div>
                 </div>
@@ -4382,7 +4391,7 @@ function PlatPct(props) {
                       ))}
                     </div>
                     {tournMyEntry && !tournMyEntry.pending && (
-                      <button onClick={() => setMyReady(!(tournMyEntry && tournMyEntry.isReady))} className={"w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
+                      <button onClick={() => setMyReady(!(tournMyEntry && tournMyEntry.isReady))} className={"plat-btn-hard plat-btn-hard-3 w-full py-3 mb-2 rounded-xl border-[3px] border-slate-800 font-black text-lg shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (tournMyEntry.isReady ? 'bg-amber-400 text-slate-900' : 'bg-white text-slate-500')}>{tournMyEntry.isReady ? '✅ 已準備（點擊取消）' : '✋ 準備好了'}</button>
                     )}
                     {isHostRef.current ? (
                       <div>
@@ -4512,15 +4521,15 @@ function PlatPct(props) {
                 <h2 className="text-2xl font-black text-slate-800 mb-2 border-b-4 border-blue-500 inline-block pb-1">💾 存檔與讀檔</h2>
                 <p className="text-sm font-bold text-slate-600 mb-4">將進度轉換為代碼，下次貼上代碼即可恢復！</p>
                 <div className="mb-6">
-                  <button onClick={handleSaveCode} className="w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
+                  <button onClick={handleSaveCode} className="plat-btn-hard w-full py-3 bg-blue-500 text-white border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] mb-3 text-base md:text-lg">產生進度代碼 (自動複製)</button>
                   <div className="relative">
                     <textarea id="saveCodeTextarea" value={saveCode} onChange={(e) => setSaveCode(e.target.value)} placeholder="點擊上方按鈕生成，或是手動貼上舊代碼至此處" rows="4" className="w-full border-4 border-slate-800 rounded-xl p-3 pb-12 font-mono text-sm shadow-inner outline-none focus:bg-blue-50 break-all bg-white" />
-                    <button onClick={handleQuickPaste} className="absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all active:translate-y-1 active:shadow-none">📋 快速貼上</button>
+                    <button onClick={handleQuickPaste} className="plat-btn-hard plat-btn-hard-2 absolute bottom-3 right-3 bg-[#4ade80] text-slate-900 px-3 py-1.5 rounded-lg text-sm font-black border-2 border-slate-800 hover:bg-[#e6b800] shadow-[2px_2px_0px_rgba(30,41,59,1)]">📋 快速貼上</button>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <button onClick={() => setShowSaveModal(false)} className="flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">關閉</button>
-                  <button onClick={handleLoadCode} className="flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">載入代碼</button>
+                  <button onClick={() => setShowSaveModal(false)} className="plat-btn-hard flex-1 py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">關閉</button>
+                  <button onClick={handleLoadCode} className="plat-btn-hard flex-1 py-3 bg-emerald-400 text-slate-900 border-4 border-slate-800 rounded-xl font-black shadow-[4px_4px_0px_rgba(30,41,59,1)]">載入代碼</button>
                 </div>
               </div>
             </div>
@@ -4534,13 +4543,13 @@ function PlatPct(props) {
                 <p className="text-sm font-bold text-slate-600 mb-4">選一個難度，立刻換一題新的。</p>
                 <div className="flex flex-col gap-2 mb-4">
                   {LEVELS.map(level => (
-                    <button key={level.id} onClick={() => { setShowSettingsModal(false); handleLevelChange(level.id === 'custom' ? 'custom' : level.id); }} className={"w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none transition-all " + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800")}>
+                    <button key={level.id} onClick={() => { setShowSettingsModal(false); handleLevelChange(level.id === 'custom' ? 'custom' : level.id); }} className={"plat-btn-hard plat-btn-hard-3 w-full text-left px-4 py-3 border-[3px] border-slate-800 rounded-xl font-black shadow-[3px_3px_0px_rgba(30,41,59,1)]" + (String(currentLevelId) === String(level.id) ? "bg-[#4ade80] text-slate-900" : "bg-white text-slate-800")}>
                       {level.name}
                       <span className="block text-xs font-bold opacity-70 mt-0.5">{level.description}</span>
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setShowSettingsModal(false)} className="w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(30,41,59,1)] transition-all">取消</button>
+                <button onClick={() => setShowSettingsModal(false)} className="plat-btn-hard w-full py-3 bg-white border-4 border-slate-800 rounded-xl font-black text-slate-800 shadow-[4px_4px_0px_rgba(30,41,59,1)]">取消</button>
               </div>
             </div>
           )}
@@ -4571,8 +4580,8 @@ function PlatPct(props) {
                   <button onClick={() => {
                       setShowCustomModal(false);
                       setCurrentLevelId(stateRef.current.levelId);
-                  }} className="flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300 active:translate-y-1 active:shadow-none transition-all">取消</button>
-                  <button onClick={handleCustomGenerate} className="flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800] active:translate-y-1 active:shadow-none transition-all">產生</button>
+                  }} className="plat-btn-hard plat-btn-hard-2 flex-1 py-2 bg-slate-200 border-2 border-slate-800 rounded-xl font-black text-slate-800 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-slate-300">取消</button>
+                  <button onClick={handleCustomGenerate} className="plat-btn-hard plat-btn-hard-2 flex-1 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] hover:bg-[#e6b800]">產生</button>
                 </div>
               </div>
             </div>
@@ -4619,7 +4628,7 @@ function PlatPct(props) {
                     maxLength={200}
                     className="flex-1 min-w-0 px-3 py-2 rounded-xl border-2 border-slate-800 text-sm font-bold outline-none focus:border-emerald-500"
                   />
-                  <button onClick={sendChat} className="px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none shrink-0">送出</button>
+                  <button onClick={sendChat} className="plat-btn-hard plat-btn-hard-2 px-4 py-2 bg-[#4ade80] border-2 border-slate-800 rounded-xl font-black text-slate-900 shadow-[2px_2px_0px_rgba(30,41,59,1)] shrink-0">送出</button>
                 </div>
                 </React.Fragment>
                 )}
