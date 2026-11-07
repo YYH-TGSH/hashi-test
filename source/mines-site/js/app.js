@@ -489,11 +489,19 @@ function MinesGame() {
     if (cells[idx] === 'o') { chord(idx); return; }
     doReveal(idx, cells, layout, nums);
   }
-  const lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
-  const lpCellRef = useRef(null);   // 本次按壓的起點格 {idx, t}：click 落點若漂移到別格就忽略（防滑移/捲動讓點數字誤動到旁邊的旗）
+  const lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 pointerup/click 不能再挖
+  const lpCellRef = useRef(null);   // 本次按壓的起點格 {idx, t}：動作一律對「按下時的那一格」執行
+  const upGuardRef = useRef(null);  // pointerup 已執行過的那一下 {idx, t}：擋掉緊接著的 click 重複觸發；鍵盤 click 沒有 pointer 前置、不在此列（放行）
+  const lpLeftRef = useRef(false);  // 按壓途中曾滑出起點格（滑鼠路徑）：之後若在「別格」放開＝取消（滑出去再回來原格放開則照常）；觸控有 implicit capture，leave 在 up 之後、不受影響
+  const TAP_DRIFT_PX = 22;          // 放開點離按壓點的容許漂移：手指抬起本來就會滾動數 px、小格子更明顯，22px 內仍算同一個點按；超過視為捲動/滑開 → 整下取消
+  // v1.54.2 輸入管線改版（使用者實機回報：按下去按鈕有反應、卻常常不插旗/不打開/數字不和弦，像累格）：
+  // 舊版動作只靠 click 觸發——手指抬起時只要滾到鄰格，瀏覽器就把 click 發給鄰格或共同祖先（整下消失），
+  // 或被「click 落點≠按下格就忽略」的防滑檢查吞掉；按下時的壓感動畫卻照樣播，才會「有反應、沒動作」。
+  // 改成 pointerup 就在按下那格執行（漂移 22px 內照算），click 退居鍵盤/程式觸發的備援並用 upGuard 防重複。
   function onCellDown(idx, e) {
     if (lpRef.current) clearTimeout(lpRef.current);
     lpFiredRef.current = false;
+    lpLeftRef.current = false;
     lpCellRef.current = { idx: idx, t: Date.now() };
     lpPtRef.current = (e && typeof e.clientX === 'number') ? { x: e.clientX, y: e.clientY } : null;
     // 已定案的格（已開數字、容錯 ✗、禮物鎖定旗）不需要長按插旗計時器：不起計時器，按住數字想事情不會有任何副作用
@@ -502,12 +510,30 @@ function MinesGame() {
     lpRef.current = setTimeout(() => { lpRef.current = null; lpPtRef.current = null; lpFiredRef.current = true; toggleFlag(idx); }, 500);
   }
   function onCellMove(e) {
-    // 防誤觸：按住後移動超過 10px（手滑、想捲動頁面）就取消長按判定——舊版完全沒取消，
-    // 使用者按住格子往下滑想捲頁面，長按照樣計時、在起點格默默插旗（數獨本來就有 10px 取消，這裡補齊）
+    // 防誤觸：按住後移動超過 TAP_DRIFT_PX（想捲動頁面）就取消長按判定——舊版 10px 太嚴：手指自然抖動就把長按照消，
+    // 放開後只剩 click 路徑、又被漂移檢查吞掉（v1.54.2 與 pointerup 容許漂移統一為 22px）
     if (!lpRef.current || !lpPtRef.current || !e || typeof e.clientX !== 'number') return;
-    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > 10) { clearTimeout(lpRef.current); lpRef.current = null; lpPtRef.current = null; }
+    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > TAP_DRIFT_PX) { clearTimeout(lpRef.current); lpRef.current = null; lpPtRef.current = null; }
   }
-  function onCellUp() { if (lpRef.current) { clearTimeout(lpRef.current); lpRef.current = null; } lpPtRef.current = null; }
+  function onCellUp(e, commit) {
+    var fired = lpFiredRef.current; // 長按已插旗：這次放開不再挖（lpFiredRef 留給隨後的 click 做最後一道吞嚥）
+    if (lpRef.current) { clearTimeout(lpRef.current); lpRef.current = null; }
+    if (!commit) { lpLeftRef.current = true; return; } // pointerleave：只停長按計時＋記下曾滑出；起點/座標紀錄留給即將到來的 pointerup
+    var lc = lpCellRef.current; lpCellRef.current = null;
+    var leftOut = lpLeftRef.current; lpLeftRef.current = false;
+    if (leftOut && e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.cell != null && Number(e.currentTarget.dataset.cell) !== (lc && lc.idx)) return; // 滑出起點格又在別格放開（滑鼠式取消）
+    var pt = lpPtRef.current; lpPtRef.current = null;
+    if (fired || !lc) return;
+    if (pt && e && typeof e.clientX === 'number' && Math.hypot(e.clientX - pt.x, e.clientY - pt.y) > TAP_DRIFT_PX) return; // 滑太遠＝捲動意圖，整下取消
+    upGuardRef.current = { idx: lc.idx, t: Date.now() };
+    onCellAction(lc.idx);
+  }
+  function onCellCancel() { if (lpRef.current) { clearTimeout(lpRef.current); lpRef.current = null; } lpPtRef.current = null; lpCellRef.current = null; } // pointercancel：瀏覽器接管手勢（捲動）→ 整下作廢
+  function onCellClick(idx) {
+    var g = upGuardRef.current;
+    if (g && g.idx === idx && Date.now() - g.t < 500) { upGuardRef.current = null; return; } // pointerup 已做完這一下，click 是尾巴
+    onCellAction(idx);
+  }
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
   const myId = myGameId();
@@ -1312,10 +1338,10 @@ function MinesGame() {
       <button key={i} data-cell={i}
         className="mine-cell flex items-center justify-center font-black rounded-[4px] border border-orange-900/20"
         style={Object.assign({ width: zCellPx, height: zCellPx, background: bg, color: color, fontSize: zCellPx <= 22 ? 12 : Math.round(zCellPx * 0.5), lineHeight: 1 }, extra)}
-        onClick={() => onCellAction(i)}
+        onClick={() => onCellClick(i)}
         onPointerDown={(e) => onCellDown(i, e)}
         onPointerMove={onCellMove}
-        onPointerUp={onCellUp} onPointerLeave={onCellUp} onPointerCancel={onCellUp}
+        onPointerUp={(e) => onCellUp(e, true)} onPointerLeave={(e) => onCellUp(e, false)} onPointerCancel={onCellCancel}
         onContextMenu={(e) => { e.preventDefault(); toggleFlag(i); }}
       >{content}</button>
     );

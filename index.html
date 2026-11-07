@@ -19492,11 +19492,19 @@ function MinesGame() {
     }
     doReveal(idx, cells, layout, nums);
   }
-  var lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 click 不能再挖
-  var lpCellRef = useRef(null); // 本次按壓的起點格 {idx, t}：click 落點若漂移到別格就忽略（防滑移/捲動讓點數字誤動到旁邊的旗）
+  var lpFiredRef = useRef(false); // 長按已觸發插旗時，隨後的 pointerup/click 不能再挖
+  var lpCellRef = useRef(null); // 本次按壓的起點格 {idx, t}：動作一律對「按下時的那一格」執行
+  var upGuardRef = useRef(null); // pointerup 已執行過的那一下 {idx, t}：擋掉緊接著的 click 重複觸發；鍵盤 click 沒有 pointer 前置、不在此列（放行）
+  var lpLeftRef = useRef(false); // 按壓途中曾滑出起點格（滑鼠路徑）：之後若在「別格」放開＝取消（滑出去再回來原格放開則照常）；觸控有 implicit capture，leave 在 up 之後、不受影響
+  var TAP_DRIFT_PX = 22; // 放開點離按壓點的容許漂移：手指抬起本來就會滾動數 px、小格子更明顯，22px 內仍算同一個點按；超過視為捲動/滑開 → 整下取消
+  // v1.54.2 輸入管線改版（使用者實機回報：按下去按鈕有反應、卻常常不插旗/不打開/數字不和弦，像累格）：
+  // 舊版動作只靠 click 觸發——手指抬起時只要滾到鄰格，瀏覽器就把 click 發給鄰格或共同祖先（整下消失），
+  // 或被「click 落點≠按下格就忽略」的防滑檢查吞掉；按下時的壓感動畫卻照樣播，才會「有反應、沒動作」。
+  // 改成 pointerup 就在按下那格執行（漂移 22px 內照算），click 退居鍵盤/程式觸發的備援並用 upGuard 防重複。
   function onCellDown(idx, e) {
     if (lpRef.current) clearTimeout(lpRef.current);
     lpFiredRef.current = false;
+    lpLeftRef.current = false;
     lpCellRef.current = {
       idx: idx,
       t: Date.now()
@@ -19516,21 +19524,55 @@ function MinesGame() {
     }, 500);
   }
   function onCellMove(e) {
-    // 防誤觸：按住後移動超過 10px（手滑、想捲動頁面）就取消長按判定——舊版完全沒取消，
-    // 使用者按住格子往下滑想捲頁面，長按照樣計時、在起點格默默插旗（數獨本來就有 10px 取消，這裡補齊）
+    // 防誤觸：按住後移動超過 TAP_DRIFT_PX（想捲動頁面）就取消長按判定——舊版 10px 太嚴：手指自然抖動就把長按照消，
+    // 放開後只剩 click 路徑、又被漂移檢查吞掉（v1.54.2 與 pointerup 容許漂移統一為 22px）
     if (!lpRef.current || !lpPtRef.current || !e || typeof e.clientX !== 'number') return;
-    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > 10) {
+    if (Math.hypot(e.clientX - lpPtRef.current.x, e.clientY - lpPtRef.current.y) > TAP_DRIFT_PX) {
       clearTimeout(lpRef.current);
       lpRef.current = null;
       lpPtRef.current = null;
     }
   }
-  function onCellUp() {
+  function onCellUp(e, commit) {
+    var fired = lpFiredRef.current; // 長按已插旗：這次放開不再挖（lpFiredRef 留給隨後的 click 做最後一道吞嚥）
+    if (lpRef.current) {
+      clearTimeout(lpRef.current);
+      lpRef.current = null;
+    }
+    if (!commit) {
+      lpLeftRef.current = true;
+      return;
+    } // pointerleave：只停長按計時＋記下曾滑出；起點/座標紀錄留給即將到來的 pointerup
+    var lc = lpCellRef.current;
+    lpCellRef.current = null;
+    var leftOut = lpLeftRef.current;
+    lpLeftRef.current = false;
+    if (leftOut && e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.cell != null && Number(e.currentTarget.dataset.cell) !== (lc && lc.idx)) return; // 滑出起點格又在別格放開（滑鼠式取消）
+    var pt = lpPtRef.current;
+    lpPtRef.current = null;
+    if (fired || !lc) return;
+    if (pt && e && typeof e.clientX === 'number' && Math.hypot(e.clientX - pt.x, e.clientY - pt.y) > TAP_DRIFT_PX) return; // 滑太遠＝捲動意圖，整下取消
+    upGuardRef.current = {
+      idx: lc.idx,
+      t: Date.now()
+    };
+    onCellAction(lc.idx);
+  }
+  function onCellCancel() {
     if (lpRef.current) {
       clearTimeout(lpRef.current);
       lpRef.current = null;
     }
     lpPtRef.current = null;
+    lpCellRef.current = null;
+  } // pointercancel：瀏覽器接管手勢（捲動）→ 整下作廢
+  function onCellClick(idx) {
+    var g = upGuardRef.current;
+    if (g && g.idx === idx && Date.now() - g.t < 500) {
+      upGuardRef.current = null;
+      return;
+    } // pointerup 已做完這一下，click 是尾巴
+    onCellAction(idx);
   }
 
   // ---------- 多人（平台模式）：星型拓撲（來賓只連房主、房主轉發全場） ----------
@@ -21634,15 +21676,19 @@ function MinesGame() {
         lineHeight: 1
       }, extra),
       onClick: function onClick() {
-        return onCellAction(i);
+        return onCellClick(i);
       },
       onPointerDown: function onPointerDown(e) {
         return onCellDown(i, e);
       },
       onPointerMove: onCellMove,
-      onPointerUp: onCellUp,
-      onPointerLeave: onCellUp,
-      onPointerCancel: onCellUp,
+      onPointerUp: function onPointerUp(e) {
+        return onCellUp(e, true);
+      },
+      onPointerLeave: function onPointerLeave(e) {
+        return onCellUp(e, false);
+      },
+      onPointerCancel: onCellCancel,
       onContextMenu: function onContextMenu(e) {
         e.preventDefault();
         toggleFlag(i);
@@ -23177,7 +23223,7 @@ ReactDOM.createRoot(document.getElementById('mines-root')).render(React.createEl
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.54.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.54.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
