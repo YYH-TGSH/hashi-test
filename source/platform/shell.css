@@ -10,6 +10,7 @@
   --plat-press-in: 80ms;
   --plat-press-out: 220ms;
   --plat-stagger: 60ms;
+  --plat-toast-rise: 10px; /* Toast 升起距離（v1.55.0，比照 Stageshow --ss-toast-rise 參數化） */
 }
 body[data-view="home"] {
   overscroll-behavior-y: none;
@@ -204,6 +205,25 @@ body.plat-room-on[data-view="mines"] {
 @keyframes platLiteIn { 0% { transform: translateY(55%) scale(1.18); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
 .plat-lite-in { display: inline-block; animation: platLiteIn 240ms var(--plat-ease-spring); }
 @media (prefers-reduced-motion: reduce) { .plat-lite-in { animation: none; } }
+/* ===== 訊息呈現（v1.55.0，P1＋P2）：訊息要有來與去——升起、滾著變、淡著退 ===== */
+/* 聊天訊息進場：由下升入＋淡入（settle）；自己的訊息 rise 較大（從輸入列方向升起的暗示）。transform 只在動畫期間存在，結束由 JS 移除 class、不殘留。 */
+@keyframes platMsgIn { from { opacity: 0; transform: translateY(var(--msg-rise, 8px)); } to { opacity: 1; transform: translateY(0); } }
+.plat-msg-in { --msg-rise: 8px; animation: platMsgIn 220ms var(--plat-ease-settle) both; }
+.plat-msg-in.mine { --msg-rise: 14px; }
+/* Toast 進場：由下 rise 升入＋settle；keyframes 全程帶 translate(-50%) 與置中 transform 合併，不弄壞置中（不用 animate-slideUpFade 的原因同此） */
+@keyframes platToastIn { from { opacity: 0; transform: translate(-50%, var(--plat-toast-rise)); } to { opacity: 1; transform: translate(-50%, 0); } }
+.plat-toast-in { animation: platToastIn 280ms var(--plat-ease-settle) both; }
+/* 小框 Popover 通則：開＝scale .96→1＋淡入（origin 由呼叫端給），關＝淡出＋微縮回、完成才 display:none。
+   -x 變體給本體帶 translateX(-50%) 置中的元素（plat-speak、聊天面板本體）——keyframes 全程合併置中位移，不跳位。 */
+@keyframes platPopIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes platPopOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.96); } }
+@keyframes platPopInX { from { opacity: 0; transform: translateX(-50%) scale(.96); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes platPopOutX { from { opacity: 1; transform: translateX(-50%) scale(1); } to { opacity: 0; transform: translateX(-50%) scale(.96); } }
+.plat-pop-in { animation: platPopIn 190ms var(--plat-ease-settle) both; }
+.plat-pop-out { animation: platPopOut 150ms var(--plat-ease-travel) both; pointer-events: none; }
+.plat-pop-in-x { animation: platPopInX 190ms var(--plat-ease-settle) both; }
+.plat-pop-out-x { animation: platPopOutX 150ms var(--plat-ease-travel) both; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .plat-msg-in, .plat-toast-in, .plat-pop-in, .plat-pop-out, .plat-pop-in-x, .plat-pop-out-x { animation: none; } }
 /* 倒數 Roll 換位（PlatCountdown 升級）：每位數字由下滾入＋spring 落定 */
 @keyframes platCountRoll { 0% { transform: translateY(38%) scale(1.22); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
 .plat-count-roll { animation: platCountRoll 300ms var(--plat-ease-spring), platCountPulse .45s ease-in-out .3s infinite alternate; }

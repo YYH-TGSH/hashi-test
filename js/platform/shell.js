@@ -165,7 +165,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.54.2'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.55.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -267,17 +267,35 @@
     if (!el) {
       el = document.createElement('div'); el.id = 'plat-toast'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); // 狀態播報（稽核 F-01 快修：toast 是全平台的狀態通知通道）
       el.style.cssText = 'position:fixed;left:50%;bottom:118px;transform:translateX(-50%);z-index:100001;background:rgba(15,23,42,.93);color:#fff;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px;border:2px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;transition:opacity .3s;display:none';
+      var sp = document.createElement('span'); sp.id = 'plat-toast-text'; el.appendChild(sp);
       document.body.appendChild(el);
     }
-    el.textContent = msg; el.style.display = 'block'; el.style.opacity = '1';
-    clearTimeout(platToast._t);
-    platToast._t = setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { el.style.display = 'none'; }, 320); }, 3600);
+    var span = el.querySelector('span');
+    if (!span) { span = document.createElement('span'); el.appendChild(span); }
+    clearTimeout(platToast._t); clearTimeout(platToast._t2);
+    // v1.55.0 Toast 升級：隱藏中（或退場淡出中）→ 由下 rise 升入＋settle 落定（.plat-toast-in 的 keyframes 全程合併 translate(-50%) 置中）；
+    // 已可見時連續通知 → 文字走 PlatLite 滾換，不再整句瞬換（every change moves）
+    var fresh = (el.style.display === 'none' || !el.style.display || el.style.opacity === '0');
+    if (fresh) {
+      span.textContent = msg;
+      el.style.display = 'block'; el.style.opacity = '1';
+      el.classList.remove('plat-toast-in'); void el.offsetWidth; el.classList.add('plat-toast-in');
+    } else {
+      el.style.opacity = '1';
+      window.PlatLite(span, msg);
+    }
+    platToast._t = setTimeout(function () { el.style.opacity = '0'; platToast._t2 = setTimeout(function () { el.style.display = 'none'; el.classList.remove('plat-toast-in'); }, 320); }, 3600);
   }
   function platDistribute(obj, fromPid) {
     if (Net.isHost) platBroadcast(obj, fromPid); else platToHost(obj);
   }
 
   // ---------- 聊天 ----------
+  function chatScrollBottom(list, smooth) {
+    if (!list) return;
+    try { if (smooth) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }); else list.scrollTop = list.scrollHeight; }
+    catch (e) { list.scrollTop = list.scrollHeight; }
+  }
   function appendChat(m) {
     var list = $('plat-chat-list'); if (!list) return;
     var d = document.createElement('div');
@@ -289,9 +307,13 @@
       d.appendChild(who);
       d.appendChild(document.createTextNode(m.text || ''));
     }
+    // v1.55.0 訊息進場（P1）：新訊息由下升入＋淡入（220ms settle；sys 同節奏、自己的訊息 rise 較大）；
+    // 動畫結束移除 class、不殘留 transform 影響排版。造型不動（行列式是使用者定的版面）。
+    d.classList.add('plat-msg-in'); if (m.mine) d.classList.add('mine');
+    (function (node) { setTimeout(function () { node.classList.remove('plat-msg-in'); node.classList.remove('mine'); }, 300); })(d);
     list.appendChild(d);
     while (list.children.length > 120) list.removeChild(list.firstChild); // 保留上限（B-06：防刷屏讓 DOM 無界累積）
-    list.scrollTop = list.scrollHeight;
+    chatScrollBottom(list, !!(Net.chatOpen && !Net.chatMin)); // 面板開著時平滑捲到底（被推著走）；關著時維持瞬跳（無人看）
     if (!m.sys && !m.mine && (!Net.chatOpen || Net.chatMin)) { Net.unread++; renderUnread(); }
   }
   function sysChat(text) { appendChat({ sys: true, text: text }); }
@@ -302,11 +324,12 @@
   }
   function openChat() {
     Net.chatOpen = true; Net.chatMin = false; Net.unread = 0; renderUnread();
-    platFadeInReset($('plat-chat'));
-    $('plat-chat').style.display = 'block'; $('plat-chat-body').style.display = 'flex'; $('plat-chat-min').textContent = '🔽';
+    var w = $('plat-chat'); if (w) { if (w._fadeT) { clearTimeout(w._fadeT); w._fadeT = null; } w.style.opacity = ''; w.style.display = 'block'; }
+    platPopOpen($('plat-chat-panel'), '50% 100%', 'block', true); // v1.55.0：面板本體收編 popover 通則（由下微放大落定）
+    $('plat-chat-body').style.display = 'flex'; $('plat-chat-min').textContent = '🔽';
     var list = $('plat-chat-list'); if (list) list.scrollTop = list.scrollHeight;
   }
-  function closeChat() { Net.chatOpen = false; platFadeOut($('plat-chat')); var ep = $('plat-chat-emojis'); if (ep) ep.style.display = 'none'; }
+  function closeChat() { Net.chatOpen = false; var ep = $('plat-chat-emojis'); if (ep) platPopClose(ep); platPopClose($('plat-chat-panel'), function () { var w = $('plat-chat'); if (w && !Net.chatOpen) w.style.display = 'none'; }, true); }
   function sendChat() {
     var inp = $('plat-chat-input'); var text = (inp.value || '').trim().slice(0, 200); if (!text || !Net.active) return; // 送出端也截斷（B-06，不只靠 HTML maxlength）
     inp.value = '';
@@ -1992,7 +2015,20 @@
   //          showInput, inputMode, showDraw, drawTool, showHostClear }
   // popover 開合（zoomOpen/drawOpen）由殼持有；模式鈕規則與數獨/數橋原行為一致：
   // 在塗鴉模式且 popover 關閉時按模式鈕 → 只重開 popover；其餘 → onAction('mode-press') 由遊戲切換。
-  var PB = { el: null, cfg: null, state: null, zoomOpen: false, drawOpen: false, dockOpen: false, lastMode: -1, unsub: null, lastJson: null };
+  var PB = { el: null, cfg: null, state: null, zoomOpen: false, drawOpen: false, dockOpen: false, lastMode: -1, unsub: null, lastJson: null, _popOut: null };
+  // PlatBar 子選單的 popover 退場（v1.55.0，P2 與 platPopOpen/Close 同通則）：bar 是 innerHTML 重畫模型、元素不能跨畫持有，
+  // 改為「關閉時先把選單以 plat-pop-out 姿態多畫一幀屍體（175ms），時間到才真的不畫」——開＝plat-pop-in 插入即播、origin 對齊觸發邊。
+  function pbDying(kind) { return !!(PB._popOut && PB._popOut.kind === kind && Date.now() < PB._popOut.until); }
+  function pbArmPopOut(kind) { PB._popOut = { kind: kind, until: Date.now() + 175 }; setTimeout(function () { if (PB._popOut && Date.now() >= PB._popOut.until - 5) { PB._popOut = null; pbRender(); } }, 190); }
+  function pbPopCloseMenu(kind) {
+    if (kind === 'zoom') PB.zoomOpen = false; else if (kind === 'draw') PB.drawOpen = false; else if (kind === 'dock') PB.dockOpen = false;
+    pbArmPopOut(kind); pbRender();
+  }
+  function pbPopOpenMenu(kind) {
+    if (kind === 'zoom') PB.zoomOpen = true; else if (kind === 'draw') PB.drawOpen = true; else if (kind === 'dock') PB.dockOpen = true;
+    if (PB._popOut && PB._popOut.kind === kind) PB._popOut = null;
+    pbRender();
+  }
   function pbEsc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); } // 名稱/標籤進 innerHTML 前一律跳脫（原為直通，改造客戶端送 HTML 名稱可注入標記）
   function pbRender() {
     if (!PB.el || !PB.state || !PB.cfg) return;
@@ -2005,8 +2041,8 @@
     // 縮放組
     h += '<div class="flex items-center gap-1.5 md:gap-3 bg-slate-100 p-1 rounded-xl border-2 border-slate-300 relative">';
     h += '<button data-pb="zoom-toggle" title="縮放（點開/收合）" class="w-11 h-11 md:w-14 md:h-14 bg-white border-[3px] border-slate-800 rounded-lg shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none flex items-center justify-center text-base md:text-lg font-black transition-all" style="--pba:' + ac + '">' + (st.zoomLabel && st.zoomLabel !== '🔍' ? '<span class="text-xs md:text-sm">' + pbEsc(st.zoomLabel) + '</span>' : '🔍') + '</button>';
-    if (PB.zoomOpen) {
-      h += '<div class="absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">';
+    if (PB.zoomOpen || pbDying('zoom')) {
+      h += '<div data-pbmenu="zoom" style="transform-origin:0% 100%" class="absolute bottom-full mb-3 left-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] z-50 ' + (PB.zoomOpen ? 'plat-pop-in' : 'plat-pop-out') + '">';
       h += '<button data-pb="zoom-in" title="放大" class="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">＋</button>';
       h += '<button data-pb="zoom-out" title="縮小" class="w-12 h-12 bg-white border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-xl font-black shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">－</button>';
       h += '<button data-pb="zoom-cycle" title="循環切換縮放模式（自動適應）" class="w-12 h-12 bg-slate-800 border-[3px] border-slate-800 rounded-xl flex items-center justify-center text-sm font-black text-white shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all">' + pbEsc(st.zoomGlyph || '🔲') + '</button>';
@@ -2026,9 +2062,9 @@
     var modeBg = (st.mode === drawIdx && st.modes.length > 2) ? '#34d399' : ac;
     h += '<div class="flex items-center gap-1 md:gap-2 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative">';
     h += '<button data-pb="mode-press" title="' + pbEsc(st.modeTitle || '切換模式') + '" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-sm md:text-base flex items-center gap-1.5 md:gap-2 transition-all shadow-md" style="background:' + modeBg + ';color:#0f172a"><span>' + pbEsc(md.icon) + '</span><span class="hidden sm:inline">' + pbEsc(md.label) + '</span><span style="font-size:10px;opacity:.6">▾</span></button>';
-    if (st.showDraw && PB.drawOpen) {
+    if (st.showDraw && (PB.drawOpen || pbDying('draw'))) {
       var penOn = st.drawTool !== 'eraser';
-      h += '<div class="absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] animate-popUpCenter z-50">';
+      h += '<div data-pbmenu="draw" style="transform-origin:100% 100%" class="absolute bottom-full mb-6 right-0 flex flex-col gap-3 bg-white border-[3px] border-slate-800 p-2.5 rounded-2xl shadow-[10px_10px_0px_rgba(30,41,59,0.2)] z-50 ' + (PB.drawOpen ? 'plat-pop-in' : 'plat-pop-out') + '">';
       h += '<button data-pb="draw-pen" title="畫筆模式" class="w-12 h-12 border-[3px] rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (penOn ? 'bg-emerald-100 border-emerald-600' : 'bg-white border-slate-800 hover:bg-slate-50') + '"' + (penOn ? ' style="transform:scale(1.1)"' : '') + '>🖌️</button>';
       h += '<button data-pb="draw-eraser" title="橡皮擦 (雙擊清除自己所有塗鴉)" class="w-12 h-12 border-[3px] rounded-xl flex items-center justify-center transition-all shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px] ' + (!penOn ? 'bg-orange-100 border-orange-600' : 'bg-white border-slate-800 hover:bg-slate-50') + '"' + (!penOn ? ' style="transform:scale(1.1)"' : '') + '>🧽</button>';
       if (st.showHostClear) h += '<button data-pb="draw-clear" title="房主：清除全場塗鴉" class="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 text-rose-800 rounded-xl flex items-center justify-center hover:bg-rose-100 shadow-[2px_2px_0px_#1e293b] active:shadow-none active:translate-y-[2px]">🚮</button>';
@@ -2045,8 +2081,8 @@
       h += '<div class="flex items-center gap-0.5 md:gap-1 bg-slate-800 p-1 rounded-2xl border-2 border-slate-800 shadow-inner relative">';
       h += '<button data-pb="dock-chat" title="聊天室" style="' + dbtn + (ds.chatOpen ? ';background:' + ac : '') + '">💬' + (ds.unread > 0 && !ds.chatOpen ? '<span style="position:absolute;top:1px;right:1px;min-width:15px;height:15px;padding:0 3px;border-radius:9999px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:1.5px solid #1e293b">' + ds.unread + '</span>' : '') + '</button>';
       h += '<button data-pb="dock-video" title="視訊" style="' + dbtn + (ds.videoOn ? ';background:' + ac : '') + '">' + (ds.videoOn ? '📹' : '🎥') + (hasVidCtl ? '<span style="font-size:9px;opacity:.75;margin-left:1px">▴</span>' : '') + '</button>';
-      if (hasVidCtl && PB.dockOpen) {
-        h += '<div class="absolute bottom-full mb-3 right-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] animate-popUpCenter z-50">';
+      if (hasVidCtl && (PB.dockOpen || pbDying('dock'))) {
+        h += '<div data-pbmenu="dock" style="transform-origin:100% 100%" class="absolute bottom-full mb-3 right-0 flex flex-col gap-2 bg-white border-[3px] border-slate-800 p-2 rounded-2xl shadow-[6px_6px_0px_rgba(30,41,59,0.25)] z-50 ' + (PB.dockOpen ? 'plat-pop-in' : 'plat-pop-out') + '">';
         if (ds.videoOn) h += '<button data-pb="dock-mic" title="麥克風" class="' + popBtn + '"' + (!ds.micMuted ? ' style="background:' + ac + '"' : '') + '>' + (ds.micMuted ? '🔇' : '🎤') + '</button>';
         h += '<button data-pb="dock-speaker" title="喇叭" class="' + popBtn + '"' + (ds.speakerOn ? ' style="background:' + ac + '"' : '') + '>' + (ds.speakerOn ? '🔊' : '🔈') + '</button>';
         if (ds.videoOn) h += '<button data-pb="dock-stop" title="關閉視訊" class="w-12 h-12 bg-rose-50 border-[3px] border-rose-800 rounded-xl flex items-center justify-center shadow-[2px_2px_0px_#1e293b] active:translate-y-[2px] active:shadow-none transition-all"><span style="font-size:19px">📹</span><span style="font-size:10px;vertical-align:top;color:#9f1239;font-weight:900">✕</span></button>';
@@ -2058,7 +2094,7 @@
     h += '</div>';
     PB.el.innerHTML = h;
     // popover（視訊控制/縮放/塗鴉）開啟時要浮在視訊頭像上面，否則會被自己的頭像遮住按不到
-    var anyPop = PB.dockOpen || PB.zoomOpen || PB.drawOpen;
+    var anyPop = PB.dockOpen || PB.zoomOpen || PB.drawOpen || pbDying('zoom') || pbDying('draw') || pbDying('dock');
     PB.el.style.position = 'relative';
     PB.el.style.zIndex = anyPop ? '99990' : '';
     var vv = $('plat-videos'); if (vv) vv.style.zIndex = anyPop ? '9990' : '';
@@ -2068,7 +2104,7 @@
     var t = e.target && e.target.closest ? e.target.closest('[data-pb]') : null;
     if (!t || !PB.el.contains(t)) return;
     var k = t.getAttribute('data-pb');
-    if (k === 'zoom-toggle') { PB.zoomOpen = !PB.zoomOpen; pbRender(); }
+    if (k === 'zoom-toggle') { if (PB.zoomOpen) pbPopCloseMenu('zoom'); else pbPopOpenMenu('zoom'); }
     else if (k === 'zoom-in') pbAct('zoom-in');
     else if (k === 'zoom-out') pbAct('zoom-out');
     else if (k === 'zoom-cycle') pbAct('zoom-cycle');
@@ -2077,7 +2113,7 @@
     else if (k === 'mode-press') {
       var st = PB.state; if (!st) return;
       var drawIdx = st.modes.length - 1;
-      if (st.showDraw && st.mode === drawIdx && !PB.drawOpen) { PB.drawOpen = true; pbRender(); return; }
+      if (st.showDraw && st.mode === drawIdx && !PB.drawOpen) { pbPopOpenMenu('draw'); return; }
       pbAct('mode-press');
     }
     else if (k === 'draw-pen') pbAct('draw-tool', 'pen');
@@ -2086,11 +2122,11 @@
     else if (k === 'dock-chat' && window.PlatDock) window.PlatDock.toggleChat();
     else if (k === 'dock-video' && window.PlatDock) {
       var ds2 = window.PlatDock.isActive() ? window.PlatDock.getState() : null;
-      if (ds2 && (ds2.videoOn || ds2.remoteCount > 0)) { PB.dockOpen = !PB.dockOpen; pbRender(); }
+      if (ds2 && (ds2.videoOn || ds2.remoteCount > 0)) { if (PB.dockOpen) pbPopCloseMenu('dock'); else pbPopOpenMenu('dock'); }
       else window.PlatDock.toggleVideo();
     }
-    else if (k === 'dock-start' && window.PlatDock) { PB.dockOpen = false; window.PlatDock.toggleVideo(); }
-    else if (k === 'dock-stop' && window.PlatDock) { PB.dockOpen = false; window.PlatDock.toggleVideo(); }
+    else if (k === 'dock-start' && window.PlatDock) { pbPopCloseMenu('dock'); window.PlatDock.toggleVideo(); }
+    else if (k === 'dock-stop' && window.PlatDock) { pbPopCloseMenu('dock'); window.PlatDock.toggleVideo(); }
     else if (k === 'dock-mic' && window.PlatDock) window.PlatDock.toggleMic();
     else if (k === 'dock-speaker' && window.PlatDock) window.PlatDock.toggleSpeaker();
   }
@@ -2121,7 +2157,9 @@
       PB.state = state;
       if (state.mode !== prevMode) {
         var drawIdx = state.modes.length - 1;
-        PB.drawOpen = !!(state.showDraw && state.mode === drawIdx);
+        var ndOpen = !!(state.showDraw && state.mode === drawIdx);
+        if (PB.drawOpen && !ndOpen) pbArmPopOut('draw'); // 模式切離塗鴉＝選單退場，照通則淡出後才消失
+        PB.drawOpen = ndOpen;
         PB.lastMode = state.mode;
       }
       pbRender();
@@ -2131,7 +2169,7 @@
       PB.el.removeEventListener('click', pbClick);
       PB.el.removeEventListener('dblclick', pbDblClick);
       PB.el.innerHTML = '';
-      PB.el = null; PB.cfg = null; PB.state = null; PB.lastJson = null; PB.zoomOpen = false; PB.drawOpen = false; PB.dockOpen = false;
+      PB.el = null; PB.cfg = null; PB.state = null; PB.lastJson = null; PB.zoomOpen = false; PB.drawOpen = false; PB.dockOpen = false; PB._popOut = null;
       if (PB.unsub) { PB.unsub(); PB.unsub = null; }
     },
     isAttached: function () { return !!PB.el; },
@@ -2394,6 +2432,31 @@
     if (el._fadeT) { clearTimeout(el._fadeT); el._fadeT = null; }
     el.style.opacity = ''; el.style.transition = ''; el.style.pointerEvents = '';
   }
+  // 小框 Popover 通則（v1.55.0，P2）：開＝scale .96→1＋淡入、transform-origin 對齊觸發邊、尺寸第一幀即定版
+  //（三處的內容都是開啟前就排好的靜態內容，不在動畫途中改尺寸）；關＝淡出＋微縮回（150ms）完成才 display:none。
+  // x=true 給本體帶 translateX(-50%) 置中的元素（plat-speak／聊天面板本體），走合併置中位移的 -x keyframes、不跳位。
+  function platPopOpen(el, origin, displayVal, x) {
+    if (!el) return;
+    if (el._popT) { clearTimeout(el._popT); el._popT = null; }
+    el._popDisplay = displayVal || el._popDisplay || 'block';
+    el.style.display = el._popDisplay;
+    if (origin) el.style.transformOrigin = origin;
+    var inCls = x ? 'plat-pop-in-x' : 'plat-pop-in', outCls = x ? 'plat-pop-out-x' : 'plat-pop-out';
+    el.classList.remove(outCls); el.classList.remove(inCls); void el.offsetWidth; el.classList.add(inCls);
+    if (el._popInT) clearTimeout(el._popInT);
+    el._popInT = setTimeout(function () { el._popInT = null; el.classList.remove(inCls); }, 230); // 動畫結束卸下 class，不留 fill 的 transform 影響後續排版
+  }
+  function platPopClose(el, done, x) {
+    if (!el) { if (done) done(); return; }
+    if (el.style.display === 'none') { if (done) done(); return; }
+    var inCls = x ? 'plat-pop-in-x' : 'plat-pop-in', outCls = x ? 'plat-pop-out-x' : 'plat-pop-out';
+    if (el._popInT) { clearTimeout(el._popInT); el._popInT = null; }
+    el.classList.remove(inCls); el.classList.add(outCls);
+    if (el._popT) clearTimeout(el._popT);
+    el._popT = setTimeout(function () { el._popT = null; el.style.display = 'none'; el.classList.remove(outCls); if (done) done(); }, 160);
+  }
+  function speakShow() { platPopOpen($('plat-speak'), '50% 0', 'flex', true); }
+  function speakHide() { platPopClose($('plat-speak'), null, true); }
   function pr2Render() {
     var el = pr2El(); var s = PR2.spec;
     if (!s) { el.style.display = 'none'; el.innerHTML = ''; return; }
@@ -2754,11 +2817,11 @@
   function onRemoteMic(d) {
     if (d.muted) {
       Net.speakPrompted[d.pid] = false;
-      if (Net.speakPid === d.pid) { $('plat-speak').style.display = 'none'; Net.speakPid = null; }
+      if (Net.speakPid === d.pid) { speakHide(); Net.speakPid = null; }
     } else if (!Net.speakerOn && !Net.speakPrompted[d.pid]) {
       Net.speakPrompted[d.pid] = true; Net.speakPid = d.pid;
       $('plat-speak-name').textContent = d.name || nameOf(d.pid);
-      $('plat-speak').style.display = 'flex';
+      speakShow();
     }
   }
   function wireCall(call, pid) {
@@ -2816,7 +2879,7 @@
   function toggleSpeaker() {
     Net.speakerOn = !Net.speakerOn;
     document.querySelectorAll('.plat-remote-video').forEach(function (el) { try { el.muted = !Net.speakerOn; } catch (e) {} });
-    if (Net.speakerOn) { $('plat-speak').style.display = 'none'; Net.speakPid = null; }
+    if (Net.speakerOn) { speakHide(); Net.speakPid = null; }
     updateDock();
   }
 
@@ -2993,11 +3056,11 @@
     if (emojiPanel && !$('plat-chat-emoji').dataset.bound) {
       $('plat-chat-emoji').dataset.bound = '1';
       PLAT_EMOJIS.forEach(function (em) { var b = document.createElement('button'); b.type = 'button'; b.className = 'plat-emoji-btn'; b.textContent = em; b.onclick = function () { var inp = $('plat-chat-input'); var st = (inp.selectionStart != null) ? inp.selectionStart : inp.value.length; var en = (inp.selectionEnd != null) ? inp.selectionEnd : inp.value.length; if (inp.value.length + em.length > 200) return; inp.value = inp.value.slice(0, st) + em + inp.value.slice(en); try { inp.setSelectionRange(st + em.length, st + em.length); } catch (e2) {} inp.focus(); }; emojiPanel.appendChild(b); });
-      $('plat-chat-emoji').onclick = function (e) { e.stopPropagation(); emojiPanel.style.display = emojiPanel.style.display === 'none' ? 'grid' : 'none'; };
+      $('plat-chat-emoji').onclick = function (e) { e.stopPropagation(); if (emojiPanel.style.display === 'none' || !emojiPanel.style.display) platPopOpen(emojiPanel, '0% 100%', 'grid'); else platPopClose(emojiPanel); }; // v1.55.0：經 popover helper（origin 對齊左下 😊 觸發鈕）
     }
     $('plat-chat-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
-    $('plat-speak-yes').onclick = function () { if (!Net.speakerOn) toggleSpeaker(); $('plat-speak').style.display = 'none'; Net.speakPid = null; };
-    $('plat-speak-no').onclick = function () { $('plat-speak').style.display = 'none'; Net.speakPid = null; };
+    $('plat-speak-yes').onclick = function () { if (!Net.speakerOn) toggleSpeaker(); speakHide(); Net.speakPid = null; };
+    $('plat-speak-no').onclick = function () { speakHide(); Net.speakPid = null; };
     // 邀請連結複製鈕（v1.51.0）
     var invCopy = $('hub-invite-copy');
     if (invCopy) invCopy.onclick = function () {
