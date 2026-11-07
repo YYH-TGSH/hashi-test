@@ -3717,7 +3717,7 @@ function MinesGame() {
       className: "z-10 w-full max-w-md mt-5 py-3.5 bg-sky-400 border-4 border-slate-800 rounded-xl font-black text-lg text-slate-900 shadow-[4px_4px_0px_rgba(30,41,59,1)] active:translate-y-[2px] active:shadow-none"
     }, "\uD83C\uDFE0 \u56DE\u5927\u5EF3"), /*#__PURE__*/React.createElement("div", {
       className: "shrink-0 pt-4 text-slate-800 font-black text-sm opacity-60 tracking-wider z-10"
-    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '大帥益智館 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showHelp && /*#__PURE__*/React.createElement("div", {
+    }, "Copyright \xA9 2026 \u8449\u5927\u5E25. All rights reserved. (", isPlat && window.PLAT_VERSION ? '三磚益智 v' + window.PLAT_VERSION : 'v1.0.0', ")"), showHelp && /*#__PURE__*/React.createElement("div", {
       className: "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4",
       onClick: function onClick() {
         return setShowHelp(false);
