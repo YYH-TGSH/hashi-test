@@ -165,7 +165,7 @@
   var RealPeer = window.Peer;
   window.__RealPeer = RealPeer;
   window.__PLAT_PLATFORM = true;
-  var PLAT_VERSION = '1.54.0'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
+  var PLAT_VERSION = '1.54.1'; // 平台主版本（功能批 +0.1 尾碼歸零；小修 +0.0.1）——數獨/數橋的子版本號讀這個值
   window.PLAT_START_WAIT_MS = 60000; // 開始按鈕門檻（兩款共用單一來源）：全員準備，或等待室開滿此毫秒數（防掛機卡房）房主才能開始；測試可調
   // 連線設定：v1.7.1 回滾 v1.6.1 的 OpenRelay TURN——該組公開帳密已失效，死中繼反而讓交涉整體卡死（使用者實測：加了之後連原本能連的都連不上）。
   // 回到 PeerJS 預設（v1.6.0 以前的做法）：同區網/友善 NAT 直連。跨網路穿透需要有在運作的中繼服務（需註冊），使用者 2026-10-18 決定不註冊任何服務，此路暫擱置。
@@ -1685,10 +1685,15 @@
       } else rescueTournNodes();
     }
     var ro = prRegion('roster'), ct = prRegion('controls');
-    [ro, ct].forEach(function (n) { if (n) n.style.display = showTourn ? 'none' : ''; });
+    // v1.54.1 修復（使用者實機回報「錦標賽沒有進入遊戲的按鈕」）：舊版在錦標賽分頁把名單（roster）與
+    // 準備/開賽列（controls）整組 display:none——v1.48 把錦標賽準備流程統一成「名單卡準備鈕＋開賽鈕」後，
+    // 這段隱藏沒跟著退場，結果真機上錦標賽分頁看不到任何進入遊戲的按鈕（jsdom 點得到隱藏元素、測試全綠也沒發現）。
+    // 現在 roster/controls 在錦標賽分頁照常顯示（與其他分頁同款）；只隱藏 settings 槽（錦標賽有自己的設定表單）。
+    if (ro) ro.style.display = '';
+    if (ct) ct.style.display = '';
+    if (ro && ro.previousElementSibling) ro.previousElementSibling.style.display = '';
     if (PR.slot) PR.slot.style.display = showTourn ? 'none' : '';
     // 錦標賽分頁也要有卡片內的聊天/視訊膠囊＋離開房間（跟兩款遊戲等待室同款、使用者指示）：dock 與 leave 不隨分頁隱藏
-    if (ro && ro.previousElementSibling) ro.previousElementSibling.style.display = showTourn ? 'none' : '';
     if (!tabsRg) return;
     var t = Net.tourn;
     var tournLive = !!(t && t.phase !== 'ended');
